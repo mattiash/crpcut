@@ -5,10 +5,7 @@
 #include <sstream>
 #include <iostream>
 #include <ostream>
-#include <cstring>
 #include <cerrno>
-#include <cstdio>
-#include <cstdlib>
 #include <cassert>
 #include <tr1/type_traits>
 namespace std {
@@ -132,7 +129,7 @@ namespace ciut {
     public:
       reporter() : write_fd(0), read_fd(0) {}
       void set_fds(int read, int write) { write_fd = write, read_fd = read; }
-      void operator()(type t, const std::ostringstream &os) const;
+      void operator()(type t, std::ostringstream &os) const;
       void operator()(type t, const char *msg = "") const
       {
         std::ostringstream os;
@@ -217,7 +214,7 @@ namespace ciut {
       {
         os << *this;
         os << " - ";
-        os << report.str();
+        os << report;
         os << std::endl;
         return os;
       }
@@ -234,7 +231,7 @@ namespace ciut {
       int in_fd_;
       int out_fd_;
       pid_t pid_;
-      std::ostringstream report;
+      std::string report;
       friend class ciut::test_case_factory;
     };
   }
@@ -359,10 +356,19 @@ namespace ciut {
             virtual bool match_name(const char *name_param) const       \
             {                                                           \
               const char *p = current_namespace.match_name(name_param); \
-              if (!p) return false;                                     \
-              if (!*p) return true; /* match for whole suites*/         \
-              if (!*p++ == ':') return false;                           \
-              if (!*p++ == ':') return false;                           \
+              if (p) \
+                {                                                       \
+                  if (p != name_param || *p == ':')                     \
+                    {                                                   \
+                      if (!*p) return true; /* match for whole suites*/ \
+                      if (!*p++ == ':') return false;                   \
+                      if (!*p++ == ':') return false;                   \
+                    }                                                   \
+                }                                                       \
+              else                                                      \
+                {                                                       \
+                  p = name_param;                                       \
+                }                                                       \
               return !std::strcmp(p, #test_case_name);                  \
             }                                                           \
             virtual std::ostream &print_name(std::ostream &os) const    \
@@ -370,7 +376,7 @@ namespace ciut {
               os << current_namespace;                                  \
               return os << #test_case_name;                             \
             }                                                           \
-          };                                                            \
+            };                                                          \
     static registrator reg;                                             \
   };                                                                    \
   test_case_name :: registrator test_case_name::reg;                    \

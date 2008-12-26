@@ -59,6 +59,7 @@ namespace ciut {
       assert(rv == 0);
       ::close(in_fd_);
       ::close(out_fd_);
+      std::string().swap(report);
     }
     comm::type test_case_registrator::read_report()
     {
@@ -69,7 +70,7 @@ namespace ciut {
         rv = ::read(in_fd_, &t, sizeof(t));
       } while (rv == -1 && errno == EINTR);
       assert(rv == sizeof(t));
-      report << header[t];
+      report += header[t];
       size_t len = 0;
       do {
         rv = ::read(in_fd_, &len, sizeof(len));
@@ -89,7 +90,8 @@ namespace ciut {
       buff[bytes_read] = 0;
       if (len)
         {
-          report << " - " << buff;
+          report += " - ";
+          report += buff;
         }
       do {
         rv = ::write(out_fd_, &len, sizeof(len));
@@ -285,7 +287,8 @@ namespace ciut {
             int rv = epoll_wait(epollfd(), &ev,  1, -1);
             if (rv == 1) break;
           }
-        implementation::test_case_registrator *child = static_cast<implementation::test_case_registrator*>(ev.data.ptr);
+        typedef implementation::test_case_registrator registrator;
+        registrator *child = static_cast<registrator*>(ev.data.ptr);
 
         if (ev.events & EPOLLIN)
           {
@@ -374,25 +377,29 @@ namespace ciut {
 
 
   namespace comm {
-    void reporter::operator()(type t, const std::ostringstream &os) const
+    void reporter::operator()(type t, std::ostringstream &os) const
     {
       write(t);
-      const std::string &s = os.str();
-      const size_t len = s.length();
-      write(len);
-      const char *p = s.c_str();
-      size_t bytes_written = 0;
-      while (bytes_written < len)
-        {
-          int rv = ::write(write_fd,
-                           p + bytes_written,
-                           len - bytes_written);
-          if (rv == -1 && errno == EINTR) continue;
-          if (rv <= 0) throw "report failed";
-          bytes_written += rv;
-        }
-      read(bytes_written);
-      assert(len == bytes_written);
+      {
+        const std::string &s = os.str();
+        const size_t len = s.length();
+        write(len);
+        const char *p = s.c_str();
+        size_t bytes_written = 0;
+        while (bytes_written < len)
+          {
+            int rv = ::write(write_fd,
+                             p + bytes_written,
+                             len - bytes_written);
+            if (rv == -1 && errno == EINTR) continue;
+            if (rv <= 0) throw "report failed";
+            bytes_written += rv;
+          }
+        read(bytes_written);
+        assert(len == bytes_written);
+        using std::ostringstream;
+        os.~ostringstream(); // man, this is ugly, but _Exit() leaks
+      }
       _Exit(0);
     }
 
