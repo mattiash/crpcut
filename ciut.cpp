@@ -102,127 +102,126 @@ namespace ciut {
       return t;
     }
 
-  void test_case_registrator::manage_death()
-  {
-    ::siginfo_t info;
-    for (;;)
-      {
-        int rv = ::waitid(P_PID, pid_, &info, WEXITED);
-        if (rv == -1 && errno == EINTR) continue;
-        assert(rv == 0);
-        break;
-      }
-
-    std::ostringstream out;
-    switch (info.si_code)
-      {
-      case CLD_EXITED:
-        if (is_expected_exit(info.si_status))
-          {
-            out << "OK";
-            successful = true;
-          }
-        else
-          {
-            out << "FAILED! Unexpectedly exited with status = " << info.si_status;
-          }
-        break;
-      case CLD_KILLED:
-        if (is_expected_signal(info.si_status))
-          {
-            out << "OK";
-            successful = true;
-          }
-        else
-          {
-            out << "FAILED! Died on signal " << info.si_status;
-          }
-        break;
-      case CLD_DUMPED:
+    void test_case_registrator::manage_death()
+    {
+      ::siginfo_t info;
+      for (;;)
         {
-          static char core_pattern[PATH_MAX] = "core";
-          static int cpfd = 0;
-          if (cpfd == 0)
-            {
-              cpfd = ::open("/proc/sys/kernel/core_pattern", O_RDONLY);
-              if (cpfd > 0)
-                {
-                  int num = ::read(cpfd, core_pattern, sizeof(core_pattern));
-                  if (num > 1) core_pattern[num-1] = 0;
-                  ::close(cpfd);
-                }
-            }
-          out << "FAILED! Dumped core";
-          static char core_name[PATH_MAX];
-
-          const char *s = core_pattern;
-          char *d = core_name;
-          while (*s)
-            {
-              if (*s != '%')
-                {
-                  *d++ = *s;
-                }
-              else
-                {
-                  ++s;
-                  switch (*s)
-                    {
-                    case 0:
-                      break;
-                    case '%':
-                      *d++='%';
-                      break;
-                    case 'p':
-                      d+=std::sprintf(d, "%u", info.si_pid);
-                      break;
-                    case 'u':
-                      d+=std::sprintf(d, "%u", info.si_uid);
-                      break;
-                    case 'g':
-                      break; // ignore for now
-                    case 's':
-                      d+=std::sprintf(d, "%u", info.si_status);
-                      break;
-                    case 't':
-                      d+=std::sprintf(d, "%u", (unsigned)time(NULL));
-                      break;
-                    case 'h':
-                      gethostname(d, core_name+PATH_MAX-d);
-                      while (*d)
-                        {
-                          ++d;
-                        }
-                      break;
-                    case 'c':
-                      break; // ignore for now
-                    default:
-                      ; // also ignore
-                    }
-                }
-              ++s;
-            }
-          *d = 0;
-          std::ostringstream newname;
-          newname << *this << ".core";
-          out << " - renaming file from "
-              << core_name
-              << " to "
-              << newname.str();
-          int rv = ::rename(core_name, newname.str().c_str());
-          if (rv) out << " failed";
+          int rv = ::waitid(P_PID, pid_, &info, WEXITED);
+          if (rv == -1 && errno == EINTR) continue;
+          assert(rv == 0);
+          break;
         }
-        break;
-      default:
-        out << "FAILED! Died with unknown code=" << info.si_code;
-      }
-    if (!death_note)
-      {
-        report += out.str();
-        death_note = true;
-      }
-  }
 
+      std::ostringstream out;
+      switch (info.si_code)
+        {
+        case CLD_EXITED:
+          if (is_expected_exit(info.si_status))
+            {
+              out << "OK";
+              successful = true;
+            }
+          else
+            {
+              out << "FAILED! Unexpectedly exited with status = " << info.si_status;
+            }
+          break;
+        case CLD_KILLED:
+          if (is_expected_signal(info.si_status))
+            {
+              out << "OK";
+              successful = true;
+            }
+          else
+            {
+              out << "FAILED! Died on signal " << info.si_status;
+            }
+          break;
+        case CLD_DUMPED:
+          {
+            static char core_pattern[PATH_MAX] = "core";
+            static int cpfd = 0;
+            if (cpfd == 0)
+              {
+                cpfd = ::open("/proc/sys/kernel/core_pattern", O_RDONLY);
+                if (cpfd > 0)
+                  {
+                    int num = ::read(cpfd, core_pattern, sizeof(core_pattern));
+                    if (num > 1) core_pattern[num-1] = 0;
+                    ::close(cpfd);
+                  }
+              }
+            out << "FAILED! Dumped core";
+            static char core_name[PATH_MAX];
+
+            const char *s = core_pattern;
+            char *d = core_name;
+            while (*s)
+              {
+                if (*s != '%')
+                  {
+                    *d++ = *s;
+                  }
+                else
+                  {
+                    ++s;
+                    switch (*s)
+                      {
+                      case 0:
+                        break;
+                      case '%':
+                        *d++='%';
+                        break;
+                      case 'p':
+                        d+=std::sprintf(d, "%u", info.si_pid);
+                        break;
+                      case 'u':
+                        d+=std::sprintf(d, "%u", info.si_uid);
+                        break;
+                      case 'g':
+                        break; // ignore for now
+                      case 's':
+                        d+=std::sprintf(d, "%u", info.si_status);
+                        break;
+                      case 't':
+                        d+=std::sprintf(d, "%u", (unsigned)time(NULL));
+                        break;
+                      case 'h':
+                        gethostname(d, core_name+PATH_MAX-d);
+                        while (*d)
+                          {
+                            ++d;
+                          }
+                        break;
+                      case 'c':
+                        break; // ignore for now
+                      default:
+                        ; // also ignore
+                      }
+                  }
+                ++s;
+              }
+            *d = 0;
+            std::ostringstream newname;
+            newname << *this << ".core";
+            out << " - renaming file from "
+                << core_name
+                << " to "
+                << newname.str();
+            int rv = ::rename(core_name, newname.str().c_str());
+            if (rv) out << " failed";
+          }
+          break;
+        default:
+          out << "FAILED! Died with unknown code=" << info.si_code;
+        }
+      if (!death_note)
+        {
+          report += out.str();
+          death_note = true;
+        }
+    }
   }
 
 
@@ -294,6 +293,8 @@ namespace ciut {
         if (ev.events & EPOLLHUP)
           {
             child->manage_death();
+            ++num_tests_run;
+            num_failed_tests+= child->failed();
             if (child->failed() || verbose_mode)
               {
                 child->print_report(std::cout);
@@ -351,6 +352,7 @@ namespace ciut {
          i != &reg;
          i = i->next)
       {
+        ++num_tests;
         if (*names)
           {
             bool found = false;
@@ -387,6 +389,9 @@ namespace ciut {
         manage_children(num_parallel);
       }
     if (pending_children) manage_children(1);
+    std::cout << num_tests_run << " tests run (" << num_failed_tests << " failed/"
+              << num_tests_run - num_failed_tests << " OK) - totally "
+              << num_tests << " tests registered\n";
   }
 
   namespace implementation {

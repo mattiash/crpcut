@@ -249,7 +249,10 @@ namespace ciut {
     test_case_factory()
       : pending_children(0),
         verbose_mode(false),
-        num_parallel(1)
+        num_parallel(1),
+        num_tests(0),
+        num_tests_run(0),
+        num_failed_tests(0)
     {
     }
     void manage_children(unsigned max_pending_children);
@@ -266,6 +269,9 @@ namespace ciut {
     bool             verbose_mode;
     unsigned         num_parallel;
     bool             single_process;
+    unsigned         num_tests;
+    unsigned         num_tests_run;
+    unsigned         num_failed_tests;
   };
 
   namespace implementation {
