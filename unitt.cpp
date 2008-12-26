@@ -163,7 +163,7 @@ TEST(should_fail_on_assert_false_with_fixture, fixture<3>)
 {
   ASSERT_FALSE(num);
 }
-int main(int, char *argv[])
+int main(int argc, const char *argv[])
 {
-  ciut::test_case_factory::run_test(argv[1]);
+  ciut::test_case_factory::run_test(argc, argv);
 }

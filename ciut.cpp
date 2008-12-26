@@ -35,7 +35,8 @@ namespace ciut {
         next(&test_case_factory::obj().reg),
         prev(test_case_factory::obj().reg.prev),
         func_(func),
-        death_note(false)
+        death_note(false),
+        successful(false)
     {
       test_case_factory::obj().reg.prev = this;
       prev->next = this;
@@ -70,6 +71,7 @@ namespace ciut {
         rv = ::read(in_fd_, &t, sizeof(t));
       } while (rv == -1 && errno == EINTR);
       assert(rv == sizeof(t));
+      successful |= t == comm::exit_ok;
       report += header[t];
       size_t len = 0;
       do {
@@ -112,13 +114,13 @@ namespace ciut {
       }
 
     std::ostringstream out;
-    out << *this << " - ";
     switch (info.si_code)
       {
       case CLD_EXITED:
         if (is_expected_exit(info.si_status))
           {
             out << "OK";
+            successful = true;
           }
         else
           {
@@ -129,14 +131,12 @@ namespace ciut {
         if (is_expected_signal(info.si_status))
           {
             out << "OK";
+            successful = true;
           }
         else
           {
             out << "FAILED! Died on signal " << info.si_status;
           }
-        break;
-      case CLD_STOPPED:
-        out << "was stopped";
         break;
       case CLD_DUMPED:
         {
@@ -213,17 +213,14 @@ namespace ciut {
           if (rv) out << " failed";
         }
         break;
-      case CLD_TRAPPED:
-        out << " trapped";
-        break;
-      case CLD_CONTINUED:
-        out << " was continued";
-        break;
       default:
         out << "FAILED! Died with unknown code=" << info.si_code;
       }
-    if (!has_obituary()) std::cout << out.str() << '\n';
-    unregister_fds();
+    if (!death_note)
+      {
+        report += out.str();
+        death_note = true;
+      }
   }
 
   }
@@ -231,12 +228,12 @@ namespace ciut {
 
   int test_case_factory::epollfd()
   {
-    static int rv = epoll_create(test_case_factory::num_parallel);
+    static int rv = epoll_create(test_case_factory::max_parallel);
     assert(rv != -1);
     return rv;
   }
 
-  void test_case_factory::manage_child(implementation::test_case_registrator *i) const
+  void test_case_factory::run_test_case(implementation::test_case_registrator *i) const
   {
     test_case_base *p = 0;
     const char *msg = 0;
@@ -293,18 +290,58 @@ namespace ciut {
         if (ev.events & EPOLLIN)
           {
             child->read_report();
-            child->print_report(std::cout);
           }
         if (ev.events & EPOLLHUP)
           {
             child->manage_death();
+            if (child->failed() || verbose_mode)
+              {
+                child->print_report(std::cout);
+              }
+            child->unregister_fds();
+
             --pending_children;
           }
       }
   }
 
-  void test_case_factory::do_run(const char *name)
+  void test_case_factory::do_run(int, const char *argv[])
   {
+    const char **p = argv+1;
+    while (const char *param = *p)
+      {
+        if (param[0] != '-') break;
+        switch (param[1]) {
+        case 'v':
+          verbose_mode = true;
+          break;
+        case 'c':
+          ++p;
+          {
+            std::istringstream is(*p);
+            if (!(is >> num_parallel) || num_parallel > max_parallel)
+              {
+                std::cout
+                  << "num child processes must be a positive integer no greater than "
+                  << max_parallel
+                  << "\nA value of 0 means test cases are executed in the parent process"
+                  "\n";
+                return;
+              }
+          }
+          break;
+        default:
+          std::cout <<
+            "Usage: " << argv[0] << " [flags] {testcases}\n"
+            "  where flags can be:\n"
+            "    -v           - verbose mode\n"
+            "    -c number    - Control number of spawned test case processes\n"
+            "                   if 0 the tests are run in the parent process\n";
+          return;
+        }
+        ++p;
+      }
+    const char **names = p;
     struct sigaction action, old_action;
     memset(&action, 0, sizeof action);
     action.sa_sigaction = child_handler;
@@ -314,7 +351,15 @@ namespace ciut {
          i != &reg;
          i = i->next)
       {
-        if (name && !i->match_name(name)) continue;
+        if (*names)
+          {
+            bool found = false;
+            for (const char **name = names; *name; ++name)
+              {
+                if ((found = i->match_name(*name))) break;
+              }
+            if (!found) continue;
+          }
         int c2p[2];
         ::pipe(c2p);
         int p2c[2];
@@ -328,7 +373,7 @@ namespace ciut {
             comm::report.set_fds(p2c[0], c2p[1]);
             ::close(p2c[1]);
             ::close(c2p[0]);
-            manage_child(i);
+            run_test_case(i);
             // never executed!
             assert("unreachable code reached" == 0);
           }

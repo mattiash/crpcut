@@ -201,6 +201,7 @@ namespace ciut {
         return t.print_name(os);
       }
       bool has_obituary() const { return death_note; }
+      bool failed() const { return !successful; }
       virtual bool match_name(const char *name) const = 0;
       test_case_base *instantiate_obj() const { return &func_(); }
       void setup(pid_t pid, int in_fd, int out_fd);
@@ -232,22 +233,28 @@ namespace ciut {
       int out_fd_;
       pid_t pid_;
       std::string report;
+      bool successful;
       friend class ciut::test_case_factory;
     };
   }
   class test_case_factory
   {
   public:
-    static const int num_parallel = 8;
+    static const unsigned max_parallel = 8;
 
-    static void run_test(const char *name = 0) { obj().do_run(name); }
+    static void run_test(int argc, const char *argv[]) { obj().do_run(argc, argv); }
     static test_case_factory& obj() { static test_case_factory f; return f; }
     static int epollfd();
   private:
-    test_case_factory() : pending_children(0) {}
+    test_case_factory()
+      : pending_children(0),
+        verbose_mode(false),
+        num_parallel(1)
+    {
+    }
     void manage_children(unsigned max_pending_children);
-    void manage_child(implementation::test_case_registrator *i) const;
-    void do_run(const char *name);
+    void run_test_case(implementation::test_case_registrator *i) const;
+    void do_run(int argc, const char *argv[]);
     friend class implementation::test_case_registrator;
     class registrator_list : public implementation::test_case_registrator
     {
@@ -255,7 +262,10 @@ namespace ciut {
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
     };
     registrator_list reg;
-    unsigned pending_children;
+    unsigned         pending_children;
+    bool             verbose_mode;
+    unsigned         num_parallel;
+    bool             single_process;
   };
 
   namespace implementation {
