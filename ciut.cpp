@@ -5,17 +5,17 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <sys/select.h>
+#include <sys/epoll.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <fcntl.h>
 }
 
 extern "C" {
-  static int child = 0;
-  static void child_handler(int)
+  static bool child = false;
+  static void child_handler(int, siginfo_t *, void *)
   {
-    child = 1;
+    child = true;
   }
 }
 
@@ -31,224 +31,314 @@ namespace ciut {
     test_case_registrator
     ::test_case_registrator(const char *name,
                             test_case_base & (*func)())
-      : name_(name), func_(func),
+      : name_(name),
         next(&test_case_factory::obj().reg),
-        prev(test_case_factory::obj().reg.prev)
+        prev(test_case_factory::obj().reg.prev),
+        func_(func),
+        death_note(false)
     {
       test_case_factory::obj().reg.prev = this;
       prev->next = this;
     }
+
+    void test_case_registrator::setup(pid_t pid, int in_fd, int out_fd)
+    {
+      epoll_event ev;
+      memset(&ev, 0, sizeof ev);
+      ev.events = EPOLLIN;
+      ev.data.ptr = this;
+      pid_ = pid;
+      in_fd_ = in_fd;
+      out_fd_ = out_fd;
+      int rv = epoll_ctl(test_case_factory::epollfd(), EPOLL_CTL_ADD, in_fd, &ev);
+      assert(rv == 0);
+    }
+    void test_case_registrator::unregister_fds()
+    {
+      int rv = epoll_ctl(test_case_factory::epollfd(), EPOLL_CTL_DEL, in_fd_, 0);
+      assert(rv == 0);
+      ::close(in_fd_);
+      ::close(out_fd_);
+    }
+    comm::type test_case_registrator::read_report()
+    {
+      static const char * const header[] = { "OK", "FAILED!", "INFO", "WARNING" };
+      comm::type t;
+      int rv;
+      do {
+        rv = ::read(in_fd_, &t, sizeof(t));
+      } while (rv == -1 && errno == EINTR);
+      assert(rv == sizeof(t));
+      report << header[t];
+      size_t len = 0;
+      do {
+        rv = ::read(in_fd_, &len, sizeof(len));
+      } while (rv == -1 && errno == EINTR);
+      assert(rv == sizeof(len));
+
+      size_t bytes_read = 0;
+      char buff[len+1];
+      while (bytes_read < len)
+        {
+          rv = ::read(in_fd_, buff + bytes_read, len - bytes_read);
+          if (rv == 0) break;
+          if (rv == -1 && errno == EINTR) continue;
+          assert(rv > 0);
+          bytes_read += rv;
+        }
+      buff[bytes_read] = 0;
+      if (len)
+        {
+          report << " - " << buff;
+        }
+      do {
+        rv = ::write(out_fd_, &len, sizeof(len));
+      } while (rv == -1 && errno == EINTR);
+      death_note |= (t == comm::exit_ok || t == comm::exit_fail);
+      return t;
+    }
+
+  void test_case_registrator::manage_death()
+  {
+    ::siginfo_t info;
+    for (;;)
+      {
+        int rv = ::waitid(P_PID, pid_, &info, WEXITED);
+        if (rv == -1 && errno == EINTR) continue;
+        assert(rv == 0);
+        break;
+      }
+
+    std::ostringstream out;
+    out << *this << " - ";
+    switch (info.si_code)
+      {
+      case CLD_EXITED:
+        if (is_expected_exit(info.si_status))
+          {
+            out << "OK";
+          }
+        else
+          {
+            out << "FAILED! Unexpectedly exited with status = " << info.si_status;
+          }
+        break;
+      case CLD_KILLED:
+        if (is_expected_signal(info.si_status))
+          {
+            out << "OK";
+          }
+        else
+          {
+            out << "FAILED! Died on signal " << info.si_status;
+          }
+        break;
+      case CLD_STOPPED:
+        out << "was stopped";
+        break;
+      case CLD_DUMPED:
+        {
+          static char core_pattern[PATH_MAX] = "core";
+          static int cpfd = 0;
+          if (cpfd == 0)
+            {
+              cpfd = ::open("/proc/sys/kernel/core_pattern", O_RDONLY);
+              if (cpfd > 0)
+                {
+                  int num = ::read(cpfd, core_pattern, sizeof(core_pattern));
+                  if (num > 1) core_pattern[num-1] = 0;
+                  ::close(cpfd);
+                }
+            }
+          out << "FAILED! Dumped core";
+          static char core_name[PATH_MAX];
+
+          const char *s = core_pattern;
+          char *d = core_name;
+          while (*s)
+            {
+              if (*s != '%')
+                {
+                  *d++ = *s;
+                }
+              else
+                {
+                  ++s;
+                  switch (*s)
+                    {
+                    case 0:
+                      break;
+                    case '%':
+                      *d++='%';
+                      break;
+                    case 'p':
+                      d+=std::sprintf(d, "%u", info.si_pid);
+                      break;
+                    case 'u':
+                      d+=std::sprintf(d, "%u", info.si_uid);
+                      break;
+                    case 'g':
+                      break; // ignore for now
+                    case 's':
+                      d+=std::sprintf(d, "%u", info.si_status);
+                      break;
+                    case 't':
+                      d+=std::sprintf(d, "%u", (unsigned)time(NULL));
+                      break;
+                    case 'h':
+                      gethostname(d, core_name+PATH_MAX-d);
+                      while (*d)
+                        {
+                          ++d;
+                        }
+                      break;
+                    case 'c':
+                      break; // ignore for now
+                    default:
+                      ; // also ignore
+                    }
+                }
+              ++s;
+            }
+          *d = 0;
+          std::ostringstream newname;
+          newname << *this << ".core";
+          out << " - renaming file from "
+              << core_name
+              << " to "
+              << newname.str();
+          int rv = ::rename(core_name, newname.str().c_str());
+          if (rv) out << " failed";
+        }
+        break;
+      case CLD_TRAPPED:
+        out << " trapped";
+        break;
+      case CLD_CONTINUED:
+        out << " was continued";
+        break;
+      default:
+        out << "FAILED! Died with unknown code=" << info.si_code;
+      }
+    if (!has_obituary()) std::cout << out.str() << '\n';
+    unregister_fds();
   }
+
+  }
+
+
+  int test_case_factory::epollfd()
+  {
+    static int rv = epoll_create(test_case_factory::num_parallel);
+    assert(rv != -1);
+    return rv;
+  }
+
+  void test_case_factory::manage_child(implementation::test_case_registrator *i) const
+  {
+    test_case_base *p = 0;
+    const char *msg = 0;
+    try {
+      p = (i->instantiate_obj());
+    }
+    catch (std::exception &e)
+      {
+        msg = e.what();
+      }
+    catch (...)
+      {
+        msg = "unknown exception";
+      }
+    if (msg)
+      {
+        std::ostringstream out;
+        out << "Creating fixture for "
+            << *i
+            << " failed with "
+            << msg << std::endl;
+        report(comm::exit_fail, out);
+      }
+    try {
+      p->run();
+    }
+    catch (std::exception &e)
+      {
+        std::ostringstream out;
+        out << "unexpected std exception, what() is \"" << e.what() << "\"";
+        report(comm::exit_fail, out);
+      }
+    catch (...)
+      {
+        report(comm::exit_fail, "unknown exception");
+      }
+    p->~test_case_base();
+    report(comm::exit_ok);
+  }
+
+  void test_case_factory::manage_children(unsigned max_pending_children)
+  {
+    while (pending_children >= max_pending_children)
+      {
+        epoll_event ev;
+        for (;;)
+          {
+            int rv = epoll_wait(epollfd(), &ev,  1, -1);
+            if (rv == 1) break;
+          }
+        implementation::test_case_registrator *child = static_cast<implementation::test_case_registrator*>(ev.data.ptr);
+
+        if (ev.events & EPOLLIN)
+          {
+            child->read_report();
+            child->print_report(std::cout);
+          }
+        if (ev.events & EPOLLHUP)
+          {
+            child->manage_death();
+            --pending_children;
+          }
+      }
+  }
+
   void test_case_factory::do_run(const char *name)
   {
-    static char core_pattern[PATH_MAX] = "core";
-    {
-      int fd = ::open("/proc/sys/kernel/core_pattern", O_RDONLY);
-      if (fd > 0)
-        {
-          int num = ::read(fd, core_pattern, sizeof(core_pattern));
-          if (num > 1) core_pattern[num-1] = 0;
-          ::close(fd);
-        }
-    }
-    ::signal(SIGCHLD, &child_handler);
+    struct sigaction action, old_action;
+    memset(&action, 0, sizeof action);
+    action.sa_sigaction = child_handler;
+    ::sigaction(SIGCHLD, &action, &old_action);
+
     for (implementation::test_case_registrator *i = reg.next;
          i != &reg;
          i = i->next)
       {
-        int death_note = 0;
         if (name && !i->match_name(name)) continue;
+        int c2p[2];
+        ::pipe(c2p);
+        int p2c[2];
+        ::pipe(p2c);
+
         ::pid_t pid = ::fork();
         if (pid < 0) continue;
         if (pid == 0) // child
           {
-            test_case_base *p = 0;
-            const char *msg = 0;
-            try {
-                p = (i->instantiate_obj());
-            }
-            catch (std::exception &e)
-              {
-                msg = e.what();
-              }
-            catch (...)
-              {
-                msg = "unknown exception";
-              }
-            if (msg)
-              {
-                std::ostringstream out;
-                out << "Creating fixture for "
-                    << *i
-                    << " failed with "
-                    << msg << std::endl;
-                testcase_pipe.report(comm::exit_fail, out);
-                std::_Exit(2);
-              }
-            try {
-              p->run();
-            }
-            catch (std::exception &e)
-              {
-                std::ostringstream out;
-                out << "unexpected std exception, what() is \"" << e.what() << "\"";
-                testcase_pipe.report(comm::exit_fail, out);
-                std::_Exit(1);
-              }
-            catch (...)
-              {
-                testcase_pipe.report(comm::exit_fail, "unknown exception");
-                std::_Exit(1);
-              }
-            p->~test_case_base();
-            testcase_pipe.report(comm::exit_ok);
-            std::_Exit(0);
+            ::sigaction(SIGCHLD, &old_action, 0);
+            comm::report.set_fds(p2c[0], c2p[1]);
+            ::close(p2c[1]);
+            ::close(c2p[0]);
+            manage_child(i);
+            // never executed!
+            assert("unreachable code reached" == 0);
           }
-        else
-          {
-            while (!child)
-              {
-                fd_set readfds;
-                FD_ZERO(&readfds);
-                int n = testcase_pipe.populate<comm::pipe::read_op,
-                  comm::pipe::c2p>(readfds, 0);
-                int rv = ::select(n, &readfds, 0, 0, 0);
-                if (rv == -1) continue;
-                assert((testcase_pipe.ok_to<comm::pipe::read_op, comm::pipe::c2p>(readfds)));
 
-                comm::type type;
-                testcase_pipe.read<comm::pipe::c2p>(type);
-                size_t size;
-                testcase_pipe.read<comm::pipe::c2p>(size);
-                std::cout << *i << " - ";
-                switch (type)
-                  {
-                  case comm::exit_ok:
-                    std::cout << "OK"; death_note = 1; break;
-                  case comm::exit_fail:
-                    std::cout << "FAILED!"; death_note = 1; break;
-                  case comm::info:
-                    std::cout << "FYI"; break;
-                  case comm::violation:
-                    std::cout << "ERROR"; break;
-                  default:
-                    std::cout << "unknown(" << type << ')';
-                  }
-                if (size)
-                  {
-                    char buff[size];
-                    testcase_pipe.read<comm::pipe::c2p>(buff, size);
-                    std::cout << " - ";
-                    std::cout.write(buff, size);
-                  }
-                testcase_pipe.write<comm::pipe::p2c>(size); // ack
-                std::cout << std::endl;
-              }
-            child = 0;
+        // parent
+        ++pending_children;
+        i->setup(pid, c2p[0], p2c[1]);
+        ::close(c2p[1]);
+        ::close(p2c[0]);
 
-            ::siginfo_t info;
-            ::waitid(P_PID, pid, &info, WEXITED | WNOHANG);
-            std::ostringstream out;
-            out << *i << " - ";
-            switch (info.si_code)
-              {
-              case CLD_EXITED:
-                if (i->is_expected_exit(info.si_status))
-                  {
-                    out << "OK";
-                  }
-                else
-                  {
-                    out << "FAILED! Unexpectedly exited with status = " << info.si_status;
-                  }
-                break;
-              case CLD_KILLED:
-                if (i->is_expected_signal(info.si_status))
-                  {
-                    out << "OK";
-                  }
-                else
-                  {
-                    out << "FAILED! Died on signal " << info.si_status;
-                  }
-                break;
-              case CLD_STOPPED:
-                out << "was stopped";
-                break;
-              case CLD_DUMPED:
-                {
-                  out << "FAILED! Dumped core";
-                  static char core_name[PATH_MAX];
-                  const char *s = core_pattern;
-                  char *d = core_name;
-                  while (*s)
-                    {
-                      if (*s != '%')
-                        {
-                          *d++ = *s;
-                        }
-                      else
-                        {
-                          ++s;
-                          switch (*s)
-                            {
-                            case 0:
-                              break;
-                            case '%':
-                              *d++='%';
-                              break;
-                            case 'p':
-                              d+=std::sprintf(d, "%u", pid);
-                              break;
-                            case 'u':
-                              d+=std::sprintf(d, "%u", info.si_uid);
-                              break;
-                            case 'g':
-                              break; // ignore for now
-                            case 's':
-                              d+=std::sprintf(d, "%u", info.si_status);
-                              break;
-                            case 't':
-                              d+=std::sprintf(d, "%u", (unsigned)time(NULL));
-                              break;
-                            case 'h':
-                              gethostname(d, core_name+PATH_MAX-d);
-                              while (*d)
-                                {
-                                  ++d;
-                                }
-                              break;
-                            case 'c':
-                              break; // ignore for now
-                            default:
-                              ; // also ignore
-                            }
-                        }
-                      ++s;
-                    }
-                  *d = 0;
-                  std::ostringstream newname;
-                  newname << *i << ".core";
-                  out << " - renaming file from "
-                      << core_name
-                      << " to "
-                      << newname.str();
-                  int rv = ::rename(core_name, newname.str().c_str());
-                  if (rv) out << " failed";
-                }
-                break;
-              case CLD_TRAPPED:
-                out << " trapped";
-                break;
-              case CLD_CONTINUED:
-                out << " was continued";
-                break;
-              default:
-                out << "FAILED! Died with unknown code=" << info.si_code;
-              }
-            if (!death_note) std::cout << out.str() << '\n';
-          }
+        manage_children(num_parallel);
       }
+    if (pending_children) manage_children(1);
   }
 
   namespace implementation {
@@ -280,6 +370,35 @@ namespace ciut {
       return os;
     }
   }
+
+
+
+  namespace comm {
+    void reporter::operator()(type t, const std::ostringstream &os) const
+    {
+      write(t);
+      const std::string &s = os.str();
+      const size_t len = s.length();
+      write(len);
+      const char *p = s.c_str();
+      size_t bytes_written = 0;
+      while (bytes_written < len)
+        {
+          int rv = ::write(write_fd,
+                           p + bytes_written,
+                           len - bytes_written);
+          if (rv == -1 && errno == EINTR) continue;
+          if (rv <= 0) throw "report failed";
+          bytes_written += rv;
+        }
+      read(bytes_written);
+      assert(len == bytes_written);
+      _Exit(0);
+    }
+
+    reporter report;
+
+  }
 }
+
 ciut::implementation::namespace_info current_namespace(0,0);
-comm::pipe testcase_pipe;

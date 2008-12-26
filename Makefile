@@ -1,4 +1,4 @@
-CXXFLAGS=-ggdb
+CXXFLAGS=-ggdb -Wall -Wextra
 
 testprog: unitt.o ciut.o
 	g++ $(CXXFLAGS) unitt.o ciut.o -o testprog

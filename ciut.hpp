@@ -15,11 +15,20 @@ namespace std {
   using namespace std::tr1;
 }
 
+struct siginfo;
 
-#define NO_CORE_FILE protected virtual ciut::policies::no_core_file
-#define EXPECT_EXIT(num) protected virtual ciut::policies::exit_death<num>
-#define EXPECT_SIGNAL_DEATH(num) protected virtual ciut::policies::signal_death<num>
-#define EXPECT_EXCEPTION(type) protected virtual ciut::policies::exception_specifier<type>
+#define NO_CORE_FILE \
+  protected virtual ciut::policies::no_core_file
+
+#define EXPECT_EXIT(num) \
+  protected virtual ciut::policies::exit_death<num>
+
+#define EXPECT_SIGNAL_DEATH(num) \
+  protected virtual ciut::policies::signal_death<num>
+
+#define EXPECT_EXCEPTION(type) \
+  protected virtual ciut::policies::exception_specifier<type>
+
 #define ANY_CODE -1
 
 namespace ciut {
@@ -110,6 +119,65 @@ namespace ciut {
 
   class test_case_factory;
 
+  namespace comm {
+    typedef enum { exit_ok, exit_fail, info, violation } type;
+
+    // protocol is type -> size_t(length) -> char[length]. length may be 0.
+    // reader acknowledges with length.
+
+    class reporter
+    {
+      int write_fd;
+      int read_fd;
+    public:
+      reporter() : write_fd(0), read_fd(0) {}
+      void set_fds(int read, int write) { write_fd = write, read_fd = read; }
+      void operator()(type t, const std::ostringstream &os) const;
+      void operator()(type t, const char *msg = "") const
+      {
+        std::ostringstream os;
+        os << msg;
+        operator()(t, os);
+      }
+    private:
+      template <typename T>
+      void write(const T& t) const
+      {
+        const size_t len = sizeof(T);
+        size_t bytes_written = 0;
+        const char *p = static_cast<const char*>(static_cast<const void*>(&t));
+        while (bytes_written < len)
+          {
+            int rv = ::write(write_fd,
+                             p + bytes_written,
+                             len - bytes_written);
+            if (rv == -1 && errno == EINTR) continue;
+            if (rv <= 0) throw "write failed";
+            bytes_written += rv;
+          }
+      }
+      template <typename T>
+      void read(T& t) const
+      {
+        const size_t len = sizeof(T);
+        size_t bytes_read = 0;
+        char *p = static_cast<char*>(static_cast<void*>(&t));
+        while (bytes_read < len)
+          {
+            int rv = ::read(read_fd,
+                            p + bytes_read,
+                            len - bytes_read);
+            if (rv == -1 && errno == EINTR) continue;
+            if (rv <= 0) {
+              std::cerr << "errno=" << errno << std::endl;
+              throw "read failed";
+            }
+            bytes_read += rv;
+          }
+      }
+    };
+  }
+
   namespace implementation {
     struct namespace_info
     {
@@ -135,25 +203,53 @@ namespace ciut {
       {
         return t.print_name(os);
       }
+      bool has_obituary() const { return death_note; }
       virtual bool match_name(const char *name) const = 0;
       test_case_base *instantiate_obj() const { return &func_(); }
+      void setup(pid_t pid, int in_fd, int out_fd);
+      void manage_death();
+      void unlink() {
+        next->prev = prev;
+        prev->next = next;
+      }
+      comm::type read_report();
+      std::ostream &print_report(std::ostream &os) const
+      {
+        os << *this;
+        os << " - ";
+        os << report.str();
+        os << std::endl;
+        return os;
+      }
     protected:
       const char *name_;
     private:
+      void unregister_fds();
       virtual std::ostream &print_name(std::ostream &) const = 0;
       test_case_registrator() : next(this), prev(this) {}
       test_case_registrator *next;
       test_case_registrator *prev;
       test_case_creator func_;
+      bool death_note;
+      int in_fd_;
+      int out_fd_;
+      pid_t pid_;
+      std::ostringstream report;
       friend class ciut::test_case_factory;
     };
   }
   class test_case_factory
   {
   public:
+    static const int num_parallel = 8;
+
     static void run_test(const char *name = 0) { obj().do_run(name); }
     static test_case_factory& obj() { static test_case_factory f; return f; }
+    static int epollfd();
   private:
+    test_case_factory() : pending_children(0) {}
+    void manage_children(unsigned max_pending_children);
+    void manage_child(implementation::test_case_registrator *i) const;
     void do_run(const char *name);
     friend class implementation::test_case_registrator;
     class registrator_list : public implementation::test_case_registrator
@@ -162,6 +258,7 @@ namespace ciut {
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
     };
     registrator_list reg;
+    unsigned pending_children;
   };
 
   namespace implementation {
@@ -194,170 +291,12 @@ namespace ciut {
   }
 }
 
-namespace comm {
-  typedef enum { exit_ok, exit_fail, info, violation } type;
 
-  // protocol is type -> size_t(length) -> char[length]. length may be 0.
-  // reader acknowledges with length.
-
-  template <int N>
-  class chararray
-  {
-    typedef const char type[N];
-    typedef type &ref;
-  };
-
-  class pipe {
-  private:
-    typedef int pair[2];
-    pair pipes[2];
-  public:
-    typedef enum { read_op, write_op } end;
-    typedef enum { c2p, p2c } direction;
-    template <end e, direction dir>
-    int populate(fd_set &set, int nfds)
-    {
-      FD_SET(pipes[dir][e], &set);
-      return std::max(pipes[dir][e] + 1, nfds);
-    }
-    template <end e, direction dir>
-    bool ok_to(fd_set &set)
-    {
-      return FD_ISSET(pipes[dir][e], &set);
-    }
-    pipe() {
-      if (::pipe(pipes[c2p])) throw "dammit";
-      if (::pipe(pipes[p2c])) throw "dammit again";
-    }
-    ~pipe() {
-      ::close(pipes[c2p][read_op]);
-      ::close(pipes[c2p][write_op]);
-      ::close(pipes[p2c][read_op]);
-      ::close(pipes[p2c][write_op]);
-    }
-    const pipe& report(type t, const std::ostringstream &os)
-    {
-      write<c2p>(t);
-      const std::string &s = os.str();
-      const size_t len = s.length();
-      write<c2p>(len);
-      const char *p = s.c_str();
-      size_t bytes_written = 0;
-      while (bytes_written < len)
-        {
-          int rv = ::write(pipes[c2p][write_op],
-                           p + bytes_written,
-                           len - bytes_written);
-          if (rv == -1 && errno == EINTR) continue;
-          if (rv <= 0) throw "report failed";
-          bytes_written += rv;
-        }
-      read<p2c>(bytes_written);
-      assert(len == bytes_written);
-      return *this;
-    }
-    const pipe& report(type t, const char *msg) const
-    {
-      const std::size_t len = std::strlen(msg);
-      write<c2p>(t);
-      write<c2p>(len);
-      const char *p = msg;
-      size_t bytes_written = 0;
-      while (bytes_written < len)
-        {
-          int rv = ::write(pipes[c2p][write_op],
-                           p + bytes_written,
-                           len - bytes_written);
-          if (rv == -1 && errno == EINTR) continue;
-          if (rv <= 0) throw "report failed";
-          bytes_written += rv;
-        }
-      read<p2c>(bytes_written);
-      assert(bytes_written == len);
-      return *this;
-    }
-    const pipe& report(type t) const
-    {
-      write<c2p>(t);
-      write<c2p>(size_t());
-      size_t len;
-      read<p2c>(len);
-      assert(len == 0);
-      return *this;
-    }
-    template <direction dir>
-    void read(type &t) const
-    {
-      char *p = static_cast<char*>(static_cast<void*>(&t));
-      size_t bytes_read = 0;
-      while (bytes_read < sizeof(t))
-        {
-          int rv = ::read(pipes[dir][read_op],
-                          p + bytes_read,
-                          sizeof(t) - bytes_read);
-          if (rv == -1 && errno == EINTR) continue;
-          if (rv <= 0) throw "read info type failed";
-          bytes_read += rv;
-        }
-    }
-    template <direction dir>
-    void read(size_t &t) const
-    {
-      char *p = static_cast<char*>(static_cast<void*>(&t));
-      size_t bytes_read = 0;
-      while (bytes_read < sizeof(t))
-        {
-          int rv = ::read(pipes[dir][read_op],
-                          p + bytes_read,
-                          sizeof(t) - bytes_read);
-          if (rv == -1 && errno == EINTR) continue;
-          if (rv <= 0) throw "read info type failed";
-          bytes_read += rv;
-        }
-    }
-    template <direction dir>
-    ssize_t read(char *p, size_t len) const
-    {
-      return ::read(pipes[dir][read_op], p, len);
-    }
-    template <direction dir, typename T>
-    void write(const T& t) const
-    {
-      const size_t len = sizeof(T);
-      size_t bytes_written = 0;
-      const char *p = static_cast<const char*>(static_cast<const void*>(&t));
-      while (bytes_written < len)
-        {
-          int rv = ::write(pipes[dir][write_op],
-                           p + bytes_written,
-                           len - bytes_written);
-          if (rv == -1 && errno == EINTR) continue;
-          if (rv <= 0) throw "write failed";
-          bytes_written += rv;
-        }
-    }
-  private:
-    template <direction dir, typename T>
-    void read(T& t) const
-    {
-      const size_t len = sizeof(T);
-      size_t bytes_read = 0;
-      char *p = static_cast<char*>(static_cast<void*>(&t));
-      while (bytes_read < len)
-        {
-          int rv = ::read(pipes[dir][read_op],
-                          p + bytes_read,
-                          len - bytes_read);
-          if (rv == -1 && errno == EINTR) continue;
-          if (rv <= 0) throw "read failed";
-          bytes_read += rv;
-        }
-    }
-  };
-}
-extern comm::pipe testcase_pipe;
 
 namespace ciut {
+  namespace comm {
+    extern reporter report;
+  }
   namespace implementation {
     template <typename exc, typename T>
     void test_wrapper<policies::exception_wrapper<exc>, T>::run(T* t)
@@ -369,11 +308,9 @@ namespace ciut {
         return;
       }
       catch (...) {
-        testcase_pipe.report(comm::exit_fail, "threw wrong exception");
-        std::_Exit(1);
+        comm::report(comm::exit_fail, "threw wrong exception");
       }
-      testcase_pipe.report(comm::exit_fail, "did not throw exception");
-      std::_Exit(1);
+      comm::report(comm::exit_fail, "did not throw exception");
     }
 
     template <typename T>
@@ -386,8 +323,7 @@ namespace ciut {
     void test_wrapper<policies::deaths::wrapper, T>::run(T *t)
     {
       t->test();
-      testcase_pipe.report(comm::exit_fail, "Unexpectedly survived");
-      _Exit(0);
+      comm::report(comm::exit_fail, "Unexpectedly survived");
     }
   }
 }
@@ -451,8 +387,7 @@ namespace ciut {
         std::ostringstream os;                                          \
         os << "ASSERT_TRUE(a)\n  where a="                              \
            << ar;                                                       \
-        testcase_pipe.report(comm::exit_fail, os);                      \
-        std::_Exit(1);                                                  \
+        ciut::comm::report(ciut::comm::exit_fail, os);                  \
       }                                                                 \
   } while(0)
 
@@ -464,8 +399,7 @@ namespace ciut {
         std::ostringstream os;                                          \
         os << "ASSERT_TRUE(a)\n  where a="                              \
            << ar;                                                       \
-        testcase_pipe.report(comm::exit_fail, os);                      \
-        std::_Exit(1);                                                  \
+        ciut::comm::report(ciut::comm::exit_fail, os);                  \
       }                                                                 \
   } while(0)
 
@@ -480,8 +414,7 @@ namespace ciut {
            << ar                                                        \
            << "\n        " #b "="                                       \
            << br;                                                       \
-        testcase_pipe.report(comm::exit_fail, os);                      \
-        std::_Exit(1);                                                  \
+        ciut::comm::report(ciut::comm::exit_fail, os);                  \
       }                                                                 \
   } while(0)
 
@@ -496,8 +429,7 @@ namespace ciut {
            << ar                                                        \
            << "\n        b="                                            \
            << br;                                                       \
-        testcase_pipe.report(comm::exit_fail, os);                      \
-        std::_Exit(1);                                                  \
+        ciut::comm::report(ciut::comm::exit_fail, os);                  \
       }                                                                 \
   } while(0)
 
@@ -512,8 +444,7 @@ namespace ciut {
          << ar                                                          \
          << "\n        b="                                              \
          << br;                                                          \
-      testcase_pipe.report(comm::exit_fail, os);                        \
-      std::_Exit(1);                                                    \
+      ciut::comm::report(ciut::comm::exit_fail, os);                    \
     }                                                                   \
   } while(0)
 
@@ -528,8 +459,7 @@ namespace ciut {
          << ar                                                           \
          << "\n        b="                                              \
          << br;                                                          \
-      testcase_pipe.report(comm::exit_fail, os);                        \
-      std::_Exit(1);                                                    \
+      ciut::comm::report(ciut::comm::exit_fail, os);                    \
     }                                                                   \
   } while(0)
 
@@ -544,8 +474,7 @@ namespace ciut {
          << ar                                                           \
          << "\n        b="                                              \
          << br;                                                          \
-      testcase_pipe.report(comm::exit_fail, os);                        \
-      std::_Exit(1);                                                    \
+      ciut::comm::report(ciut::comm::exit_fail, os);                    \
     }                                                                   \
   } while(0)
 
@@ -560,8 +489,7 @@ namespace ciut {
          << ar                                                           \
          << "\n        b="                                               \
          << br;                                                          \
-      testcase_pipe.report(comm::exit_fail, os);                        \
-      std::_Exit(1);                                                    \
+      ciut::comm::report(ciut::comm::exit_fail, os);                    \
     }                                                                   \
   } while(0)
 
@@ -569,10 +497,9 @@ namespace ciut {
   do {                                                                  \
     try {                                                               \
       expr;                                                             \
-      testcase_pipe.report(comm::exit_fail,                             \
-                           "ASSERT_THROW(" #expr ", " #exc ") did not throw"); \
-      std::_Exit(1);                                                    \
-        }                                                               \
+      ciut::comm::report(ciut::comm::exit_fail,                         \
+                         "ASSERT_THROW(" #expr ", " #exc ") did not throw"); \
+    }                                                                   \
     catch (exc) {                                                       \
     }                                                                   \
   } while (0)
@@ -586,13 +513,11 @@ namespace ciut {
       std::ostringstream out;                                           \
       out << "ASSERT_NO_THROW(" #expr ") threw std exception\n"         \
         "  what() is \"" << e.what() << "\"";                           \
-      testcase_pipe.report(comm::exit_fail, out);                       \
-      std::_Exit(1);                                                    \
+      ciut::comm::report(ciut::comm::exit_fail, out);                   \
     }                                                                   \
     catch (...) {                                                       \
-      testcase_pipe.report(comm::exit_fail,                             \
-                           "ASSERT_NO_THROW(" #expr ") threw something");  \
-      std::_Exit(1);                                                    \
+      ciut::comm::report(ciut::comm::exit_fail,                         \
+                         "ASSERT_NO_THROW(" #expr ") threw something"); \
     }                                                                   \
   } while (0)
 
