@@ -343,7 +343,7 @@ namespace ciut {
 
 #define decltype typeof
 
-#define TEST_DEF(test_case_name, ...)                                   \
+#define TEST_CASE_DEF(test_case_name, ...)                              \
   class test_case_name                                                  \
     : ciut::test_case_base, __VA_ARGS__                                 \
   {                                                                     \
@@ -351,7 +351,7 @@ namespace ciut {
     virtual void run_test()                                             \
     {                                                                   \
       ciut::implementation::test_wrapper<run_wrapper, test_case_name>::run(this); \
-    }                                                                  \
+    }                                                                   \
     void test();                                                        \
     static ciut::test_case_base& creator()                              \
     {                                                                   \
@@ -372,7 +372,7 @@ namespace ciut {
             virtual bool match_name(const char *name_param) const       \
             {                                                           \
               const char *p = current_namespace.match_name(name_param); \
-              if (p) \
+              if (p)                                                    \
                 {                                                       \
                   if (p != name_param || *p == ':')                     \
                     {                                                   \
@@ -392,10 +392,17 @@ namespace ciut {
               os << current_namespace;                                  \
               return os << #test_case_name;                             \
             }                                                           \
-            };                                                          \
+          };                                                            \
     static registrator reg;                                             \
   };                                                                    \
+
+#define TEST_DEF(test_case_name, ...)                                   \
+  TEST_CASE_DEF(test_case_name, __VA_ARGS__)                            \
   test_case_name :: registrator test_case_name::reg;                    \
+  void test_case_name::test()
+
+#define DISABLED_TEST_DEF(test_case_name, ...)                          \
+  TEST_CASE_DEF(test_case_name, __VA_ARGS__)                            \
   void test_case_name::test()
 
 #define ASSERT_TRUE(a)                                                  \
@@ -551,6 +558,7 @@ class none {};
 extern ciut::implementation::namespace_info current_namespace;
 
 #define TEST(...) TEST_DEF(__VA_ARGS__, none)
+#define DISABLED_TEST(...) DISABLED_TEST_DEF(__VA_ARGS__, none)
 
 #define TESTSUITE(name)                                                 \
   namespace name {                                                      \
