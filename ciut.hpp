@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <cassert>
 #include <tr1/type_traits>
+
 namespace std {
   using namespace std::tr1;
 }
@@ -29,10 +30,13 @@ struct siginfo;
 #define ANY_CODE -1
 
 namespace ciut {
+
   namespace policies {
+
     namespace deaths {
       class none;
     }
+
     class default_policy
     {
     protected:
@@ -41,6 +45,7 @@ namespace ciut {
     };
 
     namespace deaths {
+
       class none
       {
       public:
@@ -69,7 +74,8 @@ namespace ciut {
 
       class wrapper;
 
-    }
+    } // namespace deaths
+
     template <int N>
     class signal_death : protected virtual default_policy
     {
@@ -101,7 +107,8 @@ namespace ciut {
     protected:
       no_core_file();
     };
-  }
+
+  } // namespace policies
 
   class test_case_base : protected virtual policies::default_policy
   {
@@ -117,6 +124,7 @@ namespace ciut {
   class test_case_factory;
 
   namespace comm {
+
     typedef enum { exit_ok, exit_fail, info, violation } type;
 
     // protocol is type -> size_t(length) -> char[length]. length may be 0.
@@ -138,43 +146,54 @@ namespace ciut {
       }
     private:
       template <typename T>
-      void write(const T& t) const
-      {
-        const size_t len = sizeof(T);
-        size_t bytes_written = 0;
-        const char *p = static_cast<const char*>(static_cast<const void*>(&t));
-        while (bytes_written < len)
-          {
-            int rv = ::write(write_fd,
-                             p + bytes_written,
-                             len - bytes_written);
-            if (rv == -1 && errno == EINTR) continue;
-            if (rv <= 0) throw "write failed";
-            bytes_written += rv;
-          }
-      }
+      void write(const T& t) const;
+
       template <typename T>
-      void read(T& t) const
-      {
-        const size_t len = sizeof(T);
-        size_t bytes_read = 0;
-        char *p = static_cast<char*>(static_cast<void*>(&t));
-        while (bytes_read < len)
-          {
-            int rv = ::read(read_fd,
-                            p + bytes_read,
-                            len - bytes_read);
-            if (rv == -1 && errno == EINTR) continue;
-            if (rv <= 0) {
-              throw "read failed";
-            }
-            bytes_read += rv;
-          }
-      }
+      void read(T& t) const;
     };
-  }
+
+    template <typename T>
+    void reporter::write(const T& t) const
+    {
+      const size_t len = sizeof(T);
+      size_t bytes_written = 0;
+      const char *p = static_cast<const char*>(static_cast<const void*>(&t));
+      while (bytes_written < len)
+        {
+          int rv = ::write(write_fd,
+                           p + bytes_written,
+                           len - bytes_written);
+          if (rv == -1 && errno == EINTR) continue;
+          if (rv <= 0) throw "write failed";
+          bytes_written += rv;
+        }
+    }
+
+    template <typename T>
+    void reporter::read(T& t) const
+    {
+      const size_t len = sizeof(T);
+      size_t bytes_read = 0;
+      char *p = static_cast<char*>(static_cast<void*>(&t));
+      while (bytes_read < len)
+        {
+          int rv = ::read(read_fd,
+                          p + bytes_read,
+                          len - bytes_read);
+          if (rv == -1 && errno == EINTR) continue;
+          if (rv <= 0) {
+            throw "read failed";
+          }
+          bytes_read += rv;
+        }
+    }
+
+    extern reporter report;
+
+  } // namespace comm
 
   namespace implementation {
+
     struct namespace_info
     {
     public:
@@ -226,13 +245,18 @@ namespace ciut {
       bool successful;
       friend class ciut::test_case_factory;
     };
-  }
+
+  } // namespace implementation
+
   class test_case_factory
   {
   public:
     static const unsigned max_parallel = 8;
 
-    static void run_test(int argc, const char *argv[]) { obj().do_run(argc, argv); }
+    static void run_test(int argc, const char *argv[])
+    {
+      obj().do_run(argc, argv);
+    }
     static void introduce_name(pid_t, const std::string &s);
     static void present(pid_t pid, comm::type t, size_t len, const char *buff);
   private:
@@ -251,12 +275,15 @@ namespace ciut {
     void manage_children(unsigned max_pending_children);
     void run_test_case(implementation::test_case_registrator *i) const;
     void do_run(int argc, const char *argv[]);
+
     friend class implementation::test_case_registrator;
+
     class registrator_list : public implementation::test_case_registrator
     {
       virtual bool match_name(const char *) const { return false; }
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
     };
+
     registrator_list reg;
     unsigned         pending_children;
     bool             verbose_mode;
@@ -270,6 +297,7 @@ namespace ciut {
   };
 
   namespace implementation {
+
     template <typename C, typename T>
     class test_wrapper;
 
@@ -295,17 +323,6 @@ namespace ciut {
     };
 
 
-
-  }
-}
-
-
-
-namespace ciut {
-  namespace comm {
-    extern reporter report;
-  }
-  namespace implementation {
     template <typename exc, typename T>
     void test_wrapper<policies::exception_wrapper<exc>, T>::run(T* t)
     {
@@ -333,8 +350,12 @@ namespace ciut {
       t->test();
       comm::report(comm::exit_fail, "Unexpectedly survived");
     }
-  }
-}
+
+  } // namespace implementation
+
+
+
+} // namespace ciut
 
 #define decltype typeof
 
@@ -357,10 +378,12 @@ namespace ciut {
       : public ciut::implementation::test_case_registrator,             \
         public virtual test_case_name::expected_death_cause             \
           {                                                             \
-            typedef ciut::implementation::test_case_registrator registrator_base; \
+            typedef ciut::implementation::test_case_registrator         \
+              registrator_base;                                         \
           public:                                                       \
             registrator()                                               \
-              : registrator_base(#test_case_name, &test_case_name::creator) \
+              : registrator_base(#test_case_name,                       \
+                                 &test_case_name::creator)              \
               {                                                         \
               }                                                         \
           private:                                                      \

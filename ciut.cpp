@@ -13,14 +13,13 @@ extern "C" {
 }
 #include <map>
 extern "C" {
-  static bool child = false;
   static void child_handler(int, siginfo_t *, void *)
   {
-    child = true;
   }
 }
 
 namespace ciut {
+
   namespace policies {
     no_core_file::no_core_file()
     {
@@ -28,7 +27,9 @@ namespace ciut {
       setrlimit(RLIMIT_CORE, &r);
     }
   }
+
   namespace implementation {
+
     poll<test_case_registrator> poller;
 
     test_case_registrator
@@ -55,12 +56,14 @@ namespace ciut {
       os << *this;
       test_case_factory::introduce_name(pid, os.str());
     }
+
     void test_case_registrator::unregister_fds()
     {
       poller.del_fd(in_fd_);
       ::close(in_fd_);
       ::close(out_fd_);
     }
+
     bool test_case_registrator::read_report()
     {
       comm::type t;
@@ -96,6 +99,76 @@ namespace ciut {
       return true;
     }
 
+    namespace {
+
+      void save_core_file(const siginfo_t& info, const std::string& newname)
+      {
+        static char core_pattern[PATH_MAX] = "core";
+        static int cpfd = 0;
+        if (cpfd == 0)
+          {
+            cpfd = ::open("/proc/sys/kernel/core_pattern", O_RDONLY);
+            if (cpfd > 0)
+              {
+                int num = ::read(cpfd, core_pattern, sizeof(core_pattern));
+                if (num > 1) core_pattern[num-1] = 0;
+                ::close(cpfd);
+              }
+          }
+        static char core_name[PATH_MAX];
+
+        const char *s = core_pattern;
+        char *d = core_name;
+        while (*s)
+          {
+            if (*s != '%')
+              {
+                *d++ = *s;
+              }
+            else
+              {
+                ++s;
+                switch (*s)
+                  {
+                  case 0:
+                    break;
+                  case '%':
+                    *d++='%';
+                    break;
+                  case 'p':
+                    d+=std::sprintf(d, "%u", info.si_pid);
+                    break;
+                  case 'u':
+                    d+=std::sprintf(d, "%u", info.si_uid);
+                    break;
+                  case 'g':
+                    break; // ignore for now
+                  case 's':
+                    d+=std::sprintf(d, "%u", info.si_status);
+                    break;
+                  case 't':
+                    d+=std::sprintf(d, "%u", (unsigned)time(NULL));
+                    break;
+                  case 'h':
+                    gethostname(d, core_name+PATH_MAX-d);
+                    while (*d)
+                      {
+                        ++d;
+                      }
+                    break;
+                  case 'c':
+                    break; // ignore for now
+                  default:
+                    ; // also ignore
+                  }
+              }
+            ++s;
+          }
+        *d = 0;
+        ::rename(core_name, newname.c_str());
+      }
+    } // unnamed namespace
+
     void test_case_registrator::manage_death()
     {
       ::siginfo_t info;
@@ -112,22 +185,14 @@ namespace ciut {
       switch (info.si_code)
         {
         case CLD_EXITED:
-          if (is_expected_exit(info.si_status))
-            {
-              successful = true;
-            }
-          else
+          if (!(successful |= is_expected_exit(info.si_status)))
             {
               out << "Unexpectedly exited with status = " << info.si_status;
               t = comm::exit_fail;
             }
           break;
         case CLD_KILLED:
-          if (is_expected_signal(info.si_status))
-            {
-              successful = true;
-            }
-          else
+          if (!(successful |= is_expected_signal(info.si_status)))
             {
               out << "Died on signal " << info.si_status;
               t = comm::exit_fail;
@@ -135,78 +200,13 @@ namespace ciut {
           break;
         case CLD_DUMPED:
           {
-            static char core_pattern[PATH_MAX] = "core";
-            static int cpfd = 0;
-            if (cpfd == 0)
-              {
-                cpfd = ::open("/proc/sys/kernel/core_pattern", O_RDONLY);
-                if (cpfd > 0)
-                  {
-                    int num = ::read(cpfd, core_pattern, sizeof(core_pattern));
-                    if (num > 1) core_pattern[num-1] = 0;
-                    ::close(cpfd);
-                  }
-              }
             out << "Dumped core";
             t = comm::exit_fail;
-            static char core_name[PATH_MAX];
-
-            const char *s = core_pattern;
-            char *d = core_name;
-            while (*s)
-              {
-                if (*s != '%')
-                  {
-                    *d++ = *s;
-                  }
-                else
-                  {
-                    ++s;
-                    switch (*s)
-                      {
-                      case 0:
-                        break;
-                      case '%':
-                        *d++='%';
-                        break;
-                      case 'p':
-                        d+=std::sprintf(d, "%u", info.si_pid);
-                        break;
-                      case 'u':
-                        d+=std::sprintf(d, "%u", info.si_uid);
-                        break;
-                      case 'g':
-                        break; // ignore for now
-                      case 's':
-                        d+=std::sprintf(d, "%u", info.si_status);
-                        break;
-                      case 't':
-                        d+=std::sprintf(d, "%u", (unsigned)time(NULL));
-                        break;
-                      case 'h':
-                        gethostname(d, core_name+PATH_MAX-d);
-                        while (*d)
-                          {
-                            ++d;
-                          }
-                        break;
-                      case 'c':
-                        break; // ignore for now
-                      default:
-                        ; // also ignore
-                      }
-                  }
-                ++s;
-              }
-            *d = 0;
             std::ostringstream newname;
             newname << *this << ".core";
-            out << " - renaming file from "
-                << core_name
-                << " to "
+            save_core_file(info, newname.str());
+            out << " - saving core file as "
                 << newname.str();
-            int rv = ::rename(core_name, newname.str().c_str());
-            if (rv) out << " failed";
           }
           break;
         default:
@@ -220,7 +220,8 @@ namespace ciut {
           death_note = true;
         }
     }
-  }
+
+  } // namespace implementation
 
   void test_case_factory::introduce_name(pid_t pid, const std::string &name)
   {
@@ -229,7 +230,6 @@ namespace ciut {
       {
         int rv = ::write(pipe, &pid, sizeof(pid));
         if (rv == sizeof(pid)) break;
-        std::cerr << "rv=" << rv << " errno=" << errno << " name=" << name << std::endl;
         assert (rv == -1 && errno == EINTR);
       }
     size_t len = name.length();
@@ -237,18 +237,20 @@ namespace ciut {
       {
         int rv = ::write(pipe, &len, sizeof(len));
         if (rv == sizeof(len)) break;
-        std::cerr << "rv=" << rv << " errno=" << errno << std::endl;
         assert(rv == -1 && errno == EINTR);
       }
     for (;;)
       {
         int rv = ::write(pipe, name.c_str(), len);
         if (size_t(rv) == len) break;
-        std::cerr << "rv=" << rv << " errno=" << errno << std::endl;
         assert(rv == -1 && errno == EINTR);
       }
   }
-  void test_case_factory::present(pid_t pid, comm::type t, size_t len, const char *buff)
+
+  void test_case_factory::present(pid_t pid,
+                                  comm::type t,
+                                  size_t len,
+                                  const char *buff)
   {
     int pipe = obj().presenter_pipe;
     int rv = ::write(pipe, &pid, sizeof(pid));
@@ -263,8 +265,6 @@ namespace ciut {
         assert(size_t(rv) == len);
       }
   }
-
-#define SEPARATOR " - "
 
   void test_case_factory::start_presenter_process()
   {
@@ -319,11 +319,12 @@ namespace ciut {
         rv = ::read(presenter_pipe, &len, sizeof(len));
         if (len)
           {
-            const size_t bufflen = len + sizeof(SEPARATOR) - 1;
+            static const char separator[] = " - ";
+            const size_t bufflen = len + sizeof(separator) - 1;
             char buff[bufflen];
 
-            std::strcpy(buff, SEPARATOR);
-            rv = ::read(presenter_pipe, buff + sizeof(SEPARATOR) - 1, len);
+            std::strcpy(buff, separator);
+            rv = ::read(presenter_pipe, buff + sizeof(separator) - 1, len);
             assert(size_t(rv) == len);
             s.second += std::string(buff, bufflen);
           }
@@ -338,6 +339,7 @@ namespace ciut {
       }
     exit(0);
   }
+
   void test_case_factory::kill_presenter_process()
   {
     ::close(presenter_pipe);
@@ -350,6 +352,7 @@ namespace ciut {
         break;
       }
   }
+
   void test_case_factory::run_test_case(implementation::test_case_registrator *i) const
   {
     test_case_base *p = 0;
@@ -505,6 +508,7 @@ namespace ciut {
   }
 
   namespace implementation {
+
     const char *namespace_info::match_name(const char *n) const
     {
       if (!parent) return n;
@@ -532,11 +536,13 @@ namespace ciut {
       os << "::";
       return os;
     }
-  }
+
+  } // namespace implementation
 
 
 
   namespace comm {
+
     void reporter::operator()(type t, std::ostringstream &os) const
     {
       write(t);
@@ -558,14 +564,15 @@ namespace ciut {
         read(bytes_written);
         assert(len == bytes_written);
         using std::ostringstream;
-        os.~ostringstream(); // man, this is ugly, but _Exit() leaks
+        os.~ostringstream(); // man, this is ugly, but _Exit() causes leaks
       }
       _Exit(0);
     }
 
     reporter report;
 
-  }
-}
+  } // namespace comm
+
+} // namespace ciut
 
 ciut::implementation::namespace_info current_namespace(0,0);
