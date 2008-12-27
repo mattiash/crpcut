@@ -359,13 +359,98 @@ namespace ciut {
 
   } // namespace implementation
 
+  namespace stream_checker
+  {
+    template <typename T>
+    class is_output_streamable
+    {
+      static std::ostream &os;
+      static T& t;
+      template <typename V, typename U>
+      friend char operator<<(V&, const U&);
 
+      static char check(char);
+      static std::pair<char, char> check(std::ostream&);
+    public:
+      static const bool value = sizeof(check(os << t)) != sizeof(char);
+    };
+
+
+    template <typename T>
+    struct is_output_streamable<const T>
+    {
+      static const bool value = is_output_streamable<T>::value;
+    };
+    template <typename T>
+    struct is_output_streamable<volatile T>
+    {
+      static const bool value = is_output_streamable<T>::value;
+    };
+    template <typename T>
+    struct is_output_streamable<T&>
+    {
+      static const bool value = is_output_streamable<T>::value;
+    };
+
+    template <size_t N>
+    struct is_output_streamable<char[N]>
+    {
+      static const bool value = true;
+    };
+
+    template <size_t N>
+    struct is_output_streamable<const char[N]>
+    {
+      static const bool value = true;
+    };
+  }
+
+  namespace implementation {
+    template <typename T, bool b = stream_checker::is_output_streamable<T>::value>
+    struct conditional_streamer
+    {
+      static bool stream(std::ostream &os, const T& t)
+      {
+        os << t;
+        return true;
+      }
+    };
+
+    template <typename T>
+    struct conditional_streamer<T, false>
+    {
+      static bool stream(std::ostream &os, const T&)
+      {
+        os << "is not output streamable";
+        return false;
+      }
+    };
+  }
+  template <typename T>
+  bool conditionally_stream(std::ostream &os, const T& t)
+  {
+    return implementation::conditional_streamer<T>::stream(os, t);
+  }
+
+  template <typename T>
+  bool stream_param(std::ostream &os, const char *prefix, const char *name, const T& t)
+  {
+    std::ostringstream tmp;
+    bool v = conditionally_stream(tmp, t);
+    if (tmp.str() != name)
+      {
+        static const char* oper[] = { " ", " = " };
+        os << prefix << name << oper[v] << tmp.str();
+        return true;
+      }
+    return false;
+  }
 
 } // namespace ciut
 
 #define decltype typeof
 
-#define TEST_CASE_DEF(test_case_name, ...)                              \
+#define CIUT_TEST_CASE_DEF(test_case_name, ...)                         \
   class test_case_name                                                  \
     : ciut::test_case_base, __VA_ARGS__                                 \
   {                                                                     \
@@ -421,130 +506,99 @@ namespace ciut {
   };                                                                    \
 
 #define TEST_DEF(test_case_name, ...)                                   \
-  TEST_CASE_DEF(test_case_name, __VA_ARGS__)                            \
+  CIUT_TEST_CASE_DEF(test_case_name, __VA_ARGS__)                       \
   test_case_name :: registrator test_case_name::reg;                    \
   void test_case_name::test()
 
 #define DISABLED_TEST_DEF(test_case_name, ...)                          \
-  TEST_CASE_DEF(test_case_name, __VA_ARGS__)                            \
+  CIUT_TEST_CASE_DEF(test_case_name, __VA_ARGS__)                       \
   void test_case_name::test()
+
+#define CIUT_CONCAT(a, b) a ## b
+
+#define CIUT_CONCAT_(a, b) CIUT_CONCAT(a,b)
+
+#define CIUT_LOCAL_NAME(prefix) \
+  CIUT_CONCAT_(ciut_local_  ## prefix ## _, __LINE__)
+
+#define CIUT_REFTYPE(expr) \
+  const std::remove_cv<std::remove_reference<decltype(expr)>::type>::type&
+
+
+
+
+#define CIUT_BINARY_ASSERT(name, oper, lh, rh)                          \
+  do {                                                                  \
+  CIUT_REFTYPE(lh) CIUT_LOCAL_NAME(rl) = lh;                            \
+  CIUT_REFTYPE(rh) CIUT_LOCAL_NAME(rr) = rh;                            \
+  if (!(CIUT_LOCAL_NAME(rl) oper CIUT_LOCAL_NAME(rr)))                  \
+    {                                                                   \
+      std::ostringstream CIUT_LOCAL_NAME(os);                           \
+      CIUT_LOCAL_NAME(os) << "ASSERT_" #name "(" #lh ", " #rh ")";      \
+      bool CIUT_LOCAL_NAME(printed) = false;                            \
+      static const char *CIUT_LOCAL_NAME(prefix)[] = {                  \
+        "\n   where ",                                                  \
+        "\n         "                                                   \
+      };                                                                \
+      using ciut::stream_param;                                         \
+      CIUT_LOCAL_NAME(printed) |= stream_param(CIUT_LOCAL_NAME(os),     \
+                                               CIUT_LOCAL_NAME(prefix)[0], \
+                                               #lh, CIUT_LOCAL_NAME(rl)); \
+      stream_param(CIUT_LOCAL_NAME(os),                                 \
+                   CIUT_LOCAL_NAME(prefix)[CIUT_LOCAL_NAME(printed)],   \
+                   #rh, CIUT_LOCAL_NAME(rr));                           \
+      ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os));   \
+    }                                                                   \
+  } while(0)
 
 #define ASSERT_TRUE(a)                                                  \
   do {                                                                  \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &ar = a; \
-    if (ar)                                                             \
+    CIUT_REFTYPE(a) CIUT_LOCAL_NAME(ra) = a;                            \
+    if (CIUT_LOCAL_NAME(ra))                                            \
       {                                                                 \
       }                                                                 \
     else                                                                \
       {                                                                 \
-        std::ostringstream os;                                          \
-        os << "ASSERT_TRUE(a)\n  where a="                              \
-           << ar;                                                       \
-        ciut::comm::report(ciut::comm::exit_fail, os);                  \
+        std::ostringstream CIUT_LOCAL_NAME(os);                         \
+        CIUT_LOCAL_NAME(os) << "ASSERT_TRUE(" #a ")";                   \
+        ciut::stream_param(CIUT_LOCAL_NAME(os), "\n   where ",          \
+                           #a, CIUT_LOCAL_NAME(ra));                    \
+        ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os)); \
       }                                                                 \
   } while(0)
+
+
 
 #define ASSERT_FALSE(a)                                                 \
   do {                                                                  \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &ar = a; \
-    if (ar)                                                             \
+    CIUT_REFTYPE(a) CIUT_LOCAL_NAME(ra) = a;                            \
+    if (CIUT_LOCAL_NAME(ra))                                            \
       {                                                                 \
-        std::ostringstream os;                                          \
-        os << "ASSERT_TRUE(a)\n  where a="                              \
-           << ar;                                                       \
-        ciut::comm::report(ciut::comm::exit_fail, os);                  \
+        std::ostringstream CIUT_LOCAL_NAME(os);                         \
+        CIUT_LOCAL_NAME(os) << "ASSERT_FALSE(" #a ")";                  \
+        ciut::stream_param(CIUT_LOCAL_NAME(os), "\n   where ",          \
+                           #a, CIUT_LOCAL_NAME(ra));                    \
+        ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os)); \
       }                                                                 \
   } while(0)
 
-#define ASSERT_EQ(a, b)                                                 \
-  do {                                                                  \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &ar = a; \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &br = b; \
-    if (!(ar == br))                                                    \
-      {                                                                 \
-        std::ostringstream os;                                          \
-        os << "ASSERT_EQ(" #a ", " #b ")\n  where " #a "="              \
-           << ar                                                        \
-           << "\n        " #b "="                                       \
-           << br;                                                       \
-        ciut::comm::report(ciut::comm::exit_fail, os);                  \
-      }                                                                 \
-  } while(0)
+#define ASSERT_EQ(lh, rh)                       \
+  CIUT_BINARY_ASSERT(EQ, ==, lh, rh)
 
-#define ASSERT_NE(a, b)                                                 \
-  do {                                                                  \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &ar = a; \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &br = b; \
-    if (!(ar != br))                                                    \
-      {                                                                 \
-        std::ostringstream os;                                          \
-        os << "ASSERT_NE(a,b)\n  where a="                              \
-           << ar                                                        \
-           << "\n        b="                                            \
-           << br;                                                       \
-        ciut::comm::report(ciut::comm::exit_fail, os);                  \
-      }                                                                 \
-  } while(0)
+#define ASSERT_NE(lh, rh)                       \
+  CIUT_BINARY_ASSERT(NE, !=, lh, rh)
 
-#define ASSERT_GE(a, b)                                                 \
-  do {                                                                  \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &ar = a; \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &br = b; \
-    if (!(ar >= br))                                                    \
-    {                                                                   \
-      std::ostringstream os;                                            \
-      os << "ASSERT_GE(a,b)\n  where a="                                \
-         << ar                                                          \
-         << "\n        b="                                              \
-         << br;                                                          \
-      ciut::comm::report(ciut::comm::exit_fail, os);                    \
-    }                                                                   \
-  } while(0)
+#define ASSERT_GE(lh, rh)                       \
+  CIUT_BINARY_ASSERT(GE, >=, lh, rh)
 
-#define ASSERT_GT(a, b)                         \
-  do {                                                                  \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &ar = a; \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &br = b; \
-    if (!(ar > br))                                                     \
-    {                                                                   \
-      std::ostringstream os;                                            \
-      os << "ASSERT_GT(a,b)\n  where a="                                \
-         << ar                                                           \
-         << "\n        b="                                              \
-         << br;                                                          \
-      ciut::comm::report(ciut::comm::exit_fail, os);                    \
-    }                                                                   \
-  } while(0)
+#define ASSERT_GT(lh, rh)                       \
+  CIUT_BINARY_ASSERT(GT, >, lh, rh)
 
-#define ASSERT_LT(a, b)                         \
-  do {                                                                  \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &ar = a; \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &br = b; \
-    if (!(ar < br))                                                     \
-    {                                                                   \
-      std::ostringstream os;                                            \
-      os << "ASSERT_LT(a,b)\n  where a="                                \
-         << ar                                                           \
-         << "\n        b="                                              \
-         << br;                                                          \
-      ciut::comm::report(ciut::comm::exit_fail, os);                    \
-    }                                                                   \
-  } while(0)
+#define ASSERT_LT(lh, rh)                         \
+  CIUT_BINARY_ASSERT(LT, <, lh, rh)
 
-#define ASSERT_LE(a, b)                                                 \
-  do {                                                                  \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &ar = a; \
-    const std::remove_cv<std::remove_reference<decltype(a)>::type>::type &br = b; \
-    if (!(ar <= br))                                                     \
-    {                                                                   \
-      std::ostringstream os;                                            \
-      os << "ASSERT_LE(a,b)\n  where a="                                \
-         << ar                                                           \
-         << "\n        b="                                               \
-         << br;                                                          \
-      ciut::comm::report(ciut::comm::exit_fail, os);                    \
-    }                                                                   \
-  } while(0)
+#define ASSERT_LE(lh, rh)                       \
+  CIUT_BINARY_ASSERT(LE, <=, lh, rh)
 
 #define ASSERT_THROW(expr, exc)                                         \
   do {                                                                  \

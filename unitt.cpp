@@ -19,7 +19,7 @@ TEST(should_fail_with_exit_code_3)
   exit(3);
 }
 
-TEST(should_dump_core_due_to_death_on_signal_11)
+TEST(should_fail_with_core_dump_due_to_death_on_signal_11)
 {
   raise(11);
 }
@@ -167,6 +167,27 @@ TEST(should_fail_on_assert_false_with_fixture, fixture<3>)
 DISABLED_TEST(should_never_run, fixture<3>)
 {
   ASSERT_FALSE(num);
+}
+
+template <typename T>
+class unstreamable
+{
+  class nieu;
+public:
+  unstreamable(T t) : data(t) {}
+  unstreamable& operator=(const T& t) { data = t; return *this; }
+  operator T&() { return data; }
+  operator const T&() const { return data; }
+  bool operator!() const { return !data; }
+  operator const nieu*() const { return data ? reinterpret_cast<const nieu*>(&data) : 0; }
+private:
+  T data;
+};
+
+TEST(should_fail_on_assert_gt_with_unstreamable_param_i, fixture<3>)
+{
+  unstreamable<int> i(3);
+  ASSERT_GT(i, num);
 }
 int main(int argc, const char *argv[])
 {
