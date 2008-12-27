@@ -170,5 +170,5 @@ DISABLED_TEST(should_never_run, fixture<3>)
 }
 int main(int argc, const char *argv[])
 {
-  ciut::test_case_factory::run_test(argc, argv);
+  return ciut::test_case_factory::run_test(argc, argv);
 }

@@ -167,6 +167,7 @@ namespace ciut {
         *d = 0;
         ::rename(core_name, newname.c_str());
       }
+
     } // unnamed namespace
 
     void test_case_registrator::manage_death()
@@ -264,6 +265,12 @@ namespace ciut {
         rv = ::write(pipe, buff, len);
         assert(size_t(rv) == len);
       }
+    obj().num_failed_tests += (t == comm::exit_fail);
+    if (!tests_as_child_procs() && t == comm::exit_fail)
+      {
+        obj().kill_presenter_process();
+        exit(1);
+      }
   }
 
   void test_case_factory::start_presenter_process()
@@ -289,7 +296,7 @@ namespace ciut {
         if (rv == 0)
           {
             assert(messages.size() == 0);
-            break; // done, nothing more to do here
+            exit(0);
           }
         std::pair<std::string,std::string> &s = messages[test_case_id];
         if (s.first.length() == 0)
@@ -337,7 +344,7 @@ namespace ciut {
             messages.erase(test_case_id);
           }
       }
-    exit(0);
+    assert("unreachable code reached" == 0);
   }
 
   void test_case_factory::kill_presenter_process()
@@ -390,7 +397,10 @@ namespace ciut {
       {
         report(comm::exit_fail, "unknown exception");
       }
-    p->~test_case_base();
+    if (tests_as_child_procs())
+      {
+        p->~test_case_base(); // Ugly, but since report kills when parallel
+      }                       // it takes care of a memory leak.
     report(comm::exit_ok);
   }
 
@@ -409,7 +419,6 @@ namespace ciut {
           {
             desc->manage_death();
             ++num_tests_run;
-            num_failed_tests+= desc->failed();
             desc->unregister_fds();
 
             --pending_children;
@@ -417,7 +426,52 @@ namespace ciut {
       }
   }
 
-  void test_case_factory::do_run(int, const char *argv[])
+  void test_case_factory::start_test(implementation::test_case_registrator *i)
+  {
+    if (!tests_as_child_procs())
+      {
+        std::ostringstream os;
+        os << *i;
+        introduce_name(0, os.str());
+        run_test_case(i);
+        ++num_tests_run;
+        return;
+      }
+    struct sigaction action, old_action;
+    static bool sighandler_registered = false;
+    if (!sighandler_registered)
+      {
+        memset(&action, 0, sizeof action);
+        action.sa_sigaction = child_handler;
+        ::sigaction(SIGCHLD, &action, &old_action);
+      }
+    int c2p[2];
+    ::pipe(c2p);
+    int p2c[2];
+    ::pipe(p2c);
+
+    ::pid_t pid = ::fork();
+    if (pid < 0) return;
+    if (pid == 0) // child
+      {
+        ::sigaction(SIGCHLD, &old_action, 0);
+        comm::report.set_fds(p2c[0], c2p[1]);
+        ::close(p2c[1]);
+        ::close(c2p[0]);
+        run_test_case(i);
+        // never executed!
+        assert("unreachable code reached" == 0);
+      }
+
+    // parent
+    ++pending_children;
+    i->setup(pid, c2p[0], p2c[1]);
+    ::close(c2p[1]);
+    ::close(p2c[0]);
+    manage_children(num_parallel);
+  }
+
+  unsigned test_case_factory::do_run(int, const char *argv[])
   {
     const char **p = argv+1;
     while (const char *param = *p)
@@ -438,7 +492,7 @@ namespace ciut {
                   << max_parallel
                   << "\nA value of 0 means test cases are executed in the parent process"
                   "\n";
-                return;
+                return 1;
               }
           }
           break;
@@ -449,16 +503,12 @@ namespace ciut {
             "    -v           - verbose mode\n"
             "    -c number    - Control number of spawned test case processes\n"
             "                   if 0 the tests are run in the parent process\n";
-          return;
+          return 1;
         }
         ++p;
       }
     start_presenter_process();
     const char **names = p;
-    struct sigaction action, old_action;
-    memset(&action, 0, sizeof action);
-    action.sa_sigaction = child_handler;
-    ::sigaction(SIGCHLD, &action, &old_action);
 
     for (implementation::test_case_registrator *i = reg.next;
          i != &reg;
@@ -474,30 +524,8 @@ namespace ciut {
               }
             if (!found) continue;
           }
-        int c2p[2];
-        ::pipe(c2p);
-        int p2c[2];
-        ::pipe(p2c);
 
-        ::pid_t pid = ::fork();
-        if (pid < 0) continue;
-        if (pid == 0) // child
-          {
-            ::sigaction(SIGCHLD, &old_action, 0);
-            comm::report.set_fds(p2c[0], c2p[1]);
-            ::close(p2c[1]);
-            ::close(c2p[0]);
-            run_test_case(i);
-            // never executed!
-            assert("unreachable code reached" == 0);
-          }
-
-        // parent
-        ++pending_children;
-        i->setup(pid, c2p[0], p2c[1]);
-        ::close(c2p[1]);
-        ::close(p2c[0]);
-        manage_children(num_parallel);
+        start_test(i);
       }
     if (pending_children) manage_children(1);
     kill_presenter_process();
@@ -505,6 +533,7 @@ namespace ciut {
               << num_failed_tests  << " failed/"
               << num_tests_run - num_failed_tests << " OK) - totally "
               << num_tests << " tests registered\n";
+    return num_failed_tests;
   }
 
   namespace implementation {
@@ -545,6 +574,12 @@ namespace ciut {
 
     void reporter::operator()(type t, std::ostringstream &os) const
     {
+      if (!test_case_factory::tests_as_child_procs())
+        {
+          const std::string &s = os.str();
+          test_case_factory::present(pid_t(), t, s.length(), os.str().c_str());
+          return;
+        }
       write(t);
       {
         const std::string &s = os.str();

@@ -253,12 +253,16 @@ namespace ciut {
   public:
     static const unsigned max_parallel = 8;
 
-    static void run_test(int argc, const char *argv[])
+    static unsigned run_test(int argc, const char *argv[])
     {
-      obj().do_run(argc, argv);
+      return obj().do_run(argc, argv);
     }
     static void introduce_name(pid_t, const std::string &s);
     static void present(pid_t pid, comm::type t, size_t len, const char *buff);
+    static bool tests_as_child_procs()
+    {
+      return obj().num_parallel > 0;
+    }
   private:
     static test_case_factory& obj() { static test_case_factory f; return f; }
     test_case_factory()
@@ -274,7 +278,9 @@ namespace ciut {
     void kill_presenter_process();
     void manage_children(unsigned max_pending_children);
     void run_test_case(implementation::test_case_registrator *i) const;
-    void do_run(int argc, const char *argv[]);
+    void start_test(implementation::test_case_registrator *i);
+
+    unsigned do_run(int argc, const char *argv[]);
 
     friend class implementation::test_case_registrator;
 
