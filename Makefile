@@ -1,11 +1,14 @@
 CXXFLAGS=-ggdb -Wall -Wextra
 
-testprog: unitt.o ciut.o
-	g++ $(CXXFLAGS) unitt.o ciut.o -o testprog
+testprog: unitt.o libciut.a
+	g++ $(CXXFLAGS) unitt.o -L . -lciut -o testprog
+
+libciut.a: ciut.o
+	ar -r libciut.a ciut.o
 
 unitt.o: unitt.cpp ciut.hpp
-ciut.o: ciut.hpp ciut.hpp poll.hpp
-
+ciut.o: ciut.cpp ciut.hpp poll.hpp
+	g++ -O3 -Wall -Wextra -c ciut.cpp
 clean:
-	rm -f *.o *.rpo *.core testprog
+	rm -f *.a *.o *.rpo *.core testprog
 
