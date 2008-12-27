@@ -7,5 +7,5 @@ unitt.o: unitt.cpp ciut.hpp
 ciut.o: ciut.hpp ciut.hpp
 
 clean:
-	rm -f *.o *.rpo *.core
+	rm -f *.o *.rpo *.core testprog
 
