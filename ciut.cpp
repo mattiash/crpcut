@@ -7,12 +7,11 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-  // #include <sys/epoll.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <fcntl.h>
 }
-
+#include <map>
 extern "C" {
   static bool child = false;
   static void child_handler(int, siginfo_t *, void *)
@@ -52,17 +51,18 @@ namespace ciut {
       in_fd_ = in_fd;
       out_fd_ = out_fd;
       poller.add_fd(in_fd, this);
+      std::ostringstream os;
+      os << *this;
+      test_case_factory::introduce_name(pid, os.str());
     }
     void test_case_registrator::unregister_fds()
     {
       poller.del_fd(in_fd_);
       ::close(in_fd_);
       ::close(out_fd_);
-      std::string().swap(report);
     }
     bool test_case_registrator::read_report()
     {
-      static const char * const header[] = { "OK", "FAILED!", "INFO", "WARNING" };
       comm::type t;
       int rv;
       do {
@@ -71,7 +71,7 @@ namespace ciut {
       if (rv == 0) return false; // eof
       assert(rv == sizeof(t));
       successful |= t == comm::exit_ok;
-      report += header[t];
+
       size_t len = 0;
       do {
         rv = ::read(in_fd_, &len, sizeof(len));
@@ -79,7 +79,7 @@ namespace ciut {
       assert(rv == sizeof(len));
 
       size_t bytes_read = 0;
-      char buff[len+1];
+      char buff[len];
       while (bytes_read < len)
         {
           rv = ::read(in_fd_, buff + bytes_read, len - bytes_read);
@@ -88,15 +88,10 @@ namespace ciut {
           assert(rv > 0);
           bytes_read += rv;
         }
-      buff[bytes_read] = 0;
-      if (len)
-        {
-          report += " - ";
-          report += buff;
-        }
       do {
         rv = ::write(out_fd_, &len, sizeof(len));
       } while (rv == -1 && errno == EINTR);
+      test_case_factory::present(pid_, t, len, buff);
       death_note |= (t == comm::exit_ok || t == comm::exit_fail);
       return true;
     }
@@ -112,29 +107,30 @@ namespace ciut {
           break;
         }
 
+      comm::type t = comm::exit_ok;
       std::ostringstream out;
       switch (info.si_code)
         {
         case CLD_EXITED:
           if (is_expected_exit(info.si_status))
             {
-              out << "OK";
               successful = true;
             }
           else
             {
-              out << "FAILED! Unexpectedly exited with status = " << info.si_status;
+              out << "Unexpectedly exited with status = " << info.si_status;
+              t = comm::exit_fail;
             }
           break;
         case CLD_KILLED:
           if (is_expected_signal(info.si_status))
             {
-              out << "OK";
               successful = true;
             }
           else
             {
-              out << "FAILED! Died on signal " << info.si_status;
+              out << "Died on signal " << info.si_status;
+              t = comm::exit_fail;
             }
           break;
         case CLD_DUMPED:
@@ -151,7 +147,8 @@ namespace ciut {
                     ::close(cpfd);
                   }
               }
-            out << "FAILED! Dumped core";
+            out << "Dumped core";
+            t = comm::exit_fail;
             static char core_name[PATH_MAX];
 
             const char *s = core_pattern;
@@ -213,16 +210,146 @@ namespace ciut {
           }
           break;
         default:
-          out << "FAILED! Died with unknown code=" << info.si_code;
+          out << "Died with unknown code=" << info.si_code;
+          t = comm::exit_fail;
         }
       if (!death_note)
         {
-          report += out.str();
+          const std::string &s = out.str();
+          test_case_factory::present(pid_, t, s.length(), s.c_str());
           death_note = true;
         }
     }
   }
 
+  void test_case_factory::introduce_name(pid_t pid, const std::string &name)
+  {
+    int pipe = obj().presenter_pipe;
+    for (;;)
+      {
+        int rv = ::write(pipe, &pid, sizeof(pid));
+        if (rv == sizeof(pid)) break;
+        std::cerr << "rv=" << rv << " errno=" << errno << " name=" << name << std::endl;
+        assert (rv == -1 && errno == EINTR);
+      }
+    size_t len = name.length();
+    for (;;)
+      {
+        int rv = ::write(pipe, &len, sizeof(len));
+        if (rv == sizeof(len)) break;
+        std::cerr << "rv=" << rv << " errno=" << errno << std::endl;
+        assert(rv == -1 && errno == EINTR);
+      }
+    for (;;)
+      {
+        int rv = ::write(pipe, name.c_str(), len);
+        if (size_t(rv) == len) break;
+        std::cerr << "rv=" << rv << " errno=" << errno << std::endl;
+        assert(rv == -1 && errno == EINTR);
+      }
+  }
+  void test_case_factory::present(pid_t pid, comm::type t, size_t len, const char *buff)
+  {
+    int pipe = obj().presenter_pipe;
+    int rv = ::write(pipe, &pid, sizeof(pid));
+    assert(rv == sizeof(pid));
+    rv = ::write(pipe, &t, sizeof(t));
+    assert(rv == sizeof(t));
+    rv = ::write(pipe, &len, sizeof(len));
+    assert(rv == sizeof(len));
+    if (len)
+      {
+        rv = ::write(pipe, buff, len);
+        assert(size_t(rv) == len);
+      }
+  }
+
+#define SEPARATOR " - "
+
+  void test_case_factory::start_presenter_process()
+  {
+    int fds[2];
+    int rv = ::pipe(fds);
+    assert(rv == 0);
+    pid_t pid = ::fork();
+    if (pid != 0)
+      {
+        presenter_pipe = fds[1];
+        ::close(fds[0]);
+        presenter_pid = pid;
+        return;
+      }
+    presenter_pipe = fds[0];
+    ::close(fds[1]);
+    std::map<pid_t, std::pair<std::string, std::string> > messages;
+    for (;;)
+      {
+        pid_t test_case_id;
+        int rv = ::read(presenter_pipe, &test_case_id, sizeof(test_case_id));
+        if (rv == 0)
+          {
+            assert(messages.size() == 0);
+            break; // done, nothing more to do here
+          }
+        std::pair<std::string,std::string> &s = messages[test_case_id];
+        if (s.first.length() == 0)
+          {
+            // introduction to test case, name follows
+
+            size_t len;
+            rv = ::read(presenter_pipe, &len, sizeof(len));
+            assert(size_t(rv) == sizeof(len));
+            char buff[len];
+            rv = ::read(presenter_pipe, buff, len);
+            assert(size_t(rv) == len);
+            s.first = std::string(buff, len);
+            continue;
+          }
+
+        static const char * const header[] = {
+          "OK", "FAILED!", "INFO", "WARNING"
+        };
+
+        comm::type t;
+        rv = ::read(presenter_pipe, &t, sizeof(t));
+        assert(rv == sizeof(t));
+        s.second += header[t];
+
+        size_t len;
+        rv = ::read(presenter_pipe, &len, sizeof(len));
+        if (len)
+          {
+            const size_t bufflen = len + sizeof(SEPARATOR) - 1;
+            char buff[bufflen];
+
+            std::strcpy(buff, SEPARATOR);
+            rv = ::read(presenter_pipe, buff + sizeof(SEPARATOR) - 1, len);
+            assert(size_t(rv) == len);
+            s.second += std::string(buff, bufflen);
+          }
+        if ((t == comm::exit_ok && verbose_mode) || t == comm::exit_fail)
+          {
+            std::cout << s.first << " - " << s.second << std::endl;
+          }
+        if (t == comm::exit_ok || t == comm::exit_fail)
+          {
+            messages.erase(test_case_id);
+          }
+      }
+    exit(0);
+  }
+  void test_case_factory::kill_presenter_process()
+  {
+    ::close(presenter_pipe);
+    ::siginfo_t info;
+    for (;;)
+      {
+        int rv = ::waitid(P_PID, presenter_pid, &info, WEXITED);
+        if (rv == -1 && errno == EINTR) continue;
+        assert(rv == 0);
+        break;
+      }
+  }
   void test_case_factory::run_test_case(implementation::test_case_registrator *i) const
   {
     test_case_base *p = 0;
@@ -280,10 +407,6 @@ namespace ciut {
             desc->manage_death();
             ++num_tests_run;
             num_failed_tests+= desc->failed();
-            if (desc->failed() || verbose_mode)
-              {
-                desc->print_report(std::cout);
-              }
             desc->unregister_fds();
 
             --pending_children;
@@ -327,6 +450,7 @@ namespace ciut {
         }
         ++p;
       }
+    start_presenter_process();
     const char **names = p;
     struct sigaction action, old_action;
     memset(&action, 0, sizeof action);
@@ -370,11 +494,12 @@ namespace ciut {
         i->setup(pid, c2p[0], p2c[1]);
         ::close(c2p[1]);
         ::close(p2c[0]);
-
         manage_children(num_parallel);
       }
     if (pending_children) manage_children(1);
-    std::cout << num_tests_run << " tests run (" << num_failed_tests << " failed/"
+    kill_presenter_process();
+    std::cout << num_tests_run << " tests run ("
+              << num_failed_tests  << " failed/"
               << num_tests_run - num_failed_tests << " OK) - totally "
               << num_tests << " tests registered\n";
   }

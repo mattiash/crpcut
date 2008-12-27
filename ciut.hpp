@@ -166,7 +166,6 @@ namespace ciut {
                             len - bytes_read);
             if (rv == -1 && errno == EINTR) continue;
             if (rv <= 0) {
-              std::cerr << "errno=" << errno << std::endl;
               throw "read failed";
             }
             bytes_read += rv;
@@ -182,7 +181,7 @@ namespace ciut {
       namespace_info(const char *n, namespace_info *p) : name(n), parent(p) {}
       const char* match_name(const char *n) const;
       // returns 0 on mismatch, otherwise a pointer into n where namespace name
-      // ended.              if (!*p++ == ':') return false;
+      // ended.
 
       friend std::ostream &operator<<(std::ostream &, const namespace_info &);
     private:
@@ -211,14 +210,6 @@ namespace ciut {
         prev->next = next;
       }
       bool read_report(); // true if read succeeded
-      std::ostream &print_report(std::ostream &os) const
-      {
-        os << *this;
-        os << " - ";
-        os << report;
-        os << std::endl;
-        return os;
-      }
     protected:
       const char *name_;
     private:
@@ -232,7 +223,6 @@ namespace ciut {
       int in_fd_;
       int out_fd_;
       pid_t pid_;
-      std::string report;
       bool successful;
       friend class ciut::test_case_factory;
     };
@@ -243,9 +233,10 @@ namespace ciut {
     static const unsigned max_parallel = 8;
 
     static void run_test(int argc, const char *argv[]) { obj().do_run(argc, argv); }
-    static test_case_factory& obj() { static test_case_factory f; return f; }
-    static int epollfd();
+    static void introduce_name(pid_t, const std::string &s);
+    static void present(pid_t pid, comm::type t, size_t len, const char *buff);
   private:
+    static test_case_factory& obj() { static test_case_factory f; return f; }
     test_case_factory()
       : pending_children(0),
         verbose_mode(false),
@@ -255,6 +246,8 @@ namespace ciut {
         num_failed_tests(0)
     {
     }
+    void start_presenter_process();
+    void kill_presenter_process();
     void manage_children(unsigned max_pending_children);
     void run_test_case(implementation::test_case_registrator *i) const;
     void do_run(int argc, const char *argv[]);
@@ -272,6 +265,8 @@ namespace ciut {
     unsigned         num_tests;
     unsigned         num_tests_run;
     unsigned         num_failed_tests;
+    pid_t            presenter_pid;
+    int              presenter_pipe;
   };
 
   namespace implementation {
