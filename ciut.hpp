@@ -210,7 +210,7 @@ namespace ciut {
         next->prev = prev;
         prev->next = next;
       }
-      comm::type read_report();
+      bool read_report(); // true if read succeeded
       std::ostream &print_report(std::ostream &os) const
       {
         os << *this;

@@ -1,11 +1,13 @@
 #include "ciut.hpp"
+#define POLL_USE_EPOLL
+#include "poll.hpp"
 extern "C" {
 #include <signal.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <sys/epoll.h>
+  // #include <sys/epoll.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <fcntl.h>
@@ -28,6 +30,8 @@ namespace ciut {
     }
   }
   namespace implementation {
+    poll<test_case_registrator> poller;
+
     test_case_registrator
     ::test_case_registrator(const char *name,
                             test_case_base & (*func)())
@@ -44,25 +48,19 @@ namespace ciut {
 
     void test_case_registrator::setup(pid_t pid, int in_fd, int out_fd)
     {
-      epoll_event ev;
-      memset(&ev, 0, sizeof ev);
-      ev.events = EPOLLIN;
-      ev.data.ptr = this;
       pid_ = pid;
       in_fd_ = in_fd;
       out_fd_ = out_fd;
-      int rv = epoll_ctl(test_case_factory::epollfd(), EPOLL_CTL_ADD, in_fd, &ev);
-      assert(rv == 0);
+      poller.add_fd(in_fd, this);
     }
     void test_case_registrator::unregister_fds()
     {
-      int rv = epoll_ctl(test_case_factory::epollfd(), EPOLL_CTL_DEL, in_fd_, 0);
-      assert(rv == 0);
+      poller.del_fd(in_fd_);
       ::close(in_fd_);
       ::close(out_fd_);
       std::string().swap(report);
     }
-    comm::type test_case_registrator::read_report()
+    bool test_case_registrator::read_report()
     {
       static const char * const header[] = { "OK", "FAILED!", "INFO", "WARNING" };
       comm::type t;
@@ -70,6 +68,7 @@ namespace ciut {
       do {
         rv = ::read(in_fd_, &t, sizeof(t));
       } while (rv == -1 && errno == EINTR);
+      if (rv == 0) return false; // eof
       assert(rv == sizeof(t));
       successful |= t == comm::exit_ok;
       report += header[t];
@@ -99,7 +98,7 @@ namespace ciut {
         rv = ::write(out_fd_, &len, sizeof(len));
       } while (rv == -1 && errno == EINTR);
       death_note |= (t == comm::exit_ok || t == comm::exit_fail);
-      return t;
+      return true;
     }
 
     void test_case_registrator::manage_death()
@@ -224,14 +223,6 @@ namespace ciut {
     }
   }
 
-
-  int test_case_factory::epollfd()
-  {
-    static int rv = epoll_create(test_case_factory::max_parallel);
-    assert(rv != -1);
-    return rv;
-  }
-
   void test_case_factory::run_test_case(implementation::test_case_registrator *i) const
   {
     test_case_base *p = 0;
@@ -277,29 +268,23 @@ namespace ciut {
   {
     while (pending_children >= max_pending_children)
       {
-        epoll_event ev;
-        for (;;)
+        using namespace implementation;
+        poll<test_case_registrator>::descriptor desc = poller.wait();
+        bool read_failed = false;
+        if (desc.read())
           {
-            int rv = epoll_wait(epollfd(), &ev,  1, -1);
-            if (rv == 1) break;
+            read_failed = !desc->read_report();
           }
-        typedef implementation::test_case_registrator registrator;
-        registrator *child = static_cast<registrator*>(ev.data.ptr);
-
-        if (ev.events & EPOLLIN)
+        if (read_failed || desc.hup())
           {
-            child->read_report();
-          }
-        if (ev.events & EPOLLHUP)
-          {
-            child->manage_death();
+            desc->manage_death();
             ++num_tests_run;
-            num_failed_tests+= child->failed();
-            if (child->failed() || verbose_mode)
+            num_failed_tests+= desc->failed();
+            if (desc->failed() || verbose_mode)
               {
-                child->print_report(std::cout);
+                desc->print_report(std::cout);
               }
-            child->unregister_fds();
+            desc->unregister_fds();
 
             --pending_children;
           }
