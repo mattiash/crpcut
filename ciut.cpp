@@ -580,7 +580,7 @@ namespace ciut {
     std::cout << num_tests_run << " tests run ("
               << num_failed_tests  << " failed/"
               << num_tests_run - num_failed_tests << " OK)\n";
-    if (verbose_mode && reg.next != &reg)
+    if (reg.next != &reg)
       {
         std::cout << "Not run tests are:\n";
         for (implementation::test_case_registrator *i = reg.next;

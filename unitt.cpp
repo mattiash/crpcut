@@ -13,10 +13,12 @@ struct fixture
 TEST(default_success)
 {
 }
+
 TEST(very_slow_success)
 {
   sleep(3);
 }
+
 TEST(should_fail_with_exit_code_3)
 {
   exit(3);
@@ -53,14 +55,18 @@ TEST(should_succeed_with_exit_code_3, EXPECT_EXIT(3))
 {
   exit(3);
 }
+
 TEST(should_fail_with_no_exit, EXPECT_EXIT(3))
 {
 }
+
 TEST(should_fail_with_wrong_exit_code, EXPECT_EXIT(3))
 {
   exit(4);
 }
-TEST(should_succeed_with_range_error_thrown, EXPECT_EXCEPTION(std::range_error))
+
+TEST(should_succeed_with_range_error_thrown,
+     EXPECT_EXCEPTION(std::range_error))
 {
   throw std::range_error("apa");
 }
@@ -69,9 +75,11 @@ TEST(should_fail_with_wrong_exception, EXPECT_EXCEPTION(std::range_error))
 {
   throw std::bad_alloc();
 }
+
 TEST(should_fail_with_no_exception, EXPECT_EXCEPTION(std::exception))
 {
 }
+
 TESTSUITE(apa)
 {
   TEST(should_succeed_assert_throw_with_correct_exception)
@@ -84,84 +92,104 @@ TESTSUITE(apa)
     ASSERT_THROW(throw std::bad_alloc(), std::domain_error);
   }
 }
+
 TEST(should_fail_assert_throw_with_no_exception)
 {
   int i;
   ASSERT_THROW(i=1, std::exception);
 }
+
 TEST(should_succeed_assert_no_throw)
 {
   int i;
   ASSERT_NO_THROW(i=1);
 }
+
 TEST(should_fail_assert_no_throw_with_unknown_exception)
 {
   ASSERT_NO_THROW(throw 1);
 }
+
 TEST(should_fail_assert_no_throw_with_std_exception_string_apa)
 {
   ASSERT_NO_THROW(throw std::range_error("apa"));
 }
+
 TEST(should_succeed_on_assert_eq_with_fixture, fixture<3>)
 {
   ASSERT_EQ(num, 3);
 }
+
 TEST(should_fail_on_assert_eq_with_fixture, fixture<4>)
 {
   ASSERT_EQ(num, 3);
 }
+
 TEST(should_succeed_on_assert_ne_with_fixture, fixture<4>)
 {
   ASSERT_NE(num, 3);
 }
+
 TEST(should_fail_on_assert_ne_with_fixture, fixture<3>)
 {
   ASSERT_NE(num, 3);
 }
+
 TEST(should_succeed_on_asert_gt_with_fixture, fixture<4>)
 {
   ASSERT_GT(num, 3);
 }
+
 TEST(should_fail_on_assert_gt_with_fixture, fixture<3>)
 {
   ASSERT_GT(num, 3);
 }
+
 TEST(should_succeed_on_asert_ge_with_fixture, fixture<3>)
 {
   ASSERT_GE(num, 3);
 }
+
 TEST(should_fail_on_assert_ge_with_fixture, fixture<2>)
 {
   ASSERT_GE(num, 3);
 }
+
 TEST(should_succeed_on_assert_lt_with_fixture, fixture<2>)
 {
   ASSERT_LT(num, 3);
 }
+
 TEST(should_fail_on_assert_lt_with_fixture, fixture<3>)
 {
   ASSERT_LT(num, 3);
 }
+
 TEST(should_succeed_on_assert_le_with_fixture, fixture<3>)
 {
   ASSERT_LE(num, 3);
 }
+
 TEST(should_fail_on_assert_le_with_fixture, fixture<4>)
 {
   ASSERT_LE(num, 3);
 }
+
 TEST(should_succeed_on_assert_true_with_fixture, fixture<3>)
 {
   ASSERT_TRUE(num);
 }
+
 TEST(should_fail_on_assert_true_with_fixture, fixture<0>)
 {
   ASSERT_TRUE(num);
 }
+
 TEST(should_succeed_on_assert_false_with_fixture, fixture<0>)
 {
   ASSERT_FALSE(num);
 }
+
 TEST(should_fail_on_assert_false_with_fixture, fixture<3>)
 {
   ASSERT_FALSE(num);
@@ -208,13 +236,15 @@ TESTSUITE(depends)
                   very_slow_success))
     {
     }
-  TEST(should_not_run_due_to_failed_one_dependency,
+
+  TEST(should_not_run_due_to_one_failed_dependency,
        DEPENDS_ON(default_success, should_succeed_with_exit_code_3,
                   should_fail_due_to_unknown_exception,
                   should_succeed_on_assert_eq_with_fixture))
     {
     }
 }
+
 int main(int argc, const char *argv[])
 {
   return ciut::test_case_factory::run_test(argc, argv);
