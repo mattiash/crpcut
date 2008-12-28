@@ -496,10 +496,32 @@ namespace ciut {
               }
           }
           break;
+        case 'l':
+          {
+            const char **names = ++p;
+            if (*names && **names == '-')
+              {
+                std::cerr << "-l must be followed by a (possibly empty) test case list\n";
+                return 1;
+              }
+            for (implementation::test_case_registrator *i = reg.next;
+                 i != &reg;
+                 i = i->next)
+              {
+                bool matched = !*names;
+                for (const char **name = names; !matched && *name; ++name)
+                  {
+                    matched = i->match_name(*name);
+                  }
+                if (matched) std::cout << *i << '\n';
+              }
+            return 0;
+          }
         default:
           std::cout <<
             "Usage: " << argv[0] << " [flags] {testcases}\n"
             "  where flags can be:\n"
+            "    -l           - list test cases\n"
             "    -v           - verbose mode\n"
             "    -c number    - Control number of spawned test case processes\n"
             "                   if 0 the tests are run in the parent process\n";

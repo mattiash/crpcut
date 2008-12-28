@@ -179,7 +179,10 @@ public:
   operator T&() { return data; }
   operator const T&() const { return data; }
   bool operator!() const { return !data; }
-  operator const nieu*() const { return data ? reinterpret_cast<const nieu*>(&data) : 0; }
+  operator const nieu*() const
+  {
+    return data ? reinterpret_cast<const nieu*>(&data) : 0;
+  }
 private:
   T data;
 };

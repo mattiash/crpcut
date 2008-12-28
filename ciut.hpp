@@ -467,7 +467,7 @@ namespace ciut {
     }                                                                   \
     class registrator                                                   \
       : public ciut::implementation::test_case_registrator,             \
-        public virtual test_case_name::expected_death_cause             \
+        private virtual test_case_name::expected_death_cause            \
           {                                                             \
             typedef ciut::implementation::test_case_registrator         \
               registrator_base;                                         \
