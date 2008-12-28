@@ -419,8 +419,8 @@ namespace ciut {
           {
             desc->manage_death();
             ++num_tests_run;
+            if (!desc->failed()) desc->register_success();
             desc->unregister_fds();
-
             --pending_children;
           }
       }
@@ -435,6 +435,7 @@ namespace ciut {
         introduce_name(0, os.str());
         run_test_case(i);
         ++num_tests_run;
+        if (!i->failed()) i->register_success();
         return;
       }
     struct sigaction action, old_action;
@@ -517,11 +518,15 @@ namespace ciut {
               }
             return 0;
           }
+        case 'd':
+          nodeps = true;
+          break;
         default:
           std::cout <<
             "Usage: " << argv[0] << " [flags] {testcases}\n"
             "  where flags can be:\n"
             "    -l           - list test cases\n"
+            "    -d           - ignore dependencies\n"
             "    -v           - verbose mode\n"
             "    -c number    - Control number of spawned test case processes\n"
             "                   if 0 the tests are run in the parent process\n";
@@ -532,29 +537,59 @@ namespace ciut {
     start_presenter_process();
     const char **names = p;
 
-    for (implementation::test_case_registrator *i = reg.next;
-         i != &reg;
-         i = i->next)
+    for (;;)
       {
-        ++num_tests;
-        if (*names)
+        bool progress = false;
+        implementation::test_case_registrator *i = reg.next;
+        while (i != &reg)
           {
-            bool found = false;
-            for (const char **name = names; *name; ++name)
+            if (*names)
               {
-                if ((found = i->match_name(*name))) break;
+                bool found = false;
+                for (const char **name = names; *name; ++name)
+                  {
+                    if ((found = i->match_name(*name))) break;
+                  }
+                if (!found)
+                  {
+                    progress = true;
+                    i = i->unlink();
+                    continue;
+                  }
               }
-            if (!found) continue;
+            if (!nodeps && !i->can_run())
+              {
+                i = i->next;
+                continue;
+              }
+            start_test(i);
+            progress = true;
+            i = i->unlink();
           }
-
-        start_test(i);
+        if (!progress)
+          {
+            if (pending_children == 0)
+              {
+                break;
+              }
+            manage_children(1);
+          }
       }
     if (pending_children) manage_children(1);
     kill_presenter_process();
     std::cout << num_tests_run << " tests run ("
               << num_failed_tests  << " failed/"
-              << num_tests_run - num_failed_tests << " OK) - totally "
-              << num_tests << " tests registered\n";
+              << num_tests_run - num_failed_tests << " OK)\n";
+    if (verbose_mode && reg.next != &reg)
+      {
+        std::cout << "Not run tests are:\n";
+        for (implementation::test_case_registrator *i = reg.next;
+             i != &reg;
+             i = i->next)
+          {
+            std::cout << "  " << *i << '\n';
+          }
+      }
     return num_failed_tests;
   }
 

@@ -13,7 +13,10 @@ struct fixture
 TEST(default_success)
 {
 }
-
+TEST(very_slow_success)
+{
+  sleep(3);
+}
 TEST(should_fail_with_exit_code_3)
 {
   exit(3);
@@ -191,6 +194,26 @@ TEST(should_fail_on_assert_gt_with_unstreamable_param_i, fixture<3>)
 {
   unstreamable<int> i(3);
   ASSERT_GT(i, num);
+}
+
+
+TESTSUITE(depends)
+{
+  TEST(should_succeed_after_success_dependencies,
+       DEPENDS_ON(default_success,
+                  should_succeed_on_assert_eq_with_fixture,
+                  should_succeed_with_death_on_signal_11,
+                  should_succeed_with_exit_code_3,
+                  should_succeed_with_range_error_thrown,
+                  very_slow_success))
+    {
+    }
+  TEST(should_not_run_due_to_failed_one_dependency,
+       DEPENDS_ON(default_success, should_succeed_with_exit_code_3,
+                  should_fail_due_to_unknown_exception,
+                  should_succeed_on_assert_eq_with_fixture))
+    {
+    }
 }
 int main(int argc, const char *argv[])
 {

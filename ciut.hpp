@@ -15,17 +15,20 @@ namespace std {
 
 struct siginfo;
 
-#define NO_CORE_FILE \
+#define NO_CORE_FILE                                    \
   protected virtual ciut::policies::no_core_file
 
-#define EXPECT_EXIT(num) \
+#define EXPECT_EXIT(num)                                \
   protected virtual ciut::policies::exit_death<num>
 
-#define EXPECT_SIGNAL_DEATH(num) \
+#define EXPECT_SIGNAL_DEATH(num)                        \
   protected virtual ciut::policies::signal_death<num>
 
-#define EXPECT_EXCEPTION(type) \
+#define EXPECT_EXCEPTION(type)                                  \
   protected virtual ciut::policies::exception_specifier<type>
+
+#define DEPENDS_ON(...)                                                 \
+  protected virtual ciut::policies::dependency_policy<ciut::policies::dependencies::tuple_maker<__VA_ARGS__>::type >
 
 #define ANY_CODE -1
 
@@ -37,11 +40,15 @@ namespace ciut {
       class none;
     }
 
+    namespace dependencies {
+      class none {};
+    }
     class default_policy
     {
     protected:
       typedef void run_wrapper;
       typedef deaths::none expected_death_cause;
+      typedef dependencies::none dependency;
     };
 
     namespace deaths {
@@ -107,6 +114,153 @@ namespace ciut {
     protected:
       no_core_file();
     };
+
+    namespace dependencies {
+
+      class none;
+      class basic_enforcer;
+      class base
+      {
+      protected:
+        void inc() { ++num; }
+      public:
+        base() : num(0), dependants(0) {};
+        void add(basic_enforcer * other);
+        bool can_run() const { return num == 0; }
+        void register_success() const;
+      private:
+        int num;
+        basic_enforcer *dependants;
+      };
+
+      class basic_enforcer : public virtual base
+      {
+        friend class base;
+        basic_enforcer *next;
+      protected:
+        basic_enforcer() : next(0) {}
+      };
+
+      inline void base::add(basic_enforcer *other)
+      {
+        other->next = dependants;
+        dependants = other;
+      }
+      inline void base::register_success() const
+      {
+        for (basic_enforcer *p = dependants; p; p = p->next)
+          {
+            --p->num;
+          }
+      }
+      template <typename T>
+      class enforcer : private basic_enforcer
+      {
+      public:
+        enforcer() { inc(); T::reg.add(this); }
+      };
+
+      template <typename T1 = none, typename T2 = none>
+      class tuple : public T1,
+                    public T2
+      {
+      public:
+        typedef T1 head;
+        typedef T2 tail;
+      };
+
+      template <typename T>
+      class tuple<none, T>
+      {
+        typedef none head;
+      };
+
+      // Man, I'm longing for variadic templates... this is insanity
+      template <typename T1 = none, typename T2 = none, typename T3 = none,
+                typename T4 = none, typename T5 = none, typename T6 = none,
+                typename T7 = none, typename T8 = none, typename T9 = none,
+                typename T10 = none, typename T11 = none, typename T12 = none,
+                typename T13 = none, typename T14 = none, typename T15 = none,
+                typename T16 = none, typename T17 = none, typename T18 = none>
+      struct tuple_maker
+      {
+        typedef tuple<
+          T1,
+          tuple<
+            T2,
+            tuple<
+              T3,
+              tuple<
+                T4,
+                tuple<
+                  T5,
+                  tuple<
+                    T6,
+                    tuple<
+                      T7,
+                      tuple<
+                        T8,
+                        tuple<
+                          T9,
+                          tuple<
+                            T10,
+                            tuple<
+                              T11,
+                              tuple<
+                                T12,
+                                tuple<
+                                  T13,
+                                  tuple<
+                                    T14,
+                                    tuple<
+                                      T15,
+                                      tuple<
+                                        T16,
+                                        tuple<
+                                          T17,
+                                          tuple<T18>
+                                          >
+                                        >
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        type;
+      };
+
+      template <template <typename> class envelope, typename T>
+      class wrap
+      {
+      public:
+        typedef tuple<envelope<typename T::head>, typename wrap<envelope, typename T::tail>::type> type;
+      };
+
+      template <template <typename> class envelope, typename T>
+      class wrap<envelope, tuple<none, T> >
+      {
+      public:
+        typedef tuple<> type;
+      };
+    } // namespace dependencies
+
+    template <typename T>
+    class dependency_policy : protected virtual default_policy
+    {
+    public:
+      typedef typename dependencies::wrap<dependencies::enforcer, T>::type dependency;
+    };
+
 
   } // namespace policies
 
@@ -208,7 +362,8 @@ namespace ciut {
       namespace_info *parent;
     };
 
-    class test_case_registrator : public virtual policies::deaths::none
+    class test_case_registrator : public virtual policies::deaths::none,
+                                  public virtual policies::dependencies::base
     {
     public:
       typedef test_case_base &(*test_case_creator)();
@@ -224,9 +379,10 @@ namespace ciut {
       test_case_base *instantiate_obj() const { return &func_(); }
       void setup(pid_t pid, int in_fd, int out_fd);
       void manage_death();
-      void unlink() {
+      test_case_registrator *unlink() {
         next->prev = prev;
         prev->next = next;
+        return next;
       }
       bool read_report(); // true if read succeeded
     protected:
@@ -268,8 +424,8 @@ namespace ciut {
     test_case_factory()
       : pending_children(0),
         verbose_mode(false),
+        nodeps(false),
         num_parallel(1),
-        num_tests(0),
         num_tests_run(0),
         num_failed_tests(0)
     {
@@ -293,9 +449,9 @@ namespace ciut {
     registrator_list reg;
     unsigned         pending_children;
     bool             verbose_mode;
+    bool             nodeps;
     unsigned         num_parallel;
     bool             single_process;
-    unsigned         num_tests;
     unsigned         num_tests_run;
     unsigned         num_failed_tests;
     pid_t            presenter_pid;
@@ -455,6 +611,7 @@ namespace ciut {
     : ciut::test_case_base, __VA_ARGS__                                 \
   {                                                                     \
     friend class ciut::implementation::test_wrapper<run_wrapper, test_case_name>; \
+    friend class ciut::policies::dependencies::enforcer<test_case_name>; \
     virtual void run_test()                                             \
     {                                                                   \
       ciut::implementation::test_wrapper<run_wrapper, test_case_name>::run(this); \
@@ -467,7 +624,9 @@ namespace ciut {
     }                                                                   \
     class registrator                                                   \
       : public ciut::implementation::test_case_registrator,             \
-        private virtual test_case_name::expected_death_cause            \
+        public virtual ciut::policies::dependencies::base,              \
+        private virtual test_case_name::expected_death_cause,           \
+        private virtual test_case_name::dependency                      \
           {                                                             \
             typedef ciut::implementation::test_case_registrator         \
               registrator_base;                                         \
