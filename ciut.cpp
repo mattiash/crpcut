@@ -55,7 +55,9 @@ namespace ciut {
         unsigned long ms = now.tv_sec*1000 + now.tv_nsec / 1000000;
         if (ms > timeout_ms)
           {
-            report(comm::exit_fail, "Timeout time exceeded");
+            std::ostringstream os;
+            os << "Timeout time " << timeout_ms << "ms exceeded. Actual time was " << ms << "ms";
+            report(comm::exit_fail, os);
           }
       }
     }
