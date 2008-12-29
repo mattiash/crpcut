@@ -245,6 +245,33 @@ TESTSUITE(depends)
     }
 }
 
+TESTSUITE(timeouts)
+{
+  TEST(should_succeed_slow_realtime_deadline, DEADLINE_REALTIME_MS(3000))
+    {
+      sleep(2);
+    }
+  TEST(should_fail_slow_realtime_deadline, DEADLINE_REALTIME_MS(2000))
+    {
+      sleep(3);
+    }
+  TEST(should_succeed_slow_cputime_deadline, DEADLINE_CPU_MS(500))
+    {
+      sleep(1);
+    }
+  TEST(should_fail_slow_cputime_deadline_by_death, DEADLINE_CPU_MS(500))
+    {
+      for (;;)
+        {
+        }
+    }
+  TEST(should_fail_slow_realtime_deadline_by_death, DEADLINE_REALTIME_MS(500))
+    {
+      for (;;)
+        {
+        }
+    }
+}
 int main(int argc, const char *argv[])
 {
   return ciut::test_case_factory::run_test(argc, argv);

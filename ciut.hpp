@@ -9,6 +9,10 @@
 #include <cassert>
 #include <tr1/type_traits>
 
+extern "C"
+{
+#include <time.h>
+}
 namespace std {
   using namespace std::tr1;
 }
@@ -32,6 +36,14 @@ struct siginfo;
 
 #define ANY_CODE -1
 
+#if defined(CLOCK_PROCESS_CPUTIME_ID)
+#define DEADLINE_CPU_MS(time) ciut::policies::timeout_policy<ciut::policies::timeout::cputime, time>
+#endif
+#if defined(CLOCK_MONOTONIC)
+#define DEADLINE_REALTIME_MS(time) ciut::policies::timeout_policy<ciut::policies::timeout::realtime, time>
+#endif
+
+
 namespace ciut {
 
   namespace policies {
@@ -43,12 +55,20 @@ namespace ciut {
     namespace dependencies {
       class none {};
     }
+
+    namespace timeout {
+      class no_enforcer
+      {
+      };
+    }
+
     class default_policy
     {
     protected:
       typedef void run_wrapper;
       typedef deaths::none expected_death_cause;
       typedef dependencies::none dependency;
+      typedef timeout::no_enforcer timeout_enforcer;
     };
 
     namespace deaths {
@@ -261,8 +281,40 @@ namespace ciut {
       typedef typename dependencies::wrap<dependencies::enforcer, T>::type dependency;
     };
 
+    namespace timeout {
+
+      typedef enum { realtime, cputime } type;
+
+      class basic_enforcer
+      {
+      protected:
+        basic_enforcer(type t, unsigned timeout_ms);
+        void check(type t, unsigned timeout_ms);
+        timespec ts;
+      };
+      template <type t, unsigned timeout_ms>
+      class enforcer : private basic_enforcer
+      {
+      public:
+        enforcer() : basic_enforcer(t, timeout_ms) {}
+        ~enforcer() { check(t, timeout_ms); }
+      private:
+      };
+
+
+    } // namespace timeout
+
+
+    template <timeout::type t, unsigned timeout_ms>
+    class timeout_policy : protected virtual default_policy
+    {
+    public:
+      typedef timeout::enforcer<t, timeout_ms> timeout_enforcer;
+    };
+
 
   } // namespace policies
+
 
   class test_case_base : protected virtual policies::default_policy
   {
@@ -614,6 +666,8 @@ namespace ciut {
     friend class ciut::policies::dependencies::enforcer<test_case_name>; \
     virtual void run_test()                                             \
     {                                                                   \
+      timeout_enforcer obj;                                             \
+      (void)obj; /* silence warning */                                  \
       ciut::implementation::test_wrapper<run_wrapper, test_case_name>::run(this); \
     }                                                                   \
     void test();                                                        \

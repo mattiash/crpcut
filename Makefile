@@ -1,7 +1,7 @@
 CXXFLAGS=-ggdb -Wall -Wextra
 
 testprog: unitt.o libciut.a
-	g++ $(CXXFLAGS) unitt.o -L . -lciut -o testprog
+	g++ $(CXXFLAGS) unitt.o -L . -lciut -lrt -o testprog
 
 libciut.a: ciut.o
 	ar -r libciut.a ciut.o

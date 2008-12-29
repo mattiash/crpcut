@@ -26,6 +26,39 @@ namespace ciut {
       rlimit r = { 0, 0};
       setrlimit(RLIMIT_CORE, &r);
     }
+
+    namespace timeout {
+      basic_enforcer::basic_enforcer(type t, unsigned timeout_ms)
+      {
+        rlimit r = { (timeout_ms + 1500) / 1000, (timeout_ms + 2500) / 1000 };
+        setrlimit(RLIMIT_CPU, &r);
+        clock_gettime(t == realtime
+                      ? CLOCK_MONOTONIC
+                      : CLOCK_PROCESS_CPUTIME_ID,
+                      &ts);
+      }
+
+      void basic_enforcer::check(type t, unsigned timeout_ms)
+      {
+        timespec now;
+        clock_gettime(t == realtime
+                      ? CLOCK_MONOTONIC
+                      : CLOCK_PROCESS_CPUTIME_ID,
+                      &now);
+        now.tv_sec -= ts.tv_sec;
+        if (now.tv_nsec < ts.tv_nsec)
+          {
+            now.tv_nsec += 1000000000;
+            now.tv_sec += 1;
+          }
+        now.tv_nsec -= ts.tv_nsec;
+        unsigned long ms = now.tv_sec*1000 + now.tv_nsec / 1000000;
+        if (ms > timeout_ms)
+          {
+            report(comm::exit_fail, "Timeout time exceeded");
+          }
+      }
+    }
   }
 
   namespace implementation {
