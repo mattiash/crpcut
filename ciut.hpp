@@ -478,6 +478,7 @@ namespace ciut {
         verbose_mode(false),
         nodeps(false),
         num_parallel(1),
+        num_registered_tests(0),
         num_tests_run(0),
         num_failed_tests(0)
     {
@@ -504,6 +505,7 @@ namespace ciut {
     bool             nodeps;
     unsigned         num_parallel;
     bool             single_process;
+    unsigned         num_registered_tests;
     unsigned         num_tests_run;
     unsigned         num_failed_tests;
     pid_t            presenter_pid;

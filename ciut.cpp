@@ -56,7 +56,8 @@ namespace ciut {
         if (ms > timeout_ms)
           {
             std::ostringstream os;
-            os << "Timeout time " << timeout_ms << "ms exceeded. Actual time was " << ms << "ms";
+            os << "Timeout time " << timeout_ms
+               << "ms exceeded. Actual time was " << ms << "ms";
             report(comm::exit_fail, os);
           }
       }
@@ -486,7 +487,13 @@ namespace ciut {
     int p2c[2];
     ::pipe(p2c);
 
-    ::pid_t pid = ::fork();
+    ::pid_t pid;
+    for (;;)
+      {
+        pid = ::fork();
+        if (pid >= 0) break;
+        assert(errno == EINTR);
+      }
     if (pid < 0) return;
     if (pid == 0) // child
       {
@@ -576,8 +583,10 @@ namespace ciut {
       {
         bool progress = false;
         implementation::test_case_registrator *i = reg.next;
+        unsigned count = 0;
         while (i != &reg)
           {
+            ++count;
             if (*names)
               {
                 bool found = false;
@@ -609,10 +618,15 @@ namespace ciut {
               }
             manage_children(1);
           }
+        if (count > num_registered_tests)
+          {
+            num_registered_tests = count;
+          }
       }
     if (pending_children) manage_children(1);
     kill_presenter_process();
-    std::cout << num_tests_run << " tests run ("
+    std::cout << num_registered_tests << " registered, of which "
+              << num_tests_run << " tests run ("
               << num_failed_tests  << " failed/"
               << num_tests_run - num_failed_tests << " OK)\n";
     if (reg.next != &reg)
