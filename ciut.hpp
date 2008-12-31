@@ -8,7 +8,6 @@
 #include <cerrno>
 #include <cassert>
 #include <tr1/type_traits>
-
 extern "C"
 {
 #include <time.h>
@@ -513,6 +512,7 @@ namespace ciut {
   };
 
   namespace implementation {
+
 
     template <typename C, typename T>
     class test_wrapper;

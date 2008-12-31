@@ -8,7 +8,11 @@ extern "C"
 {
 #include <sys/epoll.h>
 }
-typedef int polldata;
+template <size_t N>
+struct polldata
+{
+  int epoll_fd;
+};
 #endif
 
 #ifdef POLL_USE_SELECT
@@ -16,11 +20,21 @@ extern "C"
 {
 #include <sys/select.h>
 }
-#include <vector>
+
+
+template <size_t N>
 struct polldata
+
 {
-  polldata() : pending_fds(0U) { FD_ZERO(&rset); FD_ZERO(&xset); }
-  std::vector<std::pair<int, void*> > access;
+  polldata()
+    : num_subscribers(0U),
+      pending_fds(0U)
+  {
+    FD_ZERO(&rset);
+    FD_ZERO(&xset);
+  }
+  std::pair<int, void*> access[N];
+  size_t num_subscribers;
   fd_set rset;
   fd_set xset;
   size_t pending_fds;
@@ -33,7 +47,7 @@ struct polldata
 #ifdef POLL_USE_POLL
 #endif
 
-template <typename T>
+template <typename T, size_t N>
 class poll
 {
 public:
@@ -50,7 +64,7 @@ public:
     T* data;
     int mode;
 
-    friend class poll<T>;
+    friend class poll<T, N>;
   };
   poll();
   ~poll();
@@ -58,43 +72,42 @@ public:
   void del_fd(int fd);
   descriptor wait(int timeout_ms = -1);
 private:
-  polldata data;
+  polldata<N> data;
 };
 
 #ifdef POLL_USE_SELECT
-template <typename T>
-inline bool poll<T>::descriptor::read() const
+template <typename T, size_t N>
+inline bool poll<T, N>::descriptor::read() const
 {
-  return mode & polldata::readbit;
+  return mode & polldata<N>::readbit;
 }
-template <typename T>
-inline bool poll<T>::descriptor::hup() const
+template <typename T, size_t N>
+inline bool poll<T, N>::descriptor::hup() const
 {
-  return mode & polldata::hupbit;
+  return mode & polldata<N>::hupbit;
 }
-template <typename T>
-inline poll<T>::poll()
+template <typename T, size_t N>
+inline poll<T, N>::poll()
 {
 }
-template <typename T>
-inline poll<T>::~poll()
+template <typename T, size_t N>
+inline poll<T, N>::~poll()
 {
 }
 
-template <typename T>
-inline void poll<T>::add_fd(int fd, T* data)
+template <typename T, size_t N>
+inline void poll<T, N>::add_fd(int fd, T* data)
 {
-  this->data.access.push_back(std::make_pair(fd, data));
+  this->data.access[this->data.num_subscribers++] = std::make_pair(fd, data);
 }
-template <typename T>
-inline void poll<T>::del_fd(int fd)
+template <typename T, size_t N>
+inline void poll<T, N>::del_fd(int fd)
 {
-  for (size_t i = 0; i < data.access.size(); ++i)
+  for (size_t i = 0; i < data.num_subscribers; ++i)
     {
       if (data.access[i].first == fd)
         {
-          data.access[i] = data.access.back();
-          data.access.pop_back();
+          data.access[i] = data.access[--data.num_subscribers];
           if (FD_ISSET(fd, &data.rset) && FD_ISSET(fd, &data.xset))
             {
               FD_CLR(fd, &data.rset);
@@ -106,13 +119,13 @@ inline void poll<T>::del_fd(int fd)
     }
   assert("fd not found" == 0);
 }
-template <typename T>
-inline typename poll<T>::descriptor poll<T>::wait(int timeout_ms)
+template <typename T, size_t N>
+inline typename poll<T, N>::descriptor poll<T, N>::wait(int timeout_ms)
 {
   if (data.pending_fds == 0)
     {
       int maxfd = 0;
-      for (size_t i = 0; i < data.access.size(); ++i)
+      for (size_t i = 0; i < data.num_subscribers; ++i)
         {
           int fd = data.access[i].first;
           if (fd > maxfd) maxfd = fd;
@@ -129,18 +142,18 @@ inline typename poll<T>::descriptor poll<T>::wait(int timeout_ms)
       if (rv == 0) return descriptor(0,0); // timeout
       data.pending_fds = rv;
     }
-  for (size_t j = 0; j < data.access.size(); ++j)
+  for (size_t j = 0; j < data.num_subscribers; ++j)
     {
       int fd = data.access[j].first;
       int mode = 0;
       if (FD_ISSET(fd, &data.rset))
         {
-          mode|= polldata::readbit;
+          mode|= polldata<N>::readbit;
           FD_CLR(fd, &data.rset);
         }
       if (FD_ISSET(fd, &data.xset))
         {
-          mode|= polldata::hupbit;
+          mode|= polldata<N>::hupbit;
           FD_CLR(fd, &data.xset);
         }
       if (mode)
@@ -154,52 +167,52 @@ inline typename poll<T>::descriptor poll<T>::wait(int timeout_ms)
 }
 #endif
 #ifdef POLL_USE_EPOLL
-template <typename T>
-inline bool poll<T>::descriptor::read() const
+template <typename T, size_t N>
+inline bool poll<T, N>::descriptor::read() const
 {
   return mode & EPOLLIN;
 }
-template <typename T>
-inline bool poll<T>::descriptor::hup() const
+template <typename T, size_t N>
+inline bool poll<T, N>::descriptor::hup() const
 {
   return mode & EPOLLHUP;
 }
 
-template <typename T>
-inline poll<T>::poll()
+template <typename T, size_t N>
+inline poll<T, N>::poll()
 {
-  data = epoll_create(1);
-  assert(data != -1);
+  data.epoll_fd = epoll_create(N);
+  assert(data.epoll_fd != -1);
 }
-template <typename T>
-inline poll<T>::~poll()
+template <typename T, size_t N>
+inline poll<T, N>::~poll()
 {
-  ::close(data);
+  ::close(data.epoll_fd);
 }
-template <typename T>
-inline void poll<T>::add_fd(int fd, T* data)
+template <typename T, size_t N>
+inline void poll<T, N>::add_fd(int fd, T* data)
 {
   epoll_event ev;
   ev.events = EPOLLIN | EPOLLHUP;
   ev.data.ptr = data;
-  int rv = epoll_ctl(this->data, EPOLL_CTL_ADD, fd, &ev);
+  int rv = epoll_ctl(this->data.epoll_fd, EPOLL_CTL_ADD, fd, &ev);
   assert(rv == 0);
 }
 
-template <typename T>
-inline void poll<T>::del_fd(int fd)
+template <typename T, size_t N>
+inline void poll<T, N>::del_fd(int fd)
 {
-  int rv = epoll_ctl(data, EPOLL_CTL_DEL, fd, 0);
+  int rv = epoll_ctl(data.epoll_fd, EPOLL_CTL_DEL, fd, 0);
   assert(rv == 0);
 }
 
-template <typename T>
-inline typename poll<T>::descriptor poll<T>::wait(int timeout_ms)
+template <typename T, size_t N>
+inline typename poll<T, N>::descriptor poll<T, N>::wait(int timeout_ms)
 {
   epoll_event ev;
   for (;;)
     {
-      int rv = epoll_wait(data, &ev, 1, timeout_ms);
+      int rv = epoll_wait(data.epoll_fd, &ev, 1, timeout_ms);
       if (rv == 0)
         {
           return descriptor(0,0); // timeout

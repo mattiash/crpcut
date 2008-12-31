@@ -1,5 +1,5 @@
 #include "ciut.hpp"
-#define POLL_USE_EPOLL
+#define POLL_USE_SELECT
 #include "poll.hpp"
 extern "C" {
 #include <signal.h>
@@ -66,7 +66,11 @@ namespace ciut {
 
   namespace implementation {
 
-    poll<test_case_registrator> poller;
+    typedef poll<test_case_registrator,
+                 test_case_factory::max_parallel> polltype;
+
+    polltype poller;
+
 
     test_case_registrator
     ::test_case_registrator(const char *name,
@@ -445,7 +449,7 @@ namespace ciut {
     while (pending_children >= max_pending_children)
       {
         using namespace implementation;
-        poll<test_case_registrator>::descriptor desc = poller.wait();
+        polltype::descriptor desc = poller.wait();
         bool read_failed = false;
         if (desc.read())
           {
