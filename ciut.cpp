@@ -1,5 +1,5 @@
 #include "ciut.hpp"
-#define POLL_USE_EPOLL
+#define POLL_USE_SELECT
 #include "poll.hpp"
 extern "C" {
 #include <signal.h>
@@ -46,7 +46,7 @@ namespace ciut {
         if (now.tv_nsec < ts.tv_nsec)
           {
             now.tv_nsec += 1000000000;
-            now.tv_sec += 1;
+            now.tv_sec -= 1;
           }
         now.tv_nsec -= ts.tv_nsec;
         unsigned long ms = now.tv_sec*1000 + now.tv_nsec / 1000000;
@@ -87,8 +87,16 @@ namespace ciut {
     {
       ::kill(pid_, SIGKILL);
       death_note = true;
+      deadline.tv_sec = 0;
       char msg[] = "Killed due to failed deadline";
       test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
+    }
+
+    void test_case_registrator::clear_deadline()
+    {
+      assert(deadline.tv_sec != 0);
+      test_case_factory::clear_deadline(this);
+      deadline.tv_sec = 0;
     }
 
     void test_case_registrator::setup(pid_t pid, int in_fd, int out_fd)
@@ -130,6 +138,7 @@ namespace ciut {
       if (t == comm::set_timeout)
         {
           assert(len == sizeof(deadline));
+          assert(deadline.tv_sec == 0);
           char *p = static_cast<char*>(static_cast<void*>(&deadline));
           while (bytes_read < len)
             {
@@ -138,7 +147,20 @@ namespace ciut {
               assert(rv > 0);
               bytes_read += rv;
             }
+          do {
+            rv = ::write(out_fd_, &len, sizeof(len));
+          } while (rv == -1 && errno == EINTR);
+          assert(deadline.tv_sec > 0);
           test_case_factory::set_deadline(this);
+          return true;
+        }
+      if (t == comm::cancel_timeout)
+        {
+          assert(len == 0);
+          clear_deadline();
+          do {
+            rv = ::write(out_fd_, &len, sizeof(len));
+          } while (rv == -1 && errno == EINTR);
           return true;
         }
       char buff[len];
@@ -154,7 +176,14 @@ namespace ciut {
         rv = ::write(out_fd_, &len, sizeof(len));
       } while (rv == -1 && errno == EINTR);
       test_case_factory::present(pid_, t, len, buff);
-      death_note |= (t == comm::exit_ok || t == comm::exit_fail);
+      if (t == comm::exit_ok || t == comm::exit_fail)
+        {
+          if (!death_note && deadline.tv_sec != 0)
+            {
+              clear_deadline();
+            }
+          death_note = true;
+        }
       return true;
     }
 
@@ -239,7 +268,10 @@ namespace ciut {
           assert(rv == 0);
           break;
         }
-
+      if (!death_note && deadline.tv_sec != 0)
+        {
+          clear_deadline();
+        }
       comm::type t = comm::exit_ok;
       std::ostringstream out;
       switch (info.si_code)
@@ -287,9 +319,41 @@ namespace ciut {
   void test_case_factory
   ::do_set_deadline(implementation::test_case_registrator *i)
   {
+    assert(i->deadline.tv_sec != 0);
     deadlines.push_back(i);
     std::push_heap(deadlines.begin(), deadlines.end(),
                    &implementation::test_case_registrator::timeout_compare);
+  }
+  void test_case_factory
+  ::do_clear_deadline(implementation::test_case_registrator *i)
+  {
+    assert(i->deadline.tv_sec != 0);
+    for (size_t n = 0; n < deadlines.size(); ++n)
+      {
+        if (deadlines[n] == i)
+          {
+            using namespace implementation;
+            for (;;)
+              {
+                size_t m = (n+1)*2-1;
+                if (m >= deadlines.size() - 1) break;
+                if (test_case_registrator::timeout_compare(deadlines[m],
+                                                           deadlines[m+1]))
+                  {
+                    deadlines[n] = deadlines[m];
+                  }
+                else
+                  {
+                    deadlines[n] = deadlines[++m];
+                  }
+                n = m;
+              }
+            deadlines[n] = deadlines.back();
+            deadlines.pop_back();
+            return;
+          }
+      }
+    assert("clear deadline when none was ordered" == 0);
   }
 
   void test_case_factory::do_introduce_name(pid_t pid, const std::string &name)
@@ -301,6 +365,14 @@ namespace ciut {
         if (rv == sizeof(pid)) break;
         assert (rv == -1 && errno == EINTR);
       }
+    const comm::type t = comm::introduce_name;
+    for (;;)
+      {
+        int rv = ::write(pipe, &t, sizeof(t));
+        if (rv == sizeof(t)) break;
+        assert(rv == -1 && errno == EINTR);
+      }
+
     size_t len = name.length();
     for (;;)
       {
@@ -368,8 +440,19 @@ namespace ciut {
           }
         assert(rv == sizeof(test_case_id));
         std::pair<std::string,std::string> &s = messages[test_case_id];
-        if (s.first.length() == 0)
+
+        static const char * const header[] = {
+          "OK", "FAILED!", "INFO", "WARNING"
+        };
+
+        comm::type t;
+        rv = ::read(presenter_pipe, &t, sizeof(t));
+        assert(rv == sizeof(t));
+
+        if (t == comm::introduce_name)
           {
+            assert(s.first.length() == 0);
+
             // introduction to test case, name follows
 
             size_t len = 0;
@@ -396,16 +479,7 @@ namespace ciut {
             s.first = std::string(buff, len);
             continue;
           }
-
-        static const char * const header[] = {
-          "OK", "FAILED!", "INFO", "WARNING"
-        };
-
-        comm::type t;
-        rv = ::read(presenter_pipe, &t, sizeof(t));
-        assert(rv == sizeof(t));
         s.second += header[t];
-
         size_t len;
         rv = ::read(presenter_pipe, &len, sizeof(len));
         if (len)
@@ -498,9 +572,11 @@ namespace ciut {
         implementation::polltype::descriptor desc = implementation::poller.wait(timeout_ms);
         if (desc.timeout())
           {
+            assert(deadlines.size());
             deadlines.front()->kill();
             std::pop_heap(deadlines.begin(), deadlines.end());
             deadlines.pop_back();
+            continue;
           }
         bool read_failed = false;
         if (desc.read())
@@ -513,31 +589,6 @@ namespace ciut {
             ++num_tests_run;
             if (!desc->failed()) desc->register_success();
             desc->unregister_fds();
-            for (size_t i = 0; i < deadlines.size(); ++i)
-              {
-                if (deadlines[i] == desc.get())
-                  {
-                    using namespace implementation;
-                    for (;;)
-                      {
-                        size_t n = (i+1)*2-1;
-                        if (n >= deadlines.size() - 1) break;
-                        if (test_case_registrator::timeout_compare(deadlines[n],
-                                                                   deadlines[n+1]))
-                          {
-                            deadlines[i] = deadlines[n];
-                          }
-                        else
-                          {
-                            deadlines[i] = deadlines[++n];
-                          }
-                        i = n;
-                      }
-                    deadlines[i] = deadlines.back();
-                    deadlines.pop_back();
-                    break;
-                  }
-              }
             --pending_children;
           }
       }
@@ -760,6 +811,7 @@ namespace ciut {
 
     void reporter::operator()(type t, std::ostringstream &os) const
     {
+      bool terminal = (t == comm::exit_ok) || (t == comm::exit_fail);
       if (!test_case_factory::tests_as_child_procs())
         {
           const std::string &s = os.str();
@@ -785,6 +837,7 @@ namespace ciut {
         read(bytes_written);
         assert(len == bytes_written);
         using std::ostringstream;
+        if (!terminal) return;
         os.~ostringstream(); // man, this is ugly, but _Exit() causes leaks
       }
       _Exit(0);

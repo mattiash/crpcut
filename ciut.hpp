@@ -319,7 +319,7 @@ namespace ciut {
       {
       public:
         enforcer();
-        ~enforcer() { basic_enforcer::check(realtime, timeout_ms); }
+        ~enforcer();
       };
 
     } // namespace timeout
@@ -351,7 +351,7 @@ namespace ciut {
 
   namespace comm {
 
-    typedef enum { exit_ok, exit_fail, info, violation, set_timeout } type;
+    typedef enum { exit_ok, exit_fail, info, violation, set_timeout, cancel_timeout, introduce_name } type;
 
     // protocol is type -> size_t(length) -> char[length]. length may be 0.
     // reader acknowledges with length.
@@ -390,7 +390,7 @@ namespace ciut {
     namespace timeout
     {
       template <unsigned timeout_ms>
-      inline enforcer<realtime, timeout_ms>::enforcer()
+      enforcer<realtime, timeout_ms>::enforcer()
         : basic_enforcer(realtime, timeout_ms)
       {
         timespec deadline = ts;
@@ -400,6 +400,12 @@ namespace ciut {
         deadline.tv_sec += timeout_ms / 1000 + 1;
         // calculated deadline + 1 sec should give plenty of slack
         report(comm::set_timeout, deadline);
+      }
+      template <unsigned timeout_ms>
+      enforcer<realtime, timeout_ms>::~enforcer()
+      {
+        report(comm::cancel_timeout);
+        basic_enforcer::check(realtime, timeout_ms);
       }
     }
   }
@@ -453,18 +459,22 @@ namespace ciut {
         if (ms < 0) return 0;
         return ms;
       }
+      void clear_deadline();
       static bool timeout_compare(const test_case_registrator *lh, const test_case_registrator *rh)
       {
         if (lh->deadline.tv_sec == rh->deadline.tv_sec)
-          return lh->deadline.tv_nsec < rh->deadline.tv_nsec;
-        return lh->deadline.tv_sec < rh->deadline.tv_sec;
+          return lh->deadline.tv_nsec > rh->deadline.tv_nsec;
+        return lh->deadline.tv_sec > rh->deadline.tv_sec;
       }
     protected:
       const char *name_;
     private:
       void unregister_fds();
       virtual std::ostream &print_name(std::ostream &) const = 0;
-      test_case_registrator() : next(this), prev(this) {}
+      test_case_registrator() : next(this), prev(this)
+      {
+        deadline.tv_sec = 0;
+      }
       test_case_registrator *next;
       test_case_registrator *prev;
       test_case_creator func_;
@@ -504,6 +514,10 @@ namespace ciut {
     {
       obj().do_set_deadline(i);
     }
+    static void clear_deadline(implementation::test_case_registrator *i)
+    {
+      obj().do_clear_deadline(i);
+    }
   private:
     static test_case_factory& obj() { static test_case_factory f; return f; }
     test_case_factory()
@@ -526,6 +540,7 @@ namespace ciut {
     void do_present(pid_t pid, comm::type t, size_t len, const char *buff);
     void do_introduce_name(pid_t pid, const std::string &s);
     void do_set_deadline(implementation::test_case_registrator *i);
+    void do_clear_deadline(implementation::test_case_registrator *i);
     friend class implementation::test_case_registrator;
 
     class registrator_list : public implementation::test_case_registrator
@@ -726,9 +741,11 @@ namespace ciut {
     {
       assert(test_case_factory::tests_as_child_procs());
       write(t);
-      const size_t len = sizeof(data);
+      size_t len = sizeof(data);
       write(len);
       write(data);
+      read(len);
+      assert(len == sizeof(data));
     }
 
     template <typename T>

@@ -248,39 +248,51 @@ TESTSUITE(depends)
 
 TESTSUITE(timeouts)
 {
-  TEST(should_succeed_slow_realtime_deadline, DEADLINE_REALTIME_MS(1500), NO_CORE_FILE)
+  TEST(should_succeed_slow_realtime_deadline,
+       DEADLINE_REALTIME_MS(1500),
+       NO_CORE_FILE)
     {
       sleep(1);
     }
-  TEST(should_fail_slow_realtime_deadline, DEADLINE_REALTIME_MS(500), NO_CORE_FILE)
+  TEST(should_fail_slow_realtime_deadline,
+       DEADLINE_REALTIME_MS(500),
+       NO_CORE_FILE)
     {
       sleep(1);
     }
+
   TEST(should_succeed_slow_cputime_deadline, DEADLINE_CPU_MS(500), NO_CORE_FILE)
     {
       sleep(3);
     }
+
   TEST(should_fail_slow_cputime_deadline, DEADLINE_CPU_MS(500), NO_CORE_FILE)
     {
       struct timespec deadline;
-      clock_gettime(CLOCK_MONOTONIC, &deadline);
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &deadline);
       deadline.tv_sec+=1;
       for (;;)
         {
           struct timespec now;
-          clock_gettime(CLOCK_MONOTONIC, &now);
+          clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now);
           if (now.tv_sec > deadline.tv_sec) break;
           if (now.tv_sec == deadline.tv_sec && now.tv_nsec >= deadline.tv_nsec)
             break;
         }
     }
-  TEST(should_fail_slow_cputime_deadline_by_death, DEADLINE_CPU_MS(500), NO_CORE_FILE)
+
+  TEST(should_fail_slow_cputime_deadline_by_death,
+       DEADLINE_CPU_MS(500),
+       NO_CORE_FILE)
     {
       for (;;)
         {
         }
     }
-  TEST(should_fail_slow_realtime_deadline_by_death, DEADLINE_REALTIME_MS(500), NO_CORE_FILE)
+
+  TEST(should_fail_slow_realtime_deadline_by_death,
+       DEADLINE_REALTIME_MS(500),
+       NO_CORE_FILE)
     {
       sleep(3);
     }
