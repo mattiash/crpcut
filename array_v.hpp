@@ -33,8 +33,8 @@ public:
     std::swap(num_elements, other.num_elements);
   }
   using array::begin;
-  iterator end() { return iterator(&operator[](num_elements)); }
-  const_iterator end() const { return iterator(&operator[](num_elements)); }
+  iterator end() { return iterator(&operator[](size())); }
+  const_iterator end() const { return iterator(&operator[](size())); }
   reverse_iterator rbegin() { return reverse_iterator(end()); }
   const reverse_iterator rbegin() const { return reverse_iterator(end()); }
   using array::rend;
@@ -45,12 +45,12 @@ public:
   using array::operator[];
   reference at(size_type n)
   {
-    if (n > N) throw std::out_of_range("array_v::at");
+    if (n >= num_elements) throw std::out_of_range("array_v::at");
     return operator[](n);
   }
   const_reference at(size_type n) const
   {
-    if (n > N) throw std::out_of_range("array_v::at");
+    if (n >= num_elements) throw std::out_of_range("array_v::at");
     return operator[](n);
   }
   using array::front;
