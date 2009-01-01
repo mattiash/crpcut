@@ -8,9 +8,13 @@
 #include <cerrno>
 #include <cassert>
 #include <tr1/type_traits>
+#include "array_v.hpp"
+#include <queue>
 extern "C"
 {
 #include <time.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 }
 namespace std {
   using namespace std::tr1;
@@ -295,11 +299,28 @@ namespace ciut {
       class enforcer : private basic_enforcer
       {
       public:
-        enforcer() : basic_enforcer(t, timeout_ms) {}
-        ~enforcer() { check(t, timeout_ms); }
-      private:
+        enforcer();
       };
 
+      template <unsigned timeout_ms>
+      class enforcer<cputime, timeout_ms> : public basic_enforcer
+      {
+      public:
+        enforcer()  : basic_enforcer(cputime, timeout_ms)
+        {
+          rlimit r = { (timeout_ms + 1500) / 1000, (timeout_ms + 2500) / 1000 };
+          setrlimit(RLIMIT_CPU, &r);
+        }
+        ~enforcer() { basic_enforcer::check(cputime, timeout_ms); }
+      };
+
+      template <unsigned timeout_ms>
+      class enforcer<realtime, timeout_ms> : public basic_enforcer
+      {
+      public:
+        enforcer();
+        ~enforcer() { basic_enforcer::check(realtime, timeout_ms); }
+      };
 
     } // namespace timeout
 
@@ -330,7 +351,7 @@ namespace ciut {
 
   namespace comm {
 
-    typedef enum { exit_ok, exit_fail, info, violation } type;
+    typedef enum { exit_ok, exit_fail, info, violation, set_timeout } type;
 
     // protocol is type -> size_t(length) -> char[length]. length may be 0.
     // reader acknowledges with length.
@@ -349,6 +370,8 @@ namespace ciut {
         os << msg;
         operator()(t, os);
       }
+      template <typename T>
+      void operator()(type t, const T& data) const;
     private:
       template <typename T>
       void write(const T& t) const;
@@ -357,46 +380,29 @@ namespace ciut {
       void read(T& t) const;
     };
 
-    template <typename T>
-    void reporter::write(const T& t) const
-    {
-      const size_t len = sizeof(T);
-      size_t bytes_written = 0;
-      const char *p = static_cast<const char*>(static_cast<const void*>(&t));
-      while (bytes_written < len)
-        {
-          int rv = ::write(write_fd,
-                           p + bytes_written,
-                           len - bytes_written);
-          if (rv == -1 && errno == EINTR) continue;
-          if (rv <= 0) throw "write failed";
-          bytes_written += rv;
-        }
-    }
-
-    template <typename T>
-    void reporter::read(T& t) const
-    {
-      const size_t len = sizeof(T);
-      size_t bytes_read = 0;
-      char *p = static_cast<char*>(static_cast<void*>(&t));
-      while (bytes_read < len)
-        {
-          int rv = ::read(read_fd,
-                          p + bytes_read,
-                          len - bytes_read);
-          if (rv == -1 && errno == EINTR) continue;
-          if (rv <= 0) {
-            throw "read failed";
-          }
-          bytes_read += rv;
-        }
-    }
 
     extern reporter report;
 
   } // namespace comm
 
+  namespace policies
+  {
+    namespace timeout
+    {
+      template <unsigned timeout_ms>
+      inline enforcer<realtime, timeout_ms>::enforcer()
+        : basic_enforcer(realtime, timeout_ms)
+      {
+        timespec deadline = ts;
+        deadline.tv_nsec += (timeout_ms % 1000) * 1000000;
+        deadline.tv_sec += deadline.tv_nsec / 1000000000;
+        deadline.tv_nsec %= 1000000000;
+        deadline.tv_sec += timeout_ms / 1000 + 1;
+        // calculated deadline + 1 sec should give plenty of slack
+        report(comm::set_timeout, deadline);
+      }
+    }
+  }
   namespace implementation {
 
     struct namespace_info
@@ -436,6 +442,23 @@ namespace ciut {
         return next;
       }
       bool read_report(); // true if read succeeded
+      void kill();
+      int ms_until_deadline() const
+      {
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        int ms = (deadline.tv_sec - now.tv_sec)*1000;
+        if (ms < 0) return 0;
+        ms+= (deadline.tv_nsec - now.tv_nsec) / 1000000;
+        if (ms < 0) return 0;
+        return ms;
+      }
+      static bool timeout_compare(const test_case_registrator *lh, const test_case_registrator *rh)
+      {
+        if (lh->deadline.tv_sec == rh->deadline.tv_sec)
+          return lh->deadline.tv_nsec < rh->deadline.tv_nsec;
+        return lh->deadline.tv_sec < rh->deadline.tv_sec;
+      }
     protected:
       const char *name_;
     private:
@@ -450,6 +473,7 @@ namespace ciut {
       int out_fd_;
       pid_t pid_;
       bool successful;
+      timespec deadline;
       friend class ciut::test_case_factory;
     };
 
@@ -464,11 +488,21 @@ namespace ciut {
     {
       return obj().do_run(argc, argv);
     }
-    static void introduce_name(pid_t, const std::string &s);
-    static void present(pid_t pid, comm::type t, size_t len, const char *buff);
+    static void introduce_name(pid_t pid, const std::string &s)
+    {
+      obj().do_introduce_name(pid, s);
+    };
+    static void present(pid_t pid, comm::type t, size_t len, const char *buff)
+    {
+      obj().do_present(pid, t, len, buff);
+    }
     static bool tests_as_child_procs()
     {
       return obj().num_parallel > 0;
+    }
+    static void set_deadline(implementation::test_case_registrator *i)
+    {
+      obj().do_set_deadline(i);
     }
   private:
     static test_case_factory& obj() { static test_case_factory f; return f; }
@@ -489,7 +523,9 @@ namespace ciut {
     void start_test(implementation::test_case_registrator *i);
 
     unsigned do_run(int argc, const char *argv[]);
-
+    void do_present(pid_t pid, comm::type t, size_t len, const char *buff);
+    void do_introduce_name(pid_t pid, const std::string &s);
+    void do_set_deadline(implementation::test_case_registrator *i);
     friend class implementation::test_case_registrator;
 
     class registrator_list : public implementation::test_case_registrator
@@ -497,6 +533,10 @@ namespace ciut {
       virtual bool match_name(const char *) const { return false; }
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
     };
+
+    typedef array_v<implementation::test_case_registrator*,
+                    max_parallel> timeout_queue;
+
 
     registrator_list reg;
     unsigned         pending_children;
@@ -509,6 +549,7 @@ namespace ciut {
     unsigned         num_failed_tests;
     pid_t            presenter_pid;
     int              presenter_pipe;
+    timeout_queue    deadlines;
   };
 
   namespace implementation {
@@ -643,7 +684,9 @@ namespace ciut {
   }
 
   template <typename T>
-  bool stream_param(std::ostream &os, const char *prefix, const char *name, const T& t)
+  bool stream_param(std::ostream &os,
+                    const char *prefix,
+                    const char *name, const T& t)
   {
     std::ostringstream tmp;
     bool v = conditionally_stream(tmp, t);
@@ -654,6 +697,58 @@ namespace ciut {
         return true;
       }
     return false;
+  }
+
+  //// template func implementations
+
+
+  namespace comm
+  {
+    template <typename T>
+    void reporter::write(const T& t) const
+    {
+      const size_t len = sizeof(T);
+      size_t bytes_written = 0;
+      const char *p = static_cast<const char*>(static_cast<const void*>(&t));
+      while (bytes_written < len)
+        {
+          int rv = ::write(write_fd,
+                           p + bytes_written,
+                           len - bytes_written);
+          if (rv == -1 && errno == EINTR) continue;
+          if (rv <= 0) throw "write failed";
+          bytes_written += rv;
+        }
+    }
+
+    template <typename T>
+    void reporter::operator()(comm::type t, const T& data) const
+    {
+      assert(test_case_factory::tests_as_child_procs());
+      write(t);
+      const size_t len = sizeof(data);
+      write(len);
+      write(data);
+    }
+
+    template <typename T>
+    void reporter::read(T& t) const
+    {
+      const size_t len = sizeof(T);
+      size_t bytes_read = 0;
+      char *p = static_cast<char*>(static_cast<void*>(&t));
+      while (bytes_read < len)
+        {
+          int rv = ::read(read_fd,
+                          p + bytes_read,
+                          len - bytes_read);
+          if (rv == -1 && errno == EINTR) continue;
+          if (rv <= 0) {
+            throw "read failed";
+          }
+          bytes_read += rv;
+        }
+    }
   }
 
 } // namespace ciut

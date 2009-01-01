@@ -55,6 +55,7 @@ public:
   {
   public:
     T* operator->() const { return data; }
+    T* get() const { return data; }
     bool read() const;
     bool hup() const;
     bool timeout() const { return mode == 0; }
@@ -133,14 +134,19 @@ inline typename poll<T, N>::descriptor poll<T, N>::wait(int timeout_ms)
           FD_SET(fd, &data.xset);
         }
       struct timeval tv = { timeout_ms / 1000, (timeout_ms % 1000) * 1000 };
-      int rv = select(maxfd + 1,
-                      &data.rset,
-                      0,
-                      &data.xset,
-                      timeout_ms == -1 ? 0 : &tv);
-      assert(rv != -1);
-      if (rv == 0) return descriptor(0,0); // timeout
-      data.pending_fds = rv;
+      for (;;)
+        {
+          int rv = select(maxfd + 1,
+                          &data.rset,
+                          0,
+                          &data.xset,
+                          timeout_ms == -1 ? 0 : &tv);
+          if (rv == -1 && errno == EINTR) continue;
+          assert(rv != -1);
+          if (rv == 0) return descriptor(0,0); // timeout
+          data.pending_fds = rv;
+          break;
+        }
     }
   for (size_t j = 0; j < data.num_subscribers; ++j)
     {

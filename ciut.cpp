@@ -1,5 +1,5 @@
 #include "ciut.hpp"
-#define POLL_USE_SELECT
+#define POLL_USE_EPOLL
 #include "poll.hpp"
 extern "C" {
 #include <signal.h>
@@ -7,11 +7,10 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <sys/resource.h>
-#include <sys/time.h>
 #include <fcntl.h>
 }
 #include <map>
+
 extern "C" {
   static void child_handler(int, siginfo_t *, void *)
   {
@@ -28,10 +27,8 @@ namespace ciut {
     }
 
     namespace timeout {
-      basic_enforcer::basic_enforcer(type t, unsigned timeout_ms)
+      basic_enforcer::basic_enforcer(type t, unsigned)
       {
-        rlimit r = { (timeout_ms + 1500) / 1000, (timeout_ms + 2500) / 1000 };
-        setrlimit(RLIMIT_CPU, &r);
         clock_gettime(t == realtime
                       ? CLOCK_MONOTONIC
                       : CLOCK_PROCESS_CPUTIME_ID,
@@ -86,6 +83,14 @@ namespace ciut {
       prev->next = this;
     }
 
+    void test_case_registrator::kill()
+    {
+      ::kill(pid_, SIGKILL);
+      death_note = true;
+      char msg[] = "Killed due to failed deadline";
+      test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
+    }
+
     void test_case_registrator::setup(pid_t pid, int in_fd, int out_fd)
     {
       pid_ = pid;
@@ -122,6 +127,20 @@ namespace ciut {
       assert(rv == sizeof(len));
 
       size_t bytes_read = 0;
+      if (t == comm::set_timeout)
+        {
+          assert(len == sizeof(deadline));
+          char *p = static_cast<char*>(static_cast<void*>(&deadline));
+          while (bytes_read < len)
+            {
+              rv = ::read(in_fd_, p + bytes_read, len - bytes_read);
+              if (rv == -1 && errno == EINTR) continue;
+              assert(rv > 0);
+              bytes_read += rv;
+            }
+          test_case_factory::set_deadline(this);
+          return true;
+        }
       char buff[len];
       while (bytes_read < len)
         {
@@ -264,9 +283,18 @@ namespace ciut {
 
   } // namespace implementation
 
-  void test_case_factory::introduce_name(pid_t pid, const std::string &name)
+
+  void test_case_factory
+  ::do_set_deadline(implementation::test_case_registrator *i)
   {
-    int pipe = obj().presenter_pipe;
+    deadlines.push_back(i);
+    std::push_heap(deadlines.begin(), deadlines.end(),
+                   &implementation::test_case_registrator::timeout_compare);
+  }
+
+  void test_case_factory::do_introduce_name(pid_t pid, const std::string &name)
+  {
+    int pipe = presenter_pipe;
     for (;;)
       {
         int rv = ::write(pipe, &pid, sizeof(pid));
@@ -288,12 +316,12 @@ namespace ciut {
       }
   }
 
-  void test_case_factory::present(pid_t pid,
-                                  comm::type t,
-                                  size_t len,
-                                  const char *buff)
+  void test_case_factory::do_present(pid_t pid,
+                                     comm::type t,
+                                     size_t len,
+                                     const char *buff)
   {
-    int pipe = obj().presenter_pipe;
+    int pipe = presenter_pipe;
     int rv = ::write(pipe, &pid, sizeof(pid));
     assert(rv == sizeof(pid));
     rv = ::write(pipe, &t, sizeof(t));
@@ -305,10 +333,10 @@ namespace ciut {
         rv = ::write(pipe, buff, len);
         assert(size_t(rv) == len);
       }
-    obj().num_failed_tests += (t == comm::exit_fail);
+    num_failed_tests += (t == comm::exit_fail);
     if (!tests_as_child_procs() && t == comm::exit_fail)
       {
-        obj().kill_presenter_process();
+        kill_presenter_process();
         exit(1);
       }
   }
@@ -338,17 +366,33 @@ namespace ciut {
             assert(messages.size() == 0);
             exit(0);
           }
+        assert(rv == sizeof(test_case_id));
         std::pair<std::string,std::string> &s = messages[test_case_id];
         if (s.first.length() == 0)
           {
             // introduction to test case, name follows
 
-            size_t len;
-            rv = ::read(presenter_pipe, &len, sizeof(len));
-            assert(size_t(rv) == sizeof(len));
+            size_t len = 0;
+            char *p = static_cast<char*>(static_cast<void*>(&len));
+            size_t bytes_read = 0;
+            while (bytes_read < sizeof(len))
+              {
+                rv = ::read(presenter_pipe,
+                            p + bytes_read,
+                            sizeof(len) - bytes_read);
+                assert(rv > 0);
+                bytes_read += rv;
+              }
             char buff[len];
-            rv = ::read(presenter_pipe, buff, len);
-            assert(size_t(rv) == len);
+            bytes_read = 0;
+            while (bytes_read < len)
+              {
+                rv = ::read(presenter_pipe,
+                            buff + bytes_read,
+                            len - bytes_read);
+                assert(rv >= 0);
+                bytes_read += rv;
+              }
             s.first = std::string(buff, len);
             continue;
           }
@@ -448,8 +492,16 @@ namespace ciut {
   {
     while (pending_children >= max_pending_children)
       {
-        using namespace implementation;
-        polltype::descriptor desc = poller.wait();
+        int timeout_ms = deadlines.size()
+          ? deadlines.front()->ms_until_deadline()
+          : -1;
+        implementation::polltype::descriptor desc = implementation::poller.wait(timeout_ms);
+        if (desc.timeout())
+          {
+            deadlines.front()->kill();
+            std::pop_heap(deadlines.begin(), deadlines.end());
+            deadlines.pop_back();
+          }
         bool read_failed = false;
         if (desc.read())
           {
@@ -461,6 +513,34 @@ namespace ciut {
             ++num_tests_run;
             if (!desc->failed()) desc->register_success();
             desc->unregister_fds();
+            for (size_t i = 0; i < deadlines.size(); ++i)
+              {
+                if (deadlines[i] == desc.get())
+                  {
+                    using namespace implementation;
+                    for (;;)
+                      {
+                        size_t n = (i+1)*2-1;
+                        if (n >= deadlines.size() - 1) break;
+                        if (test_case_registrator::timeout_compare(deadlines[n],
+                                                                   deadlines[n+1]))
+                          {
+                            deadlines[i] = deadlines[n];
+                          }
+                        else
+                          {
+                            deadlines[i] = deadlines[++n];
+                          }
+                        i = n;
+                      }
+                    deadlines[i] = deadlines.back();
+                    deadlines.pop_back();
+                    assert(std::__is_heap(deadlines.begin(),
+                                        deadlines.end(),
+                                        test_case_registrator::timeout_compare));
+                    break;
+                  }
+              }
             --pending_children;
           }
       }
@@ -548,7 +628,7 @@ namespace ciut {
             const char **names = ++p;
             if (*names && **names == '-')
               {
-                std::cerr << "-l must be followed by a (possibly empty) test case list\n";
+                std::cout << "-l must be followed by a (possibly empty) test case list\n";
                 return 1;
               }
             for (implementation::test_case_registrator *i = reg.next;
@@ -582,7 +662,6 @@ namespace ciut {
       }
     start_presenter_process();
     const char **names = p;
-
     for (;;)
       {
         bool progress = false;
