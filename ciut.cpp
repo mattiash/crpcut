@@ -535,9 +535,6 @@ namespace ciut {
                       }
                     deadlines[i] = deadlines.back();
                     deadlines.pop_back();
-                    assert(std::__is_heap(deadlines.begin(),
-                                        deadlines.end(),
-                                        test_case_registrator::timeout_compare));
                     break;
                   }
               }
