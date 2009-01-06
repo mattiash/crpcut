@@ -291,6 +291,7 @@ namespace ciut {
               }
             out << "Working dir not empty, renaming to " << test_case_factory::get_working_dir() << '/' << *this;
             ::rename(dirname.str().c_str(), myname.str().c_str());
+            t = comm::exit_failed;
           }
         test_case_factory::return_dir(dirnum);
       }
