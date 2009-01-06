@@ -1,4 +1,4 @@
-CXXFLAGS=-ggdb -Wall -Wextra
+CXXFLAGS=-ggdb -Wall -Wextra -Wno-variadic-macros -pipe
 
 testprog: unitt.o libciut.a
 	g++ $(CXXFLAGS) unitt.o -L . -lciut -lrt -o testprog

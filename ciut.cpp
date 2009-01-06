@@ -4,6 +4,7 @@
 extern "C" {
 #include <signal.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -58,8 +59,30 @@ namespace ciut {
             report(comm::exit_fail, os);
           }
       }
+
+    } // namespace timeout
+
+  } // namespace policies
+
+  namespace {
+
+    bool is_dir_empty(const char *name)
+    {
+      DIR *d = ::opendir(name);
+      assert(d);
+      dirent *ent;
+      bool empty = true;
+      while ((ent = readdir(d)) != 0 && empty)
+        {
+          if (strcmp(ent->d_name, ".") == 0 ||
+              strcmp(ent->d_name, "..") == 0)
+            continue;
+          empty = false;
+        }
+      ::closedir(d);
+      return empty;
     }
-  }
+  } // unnamed namespace
 
   namespace implementation {
 
@@ -94,7 +117,7 @@ namespace ciut {
 
     void test_case_registrator::clear_deadline()
     {
-      assert(deadline.tv_sec != 0);
+      assert(deadline_is_set());
       test_case_factory::clear_deadline(this);
       deadline.tv_sec = 0;
     }
@@ -115,6 +138,28 @@ namespace ciut {
       poller.del_fd(in_fd_);
       ::close(in_fd_);
       ::close(out_fd_);
+    }
+
+    void test_case_registrator::set_wd(int n)
+    {
+      dirnum = n;
+      std::ostringstream os;
+      os << n;
+      if (::mkdir(os.str().c_str(), 0700) != 0)
+        {
+          assert(errno == EEXIST);
+        }
+    }
+
+    void test_case_registrator::goto_wd() const
+    {
+      std::ostringstream os;
+      os << dirnum;
+      if (::chdir(os.str().c_str()) != 0)
+        {
+          report(comm::exit_fail, "couldn't chdir working dir");
+          assert("unreachable code reached" == 0);
+        }
     }
 
     bool test_case_registrator::read_report()
@@ -138,7 +183,7 @@ namespace ciut {
       if (t == comm::set_timeout)
         {
           assert(len == sizeof(deadline));
-          assert(deadline.tv_sec == 0);
+          assert(!deadline_is_set());
           char *p = static_cast<char*>(static_cast<void*>(&deadline));
           while (bytes_read < len)
             {
@@ -150,7 +195,7 @@ namespace ciut {
           do {
             rv = ::write(out_fd_, &len, sizeof(len));
           } while (rv == -1 && errno == EINTR);
-          assert(deadline.tv_sec > 0);
+          assert(deadline_is_set());
           test_case_factory::set_deadline(this);
           return true;
         }
@@ -178,7 +223,7 @@ namespace ciut {
       test_case_factory::present(pid_, t, len, buff);
       if (t == comm::exit_ok || t == comm::exit_fail)
         {
-          if (!death_note && deadline.tv_sec != 0)
+          if (!death_note && deadline_is_set())
             {
               clear_deadline();
             }
@@ -187,76 +232,7 @@ namespace ciut {
       return true;
     }
 
-    namespace {
 
-      void save_core_file(const siginfo_t& info, const std::string& newname)
-      {
-        static char core_pattern[PATH_MAX] = "core";
-        static int cpfd = 0;
-        if (cpfd == 0)
-          {
-            cpfd = ::open("/proc/sys/kernel/core_pattern", O_RDONLY);
-            if (cpfd > 0)
-              {
-                int num = ::read(cpfd, core_pattern, sizeof(core_pattern));
-                if (num > 1) core_pattern[num-1] = 0;
-                ::close(cpfd);
-              }
-          }
-        static char core_name[PATH_MAX];
-
-        const char *s = core_pattern;
-        char *d = core_name;
-        while (*s)
-          {
-            if (*s != '%')
-              {
-                *d++ = *s;
-              }
-            else
-              {
-                ++s;
-                switch (*s)
-                  {
-                  case 0:
-                    break;
-                  case '%':
-                    *d++='%';
-                    break;
-                  case 'p':
-                    d+=std::sprintf(d, "%u", info.si_pid);
-                    break;
-                  case 'u':
-                    d+=std::sprintf(d, "%u", info.si_uid);
-                    break;
-                  case 'g':
-                    break; // ignore for now
-                  case 's':
-                    d+=std::sprintf(d, "%u", info.si_status);
-                    break;
-                  case 't':
-                    d+=std::sprintf(d, "%u", (unsigned)time(NULL));
-                    break;
-                  case 'h':
-                    gethostname(d, core_name+PATH_MAX-d);
-                    while (*d)
-                      {
-                        ++d;
-                      }
-                    break;
-                  case 'c':
-                    break; // ignore for now
-                  default:
-                    ; // also ignore
-                  }
-              }
-            ++s;
-          }
-        *d = 0;
-        ::rename(core_name, newname.c_str());
-      }
-
-    } // unnamed namespace
 
     void test_case_registrator::manage_death()
     {
@@ -268,7 +244,7 @@ namespace ciut {
           assert(rv == 0);
           break;
         }
-      if (!death_note && deadline.tv_sec != 0)
+      if (!death_note && deadline_is_set())
         {
           clear_deadline();
         }
@@ -291,20 +267,33 @@ namespace ciut {
             }
           break;
         case CLD_DUMPED:
-          {
-            out << "Dumped core";
-            t = comm::exit_fail;
-            std::ostringstream newname;
-            newname << *this << ".core";
-            save_core_file(info, newname.str());
-            out << " - saving core file as "
-                << newname.str();
-          }
+          out << "Dumped core";
+          t = comm::exit_fail;
           break;
         default:
           out << "Died with unknown code=" << info.si_code;
           t = comm::exit_fail;
         }
+      {
+        std::ostringstream dirname;
+        dirname << dirnum;
+        if (!is_dir_empty(dirname.str().c_str()))
+          {
+            std::ostringstream myname;
+            myname << *this;
+            if (out.str().empty())
+              {
+                out << "FAILED - ";
+              }
+            else
+              {
+                out << "\n  ";
+              }
+            out << "Working dir not empty, renaming to " << test_case_factory::get_working_dir() << '/' << *this;
+            ::rename(dirname.str().c_str(), myname.str().c_str());
+          }
+        test_case_factory::return_dir(dirnum);
+      }
       if (!death_note)
         {
           const std::string &s = out.str();
@@ -319,7 +308,7 @@ namespace ciut {
   void test_case_factory
   ::do_set_deadline(implementation::test_case_registrator *i)
   {
-    assert(i->deadline.tv_sec != 0);
+    assert(i->deadline_is_set());
     deadlines.push_back(i);
     std::push_heap(deadlines.begin(), deadlines.end(),
                    &implementation::test_case_registrator::timeout_compare);
@@ -327,7 +316,7 @@ namespace ciut {
   void test_case_factory
   ::do_clear_deadline(implementation::test_case_registrator *i)
   {
-    assert(i->deadline.tv_sec != 0);
+    assert(i->deadline_is_set());
     for (size_t n = 0; n < deadlines.size(); ++n)
       {
         if (deadlines[n] == i)
@@ -356,6 +345,11 @@ namespace ciut {
     assert("clear deadline when none was ordered" == 0);
   }
 
+  void test_case_factory::do_return_dir(int num)
+  {
+    working_dirs[num] = first_free_working_dir;
+    first_free_working_dir = num;
+  }
   void test_case_factory::do_introduce_name(pid_t pid, const std::string &name)
   {
     int pipe = presenter_pipe;
@@ -520,6 +514,7 @@ namespace ciut {
 
   void test_case_factory::run_test_case(implementation::test_case_registrator *i) const
   {
+    i->goto_wd();
     test_case_base *p = 0;
     const char *msg = 0;
     try {
@@ -619,6 +614,11 @@ namespace ciut {
     int p2c[2];
     ::pipe(p2c);
 
+
+    int wd = first_free_working_dir;
+    first_free_working_dir = working_dirs[wd];
+    i->set_wd(wd);
+
     ::pid_t pid;
     for (;;)
       {
@@ -679,9 +679,9 @@ namespace ciut {
                 std::cout << "-l must be followed by a (possibly empty) test case list\n";
                 return 1;
               }
-            for (implementation::test_case_registrator *i = reg.next;
+            for (implementation::test_case_registrator *i = reg.get_next();
                  i != &reg;
-                 i = i->next)
+                 i = i->get_next())
               {
                 bool matched = !*names;
                 for (const char **name = names; !matched && *name; ++name)
@@ -696,7 +696,7 @@ namespace ciut {
           nodeps = true;
           break;
         default:
-          std::cout <<
+          std::cerr <<
             "Usage: " << argv[0] << " [flags] {testcases}\n"
             "  where flags can be:\n"
             "    -l           - list test cases\n"
@@ -708,12 +708,24 @@ namespace ciut {
         }
         ++p;
       }
+    if (!mkdtemp(dirbase))
+      {
+        std::cerr << argv[0] << ": failed to create working directory\n";
+        return 1;
+      }
+    if (chdir(dirbase) != 0)
+      {
+        std::cerr << argv[0] << ": couldn't move to working directori\n";
+        ::rmdir(dirbase);
+        return 1;
+      }
     start_presenter_process();
+
     const char **names = p;
     for (;;)
       {
         bool progress = false;
-        implementation::test_case_registrator *i = reg.next;
+        implementation::test_case_registrator *i = reg.get_next();
         unsigned count = 0;
         while (i != &reg)
           {
@@ -734,7 +746,7 @@ namespace ciut {
               }
             if (!nodeps && !i->can_run())
               {
-                i = i->next;
+                i = i->get_next();
                 continue;
               }
             start_test(i);
@@ -760,15 +772,30 @@ namespace ciut {
               << num_tests_run << " tests run ("
               << num_failed_tests  << " failed/"
               << num_tests_run - num_failed_tests << " OK)\n";
-    if (reg.next != &reg)
+    if (reg.get_next() != &reg)
       {
         std::cout << "Not run tests are:\n";
-        for (implementation::test_case_registrator *i = reg.next;
+        for (implementation::test_case_registrator *i = reg.get_next();
              i != &reg;
-             i = i->next)
+             i = i->get_next())
           {
             std::cout << "  " << *i << '\n';
           }
+      }
+    for (unsigned n = 0; n < max_parallel; ++n)
+      {
+        std::ostringstream name;
+        name << n;
+        ::rmdir(name.str().c_str());
+      }
+    if (!is_dir_empty("."))
+      {
+        std::cout << "Left over files are stored under " << dirbase << std::endl;
+      }
+    else
+      {
+        ::chdir("..");
+        ::rmdir(dirbase);
       }
     return num_failed_tests;
   }

@@ -460,31 +460,35 @@ namespace ciut {
         return ms;
       }
       void clear_deadline();
+      bool deadline_is_set() const { return deadline.tv_sec > 0; }
       static bool timeout_compare(const test_case_registrator *lh, const test_case_registrator *rh)
       {
         if (lh->deadline.tv_sec == rh->deadline.tv_sec)
           return lh->deadline.tv_nsec > rh->deadline.tv_nsec;
         return lh->deadline.tv_sec > rh->deadline.tv_sec;
       }
+      void unregister_fds();
+      test_case_registrator *get_next() const { return next; }
+      void set_wd(int n);
+      void goto_wd() const;
     protected:
       const char *name_;
-    private:
-      void unregister_fds();
-      virtual std::ostream &print_name(std::ostream &) const = 0;
       test_case_registrator() : next(this), prev(this)
       {
         deadline.tv_sec = 0;
       }
+    private:
+      virtual std::ostream &print_name(std::ostream &) const = 0;
       test_case_registrator *next;
       test_case_registrator *prev;
-      test_case_creator func_;
-      bool death_note;
-      int in_fd_;
-      int out_fd_;
-      pid_t pid_;
-      bool successful;
-      timespec deadline;
-      friend class ciut::test_case_factory;
+      test_case_creator      func_;
+      bool                   death_note;
+      int                    in_fd_;
+      int                    out_fd_;
+      pid_t                  pid_;
+      bool                   successful;
+      timespec               deadline;
+      int                    dirnum;
     };
 
   } // namespace implementation
@@ -518,6 +522,14 @@ namespace ciut {
     {
       obj().do_clear_deadline(i);
     }
+    static void return_dir(int num)
+    {
+      obj().do_return_dir(num);
+    }
+    static const char *get_working_dir()
+    {
+      return obj().do_get_working_dir();
+    }
   private:
     static test_case_factory& obj() { static test_case_factory f; return f; }
     test_case_factory()
@@ -527,8 +539,14 @@ namespace ciut {
         num_parallel(1),
         num_registered_tests(0),
         num_tests_run(0),
-        num_failed_tests(0)
+        num_failed_tests(0),
+        first_free_working_dir(0)
     {
+      std::strcpy(dirbase, "/tmp/ciutXXXXXX");
+      for (unsigned n = 0; n < max_parallel; ++n)
+        {
+          working_dirs[n] = n+1;
+        }
     }
     void start_presenter_process();
     void kill_presenter_process();
@@ -541,6 +559,8 @@ namespace ciut {
     void do_introduce_name(pid_t pid, const std::string &s);
     void do_set_deadline(implementation::test_case_registrator *i);
     void do_clear_deadline(implementation::test_case_registrator *i);
+    void do_return_dir(int num);
+    const char *do_get_working_dir() const { return dirbase; }
     friend class implementation::test_case_registrator;
 
     class registrator_list : public implementation::test_case_registrator
@@ -565,10 +585,12 @@ namespace ciut {
     pid_t            presenter_pid;
     int              presenter_pipe;
     timeout_queue    deadlines;
+    int              working_dirs[max_parallel];
+    int              first_free_working_dir;
+    char             dirbase[PATH_MAX];
   };
 
   namespace implementation {
-
 
     template <typename C, typename T>
     class test_wrapper;
