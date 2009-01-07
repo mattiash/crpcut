@@ -519,7 +519,7 @@ namespace ciut {
             if (!s.success || verbose_mode)
               {
                 std::cout << s.name << " - " << s.exit_cause << std::endl;
-                if (s.history.size() > 1)
+                if (s.history.size() > 1 || !s.success)
                   {
                     for (std::list<std::string>::iterator i = s.history.begin();
                          i != s.history.end();
