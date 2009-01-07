@@ -468,7 +468,7 @@ namespace ciut {
         test_case_result &s = messages[test_case_id];
 
         static const char * const header[] = {
-          "OK", "FAILED!", "<STDOUT>", "<STDERR>"
+          "", "", "<STDOUT> - ", "<STDERR> - "
         };
 
         comm::type t;
@@ -518,7 +518,7 @@ namespace ciut {
             }
             if (!s.success || verbose_mode)
               {
-                std::cout << s.name << " - " << s.exit_cause << std::endl;
+                std::cout << s.name << " - " << (s.success ? "OK\n" : "FAILED!\n");
                 if (s.history.size() > 1 || !s.success)
                   {
                     for (std::list<std::string>::iterator i = s.history.begin();
@@ -541,14 +541,11 @@ namespace ciut {
               rv = ::read(presenter_pipe, &len, sizeof(len));
               if (len)
                 {
-                  static const char separator[] = " - ";
-                  const size_t bufflen = len + sizeof(separator) - 1;
-                  char buff[bufflen];
+                  char buff[len];
 
-                  std::strcpy(buff, separator);
-                  rv = ::read(presenter_pipe, buff + sizeof(separator) - 1, len);
+                  rv = ::read(presenter_pipe, buff, len);
                   assert(size_t(rv) == len);
-                  report += std::string(buff, bufflen);
+                  report += std::string(buff, len);
                 }
               if (t == comm::exit_ok || t == comm::exit_fail)
                 {
