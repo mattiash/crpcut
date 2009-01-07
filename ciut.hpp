@@ -351,7 +351,13 @@ namespace ciut {
 
   namespace comm {
 
-    typedef enum { exit_ok, exit_fail, info, violation, set_timeout, cancel_timeout, introduce_name } type;
+    typedef enum {
+      exit_ok, exit_fail,
+      stdout, stderr,
+      set_timeout, cancel_timeout,
+      begin_test,
+      end_test
+    } type;
 
     // protocol is type -> size_t(length) -> char[length]. length may be 0.
     // reader acknowledges with length.
@@ -425,6 +431,51 @@ namespace ciut {
       namespace_info *parent;
     };
 
+    class test_case_registrator;
+    class fdreader
+    {
+    public:
+      bool read() { return do_read(fd); }
+      test_case_registrator *get_registrator() const { return reg; }
+      void close() { if (fd) { ::close(fd); } unregister(); }
+      void unregister();
+    protected:
+      fdreader(test_case_registrator *r, int fd_ = 0) : reg(r), fd(fd_) {}
+      void set_fd(int fd_);
+      test_case_registrator *const reg;
+    private:
+      virtual bool do_read(int fd) = 0;
+      int fd;
+    };
+
+    template <comm::type t>
+    class reader : public fdreader
+    {
+    public:
+      reader(test_case_registrator *r, int fd = 0) : fdreader(r, fd) {}
+      void set_fd(int fd)
+      {
+        fdreader::set_fd(fd);
+      }
+
+    private:
+      virtual bool do_read(int fd);
+    };
+
+    class report_reader : public fdreader
+    {
+    public:
+      report_reader(test_case_registrator *r) : fdreader(r) {}
+      void set_fds(int in_fd, int out_fd)
+      {
+        fdreader::set_fd(in_fd);
+        response_fd = out_fd;
+      }
+    private:
+      virtual bool do_read(int fd);
+      int response_fd;
+    };
+
     class test_case_registrator : public virtual policies::deaths::none,
                                   public virtual policies::dependencies::base
     {
@@ -440,14 +491,14 @@ namespace ciut {
       bool failed() const { return !successful; }
       virtual bool match_name(const char *name) const = 0;
       test_case_base *instantiate_obj() const { return &func_(); }
-      void setup(pid_t pid, int in_fd, int out_fd);
+      void setup(pid_t pid, int in_fd, int out_fd, int stdout_fd, int stderr_fd);
       void manage_death();
       test_case_registrator *unlink() {
         next->prev = prev;
         prev->next = next;
         return next;
       }
-      bool read_report(); // true if read succeeded
+      //      bool read_report(); // true if read succeeded
       void kill();
       int ms_until_deadline() const
       {
@@ -471,24 +522,40 @@ namespace ciut {
       test_case_registrator *get_next() const { return next; }
       void set_wd(int n);
       void goto_wd() const;
+      pid_t get_pid() const { return pid_; }
+      bool has_active_readers() const { return active_readers > 0U; }
+      void deactivate_reader() { --active_readers; }
+      void activate_reader() { ++active_readers; }
     protected:
       const char *name_;
-      test_case_registrator() : next(this), prev(this)
+      test_case_registrator()
+        : next(this),
+          prev(this),
+          active_readers(0),
+          death_note(false),
+          rep_reader(0),
+          stdout_reader(0),
+          stderr_reader(0)
       {
         deadline.tv_sec = 0;
       }
     private:
       virtual std::ostream &print_name(std::ostream &) const = 0;
+
       test_case_registrator *next;
       test_case_registrator *prev;
       test_case_creator      func_;
+      unsigned               active_readers;
       bool                   death_note;
-      int                    in_fd_;
-      int                    out_fd_;
       pid_t                  pid_;
       bool                   successful;
       timespec               deadline;
       int                    dirnum;
+      report_reader          rep_reader;
+      reader<comm::stdout>   stdout_reader;
+      reader<comm::stderr>   stderr_reader;
+
+      friend class report_reader;
     };
 
   } // namespace implementation
@@ -591,6 +658,30 @@ namespace ciut {
   };
 
   namespace implementation {
+
+    template <comm::type t>
+    bool reader<t>::do_read(int fd)
+    {
+      static char buff[1024];
+      for (;;)
+        {
+          int rv = ::read(fd, buff, sizeof(buff));
+          if (rv == 0) return false;
+          if (rv == -1)
+            {
+              int n = errno;
+              assert(n == EINTR);
+            }
+          if (!reg->has_obituary())
+            {
+              test_case_factory::present(reg->get_pid(),
+                                         t,
+                                         rv,
+                                         buff);
+            }
+          return true;
+        }
+    }
 
     template <typename C, typename T>
     class test_wrapper;

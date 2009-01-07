@@ -297,6 +297,21 @@ TESTSUITE(timeouts)
       sleep(3);
     }
 }
+TESTSUITE(stderr_and_stdout)
+{
+  TEST(should_succeed_with_stdout)
+  {
+    std::cout << "hello" << std::flush;
+  }
+  TEST(should_succeed_with_stderr)
+  {
+    std::cerr << "hello";
+  }
+  TEST(should_succeed_with_assert_on_stderr, NO_CORE_FILE, EXPECT_SIGNAL_DEATH(SIGABRT))
+  {
+    assert("apa" == 0);
+  }
+}
 int main(int argc, const char *argv[])
 {
   return ciut::test_case_factory::run_test(argc, argv);

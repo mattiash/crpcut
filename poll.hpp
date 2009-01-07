@@ -35,9 +35,9 @@ struct polldata
   }
   std::pair<int, void*> access[N];
   size_t num_subscribers;
+  size_t pending_fds;
   fd_set rset;
   fd_set xset;
-  size_t pending_fds;
 
   static const int readbit = 1;
   static const int hupbit = 2;
@@ -109,7 +109,7 @@ inline void poll<T, N>::del_fd(int fd)
       if (data.access[i].first == fd)
         {
           data.access[i] = data.access[--data.num_subscribers];
-          if (FD_ISSET(fd, &data.rset) && FD_ISSET(fd, &data.xset))
+          if (FD_ISSET(fd, &data.rset) || FD_ISSET(fd, &data.xset))
             {
               FD_CLR(fd, &data.rset);
               FD_CLR(fd, &data.xset);

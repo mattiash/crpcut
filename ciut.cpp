@@ -11,7 +11,7 @@ extern "C" {
 #include <fcntl.h>
 }
 #include <map>
-
+#include <list>
 extern "C" {
   static void child_handler(int, siginfo_t *, void *)
   {
@@ -86,10 +86,98 @@ namespace ciut {
 
   namespace implementation {
 
-    typedef poll<test_case_registrator,
-                 test_case_factory::max_parallel> polltype;
+    typedef poll<fdreader,
+                 test_case_factory::max_parallel*3> polltype;
 
     polltype poller;
+
+    void fdreader::set_fd(int fd_)
+    {
+      assert(fd == 0);
+      assert(reg != 0);
+      fd = fd_;
+      poller.add_fd(fd, this);
+      reg->activate_reader();
+    }
+
+    void fdreader::unregister()
+    {
+      assert(fd != 0);
+      assert(reg != 0);
+      reg->deactivate_reader();
+      poller.del_fd(fd);
+      fd = 0;
+    }
+
+    bool report_reader::do_read(int fd)
+    {
+      comm::type t;
+      int rv;
+      do {
+        rv = ::read(fd, &t, sizeof(t));
+      } while (rv == -1 && errno == EINTR);
+      if (rv == 0) return false; // eof
+      assert(rv == sizeof(t));
+      reg->successful |= t == comm::exit_ok;
+
+      size_t len = 0;
+      do {
+        rv = ::read(fd, &len, sizeof(len));
+      } while (rv == -1 && errno == EINTR);
+      assert(rv == sizeof(len));
+
+      size_t bytes_read = 0;
+      if (t == comm::set_timeout)
+        {
+          assert(len == sizeof(reg->deadline));
+          assert(!reg->deadline_is_set());
+          char *p = static_cast<char*>(static_cast<void*>(&reg->deadline));
+          while (bytes_read < len)
+            {
+              rv = ::read(fd, p + bytes_read, len - bytes_read);
+              if (rv == -1 && errno == EINTR) continue;
+              assert(rv > 0);
+              bytes_read += rv;
+            }
+          do {
+            rv = ::write(response_fd, &len, sizeof(len));
+          } while (rv == -1 && errno == EINTR);
+          assert(reg->deadline_is_set());
+          test_case_factory::set_deadline(reg);
+          return true;
+        }
+      if (t == comm::cancel_timeout)
+        {
+          assert(len == 0);
+          reg->clear_deadline();
+          do {
+            rv = ::write(response_fd, &len, sizeof(len));
+          } while (rv == -1 && errno == EINTR);
+          return true;
+        }
+      char buff[len];
+      while (bytes_read < len)
+        {
+          rv = ::read(fd, buff + bytes_read, len - bytes_read);
+          if (rv == 0) break;
+          if (rv == -1 && errno == EINTR) continue;
+          assert(rv > 0);
+          bytes_read += rv;
+        }
+      do {
+        rv = ::write(response_fd, &len, sizeof(len));
+      } while (rv == -1 && errno == EINTR);
+      test_case_factory::present(reg->get_pid(), t, len, buff);
+      if (t == comm::exit_ok || t == comm::exit_fail)
+        {
+          if (!reg->death_note && reg->deadline_is_set())
+            {
+              reg->clear_deadline();
+            }
+          reg->death_note = true;
+        }
+      return true;
+    }
 
 
     test_case_registrator
@@ -100,7 +188,10 @@ namespace ciut {
         prev(test_case_factory::obj().reg.prev),
         func_(func),
         death_note(false),
-        successful(false)
+        successful(false),
+        rep_reader(this),
+        stdout_reader(this),
+        stderr_reader(this)
     {
       test_case_factory::obj().reg.prev = this;
       prev->next = this;
@@ -122,24 +213,24 @@ namespace ciut {
       deadline.tv_sec = 0;
     }
 
-    void test_case_registrator::setup(pid_t pid, int in_fd, int out_fd)
+    void test_case_registrator::setup(pid_t pid, int in_fd, int out_fd, int stdout_fd, int stderr_fd)
     {
       pid_ = pid;
-      in_fd_ = in_fd;
-      out_fd_ = out_fd;
-      poller.add_fd(in_fd, this);
+      stdout_reader.set_fd(stdout_fd);
+      stderr_reader.set_fd(stderr_fd);
+      rep_reader.set_fds(in_fd, out_fd);
       std::ostringstream os;
       os << *this;
       test_case_factory::introduce_name(pid, os.str());
     }
-
+#if 0
     void test_case_registrator::unregister_fds()
     {
-      poller.del_fd(in_fd_);
-      ::close(in_fd_);
-      ::close(out_fd_);
+      stdout_reader.unregister();
+      stderr_reader.unregister();
+      rep_reader.close();
     }
-
+#endif
     void test_case_registrator::set_wd(int n)
     {
       dirnum = n;
@@ -162,77 +253,6 @@ namespace ciut {
         }
     }
 
-    bool test_case_registrator::read_report()
-    {
-      comm::type t;
-      int rv;
-      do {
-        rv = ::read(in_fd_, &t, sizeof(t));
-      } while (rv == -1 && errno == EINTR);
-      if (rv == 0) return false; // eof
-      assert(rv == sizeof(t));
-      successful |= t == comm::exit_ok;
-
-      size_t len = 0;
-      do {
-        rv = ::read(in_fd_, &len, sizeof(len));
-      } while (rv == -1 && errno == EINTR);
-      assert(rv == sizeof(len));
-
-      size_t bytes_read = 0;
-      if (t == comm::set_timeout)
-        {
-          assert(len == sizeof(deadline));
-          assert(!deadline_is_set());
-          char *p = static_cast<char*>(static_cast<void*>(&deadline));
-          while (bytes_read < len)
-            {
-              rv = ::read(in_fd_, p + bytes_read, len - bytes_read);
-              if (rv == -1 && errno == EINTR) continue;
-              assert(rv > 0);
-              bytes_read += rv;
-            }
-          do {
-            rv = ::write(out_fd_, &len, sizeof(len));
-          } while (rv == -1 && errno == EINTR);
-          assert(deadline_is_set());
-          test_case_factory::set_deadline(this);
-          return true;
-        }
-      if (t == comm::cancel_timeout)
-        {
-          assert(len == 0);
-          clear_deadline();
-          do {
-            rv = ::write(out_fd_, &len, sizeof(len));
-          } while (rv == -1 && errno == EINTR);
-          return true;
-        }
-      char buff[len];
-      while (bytes_read < len)
-        {
-          rv = ::read(in_fd_, buff + bytes_read, len - bytes_read);
-          if (rv == 0) break;
-          if (rv == -1 && errno == EINTR) continue;
-          assert(rv > 0);
-          bytes_read += rv;
-        }
-      do {
-        rv = ::write(out_fd_, &len, sizeof(len));
-      } while (rv == -1 && errno == EINTR);
-      test_case_factory::present(pid_, t, len, buff);
-      if (t == comm::exit_ok || t == comm::exit_fail)
-        {
-          if (!death_note && deadline_is_set())
-            {
-              clear_deadline();
-            }
-          death_note = true;
-        }
-      return true;
-    }
-
-
 
     void test_case_registrator::manage_death()
     {
@@ -240,7 +260,8 @@ namespace ciut {
       for (;;)
         {
           int rv = ::waitid(P_PID, pid_, &info, WEXITED);
-          if (rv == -1 && errno == EINTR) continue;
+          int n = errno;
+          if (rv == -1 && n == EINTR) continue;
           assert(rv == 0);
           break;
         }
@@ -291,7 +312,7 @@ namespace ciut {
               }
             out << "Working dir not empty, renaming to " << test_case_factory::get_working_dir() << '/' << *this;
             ::rename(dirname.str().c_str(), myname.str().c_str());
-            t = comm::exit_failed;
+            t = comm::exit_fail;
           }
         test_case_factory::return_dir(dirnum);
       }
@@ -301,8 +322,8 @@ namespace ciut {
           test_case_factory::present(pid_, t, s.length(), s.c_str());
           death_note = true;
         }
+      test_case_factory::present(pid_, comm::end_test, 0, 0);
     }
-
   } // namespace implementation
 
 
@@ -360,7 +381,7 @@ namespace ciut {
         if (rv == sizeof(pid)) break;
         assert (rv == -1 && errno == EINTR);
       }
-    const comm::type t = comm::introduce_name;
+    const comm::type t = comm::begin_test;
     for (;;)
       {
         int rv = ::write(pipe, &t, sizeof(t));
@@ -408,6 +429,15 @@ namespace ciut {
       }
   }
 
+  namespace {
+    struct test_case_result
+    {
+      bool                   success;
+      std::string            name;
+      std::string            exit_cause;
+      std::list<std::string> history;
+    };
+  }
   void test_case_factory::start_presenter_process()
   {
     int fds[2];
@@ -423,7 +453,8 @@ namespace ciut {
       }
     presenter_pipe = fds[0];
     ::close(fds[1]);
-    std::map<pid_t, std::pair<std::string, std::string> > messages;
+
+    std::map<pid_t, test_case_result> messages;
     for (;;)
       {
         pid_t test_case_id;
@@ -434,67 +465,101 @@ namespace ciut {
             exit(0);
           }
         assert(rv == sizeof(test_case_id));
-        std::pair<std::string,std::string> &s = messages[test_case_id];
+        test_case_result &s = messages[test_case_id];
 
         static const char * const header[] = {
-          "OK", "FAILED!", "INFO", "WARNING"
+          "OK", "FAILED!", "<STDOUT>", "<STDERR>"
         };
 
         comm::type t;
         rv = ::read(presenter_pipe, &t, sizeof(t));
         assert(rv == sizeof(t));
 
-        if (t == comm::introduce_name)
+        switch (t)
           {
-            assert(s.first.length() == 0);
+          case comm::begin_test:
+            {
+              assert(s.name.length() == 0);
+              assert(s.exit_cause.length() == 0);
+              assert(s.history.size() == 0);
 
-            // introduction to test case, name follows
+              // introduction to test case, name follows
 
-            size_t len = 0;
-            char *p = static_cast<char*>(static_cast<void*>(&len));
-            size_t bytes_read = 0;
-            while (bytes_read < sizeof(len))
+              size_t len = 0;
+              char *p = static_cast<char*>(static_cast<void*>(&len));
+              size_t bytes_read = 0;
+              while (bytes_read < sizeof(len))
+                {
+                  rv = ::read(presenter_pipe,
+                              p + bytes_read,
+                              sizeof(len) - bytes_read);
+                  assert(rv > 0);
+                  bytes_read += rv;
+                }
+              char buff[len];
+              bytes_read = 0;
+              while (bytes_read < len)
+                {
+                  rv = ::read(presenter_pipe,
+                              buff + bytes_read,
+                              len - bytes_read);
+                  assert(rv >= 0);
+                  bytes_read += rv;
+                }
+              s.name.assign(buff, len);
+            }
+            break;
+          case comm::end_test:
+            {
+              size_t len;
+              rv = ::read(presenter_pipe, &len, sizeof(len));
+              assert(rv == sizeof(len));
+              assert(len == 0);
+            }
+            if (!s.success || verbose_mode)
               {
-                rv = ::read(presenter_pipe,
-                            p + bytes_read,
-                            sizeof(len) - bytes_read);
-                assert(rv > 0);
-                bytes_read += rv;
+                std::cout << s.name << " - " << s.exit_cause << std::endl;
+                if (s.history.size() > 1)
+                  {
+                    for (std::list<std::string>::iterator i = s.history.begin();
+                         i != s.history.end();
+                         ++i)
+                      {
+                        std::cout << "  " << *i << '\n';
+                      }
+                  }
               }
-            char buff[len];
-            bytes_read = 0;
-            while (bytes_read < len)
-              {
-                rv = ::read(presenter_pipe,
-                            buff + bytes_read,
-                            len - bytes_read);
-                assert(rv >= 0);
-                bytes_read += rv;
-              }
-            s.first = std::string(buff, len);
-            continue;
-          }
-        s.second += header[t];
-        size_t len;
-        rv = ::read(presenter_pipe, &len, sizeof(len));
-        if (len)
-          {
-            static const char separator[] = " - ";
-            const size_t bufflen = len + sizeof(separator) - 1;
-            char buff[bufflen];
-
-            std::strcpy(buff, separator);
-            rv = ::read(presenter_pipe, buff + sizeof(separator) - 1, len);
-            assert(size_t(rv) == len);
-            s.second += std::string(buff, bufflen);
-          }
-        if ((t == comm::exit_ok && verbose_mode) || t == comm::exit_fail)
-          {
-            std::cout << s.first << " - " << s.second << std::endl;
-          }
-        if (t == comm::exit_ok || t == comm::exit_fail)
-          {
             messages.erase(test_case_id);
+            break;
+          case comm::stdout:
+          case comm::stderr:
+          case comm::exit_ok:
+          case comm::exit_fail:
+            {
+              std::string report(header[t]);
+              size_t len;
+              rv = ::read(presenter_pipe, &len, sizeof(len));
+              if (len)
+                {
+                  static const char separator[] = " - ";
+                  const size_t bufflen = len + sizeof(separator) - 1;
+                  char buff[bufflen];
+
+                  std::strcpy(buff, separator);
+                  rv = ::read(presenter_pipe, buff + sizeof(separator) - 1, len);
+                  assert(size_t(rv) == len);
+                  report += std::string(buff, bufflen);
+                }
+              if (t == comm::exit_ok || t == comm::exit_fail)
+                {
+                  s.exit_cause.assign(report, 0, report.find('\n'));
+                  s.success = t == comm::exit_ok;
+                }
+              s.history.push_back(report);
+            }
+            break;
+          default:
+            assert("unreachable code reached" == 0);
           }
       }
     assert("unreachable code reached" == 0);
@@ -577,15 +642,19 @@ namespace ciut {
         bool read_failed = false;
         if (desc.read())
           {
-            read_failed = !desc->read_report();
+            read_failed = !desc->read();
           }
         if (read_failed || desc.hup())
           {
-            desc->manage_death();
-            ++num_tests_run;
-            if (!desc->failed()) desc->register_success();
-            desc->unregister_fds();
-            --pending_children;
+            desc->unregister();
+            implementation::test_case_registrator *r = desc->get_registrator();
+            if (!r->has_active_readers())
+              {
+                r->manage_death();
+                ++num_tests_run;
+                if (!r->failed()) r->register_success();
+                --pending_children;
+              }
           }
       }
   }
@@ -614,7 +683,10 @@ namespace ciut {
     ::pipe(c2p);
     int p2c[2];
     ::pipe(p2c);
-
+    int stderr[2];
+    ::pipe(stderr);
+    int stdout[2];
+    ::pipe(stdout);
 
     int wd = first_free_working_dir;
     first_free_working_dir = working_dirs[wd];
@@ -632,6 +704,12 @@ namespace ciut {
       {
         ::sigaction(SIGCHLD, &old_action, 0);
         comm::report.set_fds(p2c[0], c2p[1]);
+        ::dup2(stdout[1], 1);
+        ::dup2(stderr[1], 2);
+        ::close(stdout[0]);
+        ::close(stderr[0]);
+        ::close(stdout[1]);
+        ::close(stderr[1]);
         ::close(p2c[1]);
         ::close(c2p[0]);
         run_test_case(i);
@@ -641,9 +719,11 @@ namespace ciut {
 
     // parent
     ++pending_children;
-    i->setup(pid, c2p[0], p2c[1]);
+    i->setup(pid, c2p[0], p2c[1], stdout[0], stderr[0]);
     ::close(c2p[1]);
     ::close(p2c[0]);
+    ::close(stdout[1]);
+    ::close(stderr[1]);
     manage_children(num_parallel);
   }
 
@@ -868,6 +948,8 @@ namespace ciut {
         if (!terminal) return;
         os.~ostringstream(); // man, this is ugly, but _Exit() causes leaks
       }
+      std::cout.flush();
+      std::cerr.flush();
       _Exit(0);
     }
 
