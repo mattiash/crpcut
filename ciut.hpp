@@ -498,7 +498,6 @@ namespace ciut {
         prev->next = next;
         return next;
       }
-      //      bool read_report(); // true if read succeeded
       void kill();
       int ms_until_deadline() const
       {

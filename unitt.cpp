@@ -301,7 +301,7 @@ TESTSUITE(stderr_and_stdout)
 {
   TEST(should_succeed_with_stdout)
   {
-    std::cout << "hello" << std::flush;
+    std::cout << "hello";
   }
   TEST(should_succeed_with_stderr)
   {

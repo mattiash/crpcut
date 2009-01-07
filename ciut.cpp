@@ -923,6 +923,7 @@ namespace ciut {
           test_case_factory::present(pid_t(), t, s.length(), os.str().c_str());
           return;
         }
+      std::cout << std::flush;
       write(t);
       {
         const std::string &s = os.str();
@@ -945,8 +946,6 @@ namespace ciut {
         if (!terminal) return;
         os.~ostringstream(); // man, this is ugly, but _Exit() causes leaks
       }
-      std::cout.flush();
-      std::cerr.flush();
       _Exit(0);
     }
 
