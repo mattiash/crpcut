@@ -724,7 +724,7 @@ namespace ciut {
     manage_children(num_parallel);
   }
 
-  unsigned test_case_factory::do_run(int, const char *argv[])
+  unsigned test_case_factory::do_run(int, const char *argv[], std::ostream &os)
   {
     const char **p = argv+1;
     while (const char *param = *p)
@@ -740,7 +740,7 @@ namespace ciut {
             std::istringstream is(*p);
             if (!(is >> num_parallel) || num_parallel > max_parallel)
               {
-                std::cout
+                os
                   << "num child processes must be a positive integer no greater than "
                   << max_parallel
                   << "\nA value of 0 means test cases are executed in the parent process"
@@ -754,7 +754,7 @@ namespace ciut {
             const char **names = ++p;
             if (*names && **names == '-')
               {
-                std::cout << "-l must be followed by a (possibly empty) test case list\n";
+                os << "-l must be followed by a (possibly empty) test case list\n";
                 return 1;
               }
             for (implementation::test_case_registrator *i = reg.get_next();
@@ -774,7 +774,7 @@ namespace ciut {
           nodeps = true;
           break;
         default:
-          std::cerr <<
+          os <<
             "Usage: " << argv[0] << " [flags] {testcases}\n"
             "  where flags can be:\n"
             "    -l           - list test cases\n"
@@ -788,12 +788,12 @@ namespace ciut {
       }
     if (!mkdtemp(dirbase))
       {
-        std::cerr << argv[0] << ": failed to create working directory\n";
+        os << argv[0] << ": failed to create working directory\n";
         return 1;
       }
     if (chdir(dirbase) != 0)
       {
-        std::cerr << argv[0] << ": couldn't move to working directori\n";
+        os << argv[0] << ": couldn't move to working directori\n";
         ::rmdir(dirbase);
         return 1;
       }

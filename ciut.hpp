@@ -564,9 +564,9 @@ namespace ciut {
   public:
     static const unsigned max_parallel = 8;
 
-    static unsigned run_test(int argc, const char *argv[])
+    static unsigned run_test(int argc, const char *argv[], std::ostream &os = std::cerr)
     {
-      return obj().do_run(argc, argv);
+      return obj().do_run(argc, argv, os);
     }
     static void introduce_name(pid_t pid, const std::string &s)
     {
@@ -620,7 +620,7 @@ namespace ciut {
     void run_test_case(implementation::test_case_registrator *i) const;
     void start_test(implementation::test_case_registrator *i);
 
-    unsigned do_run(int argc, const char *argv[]);
+    unsigned do_run(int argc, const char *argv[], std::ostream &os);
     void do_present(pid_t pid, comm::type t, size_t len, const char *buff);
     void do_introduce_name(pid_t pid, const std::string &s);
     void do_set_deadline(implementation::test_case_registrator *i);
