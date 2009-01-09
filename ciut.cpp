@@ -12,11 +12,6 @@ extern "C" {
 }
 #include <map>
 #include <list>
-extern "C" {
-  static void child_handler(int, siginfo_t *, void *)
-  {
-  }
-}
 
 namespace ciut {
 
@@ -538,29 +533,27 @@ namespace ciut {
                 bool history_print = false;
                 std::cout << "    <test name=\"" << s.name
                           << "\" result=\"" << (s.success ? "OK" : "FAILED") << '"';
-                if (s.history.size() > 1 || !s.success)
+
+                for (std::list<std::string>::iterator i = s.history.begin();
+                     i != s.history.end();
+                     ++i)
                   {
-                    for (std::list<std::string>::iterator i = s.history.begin();
-                         i != s.history.end();
-                         ++i)
+                    bool prev_ended = true;
+                    std::string &s = *i;
+                    for (std::string::size_type prevpos = 0, endpos = 0;
+                         ;
+                         prevpos = endpos + 1)
                       {
-                        bool prev_ended = true;
-                        std::string &s = *i;
-                        for (std::string::size_type prevpos = 0, endpos = 0;
-                             ;
-                             prevpos = endpos + 1)
+                        if (!history_print)
                           {
-                            if (!history_print)
-                              {
-                                std::cout  << ">\n";
-                                history_print = true;
-                              }
-                            endpos = s.find('\n', prevpos);
-                            if (endpos == std::string::npos) break;
-                            static const char *prefix[] = { "", "      " };
-                            std::cout << prefix[prev_ended] << std::string(s, prevpos, endpos - prevpos) << "\n";
-                            prev_ended = s[endpos-1] == '>';
+                            std::cout  << ">\n";
+                            history_print = true;
                           }
+                        endpos = s.find('\n', prevpos);
+                        if (endpos == std::string::npos) break;
+                        static const char *prefix[] = { "", "      " };
+                        std::cout << prefix[prev_ended] << std::string(s, prevpos, endpos - prevpos) << "\n";
+                        prev_ended = s[endpos-1] == '>';
                       }
                   }
                 if (history_print)
@@ -574,10 +567,11 @@ namespace ciut {
               }
             messages.erase(test_case_id);
             break;
-          case comm::stdout:
-          case comm::stderr:
           case comm::exit_ok:
           case comm::exit_fail:
+            s.success = t == comm::exit_ok; // fallthrough
+          case comm::stdout:
+          case comm::stderr:
             {
               size_t len;
               rv = ::read(presenter_pipe, &len, sizeof(len));
@@ -590,7 +584,6 @@ namespace ciut {
 
                   if (t == comm::exit_ok || t == comm::exit_fail)
                     {
-                      s.success = t == comm::exit_ok;
                       s.history.push_back(std::string(buff, len));
                     }
                   else
@@ -738,14 +731,7 @@ namespace ciut {
         if (!i->failed()) i->register_success();
         return;
       }
-    struct sigaction action, old_action;
-    static bool sighandler_registered = false;
-    if (!sighandler_registered)
-      {
-        memset(&action, 0, sizeof action);
-        action.sa_sigaction = child_handler;
-        ::sigaction(SIGCHLD, &action, &old_action);
-      }
+
     int c2p[2];
     ::pipe(c2p);
     int p2c[2];
@@ -769,7 +755,6 @@ namespace ciut {
     if (pid < 0) return;
     if (pid == 0) // child
       {
-        ::sigaction(SIGCHLD, &old_action, 0);
         comm::report.set_fds(p2c[0], c2p[1]);
         ::dup2(stdout[1], 1);
         ::dup2(stderr[1], 2);
@@ -867,7 +852,6 @@ namespace ciut {
         ::rmdir(dirbase);
         return 1;
       }
-    start_presenter_process();
     {
       static char time_string[] = "2009-01-09T23:59:59";
       time_t now = ::time(0);
@@ -890,6 +874,7 @@ namespace ciut {
         "\" name=\"" << argv[0] << "\">\n" << std::flush;
     }
 
+    start_presenter_process();
     const char **names = p;
     for (;;)
       {

@@ -610,6 +610,7 @@ namespace ciut {
       test_case_registrator *get_registrator() const { return reg; }
       void close() { if (fd) { ::close(fd); } unregister(); }
       void unregister();
+      virtual ~fdreader() {} // silence gcc, it's really not needed
     protected:
       fdreader(test_case_registrator *r, int fd_ = 0) : reg(r), fd(fd_) {}
       void set_fd(int fd_);
