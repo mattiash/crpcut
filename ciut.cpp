@@ -54,8 +54,21 @@ namespace ciut {
         if (ms > timeout_ms)
           {
             std::ostringstream os;
-            os << "Timeout time " << timeout_ms
-               << "ms exceeded. Actual time was " << ms << "ms";
+            CIUT_XML_TAG(timeout, os)
+              {
+                CIUT_XML_TAG(type, timeout)
+                  {
+                    type << (t == realtime ? "realtime" : "cputime");
+                  }
+                CIUT_XML_TAG(max_ms, timeout)
+                  {
+                    max_ms << timeout_ms;
+                  }
+                CIUT_XML_TAG(actual_ms, timeout)
+                  {
+                    actual_ms << ms;
+                  }
+              }
             report(comm::exit_fail, os);
           }
       }
@@ -202,7 +215,7 @@ namespace ciut {
       ::kill(pid_, SIGKILL);
       death_note = true;
       deadline.tv_sec = 0;
-      char msg[] = "Killed due to failed deadline";
+      char msg[] = "<timeout action=\"killed\"/>\n";
       test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
     }
 
@@ -271,57 +284,64 @@ namespace ciut {
         }
       comm::type t = comm::exit_ok;
       std::ostringstream out;
-      switch (info.si_code)
+      CIUT_XML_TAG(termination, out)
         {
-        case CLD_EXITED:
-          if (!(successful |= is_expected_exit(info.si_status)))
+          switch (info.si_code)
             {
-              out << "Unexpectedly exited with status = " << info.si_status;
+            case CLD_EXITED:
+              if (!(successful |= is_expected_exit(info.si_status)))
+                {
+                  CIUT_XML_TAG(exit, termination,
+                               xml::attr("code", info.si_status));
+
+                  t = comm::exit_fail;
+                }
+              break;
+            case CLD_KILLED:
+              if (!(successful |= is_expected_signal(info.si_status)))
+                {
+                  CIUT_XML_TAG(signal, termination,
+                               xml::attr("number", info.si_status));
+                  t = comm::exit_fail;
+                }
+              break;
+            case CLD_DUMPED:
+              CIUT_XML_TAG(core_dump, termination);
+              t = comm::exit_fail;
+              break;
+            default:
+              CIUT_XML_TAG(unknown_reason, termination,
+                           xml::attr("code", info.si_code));
               t = comm::exit_fail;
             }
-          break;
-        case CLD_KILLED:
-          if (!(successful |= is_expected_signal(info.si_status)))
-            {
-              out << "Died on signal " << info.si_status;
-              t = comm::exit_fail;
-            }
-          break;
-        case CLD_DUMPED:
-          out << "Dumped core";
-          t = comm::exit_fail;
-          break;
-        default:
-          out << "Died with unknown code=" << info.si_code;
-          t = comm::exit_fail;
         }
-      {
-        std::ostringstream dirname;
-        dirname << dirnum;
-        if (!is_dir_empty(dirname.str().c_str()))
-          {
-            std::ostringstream myname;
-            myname << *this;
-            if (out.str().empty())
-              {
-                out << "FAILED - ";
-              }
-            else
-              {
-                out << "\n  ";
-              }
-            out << "Working dir not empty, renaming to " << test_case_factory::get_working_dir() << '/' << *this;
-            ::rename(dirname.str().c_str(), myname.str().c_str());
-            t = comm::exit_fail;
-          }
-        test_case_factory::return_dir(dirnum);
-      }
       if (!death_note)
         {
           const std::string &s = out.str();
           test_case_factory::present(pid_, t, s.length(), s.c_str());
           death_note = true;
         }
+      {
+        std::ostringstream dirname;
+        dirname << dirnum;
+        std::ostringstream tcname;
+        tcname << *this;
+        if (!is_dir_empty(dirname.str().c_str()))
+          {
+            std::ostringstream msg;
+            CIUT_XML_TAG(remaining_files, msg)
+              {
+                CIUT_XML_TAG(directory, remaining_files)
+                  {
+                    directory << test_case_factory::get_working_dir() << '/' << tcname.str();
+                  }
+              }
+            ::rename(dirname.str().c_str(), tcname.str().c_str());
+            const std::string &s = msg.str();
+            test_case_factory::present(pid_, comm::exit_fail, s.length(), s.c_str());
+          }
+        test_case_factory::return_dir(dirnum);
+      }
       test_case_factory::present(pid_, comm::end_test, 0, 0);
     }
   } // namespace implementation
@@ -434,7 +454,6 @@ namespace ciut {
     {
       bool                   success;
       std::string            name;
-      std::string            exit_cause;
       std::list<std::string> history;
     };
   }
@@ -455,6 +474,7 @@ namespace ciut {
     ::close(fds[1]);
 
     std::map<pid_t, test_case_result> messages;
+    std::cout << "  <log>\n";
     for (;;)
       {
         pid_t test_case_id;
@@ -462,14 +482,12 @@ namespace ciut {
         if (rv == 0)
           {
             assert(messages.size() == 0);
+            std::cout << "  </log>\n";
             exit(0);
           }
         assert(rv == sizeof(test_case_id));
         test_case_result &s = messages[test_case_id];
 
-        static const char * const header[] = {
-          "", "", "<STDOUT> - ", "<STDERR> - "
-        };
 
         comm::type t;
         rv = ::read(presenter_pipe, &t, sizeof(t));
@@ -480,7 +498,6 @@ namespace ciut {
           case comm::begin_test:
             {
               assert(s.name.length() == 0);
-              assert(s.exit_cause.length() == 0);
               assert(s.history.size() == 0);
 
               // introduction to test case, name follows
@@ -518,15 +535,41 @@ namespace ciut {
             }
             if (!s.success || verbose_mode)
               {
-                std::cout << s.name << " - " << (s.success ? "OK\n" : "FAILED!\n");
+                bool history_print = false;
+                std::cout << "    <test name=\"" << s.name
+                          << "\" result=\"" << (s.success ? "OK" : "FAILED") << '"';
                 if (s.history.size() > 1 || !s.success)
                   {
                     for (std::list<std::string>::iterator i = s.history.begin();
                          i != s.history.end();
                          ++i)
                       {
-                        std::cout << "  " << *i << '\n';
+                        bool prev_ended = true;
+                        std::string &s = *i;
+                        for (std::string::size_type prevpos = 0, endpos = 0;
+                             ;
+                             prevpos = endpos + 1)
+                          {
+                            if (!history_print)
+                              {
+                                std::cout  << ">\n";
+                                history_print = true;
+                              }
+                            endpos = s.find('\n', prevpos);
+                            if (endpos == std::string::npos) break;
+                            static const char *prefix[] = { "", "      " };
+                            std::cout << prefix[prev_ended] << std::string(s, prevpos, endpos - prevpos) << "\n";
+                            prev_ended = s[endpos-1] == '>';
+                          }
                       }
+                  }
+                if (history_print)
+                  {
+                    std::cout << "    </test>\n";
+                  }
+                else
+                  {
+                    std::cout << "/>\n";
                   }
               }
             messages.erase(test_case_id);
@@ -536,7 +579,6 @@ namespace ciut {
           case comm::exit_ok:
           case comm::exit_fail:
             {
-              std::string report(header[t]);
               size_t len;
               rv = ::read(presenter_pipe, &len, sizeof(len));
               if (len)
@@ -545,14 +587,32 @@ namespace ciut {
 
                   rv = ::read(presenter_pipe, buff, len);
                   assert(size_t(rv) == len);
-                  report += std::string(buff, len);
+
+                  if (t == comm::exit_ok || t == comm::exit_fail)
+                    {
+                      s.success = t == comm::exit_ok;
+                      s.history.push_back(std::string(buff, len));
+                    }
+                  else
+                    {
+                      std::ostringstream os;
+                      if (t == comm::stdout)
+                        {
+                          CIUT_XML_TAG(stdout, os)
+                            {
+                              stdout << std::string(buff, len);
+                            }
+                        }
+                      else
+                        {
+                          CIUT_XML_TAG(stderr, os)
+                            {
+                              stderr << std::string(buff, len);
+                            }
+                        }
+                      s.history.push_back(os.str());
+                    }
                 }
-              if (t == comm::exit_ok || t == comm::exit_fail)
-                {
-                  s.exit_cause.assign(report, 0, report.find('\n'));
-                  s.success = t == comm::exit_ok;
-                }
-              s.history.push_back(report);
             }
             break;
           default:
@@ -606,12 +666,22 @@ namespace ciut {
     catch (std::exception &e)
       {
         std::ostringstream out;
-        out << "unexpected std exception, what() is \"" << e.what() << "\"";
+        CIUT_XML_TAG(exception_death, out)
+          {
+            CIUT_XML_TAG(caught, exception_death,
+                         ciut::xml::attr("type", "std::exception"),
+                         ciut::xml::attr("what", e.what()));
+          }
         report(comm::exit_fail, out);
       }
     catch (...)
       {
-        report(comm::exit_fail, "unknown exception");
+        std::ostringstream out;
+        CIUT_XML_TAG(exception_death, out)
+          {
+            CIUT_XML_TAG(caught, exception_death, ciut::xml::attr("type", "..."));
+          }
+        report(comm::exit_fail, out);
       }
     if (tests_as_child_procs())
       {
@@ -798,6 +868,27 @@ namespace ciut {
         return 1;
       }
     start_presenter_process();
+    {
+      static char time_string[] = "2009-01-09T23:59:59";
+      time_t now = ::time(0);
+      struct tm tmdata;
+      ::gmtime_r(&now, &tmdata);
+      std::sprintf(time_string, "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2d",
+                   tmdata.tm_year + 1900,
+                   tmdata.tm_mon + 1,
+                   tmdata.tm_mday,
+                   tmdata.tm_hour,
+                   tmdata.tm_min,
+                   tmdata.tm_sec);
+      static char machine_string[PATH_MAX];
+      ::gethostname(machine_string, sizeof(machine_string));
+      std::cout <<
+        "<?xml version=\"1.0\"?>\n\n"
+        "<test_run"
+        " time=\"" << time_string <<
+        "\" machine=\"" << machine_string <<
+        "\" name=\"" << argv[0] << "\">\n" << std::flush;
+    }
 
     const char **names = p;
     for (;;)
@@ -846,19 +937,22 @@ namespace ciut {
       }
     if (pending_children) manage_children(1);
     kill_presenter_process();
-    std::cout << num_registered_tests << " registered, of which "
-              << num_tests_run << " tests run ("
-              << num_failed_tests  << " failed/"
-              << num_tests_run - num_failed_tests << " OK)\n";
+    std::cout <<
+      "  <statistics>\n"
+      "    <tests_registered>" << num_registered_tests << "</tests_registered>\n"
+      "    <tests_run>"        << num_tests_run        << "</tests_run>\n"
+      "    <tests_failed>"     << num_failed_tests     << "</tests_failed>\n"
+      "  </statistics>\n";
     if (reg.get_next() != &reg)
       {
-        std::cout << "Not run tests are:\n";
+        std::cout << "  <blocked_tests>\n";
         for (implementation::test_case_registrator *i = reg.get_next();
              i != &reg;
              i = i->get_next())
           {
-            std::cout << "  " << *i << '\n';
+            std::cout << "    <testcase name=\"" << *i << "\"/>\n";
           }
+        std::cout << "  </blocked_tests>\n";
       }
     for (unsigned n = 0; n < max_parallel; ++n)
       {
@@ -868,13 +962,14 @@ namespace ciut {
       }
     if (!is_dir_empty("."))
       {
-        std::cout << "Left over files are stored under " << dirbase << std::endl;
+        std::cout << "  <remaining_files directory=\"" << dirbase << "\"/>\n";
       }
     else
       {
         ::chdir("..");
         ::rmdir(dirbase);
       }
+    std::cout << "</test_run>\n";
     return num_failed_tests;
   }
 

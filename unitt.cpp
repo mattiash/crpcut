@@ -194,6 +194,31 @@ TESTSUITE(asserts)
     {
       ASSERT_FALSE(num);
     }
+
+  template <typename T>
+    class unstreamable
+  {
+    class nieu;
+  public:
+    unstreamable(T t) : data(t) {}
+    unstreamable& operator=(const T& t) { data = t; return *this; }
+    operator T&() { return data; }
+    operator const T&() const { return data; }
+    bool operator!() const { return !data; }
+    operator const nieu*() const
+    {
+      return data ? reinterpret_cast<const nieu*>(&data) : 0;
+    }
+  private:
+    T data;
+  };
+
+  TEST(should_fail_on_assert_gt_with_unstreamable_param_i, fixture<3>)
+    {
+      unstreamable<int> i(3);
+      ASSERT_GT(i, num);
+    }
+
 }
 
 DISABLED_TEST(should_never_run, fixture<3>)
@@ -201,29 +226,8 @@ DISABLED_TEST(should_never_run, fixture<3>)
   ASSERT_FALSE(num);
 }
 
-template <typename T>
-class unstreamable
-{
-  class nieu;
-public:
-  unstreamable(T t) : data(t) {}
-  unstreamable& operator=(const T& t) { data = t; return *this; }
-  operator T&() { return data; }
-  operator const T&() const { return data; }
-  bool operator!() const { return !data; }
-  operator const nieu*() const
-  {
-    return data ? reinterpret_cast<const nieu*>(&data) : 0;
-  }
-private:
-  T data;
-};
 
-TEST(should_fail_on_assert_gt_with_unstreamable_param_i, fixture<3>)
-{
-  unstreamable<int> i(3);
-  ASSERT_GT(i, num);
-}
+
 
 
 TESTSUITE(depends)
@@ -312,6 +316,7 @@ TESTSUITE(stderr_and_stdout)
     assert("apa" == 0);
   }
 }
+
 int main(int argc, const char *argv[])
 {
   return ciut::test_case_factory::run_test(argc, argv);

@@ -5,11 +5,13 @@
 #include <sstream>
 #include <iostream>
 #include <ostream>
+#include <iomanip>
 #include <cerrno>
 #include <cassert>
 #include <tr1/type_traits>
 #include "array_v.hpp"
 #include <queue>
+#include <cmath>
 extern "C"
 {
 #include <time.h>
@@ -49,6 +51,174 @@ struct siginfo;
 
 namespace ciut {
 
+  namespace xml {
+    class tag_t
+    {
+      template <typename T>
+      struct attr
+      {
+        attr(const char *n, const T& v) : name(n), val(v) {}
+        const char *name;
+        const T&    val;
+        friend std::ostream &operator<<(std::ostream &os, const attr& a)
+        {
+          os << " " << a.name << "=\"" << a.val << "\""; return os;
+        }
+      };
+    public:
+      operator void*() const { return 0; }
+      tag_t(const char *name, std::ostream &os)
+        : name_(name),
+          state_(in_name),
+          indent_(0),
+          os_(os),
+          parent_(0)
+      {
+        introduce();
+      }
+      tag_t(const char *name, tag_t &parent)
+        : name_(name),
+          state_(in_name),
+          indent_(parent.indent_+1),
+          os_(parent.os_),
+          parent_(&parent)
+      {
+        introduce();
+        parent.state_ = in_children;
+      }
+      template <typename T1>
+      tag_t(const char *name, tag_t &parent, const attr<T1>& a1)
+        : name_(name),
+          state_(in_name),
+          indent_(parent.indent_+1),
+          os_(parent.os_),
+          parent_(&parent)
+      {
+        introduce();
+        parent.state_ = in_children;
+        os_ << a1;
+      }
+      template <typename T1, typename T2>
+      tag_t(const char *name, tag_t &parent, const attr<T1>& a1, const attr<T2> &a2)
+        : name_(name),
+          state_(in_name),
+          indent_(parent.indent_+1),
+          os_(parent.os_),
+          parent_(&parent)
+      {
+        introduce();
+        parent.state_ = in_children;
+        os_ << a1 << a2;
+      }
+      template <typename T1, typename T2, typename T3>
+      tag_t(const char *name, tag_t &parent, const attr<T1>& a1, const attr<T2> &a2, const attr<T3> &a3)
+        : name_(name),
+          state_(in_name),
+          indent_(parent.indent_+1),
+          os_(parent.os_),
+          parent_(&parent)
+      {
+        introduce();
+        parent.state_ = in_children;
+        os_ << a1 << a2 << a3;
+      }
+      template <typename T1, typename T2, typename T3, typename T4>
+      tag_t(const char *name, tag_t &parent, const attr<T1>& a1, const attr<T2> &a2, const attr<T3> &a3, const attr<T4> &a4)
+        : name_(name),
+          state_(in_name),
+          indent_(parent.indent_+1),
+          os_(parent.os_),
+          parent_(&parent)
+      {
+        introduce();
+        parent.state_ = in_children;
+        os_ << a1 << a2 << a3 << a4;
+      }
+      ~tag_t()
+      {
+        if (state_ == in_name)
+          {
+            os_ << "/>\n";
+          }
+        else
+          {
+            if (state_ == in_children)
+              {
+                os_  << std::setw(indent_*2) << "";
+              }
+            os_ << "</" << name_ << ">\n";
+          }
+      }
+      template <typename T>
+      tag_t & operator<<(const T& t)
+      {
+        std::ostringstream o;
+        if (conditionally_stream(o, t))
+          {
+            if (state_ != in_data)
+              {
+                os_ << ">";
+                state_ = in_data;
+              }
+            const std::string &s = o.str();
+            for (std::string::const_iterator i = s.begin(); i != s.end(); ++i)
+              {
+                unsigned char u = *i;
+                switch (u)
+                  {
+                  case '&':
+                    os_ << "&amp;"; break;
+                  case '<':
+                    os_ << "&lt;"; break;
+                  case '>':
+                    os_ << "&gt;"; break;
+                  case '"':
+                    os_ << "&quot;"; break;
+                  case '\'':
+                    os_ << "&apos;"; break;
+                  default:
+                    if (u < 128)
+                      {
+                    os_ << *i;
+                      }
+                    else
+                      {
+                        os_ << "&#" << int(u) << ';';
+                      }
+                  }
+              }
+          }
+        return *this;
+      }
+    private:
+      void introduce()
+      {
+        if (parent_ && parent_->state_ != in_data)
+          {
+            if (parent_->state_ == in_name)
+              {
+                os_ << ">\n";
+              }
+            parent_->state_ = in_children;
+            os_ << std::setw(indent_ * 2) << "";
+          }
+        os_ << '<' << name_;
+      }
+
+      const char *name_;
+      enum { in_name, in_children, in_data } state_;
+      int indent_;
+      std::ostream &os_;
+      tag_t *parent_;
+
+      template <typename T>
+      friend tag_t::attr<T> attr(const char *name, const T& t)
+      {
+        tag_t::attr<T> a(name, t);
+        return a;
+      }
+    };
+  }
   namespace policies {
 
     namespace deaths {
@@ -68,10 +238,10 @@ namespace ciut {
     class default_policy
     {
     protected:
-      typedef void run_wrapper;
-      typedef deaths::none expected_death_cause;
-      typedef dependencies::none dependency;
-      typedef timeout::no_enforcer timeout_enforcer;
+      typedef void ciut_run_wrapper;
+      typedef deaths::none ciut_expected_death_cause;
+      typedef dependencies::none ciut_dependency;
+      typedef timeout::no_enforcer ciut_timeout_enforcer;
     };
 
     namespace deaths {
@@ -110,16 +280,16 @@ namespace ciut {
     class signal_death : protected virtual default_policy
     {
     public:
-      typedef deaths::wrapper run_wrapper;
-      typedef deaths::signal<N> expected_death_cause;
+      typedef deaths::wrapper ciut_run_wrapper;
+      typedef deaths::signal<N> ciut_expected_death_cause;
     };
 
     template <int N>
     class exit_death : protected virtual default_policy
     {
     public:
-      typedef deaths::wrapper  run_wrapper;
-      typedef deaths::exit<N>  expected_death_cause;
+      typedef deaths::wrapper  ciut_run_wrapper;
+      typedef deaths::exit<N>  ciut_expected_death_cause;
     };
 
     template <typename exc>
@@ -129,7 +299,7 @@ namespace ciut {
     class exception_specifier : protected virtual default_policy
     {
     public:
-      typedef exception_wrapper<T> run_wrapper;
+      typedef exception_wrapper<T> ciut_run_wrapper;
     };
 
     class no_core_file : protected virtual default_policy
@@ -281,7 +451,7 @@ namespace ciut {
     class dependency_policy : protected virtual default_policy
     {
     public:
-      typedef typename dependencies::wrap<dependencies::enforcer, T>::type dependency;
+      typedef typename dependencies::wrap<dependencies::enforcer, T>::type ciut_dependency;
     };
 
     namespace timeout {
@@ -301,7 +471,7 @@ namespace ciut {
       public:
         enforcer();
       };
-
+#if defined(CLOCK_PROCESS_CPUTIME_ID)
       template <unsigned timeout_ms>
       class enforcer<cputime, timeout_ms> : public basic_enforcer
       {
@@ -313,7 +483,8 @@ namespace ciut {
         }
         ~enforcer() { basic_enforcer::check(cputime, timeout_ms); }
       };
-
+#endif
+#if defined(CLOCK_MONOTONIC)
       template <unsigned timeout_ms>
       class enforcer<realtime, timeout_ms> : public basic_enforcer
       {
@@ -321,7 +492,7 @@ namespace ciut {
         enforcer();
         ~enforcer();
       };
-
+#endif
     } // namespace timeout
 
 
@@ -329,7 +500,7 @@ namespace ciut {
     class timeout_policy : protected virtual default_policy
     {
     public:
-      typedef timeout::enforcer<t, timeout_ms> timeout_enforcer;
+      typedef timeout::enforcer<t, timeout_ms> ciut_timeout_enforcer;
     };
 
 
@@ -671,13 +842,12 @@ namespace ciut {
               int n = errno;
               assert(n == EINTR);
             }
-          if (!reg->has_obituary())
-            {
-              test_case_factory::present(reg->get_pid(),
-                                         t,
-                                         rv,
-                                         buff);
-            }
+
+          std::ostringstream os;
+          test_case_factory::present(reg->get_pid(),
+                                     t,
+                                     rv,
+                                     buff);
           return true;
         }
     }
@@ -717,9 +887,9 @@ namespace ciut {
         return;
       }
       catch (...) {
-        comm::report(comm::exit_fail, "threw wrong exception");
+        comm::report(comm::exit_fail, "<exception>\n  <type/>\n</exception>\n");
       }
-      comm::report(comm::exit_fail, "did not throw exception");
+      comm::report(comm::exit_fail, "<exception/>\n");
     }
 
     template <typename T>
@@ -732,7 +902,7 @@ namespace ciut {
     void test_wrapper<policies::deaths::wrapper, T>::run(T *t)
     {
       t->test();
-      comm::report(comm::exit_fail, "Unexpectedly survived");
+      comm::report(comm::exit_fail, "<exit/>\n");
     }
 
   } // namespace implementation
@@ -797,9 +967,9 @@ namespace ciut {
     template <typename T>
     struct conditional_streamer<T, false>
     {
-      static bool stream(std::ostream &os, const T&)
+      static bool stream(std::ostream &, const T&)
       {
-        os << "is not output streamable";
+        //        os << "is not output streamable";
         return false;
       }
     };
@@ -884,17 +1054,24 @@ namespace ciut {
 
 #define decltype typeof
 
+#define CIUT_XML_TAG(name, ...) \
+  if (ciut::xml::tag_t name = ciut::xml::tag_t(#name, __VA_ARGS__)) \
+    {                                                               \
+    }                                                               \
+  else
+
 #define CIUT_TEST_CASE_DEF(test_case_name, ...)                         \
   class test_case_name                                                  \
     : ciut::test_case_base, __VA_ARGS__                                 \
   {                                                                     \
-    friend class ciut::implementation::test_wrapper<run_wrapper, test_case_name>; \
-    friend class ciut::policies::dependencies::enforcer<test_case_name>; \
-    virtual void run_test()                                             \
-    {                                                                   \
-      timeout_enforcer obj;                                             \
+    friend class ciut::implementation::test_wrapper<ciut_run_wrapper, test_case_name>; \
+  friend class ciut::policies::dependencies::enforcer<test_case_name>;  \
+  virtual void run_test()                                               \
+  {                                                                     \
+      ciut_timeout_enforcer obj;                                        \
       (void)obj; /* silence warning */                                  \
-      ciut::implementation::test_wrapper<run_wrapper, test_case_name>::run(this); \
+      using ciut::implementation::test_wrapper;                         \
+      test_wrapper<ciut_run_wrapper, test_case_name>::run(this);        \
     }                                                                   \
     void test();                                                        \
     static ciut::test_case_base& creator()                              \
@@ -905,8 +1082,8 @@ namespace ciut {
     class registrator                                                   \
       : public ciut::implementation::test_case_registrator,             \
         public virtual ciut::policies::dependencies::base,              \
-        private virtual test_case_name::expected_death_cause,           \
-        private virtual test_case_name::dependency                      \
+        private virtual test_case_name::ciut_expected_death_cause,      \
+        private virtual test_case_name::ciut_dependency                 \
           {                                                             \
             typedef ciut::implementation::test_case_registrator         \
               registrator_base;                                         \
@@ -973,19 +1150,17 @@ namespace ciut {
   if (!(CIUT_LOCAL_NAME(rl) oper CIUT_LOCAL_NAME(rr)))                  \
     {                                                                   \
       std::ostringstream CIUT_LOCAL_NAME(os);                           \
-      CIUT_LOCAL_NAME(os) << "ASSERT_" #name "(" #lh ", " #rh ")";      \
-      bool CIUT_LOCAL_NAME(printed) = false;                            \
-      static const char *CIUT_LOCAL_NAME(prefix)[] = {                  \
-        "\n   where ",                                                  \
-        "\n         "                                                   \
-      };                                                                \
-      using ciut::stream_param;                                         \
-      CIUT_LOCAL_NAME(printed) |= stream_param(CIUT_LOCAL_NAME(os),     \
-                                               CIUT_LOCAL_NAME(prefix)[0], \
-                                               #lh, CIUT_LOCAL_NAME(rl)); \
-      stream_param(CIUT_LOCAL_NAME(os),                                 \
-                   CIUT_LOCAL_NAME(prefix)[CIUT_LOCAL_NAME(printed)],   \
-                   #rh, CIUT_LOCAL_NAME(rr));                           \
+      CIUT_XML_TAG(ASSERT_ ## name, CIUT_LOCAL_NAME(os))                \
+        {                                                               \
+          CIUT_XML_TAG(param, ASSERT_ ## name, ciut::xml::attr("name", #lh)) \
+            {                                                           \
+              param << CIUT_LOCAL_NAME(rl);                             \
+            }                                                           \
+          CIUT_XML_TAG(param, ASSERT_ ## name, ciut::xml::attr("name", #rh)) \
+            {                                                           \
+              param << CIUT_LOCAL_NAME(rr);                             \
+            }                                                           \
+        }                                                               \
       ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os));   \
     }                                                                   \
   } while(0)
@@ -999,9 +1174,13 @@ namespace ciut {
     else                                                                \
       {                                                                 \
         std::ostringstream CIUT_LOCAL_NAME(os);                         \
-        CIUT_LOCAL_NAME(os) << "ASSERT_TRUE(" #a ")";                   \
-        ciut::stream_param(CIUT_LOCAL_NAME(os), "\n   where ",          \
-                           #a, CIUT_LOCAL_NAME(ra));                    \
+        CIUT_XML_TAG(ASSERT_TRUE, CIUT_LOCAL_NAME(os))                  \
+          {                                                             \
+            CIUT_XML_TAG(expr, ASSERT_TRUE)                             \
+              {                                                         \
+                expr << CIUT_LOCAL_NAME(ra);                            \
+              }                                                         \
+          }                                                             \
         ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os)); \
       }                                                                 \
   } while(0)
@@ -1014,9 +1193,13 @@ namespace ciut {
     if (CIUT_LOCAL_NAME(ra))                                            \
       {                                                                 \
         std::ostringstream CIUT_LOCAL_NAME(os);                         \
-        CIUT_LOCAL_NAME(os) << "ASSERT_FALSE(" #a ")";                  \
-        ciut::stream_param(CIUT_LOCAL_NAME(os), "\n   where ",          \
-                           #a, CIUT_LOCAL_NAME(ra));                    \
+        CIUT_XML_TAG(ASSERT_FALSE, CIUT_LOCAL_NAME(os))                 \
+          {                                                             \
+            CIUT_XML_TAG(expr, ASSERT_FALSE)                            \
+              {                                                         \
+                expr << CIUT_LOCAL_NAME(ra);                            \
+              }                                                         \
+          }                                                             \
         ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os)); \
       }                                                                 \
   } while(0)
@@ -1039,12 +1222,26 @@ namespace ciut {
 #define ASSERT_LE(lh, rh)                       \
   CIUT_BINARY_ASSERT(LE, <=, lh, rh)
 
+
 #define ASSERT_THROW(expr, exc)                                         \
   do {                                                                  \
     try {                                                               \
       expr;                                                             \
+      std::ostringstream CIUT_LOCAL_NAME(os);                           \
+      CIUT_XML_TAG(ASSERT_THROW, CIUT_LOCAL_NAME(os))                   \
+      {                                                                 \
+        CIUT_XML_TAG(expression, ASSERT_THROW)                          \
+        {                                                               \
+          expression << #expr;                                          \
+        }                                                               \
+        CIUT_XML_TAG(expected_type, ASSERT_THROW)                       \
+          {                                                             \
+            expected_type << #exc;                                      \
+          }                                                             \
+        CIUT_XML_TAG(caught, ASSERT_THROW);                             \
+      }                                                                 \
       ciut::comm::report(ciut::comm::exit_fail,                         \
-                         "ASSERT_THROW(" #expr ", " #exc ") did not throw"); \
+                         CIUT_LOCAL_NAME(os));                          \
     }                                                                   \
     catch (exc) {                                                       \
     }                                                                   \
@@ -1055,22 +1252,38 @@ namespace ciut {
     try {                                                               \
       expr;                                                             \
     }                                                                   \
-    catch (std::exception &e) {                                         \
-      std::ostringstream out;                                           \
-      out << "ASSERT_NO_THROW(" #expr ") threw std exception\n"         \
-        "  what() is \"" << e.what() << "\"";                           \
-      ciut::comm::report(ciut::comm::exit_fail, out);                   \
+    catch (std::exception &CIUT_LOCAL_NAME(e)) {                        \
+      std::ostringstream CIUT_LOCAL_NAME(os);                           \
+      CIUT_XML_TAG(ASSERT_NO_THROW, CIUT_LOCAL_NAME(os))                \
+        {                                                               \
+          CIUT_XML_TAG(expression, ASSERT_NO_THROW)                     \
+          {                                                             \
+            expression << #expr;                                        \
+          }                                                             \
+          CIUT_XML_TAG(caught,  ASSERT_NO_THROW,                        \
+                       ciut::xml::attr("type", "std::exception"),       \
+                       ciut::xml::attr("what", CIUT_LOCAL_NAME(e).what()));  \
+        }                                                               \
+      ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os));   \
     }                                                                   \
     catch (...) {                                                       \
+      std::ostringstream CIUT_LOCAL_NAME(os);                           \
+      CIUT_XML_TAG(ASSERT_NO_THROW, CIUT_LOCAL_NAME(os))                \
+      {                                                                 \
+        CIUT_XML_TAG(expression, ASSERT_NO_THROW)                       \
+          {                                                             \
+            expression << #expr;                                        \
+          }                                                             \
+        CIUT_XML_TAG(caught, ASSERT_NO_THROW,                           \
+                     ciut::xml::attr("type", "..."));                   \
+        }                                                               \
       ciut::comm::report(ciut::comm::exit_fail,                         \
-                         "ASSERT_NO_THROW(" #expr ") threw something"); \
+                         CIUT_LOCAL_NAME(os));                          \
     }                                                                   \
   } while (0)
 
 
 class none {};
-
-
 
 extern ciut::implementation::namespace_info current_namespace;
 
