@@ -284,21 +284,24 @@ namespace ciut {
           switch (info.si_code)
             {
             case CLD_EXITED:
-              if (!(successful |= is_expected_exit(info.si_status)))
-                {
-                  CIUT_XML_TAG(exit, termination,
-                               xml::attr("code", info.si_status));
-
-                  t = comm::exit_fail;
-                }
+              {
+                CIUT_XML_TAG(exit, termination,
+                             xml::attr("code", info.si_status));
+                if (!(successful |= is_expected_exit(info.si_status)))
+                  {
+                    t = comm::exit_fail;
+                  }
+              }
               break;
             case CLD_KILLED:
-              if (!(successful |= is_expected_signal(info.si_status)))
-                {
-                  CIUT_XML_TAG(signal, termination,
-                               xml::attr("number", info.si_status));
-                  t = comm::exit_fail;
-                }
+              {
+                CIUT_XML_TAG(signal, termination,
+                             xml::attr("number", info.si_status));
+                if (!(successful |= is_expected_signal(info.si_status)))
+                  {
+                    t = comm::exit_fail;
+                  }
+              }
               break;
             case CLD_DUMPED:
               CIUT_XML_TAG(core_dump, termination);
@@ -659,9 +662,9 @@ namespace ciut {
     catch (std::exception &e)
       {
         std::ostringstream out;
-        CIUT_XML_TAG(exception_death, out)
+        CIUT_XML_TAG(exception, out)
           {
-            CIUT_XML_TAG(caught, exception_death,
+            CIUT_XML_TAG(caught, exception,
                          ciut::xml::attr("type", "std::exception"),
                          ciut::xml::attr("what", e.what()));
           }
@@ -670,9 +673,9 @@ namespace ciut {
     catch (...)
       {
         std::ostringstream out;
-        CIUT_XML_TAG(exception_death, out)
+        CIUT_XML_TAG(exception, out)
           {
-            CIUT_XML_TAG(caught, exception_death, ciut::xml::attr("type", "..."));
+            CIUT_XML_TAG(caught, exception, ciut::xml::attr("type", "..."));
           }
         report(comm::exit_fail, out);
       }
@@ -853,11 +856,11 @@ namespace ciut {
         return 1;
       }
     {
-      static char time_string[] = "2009-01-09T23:59:59";
+      static char time_string[] = "2009-01-09T23:59:59Z";
       time_t now = ::time(0);
       struct tm tmdata;
       ::gmtime_r(&now, &tmdata);
-      std::sprintf(time_string, "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2d",
+      std::sprintf(time_string, "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
                    tmdata.tm_year + 1900,
                    tmdata.tm_mon + 1,
                    tmdata.tm_mday,

@@ -888,9 +888,9 @@ namespace ciut {
         return;
       }
       catch (...) {
-        comm::report(comm::exit_fail, "<exception>\n  <type/>\n</exception>\n");
+        comm::report(comm::exit_fail, "<exception>\n  <caught type=\"...\"/>\n</exception>\n");
       }
-      comm::report(comm::exit_fail, "<exception/>\n");
+      comm::report(comm::exit_fail, "<missing>\n  <exception/>\n</missing>\n");
     }
 
     template <typename T>
@@ -903,7 +903,7 @@ namespace ciut {
     void test_wrapper<policies::deaths::wrapper, T>::run(T *t)
     {
       t->test();
-      comm::report(comm::exit_fail, "<exit/>\n");
+      comm::report(comm::exit_fail, "<missing>\n  <exit/>\n</missing>\n");
     }
 
   } // namespace implementation
@@ -970,7 +970,6 @@ namespace ciut {
     {
       static bool stream(std::ostream &, const T&)
       {
-        //        os << "is not output streamable";
         return false;
       }
     };
@@ -1235,11 +1234,13 @@ namespace ciut {
         {                                                               \
           expression << #expr;                                          \
         }                                                               \
-        CIUT_XML_TAG(expected_type, ASSERT_THROW)                       \
+        CIUT_XML_TAG(missing, ASSERT_THROW)                             \
+        {                                                               \
+          CIUT_XML_TAG(exception, missing)                              \
           {                                                             \
-            expected_type << #exc;                                      \
+            exception << #exc;                                          \
           }                                                             \
-        CIUT_XML_TAG(caught, ASSERT_THROW);                             \
+        }                                                               \
       }                                                                 \
       ciut::comm::report(ciut::comm::exit_fail,                         \
                          CIUT_LOCAL_NAME(os));                          \
