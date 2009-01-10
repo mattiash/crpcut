@@ -341,6 +341,7 @@ namespace ciut {
         other->next = dependants;
         dependants = other;
       }
+
       inline void base::register_success()
       {
         if (!successful)
@@ -546,13 +547,16 @@ namespace ciut {
     public:
       reporter() : write_fd(0), read_fd(0) {}
       void set_fds(int read, int write) { write_fd = write, read_fd = read; }
-      void operator()(type t, std::ostringstream &os) const;
-      void operator()(type t, const char *msg = "") const
+      void operator()(type t, std::ostringstream &os) const
       {
-        std::ostringstream os;
-        os << msg;
-        operator()(t, os);
+        const std::string &s = os.str();
+        operator()(t, s.length(), s.c_str());
       }
+      void operator()(type t, const char *msg) const
+      {
+        operator()(t, std::strlen(msg), msg);
+      }
+      void operator()(type t, size_t len, const char *msg) const;
       template <typename T>
       void operator()(type t, const T& data) const;
     private:
@@ -587,7 +591,7 @@ namespace ciut {
       template <unsigned timeout_ms>
       enforcer<realtime, timeout_ms>::~enforcer()
       {
-        report(comm::cancel_timeout);
+        report(comm::cancel_timeout, 0, 0);
         basic_enforcer::check(realtime, timeout_ms);
       }
     }
@@ -781,7 +785,7 @@ namespace ciut {
         num_parallel(1),
         num_registered_tests(0),
         num_tests_run(0),
-        num_failed_tests(0),
+        num_successful_tests(0),
         first_free_working_dir(0)
     {
       std::strcpy(dirbase, "/tmp/ciutXXXXXX");
@@ -823,7 +827,7 @@ namespace ciut {
     bool             single_process;
     unsigned         num_registered_tests;
     unsigned         num_tests_run;
-    unsigned         num_failed_tests;
+    unsigned         num_successful_tests;
     pid_t            presenter_pid;
     int              presenter_pipe;
     timeout_queue    deadlines;
@@ -848,7 +852,6 @@ namespace ciut {
               assert(n == EINTR);
             }
 
-          std::ostringstream os;
           test_case_factory::present(reg->get_pid(),
                                      t,
                                      rv,
