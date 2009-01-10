@@ -317,11 +317,13 @@ namespace ciut {
       protected:
         void inc() { ++num; }
       public:
-        base() : num(0), dependants(0) {};
+        base() : successful(false), num(0), dependants(0) {};
         void add(basic_enforcer * other);
         bool can_run() const { return num == 0; }
-        void register_success() const;
+        bool failed() const { return !successful; }
+        void register_success();
       private:
+        bool successful;
         int num;
         basic_enforcer *dependants;
       };
@@ -339,11 +341,15 @@ namespace ciut {
         other->next = dependants;
         dependants = other;
       }
-      inline void base::register_success() const
+      inline void base::register_success()
       {
-        for (basic_enforcer *p = dependants; p; p = p->next)
+        if (!successful)
           {
-            --p->num;
+            successful = true;
+            for (basic_enforcer *p = dependants; p; p = p->next)
+              {
+                --p->num;
+              }
           }
       }
       template <typename T>
@@ -660,7 +666,6 @@ namespace ciut {
         return t.print_name(os);
       }
       bool has_obituary() const { return death_note; }
-      bool failed() const { return !successful; }
       virtual bool match_name(const char *name) const = 0;
       test_case_base *instantiate_obj() const { return &func_(); }
       void setup(pid_t pid, int in_fd, int out_fd, int stdout_fd, int stderr_fd);
@@ -719,7 +724,6 @@ namespace ciut {
       unsigned               active_readers;
       bool                   death_note;
       pid_t                  pid_;
-      bool                   successful;
       timespec               deadline;
       int                    dirnum;
       report_reader          rep_reader;

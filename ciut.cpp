@@ -126,8 +126,10 @@ namespace ciut {
       } while (rv == -1 && errno == EINTR);
       if (rv == 0) return false; // eof
       assert(rv == sizeof(t));
-      reg->successful |= t == comm::exit_ok;
-
+      if (t == comm::exit_ok)
+        {
+          reg->register_success();
+        }
       size_t len = 0;
       do {
         rv = ::read(fd, &len, sizeof(len));
@@ -196,7 +198,6 @@ namespace ciut {
         prev(test_case_factory::obj().reg.prev),
         func_(func),
         death_note(false),
-        successful(false),
         rep_reader(this),
         stdout_reader(this),
         stderr_reader(this)
@@ -231,14 +232,6 @@ namespace ciut {
       os << *this;
       test_case_factory::introduce_name(pid, os.str());
     }
-#if 0
-    void test_case_registrator::unregister_fds()
-    {
-      stdout_reader.unregister();
-      stderr_reader.unregister();
-      rep_reader.close();
-    }
-#endif
     void test_case_registrator::set_wd(int n)
     {
       dirnum = n;
@@ -287,9 +280,13 @@ namespace ciut {
               {
                 CIUT_XML_TAG(exit, termination,
                              xml::attr("code", info.si_status));
-                if (!(successful |= is_expected_exit(info.si_status)))
+                bool success = !failed();
+                if (!success)
                   {
-                    t = comm::exit_fail;
+                    if (!is_expected_exit(info.si_status))
+                      {
+                        t = comm::exit_fail;
+                      }
                   }
               }
               break;
@@ -297,9 +294,13 @@ namespace ciut {
               {
                 CIUT_XML_TAG(signal, termination,
                              xml::attr("number", info.si_status));
-                if (!(successful |= is_expected_signal(info.si_status)))
+                bool success = !failed();
+                if (!success)
                   {
-                    t = comm::exit_fail;
+                    if (!is_expected_signal(info.si_status))
+                      {
+                        t = comm::exit_fail;
+                      }
                   }
               }
               break;
@@ -340,6 +341,7 @@ namespace ciut {
           }
         test_case_factory::return_dir(dirnum);
       }
+      if (t == comm::exit_ok) register_success();
       test_case_factory::present(pid_, comm::end_test, 0, 0);
     }
   } // namespace implementation
@@ -440,11 +442,6 @@ namespace ciut {
         assert(size_t(rv) == len);
       }
     num_failed_tests += (t == comm::exit_fail);
-    if (!tests_as_child_procs() && t == comm::exit_fail)
-      {
-        kill_presenter_process();
-        exit(1);
-      }
   }
 
   namespace {
@@ -633,7 +630,6 @@ namespace ciut {
 
   void test_case_factory::run_test_case(implementation::test_case_registrator *i) const
   {
-    i->goto_wd();
     test_case_base *p = 0;
     const char *msg = 0;
     try {
@@ -656,6 +652,7 @@ namespace ciut {
             << msg << std::endl;
         report(comm::exit_fail, out);
       }
+    // report start of test
     try {
       p->run();
     }
@@ -679,10 +676,15 @@ namespace ciut {
           }
         report(comm::exit_fail, out);
       }
+    // report end of test
     if (tests_as_child_procs())
       {
         p->~test_case_base(); // Ugly, but since report kills when parallel
       }                       // it takes care of a memory leak.
+    else
+      {
+        i->register_success();
+      }
     report(comm::exit_ok);
   }
 
@@ -715,7 +717,6 @@ namespace ciut {
               {
                 r->manage_death();
                 ++num_tests_run;
-                if (!r->failed()) r->register_success();
                 --pending_children;
               }
           }
@@ -726,12 +727,14 @@ namespace ciut {
   {
     if (!tests_as_child_procs())
       {
-        std::ostringstream os;
-        os << *i;
-        introduce_name(0, os.str());
+        std::cerr << "  <name=\"" << *i;
         run_test_case(i);
         ++num_tests_run;
-        if (!i->failed()) i->register_success();
+        if (i->failed())
+          {
+            exit(1);
+          }
+        std::cerr << " result=\"OK\"/>\n";
         return;
       }
 
@@ -767,6 +770,7 @@ namespace ciut {
         ::close(stderr[1]);
         ::close(p2c[1]);
         ::close(c2p[0]);
+        i->goto_wd();
         run_test_case(i);
         // never executed!
         assert("unreachable code reached" == 0);
@@ -844,16 +848,19 @@ namespace ciut {
         }
         ++p;
       }
-    if (!mkdtemp(dirbase))
+    if (tests_as_child_procs())
       {
-        os << argv[0] << ": failed to create working directory\n";
-        return 1;
-      }
-    if (chdir(dirbase) != 0)
-      {
-        os << argv[0] << ": couldn't move to working directori\n";
-        ::rmdir(dirbase);
-        return 1;
+        if (!mkdtemp(dirbase))
+          {
+            os << argv[0] << ": failed to create working directory\n";
+            return 1;
+          }
+        if (chdir(dirbase) != 0)
+          {
+            os << argv[0] << ": couldn't move to working directoryy\n";
+            ::rmdir(dirbase);
+            return 1;
+          }
       }
     {
       static char time_string[] = "2009-01-09T23:59:59Z";
@@ -877,7 +884,7 @@ namespace ciut {
         "\" name=\"" << argv[0] << "\">\n" << std::flush;
     }
 
-    start_presenter_process();
+    if (tests_as_child_procs()) start_presenter_process();
     const char **names = p;
     for (;;)
       {
@@ -924,13 +931,32 @@ namespace ciut {
           }
       }
     if (pending_children) manage_children(1);
-    kill_presenter_process();
-    std::cout <<
-      "  <statistics>\n"
-      "    <tests_registered>" << num_registered_tests << "</tests_registered>\n"
-      "    <tests_run>"        << num_tests_run        << "</tests_run>\n"
-      "    <tests_failed>"     << num_failed_tests     << "</tests_failed>\n"
-      "  </statistics>\n";
+    if (tests_as_child_procs())
+      {
+        kill_presenter_process();
+        std::cout <<
+          "  <statistics>\n"
+          "    <tests_registered>" << num_registered_tests << "</tests_registered>\n"
+          "    <tests_run>"        << num_tests_run        << "</tests_run>\n"
+          "    <tests_failed>"     << num_failed_tests     << "</tests_failed>\n"
+          "  </statistics>\n";
+
+        for (unsigned n = 0; n < max_parallel; ++n)
+          {
+            std::ostringstream name;
+            name << n;
+            ::rmdir(name.str().c_str());
+          }
+        if (!is_dir_empty("."))
+          {
+            std::cout << "  <remaining_files directory=\"" << dirbase << "\"/>\n";
+          }
+        else
+          {
+            ::chdir("..");
+            ::rmdir(dirbase);
+          }
+      }
     if (reg.get_next() != &reg)
       {
         std::cout << "  <blocked_tests>\n";
@@ -942,21 +968,7 @@ namespace ciut {
           }
         std::cout << "  </blocked_tests>\n";
       }
-    for (unsigned n = 0; n < max_parallel; ++n)
-      {
-        std::ostringstream name;
-        name << n;
-        ::rmdir(name.str().c_str());
-      }
-    if (!is_dir_empty("."))
-      {
-        std::cout << "  <remaining_files directory=\"" << dirbase << "\"/>\n";
-      }
-    else
-      {
-        ::chdir("..");
-        ::rmdir(dirbase);
-      }
+
     std::cout << "</test_run>\n";
     return num_failed_tests;
   }
@@ -999,11 +1011,11 @@ namespace ciut {
 
     void reporter::operator()(type t, std::ostringstream &os) const
     {
-      bool terminal = (t == comm::exit_ok) || (t == comm::exit_fail);
       if (!test_case_factory::tests_as_child_procs())
         {
           const std::string &s = os.str();
-          test_case_factory::present(pid_t(), t, s.length(), os.str().c_str());
+          std::cerr << s;
+          if (t == exit_fail) abort();
           return;
         }
       std::cout << std::flush;
@@ -1026,6 +1038,7 @@ namespace ciut {
         read(bytes_written);
         assert(len == bytes_written);
         using std::ostringstream;
+        bool terminal = (t == comm::exit_ok) || (t == comm::exit_fail);
         if (!terminal) return;
         os.~ostringstream(); // man, this is ugly, but _Exit() causes leaks
       }
