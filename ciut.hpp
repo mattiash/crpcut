@@ -12,9 +12,9 @@
 #include "array_v.hpp"
 #include <queue>
 #include <cmath>
+#include <ctime>
 extern "C"
 {
-#include <time.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 }
@@ -672,7 +672,10 @@ namespace ciut {
       bool has_obituary() const { return death_note; }
       virtual bool match_name(const char *name) const = 0;
       test_case_base *instantiate_obj() const { return &func_(); }
-      void setup(pid_t pid, int in_fd, int out_fd, int stdout_fd, int stderr_fd);
+      void setup(pid_t pid,
+                 int in_fd, int out_fd,
+                 int stdout_fd,
+                 int stderr_fd);
       void manage_death();
       test_case_registrator *unlink() {
         next->prev = prev;
@@ -683,7 +686,7 @@ namespace ciut {
       int ms_until_deadline() const
       {
         struct timespec now;
-        clock_gettime(CLOCK_MONOTONIC, &now);
+        ::clock_gettime(CLOCK_MONOTONIC, &now);
         int ms = (deadline.tv_sec - now.tv_sec)*1000;
         if (ms < 0) return 0;
         ms+= (deadline.tv_nsec - now.tv_nsec) / 1000000;
@@ -692,7 +695,8 @@ namespace ciut {
       }
       void clear_deadline();
       bool deadline_is_set() const { return deadline.tv_sec > 0; }
-      static bool timeout_compare(const test_case_registrator *lh, const test_case_registrator *rh)
+      static bool timeout_compare(const test_case_registrator *lh,
+                                  const test_case_registrator *rh)
       {
         if (lh->deadline.tv_sec == rh->deadline.tv_sec)
           return lh->deadline.tv_nsec > rh->deadline.tv_nsec;
@@ -705,7 +709,7 @@ namespace ciut {
       pid_t get_pid() const { return pid_; }
       bool has_active_readers() const { return active_readers > 0U; }
       void deactivate_reader() { --active_readers; }
-      void activate_reader() { ++active_readers; }
+      void activate_reader()   { ++active_readers; }
     protected:
       const char *name_;
       test_case_registrator()
@@ -1291,13 +1295,14 @@ namespace ciut {
     }                                                                   \
   } while (0)
 
-
-class none {};
+namespace ciut {
+  class none {};
+}
 
 extern ciut::implementation::namespace_info current_namespace;
 
-#define TEST(...) TEST_DEF(__VA_ARGS__, none)
-#define DISABLED_TEST(...) DISABLED_TEST_DEF(__VA_ARGS__, none)
+#define TEST(...) TEST_DEF(__VA_ARGS__, ciut::none)
+#define DISABLED_TEST(...) DISABLED_TEST_DEF(__VA_ARGS__, ciut::none)
 
 #define TESTSUITE(name)                                                 \
   namespace name {                                                      \

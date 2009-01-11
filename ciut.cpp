@@ -1,5 +1,5 @@
 #include "ciut.hpp"
-#define POLL_USE_SELECT
+#define POLL_USE_EPOLL
 #include "poll.hpp"
 extern "C" {
 #include <signal.h>
@@ -20,25 +20,25 @@ namespace ciut {
     no_core_file::no_core_file()
     {
       rlimit r = { 0, 0};
-      setrlimit(RLIMIT_CORE, &r);
+      ::setrlimit(RLIMIT_CORE, &r);
     }
 
     namespace timeout {
       basic_enforcer::basic_enforcer(type t, unsigned)
       {
-        clock_gettime(t == realtime
-                      ? CLOCK_MONOTONIC
-                      : CLOCK_PROCESS_CPUTIME_ID,
-                      &ts);
+        ::clock_gettime(t == realtime
+                        ? CLOCK_MONOTONIC
+                        : CLOCK_PROCESS_CPUTIME_ID,
+                        &ts);
       }
 
       void basic_enforcer::check(type t, unsigned timeout_ms)
       {
         timespec now;
-        clock_gettime(t == realtime
-                      ? CLOCK_MONOTONIC
-                      : CLOCK_PROCESS_CPUTIME_ID,
-                      &now);
+        ::clock_gettime(t == realtime
+                        ? CLOCK_MONOTONIC
+                        : CLOCK_PROCESS_CPUTIME_ID,
+                        &now);
         now.tv_sec -= ts.tv_sec;
         if (now.tv_nsec < ts.tv_nsec)
           {
@@ -96,8 +96,7 @@ namespace ciut {
 
   namespace implementation {
 
-    typedef poll<fdreader,
-                 test_case_factory::max_parallel*3> polltype;
+    typedef poll<fdreader, test_case_factory::max_parallel*3> polltype;
 
     polltype poller;
 
@@ -167,7 +166,7 @@ namespace ciut {
           } while (rv == -1 && errno == EINTR);
           return true;
         }
-      char buff[len];
+      char *buff = static_cast<char *>(::alloca(len));
       while (bytes_read < len)
         {
           rv = ::read(fd, buff + bytes_read, len - bytes_read);
@@ -213,7 +212,7 @@ namespace ciut {
       ::kill(pid_, SIGKILL);
       death_note = true;
       deadline.tv_sec = 0;
-      char msg[] = "<timeout action=\"killed\"/>\n";
+      static const char msg[] = "<timeout action=\"killed\"/>\n";
       test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
     }
 
@@ -224,7 +223,10 @@ namespace ciut {
       deadline.tv_sec = 0;
     }
 
-    void test_case_registrator::setup(pid_t pid, int in_fd, int out_fd, int stdout_fd, int stderr_fd)
+    void test_case_registrator::setup(pid_t pid,
+                                      int in_fd, int out_fd,
+                                      int stdout_fd,
+                                      int stderr_fd)
     {
       pid_ = pid;
       stdout_reader.set_fd(stdout_fd);
@@ -345,7 +347,7 @@ namespace ciut {
                     directory << test_case_factory::get_working_dir() << '/' << tcname.str();
                   }
               }
-            ::rename(dirname, tcname.str().c_str());
+            std::rename(dirname, tcname.str().c_str());
             const std::string &s = msg.str();
             test_case_factory::present(pid_, comm::exit_fail, s.length(), s.c_str());
           }
@@ -517,7 +519,7 @@ namespace ciut {
                   assert(rv > 0);
                   bytes_read += rv;
                 }
-              char buff[len];
+              char *buff = static_cast<char *>(::alloca(len));
               bytes_read = 0;
               while (bytes_read < len)
                 {
@@ -586,8 +588,7 @@ namespace ciut {
               rv = ::read(presenter_pipe, &len, sizeof(len));
               if (len)
                 {
-                  char buff[len];
-
+                  char *buff = static_cast<char *>(alloca(len));
                   rv = ::read(presenter_pipe, buff, len);
                   assert(size_t(rv) == len);
 
@@ -672,7 +673,7 @@ namespace ciut {
 #define TEMPLATE_TAIL "\"/>\n</exception>\n"
         const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
         const size_t tail_size = sizeof(TEMPLATE_TAIL) - 1;
-        char msg[head_size + len + tail_size + 1];
+        char *msg = static_cast<char *>(alloca(head_size + len + tail_size + 1));
         std::strcpy(msg, TEMPLATE_HEAD);
         std::strcpy(msg + head_size, e.what());
         std::strcpy(msg + head_size + len, TEMPLATE_TAIL);
@@ -682,7 +683,7 @@ namespace ciut {
       }
     catch (...)
       {
-        const char msg[] = "<exception>\n  <caught type=\"...\"/>\n</exception>\n";
+        static const char msg[] = "<exception>\n  <caught type=\"...\"/>\n</exception>\n";
         report(comm::exit_fail, msg);
       }
     // report end of test
@@ -857,12 +858,12 @@ namespace ciut {
       }
     if (tests_as_child_procs())
       {
-        if (!mkdtemp(dirbase))
+        if (!::mkdtemp(dirbase))
           {
             os << argv[0] << ": failed to create working directory\n";
             return 1;
           }
-        if (chdir(dirbase) != 0)
+        if (::chdir(dirbase) != 0)
           {
             os << argv[0] << ": couldn't move to working directoryy\n";
             ::rmdir(dirbase);
@@ -879,18 +880,17 @@ namespace ciut {
         std::cout.sync_with_stdio();
       }
     {
-      static char time_string[] = "2009-01-09T23:59:59Z";
-      time_t now = ::time(0);
-      struct tm tmdata;
-      ::gmtime_r(&now, &tmdata);
+      char time_string[] = "2009-01-09T23:59:59Z";
+      time_t now = std::time(0);
+      struct tm *tmdata = std::gmtime(&now);
       std::sprintf(time_string, "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
-                   tmdata.tm_year + 1900,
-                   tmdata.tm_mon + 1,
-                   tmdata.tm_mday,
-                   tmdata.tm_hour,
-                   tmdata.tm_min,
-                   tmdata.tm_sec);
-      static char machine_string[PATH_MAX];
+                   tmdata->tm_year + 1900,
+                   tmdata->tm_mon + 1,
+                   tmdata->tm_mday,
+                   tmdata->tm_hour,
+                   tmdata->tm_min,
+                   tmdata->tm_sec);
+      char machine_string[PATH_MAX];
       ::gethostname(machine_string, sizeof(machine_string));
       std::cout <<
         "<?xml version=\"1.0\"?>\n\n"
@@ -1058,7 +1058,7 @@ namespace ciut {
       assert(len == bytes_written);
       bool terminal = (t == comm::exit_ok) || (t == comm::exit_fail);
       if (!terminal) return;
-      _Exit(0);
+      std::_Exit(0);
     }
 
     reporter report;
