@@ -1148,8 +1148,16 @@ namespace ciut {
 #define CIUT_LOCAL_NAME(prefix) \
   CIUT_CONCAT_(ciut_local_  ## prefix ## _, __LINE__)
 
+namespace ciut {
+  namespace implementation {
+    template <typename T>
+    const typename std::remove_cv<typename std::remove_reference<T>::type>::type&
+    gettype();
+  }
+}
+
 #define CIUT_REFTYPE(expr) \
-  const std::remove_cv<std::remove_reference<decltype(expr)>::type>::type&
+  decltype(ciut::implementation::gettype<decltype(expr)>())
 
 
 

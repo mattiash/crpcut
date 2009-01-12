@@ -806,8 +806,8 @@ namespace ciut {
           ++p;
           {
             char *end;
-            long l = std::strtol(*p, &end, 10);
-            if (*end != 0 || l < 0L || l > max_parallel)
+            unsigned long l = std::strtol(*p, &end, 10);
+            if (*end != 0 || l > max_parallel)
               {
                 os
                   << "num child processes must be a positive integer no greater than "

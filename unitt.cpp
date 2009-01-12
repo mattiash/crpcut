@@ -317,6 +317,44 @@ TESTSUITE(stderr_and_stdout)
   }
 }
 
+TESTSUITE(parametrized)
+{
+  class ptest : DEPENDS_ON(very_slow_success)
+    {
+    protected:
+      template <typename T1, typename T2>
+        void a_test(T1 p1, T2 p2)
+        {
+          ASSERT_LT(p1, p2);
+        }
+    };
+
+  TEST(should_succeed_assert_lt_int_double, ptest)
+    {
+      a_test(3, 3.1415);
+    }
+  TEST(should_succeed_assert_lt_int_char, ptest)
+    {
+      a_test(32, 'A');
+    }
+  TEST(should_succeed_assert_lt_char_array_string, ptest)
+    {
+      a_test("apa", std::string("katt"));
+    }
+
+  TEST(should_fail_assert_lt_int_double, ptest)
+    {
+      a_test(4, 3.1415);
+    }
+  TEST(should_fail_assert_lt_int_char, ptest)
+    {
+      a_test(800, 'A');
+    }
+  TEST(should_fail_assert_lt_char_array_string, ptest)
+    {
+      a_test("orm", std::string("katt"));
+    }
+}
 int main(int argc, const char *argv[])
 {
   return ciut::test_case_factory::run_test(argc, argv);
