@@ -899,9 +899,9 @@ namespace ciut {
         return;
       }
       catch (...) {
-        comm::report(comm::exit_fail, "<exception>\n  <caught type=\"...\"/>\n</exception>\n");
+        comm::report(comm::exit_fail, "<failure>Unexpectedly caught ...</failure>\n");
       }
-      comm::report(comm::exit_fail, "<missing>\n  <exception/>\n</missing>\n");
+      comm::report(comm::exit_fail, "<failure>Unexpectedly did not throw</failure>\n");
     }
 
     template <typename T>
@@ -914,7 +914,7 @@ namespace ciut {
     void test_wrapper<policies::deaths::wrapper, T>::run(T *t)
     {
       t->test();
-      comm::report(comm::exit_fail, "<missing>\n  <exit/>\n</missing>\n");
+      comm::report(comm::exit_fail, "<failure>Unexpectedly survived</failure>\n");
     }
 
   } // namespace implementation
@@ -998,7 +998,7 @@ namespace ciut {
   {
     std::ostringstream tmp;
     bool v = conditionally_stream(tmp, t);
-    if (tmp.str() != name)
+    if (v && tmp.str() != name)
       {
         static const char* oper[] = { " ", " = " };
         os << prefix << name << oper[v] << tmp.str();
@@ -1162,26 +1162,29 @@ namespace ciut {
 
 
 
-#define CIUT_BINARY_ASSERT(name, oper, lh, rh)                          \
-  do {                                                                  \
-  CIUT_REFTYPE(lh) CIUT_LOCAL_NAME(rl) = lh;                            \
-  CIUT_REFTYPE(rh) CIUT_LOCAL_NAME(rr) = rh;                            \
-  if (!(CIUT_LOCAL_NAME(rl) oper CIUT_LOCAL_NAME(rr)))                  \
-    {                                                                   \
-      std::ostringstream CIUT_LOCAL_NAME(os);                           \
-      CIUT_XML_TAG(ASSERT_ ## name, CIUT_LOCAL_NAME(os))                \
-        {                                                               \
-          CIUT_XML_TAG(param, ASSERT_ ## name, ciut::xml::attr("name", #lh)) \
-            {                                                           \
-              param << CIUT_LOCAL_NAME(rl);                             \
-            }                                                           \
-          CIUT_XML_TAG(param, ASSERT_ ## name, ciut::xml::attr("name", #rh)) \
-            {                                                           \
-              param << CIUT_LOCAL_NAME(rr);                             \
-            }                                                           \
-        }                                                               \
-      ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os));   \
-    }                                                                   \
+#define CIUT_BINARY_ASSERT(name, oper, lh, rh)                                        \
+  do {                                                                                \
+  CIUT_REFTYPE(lh) CIUT_LOCAL_NAME(rl) = lh;                                          \
+  CIUT_REFTYPE(rh) CIUT_LOCAL_NAME(rr) = rh;                                          \
+  if (!(CIUT_LOCAL_NAME(rl) oper CIUT_LOCAL_NAME(rr)))                                \
+    {                                                                                 \
+      std::ostringstream CIUT_LOCAL_NAME(os);                                         \
+      CIUT_LOCAL_NAME(os) << "<failure>ASSERT_" #name "(" #lh ", " #rh ")";           \
+      static const char* CIUT_LOCAL_NAME(prefix)[] = { "\n  where ", "\n        " };  \
+      bool CIUT_LOCAL_NAME(printed) = false;                                          \
+      CIUT_LOCAL_NAME(printed) |=                                                     \
+         ciut::stream_param(CIUT_LOCAL_NAME(os),                                      \
+                            CIUT_LOCAL_NAME(prefix)[CIUT_LOCAL_NAME(printed)],        \
+                            #lh,                                                      \
+                            CIUT_LOCAL_NAME(rl));                                     \
+      CIUT_LOCAL_NAME(printed) |=                                                     \
+         ciut::stream_param(CIUT_LOCAL_NAME(os),                                      \
+                            CIUT_LOCAL_NAME(prefix)[CIUT_LOCAL_NAME(printed)],        \
+                            #rh,                                                      \
+                            CIUT_LOCAL_NAME(rr));                                     \
+      CIUT_LOCAL_NAME(os) << "</failure>\n";                                        \
+      ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os));                 \
+    }                                                                                 \
   } while(0)
 
 #define ASSERT_TRUE(a)                                                  \
@@ -1193,13 +1196,13 @@ namespace ciut {
     else                                                                \
       {                                                                 \
         std::ostringstream CIUT_LOCAL_NAME(os);                         \
-        CIUT_XML_TAG(ASSERT_TRUE, CIUT_LOCAL_NAME(os))                  \
-          {                                                             \
-            CIUT_XML_TAG(expr, ASSERT_TRUE)                             \
-              {                                                         \
-                expr << CIUT_LOCAL_NAME(ra);                            \
-              }                                                         \
-          }                                                             \
+        CIUT_LOCAL_NAME(os) << "<failure>"                              \
+                               "ASSERT_TRUE(" #a ")\n";                 \
+        ciut::stream_param(CIUT_LOCAL_NAME(os),                         \
+                           "  where ",                                  \
+                           #a,                                          \
+                           CIUT_LOCAL_NAME(ra));                        \
+        CIUT_LOCAL_NAME(os) << "</failure>\n";                          \
         ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os)); \
       }                                                                 \
   } while(0)
@@ -1212,13 +1215,13 @@ namespace ciut {
     if (CIUT_LOCAL_NAME(ra))                                            \
       {                                                                 \
         std::ostringstream CIUT_LOCAL_NAME(os);                         \
-        CIUT_XML_TAG(ASSERT_FALSE, CIUT_LOCAL_NAME(os))                 \
-          {                                                             \
-            CIUT_XML_TAG(expr, ASSERT_FALSE)                            \
-              {                                                         \
-                expr << CIUT_LOCAL_NAME(ra);                            \
-              }                                                         \
-          }                                                             \
+        CIUT_LOCAL_NAME(os) << "<failure>"                              \
+                               "ASSERT_FALSE(" #a ")\n";                \
+        ciut::stream_param(CIUT_LOCAL_NAME(os),                         \
+                           "  where ",                                  \
+                           #a,                                          \
+                           CIUT_LOCAL_NAME(ra));                        \
+        CIUT_LOCAL_NAME(os) << "</failure>\n";                          \
         ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os)); \
       }                                                                 \
   } while(0)
@@ -1242,30 +1245,18 @@ namespace ciut {
   CIUT_BINARY_ASSERT(LE, <=, lh, rh)
 
 
-#define ASSERT_THROW(expr, exc)                                         \
-  do {                                                                  \
-    try {                                                               \
-      expr;                                                             \
-      std::ostringstream CIUT_LOCAL_NAME(os);                           \
-      CIUT_XML_TAG(ASSERT_THROW, CIUT_LOCAL_NAME(os))                   \
-      {                                                                 \
-        CIUT_XML_TAG(expression, ASSERT_THROW)                          \
-        {                                                               \
-          expression << #expr;                                          \
-        }                                                               \
-        CIUT_XML_TAG(missing, ASSERT_THROW)                             \
-        {                                                               \
-          CIUT_XML_TAG(exception, missing)                              \
-          {                                                             \
-            exception << #exc;                                          \
-          }                                                             \
-        }                                                               \
-      }                                                                 \
-      ciut::comm::report(ciut::comm::exit_fail,                         \
-                         CIUT_LOCAL_NAME(os));                          \
-    }                                                                   \
-    catch (exc) {                                                       \
-    }                                                                   \
+#define ASSERT_THROW(expr, exc)                                             \
+  do {                                                                      \
+    try {                                                                   \
+      expr;                                                                 \
+      std::ostringstream CIUT_LOCAL_NAME(os);                               \
+      CIUT_LOCAL_NAME(os) << "<failure>ASSERT_THROW(" #expr ", " #exc ")\n" \
+                             "  Did not throw</failure>\n";                 \
+      ciut::comm::report(ciut::comm::exit_fail,                             \
+                         CIUT_LOCAL_NAME(os));                              \
+    }                                                                       \
+    catch (exc) {                                                           \
+    }                                                                       \
   } while (0)
 
 #define ASSERT_NO_THROW(expr)                                           \
@@ -1275,29 +1266,16 @@ namespace ciut {
     }                                                                   \
     catch (std::exception &CIUT_LOCAL_NAME(e)) {                        \
       std::ostringstream CIUT_LOCAL_NAME(os);                           \
-      CIUT_XML_TAG(ASSERT_NO_THROW, CIUT_LOCAL_NAME(os))                \
-        {                                                               \
-          CIUT_XML_TAG(expression, ASSERT_NO_THROW)                     \
-          {                                                             \
-            expression << #expr;                                        \
-          }                                                             \
-          CIUT_XML_TAG(caught,  ASSERT_NO_THROW,                        \
-                       ciut::xml::attr("type", "std::exception"),       \
-                       ciut::xml::attr("what", CIUT_LOCAL_NAME(e).what()));  \
-        }                                                               \
+      CIUT_LOCAL_NAME(os) << "<failure>ASSERT_NO_THROW(" #expr ")\n"    \
+                             "  caught std::exception\n"                \
+                             "  what()=" << CIUT_LOCAL_NAME(e).what()   \
+                          << "\n</failure>\n";                          \
       ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os));   \
     }                                                                   \
     catch (...) {                                                       \
       std::ostringstream CIUT_LOCAL_NAME(os);                           \
-      CIUT_XML_TAG(ASSERT_NO_THROW, CIUT_LOCAL_NAME(os))                \
-      {                                                                 \
-        CIUT_XML_TAG(expression, ASSERT_NO_THROW)                       \
-          {                                                             \
-            expression << #expr;                                        \
-          }                                                             \
-        CIUT_XML_TAG(caught, ASSERT_NO_THROW,                           \
-                     ciut::xml::attr("type", "..."));                   \
-        }                                                               \
+      CIUT_LOCAL_NAME(os) << "<failure>ASSERT_NO_THROW(" #expr ")\n"    \
+                             "  caught ...\n</failure>\n";              \
       ciut::comm::report(ciut::comm::exit_fail,                         \
                          CIUT_LOCAL_NAME(os));                          \
     }                                                                   \

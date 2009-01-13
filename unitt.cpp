@@ -311,7 +311,7 @@ TESTSUITE(stderr_and_stdout)
   {
     std::cerr << "hello";
   }
-  TEST(should_succeed_with_assert_on_stderr, NO_CORE_FILE, EXPECT_SIGNAL_DEATH(SIGABRT))
+  TEST(should_fail_with_death_due_to_assert_on_stderr)
   {
     assert("apa" == 0);
   }

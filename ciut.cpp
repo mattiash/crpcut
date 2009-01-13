@@ -50,21 +50,11 @@ namespace ciut {
         if (ms > timeout_ms)
           {
             std::ostringstream os;
-            CIUT_XML_TAG(timeout, os)
-              {
-                CIUT_XML_TAG(type, timeout)
-                  {
-                    type << (t == realtime ? "realtime" : "cputime");
-                  }
-                CIUT_XML_TAG(max_ms, timeout)
-                  {
-                    max_ms << timeout_ms;
-                  }
-                CIUT_XML_TAG(actual_ms, timeout)
-                  {
-                    actual_ms << ms;
-                  }
-              }
+            os << "<failure>";
+            os << (t == realtime ? "Realtime" : "Cputime")
+               << " timeout " << timeout_ms
+               << "ms exceeded.\n  Actual time to completion was "
+               << ms << "ms</failure>\n";
             report(comm::exit_fail, os);
           }
       }
@@ -212,7 +202,7 @@ namespace ciut {
       ::kill(pid_, SIGKILL);
       death_note = true;
       deadline.tv_sec = 0;
-      static const char msg[] = "<timeout action=\"killed\"/>\n";
+      static const char msg[] = "<failure>Timed out - killed</failure>\n";
       test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
     }
 
@@ -258,7 +248,7 @@ namespace ciut {
       (void)len; // silence warning when building with -DNDEBUG
       if (::chdir(name) != 0)
         {
-          report(comm::exit_fail, "couldn't chdir working dir");
+          report(comm::exit_fail, "<failure>Couldn't chdir working dir</failure>\n");
           assert("unreachable code reached" == 0);
         }
     }
@@ -283,14 +273,26 @@ namespace ciut {
       if (!death_note)
         {
           std::ostringstream out;
-          CIUT_XML_TAG(termination, out)
+          CIUT_XML_TAG(failure, out)
             {
+              char dirname[std::numeric_limits<int>::digits/3+1];
+              int len = std::snprintf(dirname, sizeof(dirname), "%d", dirnum);
+              assert(len > 0 && len < int(sizeof(dirname)));
+              (void)len; // silence warning when building with -DNDEBUG
+              if (!is_dir_empty(dirname))
+                {
+                  std::ostringstream tcname;
+                  tcname << *this;
+                  out << " nonempty_dir=\"" << test_case_factory::get_working_dir() << '/' << *this << "\"";
+                  std::rename(dirname, tcname.str().c_str());
+                  t = comm::exit_fail;
+                }
+
               switch (info.si_code)
                 {
                 case CLD_EXITED:
                   {
-                    CIUT_XML_TAG(exit, termination,
-                                 xml::attr("code", info.si_status));
+                    failure << "Unexpectedly exited with code " << info.si_status;
                     bool success = !failed();
                     if (!success)
                       {
@@ -303,8 +305,7 @@ namespace ciut {
                   break;
                 case CLD_KILLED:
                   {
-                    CIUT_XML_TAG(signal, termination,
-                                 xml::attr("number", info.si_status));
+                    failure << "Unexpectedly died on signal " << info.si_status;
                     bool success = !failed();
                     if (!success)
                       {
@@ -313,46 +314,26 @@ namespace ciut {
                             t = comm::exit_fail;
                           }
                       }
-              }
+                  }
                   break;
                 case CLD_DUMPED:
-                  CIUT_XML_TAG(core_dump, termination);
+                  failure << "Unexpectedly died with core dump";
                   t = comm::exit_fail;
                   break;
                 default:
-                  CIUT_XML_TAG(unknown_reason, termination,
-                               xml::attr("code", info.si_code));
+                  failure << "Unexpectedly died for unknown reason, code=" << info.si_code;
                   t = comm::exit_fail;
                 }
             }
-          const std::string &s = out.str();
-          test_case_factory::present(pid_, t, s.length(), s.c_str());
           death_note = true;
-          if (t == comm::exit_ok) register_success();
+          if (t == comm::exit_ok || !failed()) register_success();
+          //          if (t != comm::exit_ok)
+            {
+              const std::string &s = out.str();
+              test_case_factory::present(pid_, t, s.length(), s.c_str());
+            }
         }
-      {
-        char dirname[std::numeric_limits<int>::digits/3+1];
-        int len = std::snprintf(dirname, sizeof(dirname), "%d", dirnum);
-        assert(len > 0 && len < int(sizeof(dirname)));
-        (void)len; // silence warning when building with -DNDEBUG
-        if (!is_dir_empty(dirname))
-          {
-            std::ostringstream tcname;
-            tcname << *this;
-            std::ostringstream msg;
-            CIUT_XML_TAG(remaining_files, msg)
-              {
-                CIUT_XML_TAG(directory, remaining_files)
-                  {
-                    directory << test_case_factory::get_working_dir() << '/' << tcname.str();
-                  }
-              }
-            std::rename(dirname, tcname.str().c_str());
-            const std::string &s = msg.str();
-            test_case_factory::present(pid_, comm::exit_fail, s.length(), s.c_str());
-          }
-        test_case_factory::return_dir(dirnum);
-      }
+      test_case_factory::return_dir(dirnum);
       test_case_factory::present(pid_, comm::end_test, 0, 0);
     }
   } // namespace implementation
@@ -480,7 +461,6 @@ namespace ciut {
     ::close(fds[1]);
 
     std::map<pid_t, test_case_result> messages;
-    std::cout << "  <log>\n";
     for (;;)
       {
         pid_t test_case_id;
@@ -488,7 +468,6 @@ namespace ciut {
         if (rv == 0)
           {
             assert(messages.size() == 0);
-            std::cout << "  </log>\n";
             exit(0);
           }
         assert(rv == sizeof(test_case_id));
@@ -542,9 +521,8 @@ namespace ciut {
             if (!s.success || verbose_mode)
               {
                 bool history_print = false;
-                std::cout << "    <test name=\"" << s.name
+                std::cout << "  <test name=\"" << s.name
                           << "\" result=\"" << (s.success ? "OK" : "FAILED") << '"';
-
                 for (std::list<std::string>::iterator i = s.history.begin();
                      i != s.history.end();
                      ++i)
@@ -557,7 +535,7 @@ namespace ciut {
                       {
                         if (!history_print)
                           {
-                            std::cout  << ">\n";
+                            std::cout  << ">\n    <log>\n";
                             history_print = true;
                           }
                         endpos = s.find('\n', prevpos);
@@ -569,7 +547,7 @@ namespace ciut {
                   }
                 if (history_print)
                   {
-                    std::cout << "    </test>\n";
+                    std::cout << "    </log>\n  </test>\n";
                   }
                 else
                   {
@@ -642,24 +620,28 @@ namespace ciut {
   {
     test_case_base *p = 0;
     const char *msg = 0;
+    const char *type = 0;
     try {
       p = (i->instantiate_obj());
     }
     catch (std::exception &e)
       {
+        type = "std::exception";
         msg = e.what();
       }
     catch (...)
       {
-        msg = "unknown exception";
+        type = "...";
       }
-    if (msg)
+    if (type)
       {
         std::ostringstream out;
-        out << "Creating fixture for "
-            << *i
-            << " failed with "
-            << msg << std::endl;
+        out << "<failure>Fixture contructor threw " << type;
+        if (msg)
+          {
+            out << "\n  what()=" << msg; 
+          }
+        out << "</failure>";
         report(comm::exit_fail, out);
       }
     // report start of test
@@ -669,8 +651,8 @@ namespace ciut {
     catch (std::exception &e)
       {
         const size_t len = std::strlen(e.what());
-#define TEMPLATE_HEAD "<exception>\n  <caught type=\"std::exception\" what=\""
-#define TEMPLATE_TAIL "\"/>\n</exception>\n"
+#define TEMPLATE_HEAD "<failure>Unexpectedly caught std::exception\n  what()="
+#define TEMPLATE_TAIL "</failure>\n"
         const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
         const size_t tail_size = sizeof(TEMPLATE_TAIL) - 1;
         char *msg = static_cast<char *>(alloca(head_size + len + tail_size + 1));
@@ -683,7 +665,7 @@ namespace ciut {
       }
     catch (...)
       {
-        static const char msg[] = "<exception>\n  <caught type=\"...\"/>\n</exception>\n";
+        static const char msg[] = "<failure>Unexpectedly caught ...</failure>\n";
         report(comm::exit_fail, msg);
       }
     // report end of test
@@ -894,9 +876,10 @@ namespace ciut {
       ::gethostname(machine_string, sizeof(machine_string));
       std::cout <<
         "<?xml version=\"1.0\"?>\n\n"
-        "<test_run"
-        " time=\"" << time_string <<
-        "\" machine=\"" << machine_string <<
+        "<ciut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+        " xsi:noNamespaceSchemaLocation=\"ciut.xsd\""
+        " starttime=\"" << time_string <<
+        "\" host=\"" << machine_string <<
         "\" name=\"" << argv[0] << "\">\n" << std::flush;
     }
 
@@ -950,12 +933,21 @@ namespace ciut {
     if (tests_as_child_procs())
       {
         kill_presenter_process();
-        std::cout <<
-          "  <statistics>\n"
-          "    <tests_registered>" << num_registered_tests << "</tests_registered>\n"
-          "    <tests_run>"        << num_tests_run        << "</tests_run>\n"
-          "    <tests_succeeded>"     << num_successful_tests     << "</tests_succeeded>\n"
-          "  </statistics>\n";
+        CIUT_XML_TAG(statistics, std::cout)
+          {
+            CIUT_XML_TAG(registered_test_cases, statistics)
+              {
+                registered_test_cases << num_registered_tests;
+              }
+            CIUT_XML_TAG(run_test_cases, statistics)
+              {
+                run_test_cases << num_tests_run;
+              }
+            CIUT_XML_TAG(failed_test_cases, statistics)
+              {
+                failed_test_cases << num_tests_run - num_successful_tests;
+              }
+          }
 
         for (unsigned n = 0; n < max_parallel; ++n)
           {
@@ -966,7 +958,7 @@ namespace ciut {
           }
         if (!is_dir_empty("."))
           {
-            std::cout << "  <remaining_files directory=\"" << dirbase << "\"/>\n";
+            std::cout << "  <remaining_files nonempty_dir=\"" << dirbase << "\"/>\n";
           }
         else
           {
@@ -986,7 +978,7 @@ namespace ciut {
         std::cout << "  </blocked_tests>\n";
       }
 
-    std::cout << "</test_run>\n";
+    std::cout << "</ciut>\n";
     return num_tests_run - num_successful_tests;
   }
 
