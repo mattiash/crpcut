@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="identifier">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-zA-Z_][a-zA-Z0-9_]*(::[a-zA-Z_][a-zA-Z0-9_]*)*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="remaining_files">
+    <xs:attribute name="nonempty_dir" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="failure">
+     <xs:simpleContent>
+       <xs:extension base="xs:string">
+         <xs:attribute name="nonempty_dir" type="xs:string" use="optional"/>
+       </xs:extension>
+     </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="log">
+    <xs:sequence minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="failure" type="failure" minOccurs="0"/>
+      <xs:element name="stdout" type="xs:string" minOccurs="0"/>
+      <xs:element name="stderr" type="xs:string" minOccurs="0"/>
+      <xs:element name="remaining_files" type="remaining_files" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="result">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="OK|FAILED"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="test">
+    <xs:sequence>
+      <xs:element name="log"  type="log" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="identifier" use="required"/>
+    <xs:attribute name="result" type="result" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="testname">
+    <xs:attribute name="name" type="identifier" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="blocked_tests">
+    <xs:sequence>
+      <xs:element name="test" type="testname" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="statistics">
+    <xs:sequence>
+      <xs:element name="registered_test_cases" type="xs:unsignedInt"/>
+      <xs:element name="run_test_cases" type="xs:unsignedInt"/>
+      <xs:element name="failed_test_cases" type="xs:unsignedInt"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="testrun">
+    <xs:sequence>
+      <xs:element name="test" type="test" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="statistics" type="statistics"/>
+      <xs:element name="remaining_files" type="remaining_files" minOccurs="0"/>
+      <xs:element name="blocked_tests" type="blocked_tests" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="host" type="xs:string" use="required"/>
+    <xs:attribute name="starttime" type="xs:dateTime" use="required"/>
+  </xs:complexType>
+
+  <xs:element name="ciut" type="testrun"/>
+</xs:schema>
