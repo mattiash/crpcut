@@ -52,8 +52,8 @@ If you have a multi-core CPU, it may be beneficial to run several test cases
 in parallel. crpcut allows that.
 <p/>
 If there are files left in the test process' working directory after the test
-case process has terminated, the test case is concidered failed. The working
-dir is left untouched by crpcut, for you to examine.
+case process has terminated, the test case is considered failed. The working
+directory is left untouched by crpcut, for you to examine.
 </chapter>
 
 <chapter title="Requirements">
@@ -103,13 +103,13 @@ due to its lack of clock_gettime().
 
 <chapter title="Writing tests">
 Test cases are defined using the <id>TEST()</id> macro. If several tests are
-related, they can be grouped into a testsuite using the <id>TESTSUITE()</id>
+related, they can be grouped into a test suite using the <id>TESTSUITE()</id>
 macro. Test cases can be written in several files and linked to one main
 program.
 <p/>
 In tests, assert correctness using unary and binary assertion macros.
 <p/>
-The unasy assertions are:
+The unary assertions are:
 <definitions notion="assert" meaning="condition">
   <def notion="ASSERT_TRUE(expr)">Succeeds iff <id>expr</id> evaluates to
                                  <id>true</id></def>
@@ -136,8 +136,8 @@ The binary assertions are:
   <def notion="ASSERT_THROW(expr, exc_type)">Succeeds iff the expression <id>expr</id> throws an exception of type <id>exc_type</id></def>
 </definitions>
 If an assertion fails, the value of the parameters is included in the failure
-log (provided that the values are ouptut streamable.) All assert macros
-evaluates each parameter value exactly once, so providing paremeters with
+log (provided that the values are output streamable.) All assert macros
+evaluates each parameter value exactly once, so providing parameters with
 side effects is not a problem. The order of evaluation of the parameters is
 undefined, however.
 <p/>
@@ -183,7 +183,7 @@ The test case modifiers are:
                            file, no matter how it crashes. Useful when
                            testing that an <id>assert()</id> works as expected.
                            </def>
-<def notion="EXPECT_EXIT(code)">For the test to suceed, it must exit with the
+<def notion="EXPECT_EXIT(code)">For the test to succeed, it must exit with the
                                 supplied exit code. If any exit is OK, use
                                 <id>ANY_CODE</id> for <id>code</id>.</def>
 <def notion="EXPECT_SIGNAL_DEATH(code)">For the test to succeed, it must
@@ -235,15 +235,15 @@ int main(int argc, char *argv[])
 }
 </code>
 <id>crpcut::test_case_factory::run_test()</id> expects parameters as a set of
-flags followed by a set of testcase or testsuite names. The flags are:
+flags followed by a set of test case or test suite names. The flags are:
 <definitions>
-<def notion="-l">List all testcases matching the testcase or testsuite names
-                 on stdout, then exit with code 0.
+<def notion="-l">List on stdout, all test cases matching the test case or test
+                 suite names, then exit with code 0.
                  </def>
 <def notion="-d">Ignore dependencies when running tests.</def>
 <def notion="-v">Print the result of successful tests, in addition to that
                  of the failed ones.</def>
-<def notion="-c&#xA0;num">Control the number of parallell spawned test
+<def notion="-c&#xA0;num">Control the number of parallel spawned test
                                 case processes. The default is 1. If 0, the
                                 test cases are run in the parent process.</def>
 </definitions>
@@ -252,7 +252,7 @@ should really only be used when debugging a test case (below.) The whole test
 program will terminate when reaching the first failed test. Tests that die,
 will also terminate the program, even if death is expected.
 <p/>
-To run the tests in testsuite <id>asserts</id>, 8 test cases in parallel,
+To run the tests in test suite <id>asserts</id>, 8 test cases in parallel,
 ignore all dependencies, and print also successful tests, start the
 test program using <id>-d&#xA0;-v&#xA;-c&#xA;8 asserts</id>.
 <p/>
@@ -276,7 +276,7 @@ provided in <id>crpcut.xsd</id>. It is fairly human-readable.
 
 <chapter title="Debugging">
 Debugging a test case is easy. Load the test program into your favourite
-debugger. Set a breakpoint on testcasename::test. Run with
+debugger. Set a break point on testcasename::test. Run with
 <id>-d&#xA0;-c&#xA0;0&#xA0;testcasename</id>. Example:
 <code>
 &gt; $ gdb ./testprog
@@ -320,3 +320,6 @@ order is:
 </list>
 </chapter>
 </doc>
+
+<!--  LocalWords:  crpcut
+ -->
