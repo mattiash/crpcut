@@ -133,12 +133,13 @@ The binary assertions are:
                                 evaluates to <id>true</id></def>
   <def notion="ASSERT_LE(a, b)">Succeeds iff the expression <id>(a &lt;= b)</id>
                                 evaluates to <id>true</id></def>
+  <def notion="ASSERT_THROW(expr, exc_type)">Succeeds iff the expression <id>expr</id> throws an exception of type <id>exc_type</id></def>
 </definitions>
-If the assertion fails because the expression evaluates to <id>false</id> the
-value of the parameters is included in the failure log (provided that the
-values are ouptut streamable.) All assert macros evaluates each parameter
-value exactly once, so providing paremeters with side effects is not a problem.
-The order of evaluation is undefined, however.
+If an assertion fails, the value of the parameters is included in the failure
+log (provided that the values are ouptut streamable.) All assert macros
+evaluates each parameter value exactly once, so providing paremeters with
+side effects is not a problem. The order of evaluation of the parameters is
+undefined, however.
 <p/>
 If several test cases share the same test setup, a test fixture can be written.
 A fixture is just a <id>class</id> or <id>struct</id>, with the desired
