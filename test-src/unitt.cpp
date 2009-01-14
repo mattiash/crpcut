@@ -254,9 +254,6 @@ DISABLED_TEST(should_never_run, fixture<3>)
 }
 
 
-
-
-
 TESTSUITE(depends)
 {
   TEST(should_succeed_after_success_dependencies,

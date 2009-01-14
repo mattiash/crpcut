@@ -103,7 +103,7 @@ due to its lack of clock_gettime().
 
 <chapter title="Writing tests">
 Test cases are defined using the <id>TEST()</id> macro. If several tests are
-connected, they can be grouped into a testsuite using the <id>TESTSUITE()</id>
+related, they can be grouped into a testsuite using the <id>TESTSUITE()</id>
 macro. Test cases can be written in several files and linked to one main
 program.
 <p/>
@@ -217,6 +217,12 @@ The test case modifiers are:
                               run, all tests in the list must have finished
                               successfully.</def>
 </definitions>
+If, for whatever reason, you have tests that you currently don&apos;t want to
+run, but you intend for them to be included later, define them using
+<id>DISABLED_TEST()</id> instead of <id>TEST()</id>. Test cases defined with
+<id>DISABLED_TEST()</id> are compiled, preventing code-rot, but will never be
+a candidate for running. It is not possible to state dependency on a disabled
+test.
 </chapter>
 
 <chapter title="The main program">
