@@ -9,6 +9,7 @@
           <tr>
             <th align="left">Testcase</th>
             <th align="left">Result</th>
+            <th>Failure</th>
           </tr>
           <xsl:for-each select="ciut/test">
             <xsl:sort select="@name"/>
@@ -21,6 +22,7 @@
                 <xsl:otherwise>
                   <td bgcolor="#ff0000"><xsl:value-of select="@name"/></td>
                   <td bgcolor="#ff0000"><xsl:value-of select="@result"/></td>
+                  <td><pre><xsl:value-of select="./log/failure"/></pre></td>
                 </xsl:otherwise>
               </xsl:choose>
             </tr>

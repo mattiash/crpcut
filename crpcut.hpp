@@ -1,5 +1,5 @@
-#ifndef CIUT_HPP
-#define CIUT_HPP
+#ifndef CRPCUT_HPP
+#define CRPCUT_HPP
 
 #include <stdexcept>
 #include <sstream>
@@ -22,34 +22,34 @@ namespace std {
   using namespace std::tr1;
 }
 
-struct siginfo;
+#define NO_CORE_FILE \
+  protected virtual crpcut::policies::no_core_file
 
-#define NO_CORE_FILE                                    \
-  protected virtual ciut::policies::no_core_file
+#define EXPECT_EXIT(num) \
+  protected virtual crpcut::policies::exit_death<num>
 
-#define EXPECT_EXIT(num)                                \
-  protected virtual ciut::policies::exit_death<num>
+#define EXPECT_SIGNAL_DEATH(num) \
+  protected virtual crpcut::policies::signal_death<num>
 
-#define EXPECT_SIGNAL_DEATH(num)                        \
-  protected virtual ciut::policies::signal_death<num>
+#define EXPECT_EXCEPTION(type) \
+  protected virtual crpcut::policies::exception_specifier<type>
 
-#define EXPECT_EXCEPTION(type)                                  \
-  protected virtual ciut::policies::exception_specifier<type>
-
-#define DEPENDS_ON(...)                                                 \
-  protected virtual ciut::policies::dependency_policy<ciut::policies::dependencies::tuple_maker<__VA_ARGS__>::type >
+#define DEPENDS_ON(...) \
+  protected virtual crpcut::policies::dependency_policy<crpcut::policies::dependencies::tuple_maker<__VA_ARGS__>::type >
 
 #define ANY_CODE -1
 
 #if defined(CLOCK_PROCESS_CPUTIME_ID)
-#define DEADLINE_CPU_MS(time) ciut::policies::timeout_policy<ciut::policies::timeout::cputime, time>
+#define DEADLINE_CPU_MS(time) \
+  crpcut::policies::timeout_policy<crpcut::policies::timeout::cputime, time>
 #endif
 #if defined(CLOCK_MONOTONIC)
-#define DEADLINE_REALTIME_MS(time) ciut::policies::timeout_policy<ciut::policies::timeout::realtime, time>
+#define DEADLINE_REALTIME_MS(time) \
+  crpcut::policies::timeout_policy<crpcut::policies::timeout::realtime, time>
 #endif
 
 
-namespace ciut {
+namespace crpcut {
 
   namespace xml {
     class tag_t
@@ -87,7 +87,8 @@ namespace ciut {
         parent.state_ = in_children;
       }
       template <typename T1>
-      tag_t(const char *name, tag_t &parent, const attr<T1>& a1)
+      tag_t(const char *name, tag_t &parent,
+            const attr<T1>& a1)
         : name_(name),
           state_(in_name),
           indent_(parent.indent_+1),
@@ -99,7 +100,8 @@ namespace ciut {
         os_ << a1;
       }
       template <typename T1, typename T2>
-      tag_t(const char *name, tag_t &parent, const attr<T1>& a1, const attr<T2> &a2)
+      tag_t(const char *name, tag_t &parent,
+            const attr<T1>& a1, const attr<T2> &a2)
         : name_(name),
           state_(in_name),
           indent_(parent.indent_+1),
@@ -111,7 +113,8 @@ namespace ciut {
         os_ << a1 << a2;
       }
       template <typename T1, typename T2, typename T3>
-      tag_t(const char *name, tag_t &parent, const attr<T1>& a1, const attr<T2> &a2, const attr<T3> &a3)
+      tag_t(const char *name, tag_t &parent,
+            const attr<T1>& a1, const attr<T2> &a2, const attr<T3> &a3)
         : name_(name),
           state_(in_name),
           indent_(parent.indent_+1),
@@ -123,7 +126,8 @@ namespace ciut {
         os_ << a1 << a2 << a3;
       }
       template <typename T1, typename T2, typename T3, typename T4>
-      tag_t(const char *name, tag_t &parent, const attr<T1>& a1, const attr<T2> &a2, const attr<T3> &a3, const attr<T4> &a4)
+      tag_t(const char *name, tag_t &parent,
+            const attr<T1>& a1, const attr<T2> &a2, const attr<T3> &a3, const attr<T4> &a4)
         : name_(name),
           state_(in_name),
           indent_(parent.indent_+1),
@@ -238,10 +242,10 @@ namespace ciut {
     class default_policy
     {
     protected:
-      typedef void ciut_run_wrapper;
-      typedef deaths::none ciut_expected_death_cause;
-      typedef dependencies::none ciut_dependency;
-      typedef timeout::no_enforcer ciut_timeout_enforcer;
+      typedef void crpcut_run_wrapper;
+      typedef deaths::none crpcut_expected_death_cause;
+      typedef dependencies::none crpcut_dependency;
+      typedef timeout::no_enforcer crpcut_timeout_enforcer;
     };
 
     namespace deaths {
@@ -280,16 +284,16 @@ namespace ciut {
     class signal_death : protected virtual default_policy
     {
     public:
-      typedef deaths::wrapper ciut_run_wrapper;
-      typedef deaths::signal<N> ciut_expected_death_cause;
+      typedef deaths::wrapper crpcut_run_wrapper;
+      typedef deaths::signal<N> crpcut_expected_death_cause;
     };
 
     template <int N>
     class exit_death : protected virtual default_policy
     {
     public:
-      typedef deaths::wrapper  ciut_run_wrapper;
-      typedef deaths::exit<N>  ciut_expected_death_cause;
+      typedef deaths::wrapper  crpcut_run_wrapper;
+      typedef deaths::exit<N>  crpcut_expected_death_cause;
     };
 
     template <typename exc>
@@ -299,7 +303,7 @@ namespace ciut {
     class exception_specifier : protected virtual default_policy
     {
     public:
-      typedef exception_wrapper<T> ciut_run_wrapper;
+      typedef exception_wrapper<T> crpcut_run_wrapper;
     };
 
     class no_core_file : protected virtual default_policy
@@ -357,7 +361,7 @@ namespace ciut {
       class enforcer : private basic_enforcer
       {
       public:
-        enforcer() { inc(); T::reg.add(this); }
+        enforcer() { inc(); T::crpcut_reg.add(this); }
       };
 
       template <typename T1 = none, typename T2 = none>
@@ -443,7 +447,8 @@ namespace ciut {
       class wrap
       {
       public:
-        typedef tuple<envelope<typename T::head>, typename wrap<envelope, typename T::tail>::type> type;
+        typedef tuple<envelope<typename T::head>,
+                      typename wrap<envelope, typename T::tail>::type> type;
       };
 
       template <template <typename> class envelope, typename T>
@@ -458,7 +463,7 @@ namespace ciut {
     class dependency_policy : protected virtual default_policy
     {
     public:
-      typedef typename dependencies::wrap<dependencies::enforcer, T>::type ciut_dependency;
+      typedef typename dependencies::wrap<dependencies::enforcer, T>::type crpcut_dependency;
     };
 
     namespace timeout {
@@ -507,7 +512,7 @@ namespace ciut {
     class timeout_policy : protected virtual default_policy
     {
     public:
-      typedef timeout::enforcer<t, timeout_ms> ciut_timeout_enforcer;
+      typedef timeout::enforcer<t, timeout_ms> crpcut_timeout_enforcer;
     };
 
 
@@ -792,7 +797,7 @@ namespace ciut {
         num_successful_tests(0),
         first_free_working_dir(0)
     {
-      std::strcpy(dirbase, "/tmp/ciutXXXXXX");
+      std::strcpy(dirbase, "/tmp/crpcutXXXXXX");
       for (unsigned n = 0; n < max_parallel; ++n)
         {
           working_dirs[n] = n+1;
@@ -1061,94 +1066,94 @@ namespace ciut {
     }
   }
 
-} // namespace ciut
+} // namespace crpcut
 
 #define decltype typeof
 
-#define CIUT_XML_TAG(name, ...) \
-  if (ciut::xml::tag_t name = ciut::xml::tag_t(#name, __VA_ARGS__)) \
-    {                                                               \
-    }                                                               \
+#define CRPCUT_XML_TAG(name, ...) \
+  if (crpcut::xml::tag_t name = crpcut::xml::tag_t(#name, __VA_ARGS__)) \
+    {                                                                   \
+    }                                                                   \
   else
 
-#define CIUT_TEST_CASE_DEF(test_case_name, ...)                         \
-  class test_case_name                                                  \
-    : ciut::test_case_base, __VA_ARGS__                                 \
-  {                                                                     \
-    friend class ciut::implementation::test_wrapper<ciut_run_wrapper, test_case_name>; \
-  friend class ciut::policies::dependencies::enforcer<test_case_name>;  \
-  virtual void run_test()                                               \
-  {                                                                     \
-      ciut_timeout_enforcer obj;                                        \
-      (void)obj; /* silence warning */                                  \
-      using ciut::implementation::test_wrapper;                         \
-      test_wrapper<ciut_run_wrapper, test_case_name>::run(this);        \
-    }                                                                   \
-    void test();                                                        \
-    static ciut::test_case_base& creator()                              \
-    {                                                                   \
-      static test_case_name obj;                                        \
-      return obj;                                                       \
-    }                                                                   \
-    class registrator                                                   \
-      : public ciut::implementation::test_case_registrator,             \
-        public virtual ciut::policies::dependencies::base,              \
-        private virtual test_case_name::ciut_expected_death_cause,      \
-        private virtual test_case_name::ciut_dependency                 \
-          {                                                             \
-            typedef ciut::implementation::test_case_registrator         \
-              registrator_base;                                         \
-          public:                                                       \
-            registrator()                                               \
-              : registrator_base(#test_case_name,                       \
-                                 &test_case_name::creator)              \
-              {                                                         \
-              }                                                         \
-          private:                                                      \
-            virtual bool match_name(const char *name_param) const       \
-            {                                                           \
-              const char *p = current_namespace.match_name(name_param); \
-              if (p)                                                    \
-                {                                                       \
-                  if (p != name_param || *p == ':')                     \
-                    {                                                   \
-                      if (!*p) return true; /* match for whole suites*/ \
-                      if (!*p++ == ':') return false;                   \
-                      if (!*p++ == ':') return false;                   \
-                    }                                                   \
-                }                                                       \
-              else                                                      \
-                {                                                       \
-                  p = name_param;                                       \
-                }                                                       \
-              return !std::strcmp(p, #test_case_name);                  \
-            }                                                           \
-            virtual std::ostream &print_name(std::ostream &os) const    \
-            {                                                           \
-              os << current_namespace;                                  \
-              return os << #test_case_name;                             \
-            }                                                           \
-          };                                                            \
-    static registrator reg;                                             \
-  };                                                                    \
+#define CRPCUT_TEST_CASE_DEF(test_case_name, ...)                           \
+  class test_case_name                                                      \
+    : crpcut::test_case_base, __VA_ARGS__                                   \
+  {                                                                         \
+    friend class crpcut::implementation::test_wrapper<crpcut_run_wrapper, test_case_name>; \
+    friend class crpcut::policies::dependencies::enforcer<test_case_name>;  \
+  virtual void run_test()                                                   \
+  {                                                                         \
+      crpcut_timeout_enforcer obj;                                          \
+      (void)obj; /* silence warning */                                      \
+      using crpcut::implementation::test_wrapper;                           \
+      test_wrapper<crpcut_run_wrapper, test_case_name>::run(this);          \
+    }                                                                       \
+    void test();                                                            \
+    static crpcut::test_case_base& creator()                                \
+    {                                                                       \
+      static test_case_name obj;                                            \
+      return obj;                                                           \
+    }                                                                       \
+    class registrator                                                       \
+      : public crpcut::implementation::test_case_registrator,               \
+        public virtual crpcut::policies::dependencies::base,                \
+        private virtual test_case_name::crpcut_expected_death_cause,        \
+        private virtual test_case_name::crpcut_dependency                   \
+          {                                                                 \
+            typedef crpcut::implementation::test_case_registrator           \
+              registrator_base;                                             \
+          public:                                                           \
+            registrator()                                                   \
+              : registrator_base(#test_case_name,                           \
+                                 &test_case_name::creator)                  \
+              {                                                             \
+              }                                                             \
+          private:                                                          \
+            virtual bool match_name(const char *name_param) const           \
+            {                                                               \
+              const char *p = current_namespace.match_name(name_param);     \
+              if (p)                                                        \
+                {                                                           \
+                  if (p != name_param || *p == ':')                         \
+                    {                                                       \
+                      if (!*p) return true; /* match for whole suites*/     \
+                      if (!*p++ == ':') return false;                       \
+                      if (!*p++ == ':') return false;                       \
+                    }                                                       \
+                }                                                           \
+              else                                                          \
+                {                                                           \
+                  p = name_param;                                           \
+                }                                                           \
+              return !std::strcmp(p, #test_case_name);                      \
+            }                                                               \
+            virtual std::ostream &print_name(std::ostream &os) const        \
+            {                                                               \
+              os << current_namespace;                                      \
+              return os << #test_case_name;                                 \
+            }                                                               \
+          };                                                                \
+    static registrator crpcut_reg;                                          \
+  };                                                                        \
 
 #define TEST_DEF(test_case_name, ...)                                   \
-  CIUT_TEST_CASE_DEF(test_case_name, __VA_ARGS__)                       \
-  test_case_name :: registrator test_case_name::reg;                    \
+  CRPCUT_TEST_CASE_DEF(test_case_name, __VA_ARGS__)                     \
+  test_case_name :: registrator test_case_name::crpcut_reg;             \
   void test_case_name::test()
 
 #define DISABLED_TEST_DEF(test_case_name, ...)                          \
-  CIUT_TEST_CASE_DEF(test_case_name, __VA_ARGS__)                       \
+  CRPCUT_TEST_CASE_DEF(test_case_name, __VA_ARGS__)                     \
   void test_case_name::test()
 
-#define CIUT_CONCAT(a, b) a ## b
+#define CRPCUT_CONCAT(a, b) a ## b
 
-#define CIUT_CONCAT_(a, b) CIUT_CONCAT(a,b)
+#define CRPCUT_CONCAT_(a, b) CRPCUT_CONCAT(a,b)
 
-#define CIUT_LOCAL_NAME(prefix) \
-  CIUT_CONCAT_(ciut_local_  ## prefix ## _, __LINE__)
+#define CRPCUT_LOCAL_NAME(prefix) \
+  CRPCUT_CONCAT_(crpcut_local_  ## prefix ## _, __LINE__)
 
-namespace ciut {
+namespace crpcut {
   namespace implementation {
     template <typename T>
     const typename std::remove_cv<typename std::remove_reference<T>::type>::type&
@@ -1156,149 +1161,149 @@ namespace ciut {
   }
 }
 
-#define CIUT_REFTYPE(expr) \
-  decltype(ciut::implementation::gettype<decltype(expr)>())
+#define CRPCUT_REFTYPE(expr) \
+  decltype(crpcut::implementation::gettype<decltype(expr)>())
 
 
 
 
-#define CIUT_BINARY_ASSERT(name, oper, lh, rh)                                        \
-  do {                                                                                \
-  CIUT_REFTYPE(lh) CIUT_LOCAL_NAME(rl) = lh;                                          \
-  CIUT_REFTYPE(rh) CIUT_LOCAL_NAME(rr) = rh;                                          \
-  if (!(CIUT_LOCAL_NAME(rl) oper CIUT_LOCAL_NAME(rr)))                                \
-    {                                                                                 \
-      std::ostringstream CIUT_LOCAL_NAME(os);                                         \
-      CIUT_LOCAL_NAME(os) << "<failure>ASSERT_" #name "(" #lh ", " #rh ")";           \
-      static const char* CIUT_LOCAL_NAME(prefix)[] = { "\n  where ", "\n        " };  \
-      bool CIUT_LOCAL_NAME(printed) = false;                                          \
-      CIUT_LOCAL_NAME(printed) |=                                                     \
-         ciut::stream_param(CIUT_LOCAL_NAME(os),                                      \
-                            CIUT_LOCAL_NAME(prefix)[CIUT_LOCAL_NAME(printed)],        \
-                            #lh,                                                      \
-                            CIUT_LOCAL_NAME(rl));                                     \
-      CIUT_LOCAL_NAME(printed) |=                                                     \
-         ciut::stream_param(CIUT_LOCAL_NAME(os),                                      \
-                            CIUT_LOCAL_NAME(prefix)[CIUT_LOCAL_NAME(printed)],        \
-                            #rh,                                                      \
-                            CIUT_LOCAL_NAME(rr));                                     \
-      CIUT_LOCAL_NAME(os) << "</failure>\n";                                        \
-      ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os));                 \
-    }                                                                                 \
+#define CRPCUT_BINARY_ASSERT(name, oper, lh, rh)                                        \
+  do {                                                                                  \
+  CRPCUT_REFTYPE(lh) CRPCUT_LOCAL_NAME(rl) = lh;                                        \
+  CRPCUT_REFTYPE(rh) CRPCUT_LOCAL_NAME(rr) = rh;                                        \
+  if (!(CRPCUT_LOCAL_NAME(rl) oper CRPCUT_LOCAL_NAME(rr)))                              \
+    {                                                                                   \
+      std::ostringstream CRPCUT_LOCAL_NAME(os);                                         \
+      CRPCUT_LOCAL_NAME(os) << "<failure>ASSERT_" #name "(" #lh ", " #rh ")";           \
+      static const char* CRPCUT_LOCAL_NAME(prefix)[] = { "\n  where ", "\n        " };  \
+      bool CRPCUT_LOCAL_NAME(printed) = false;                                          \
+      CRPCUT_LOCAL_NAME(printed) |=                                                     \
+         crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                                    \
+                            CRPCUT_LOCAL_NAME(prefix)[CRPCUT_LOCAL_NAME(printed)],      \
+                            #lh,                                                        \
+                            CRPCUT_LOCAL_NAME(rl));                                     \
+      CRPCUT_LOCAL_NAME(printed) |=                                                     \
+         crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                                    \
+                            CRPCUT_LOCAL_NAME(prefix)[CRPCUT_LOCAL_NAME(printed)],      \
+                            #rh,                                                        \
+                            CRPCUT_LOCAL_NAME(rr));                                     \
+      CRPCUT_LOCAL_NAME(os) << "</failure>\n";                                          \
+      crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os));             \
+    }                                                                                   \
   } while(0)
 
-#define ASSERT_TRUE(a)                                                  \
-  do {                                                                  \
-    CIUT_REFTYPE(a) CIUT_LOCAL_NAME(ra) = a;                            \
-    if (CIUT_LOCAL_NAME(ra))                                            \
-      {                                                                 \
-      }                                                                 \
-    else                                                                \
-      {                                                                 \
-        std::ostringstream CIUT_LOCAL_NAME(os);                         \
-        CIUT_LOCAL_NAME(os) << "<failure>"                              \
-                               "ASSERT_TRUE(" #a ")\n";                 \
-        ciut::stream_param(CIUT_LOCAL_NAME(os),                         \
-                           "  where ",                                  \
-                           #a,                                          \
-                           CIUT_LOCAL_NAME(ra));                        \
-        CIUT_LOCAL_NAME(os) << "</failure>\n";                          \
-        ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os)); \
-      }                                                                 \
+#define ASSERT_TRUE(a)                                                        \
+  do {                                                                        \
+    CRPCUT_REFTYPE(a) CRPCUT_LOCAL_NAME(ra) = a;                              \
+    if (CRPCUT_LOCAL_NAME(ra))                                                \
+      {                                                                       \
+      }                                                                       \
+    else                                                                      \
+      {                                                                       \
+        std::ostringstream CRPCUT_LOCAL_NAME(os);                             \
+        CRPCUT_LOCAL_NAME(os) << "<failure>"                                  \
+                               "ASSERT_TRUE(" #a ")\n";                       \
+        crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                           \
+                           "  where ",                                        \
+                           #a,                                                \
+                           CRPCUT_LOCAL_NAME(ra));                            \
+        CRPCUT_LOCAL_NAME(os) << "</failure>\n";                              \
+        crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os)); \
+      }                                                                       \
   } while(0)
 
 
 
-#define ASSERT_FALSE(a)                                                 \
-  do {                                                                  \
-    CIUT_REFTYPE(a) CIUT_LOCAL_NAME(ra) = a;                            \
-    if (CIUT_LOCAL_NAME(ra))                                            \
-      {                                                                 \
-        std::ostringstream CIUT_LOCAL_NAME(os);                         \
-        CIUT_LOCAL_NAME(os) << "<failure>"                              \
-                               "ASSERT_FALSE(" #a ")\n";                \
-        ciut::stream_param(CIUT_LOCAL_NAME(os),                         \
-                           "  where ",                                  \
-                           #a,                                          \
-                           CIUT_LOCAL_NAME(ra));                        \
-        CIUT_LOCAL_NAME(os) << "</failure>\n";                          \
-        ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os)); \
-      }                                                                 \
+#define ASSERT_FALSE(a)                                                       \
+  do {                                                                        \
+    CRPCUT_REFTYPE(a) CRPCUT_LOCAL_NAME(ra) = a;                              \
+    if (CRPCUT_LOCAL_NAME(ra))                                                \
+      {                                                                       \
+        std::ostringstream CRPCUT_LOCAL_NAME(os);                             \
+        CRPCUT_LOCAL_NAME(os) << "<failure>"                                  \
+                               "ASSERT_FALSE(" #a ")\n";                      \
+        crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                           \
+                           "  where ",                                        \
+                           #a,                                                \
+                           CRPCUT_LOCAL_NAME(ra));                            \
+        CRPCUT_LOCAL_NAME(os) << "</failure>\n";                              \
+        crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os)); \
+      }                                                                       \
   } while(0)
 
-#define ASSERT_EQ(lh, rh)                       \
-  CIUT_BINARY_ASSERT(EQ, ==, lh, rh)
+#define ASSERT_EQ(lh, rh) \
+  CRPCUT_BINARY_ASSERT(EQ, ==, lh, rh)
 
-#define ASSERT_NE(lh, rh)                       \
-  CIUT_BINARY_ASSERT(NE, !=, lh, rh)
+#define ASSERT_NE(lh, rh) \
+  CRPCUT_BINARY_ASSERT(NE, !=, lh, rh)
 
-#define ASSERT_GE(lh, rh)                       \
-  CIUT_BINARY_ASSERT(GE, >=, lh, rh)
+#define ASSERT_GE(lh, rh) \
+  CRPCUT_BINARY_ASSERT(GE, >=, lh, rh)
 
-#define ASSERT_GT(lh, rh)                       \
-  CIUT_BINARY_ASSERT(GT, >, lh, rh)
+#define ASSERT_GT(lh, rh) \
+  CRPCUT_BINARY_ASSERT(GT, >, lh, rh)
 
-#define ASSERT_LT(lh, rh)                         \
-  CIUT_BINARY_ASSERT(LT, <, lh, rh)
+#define ASSERT_LT(lh, rh) \
+  CRPCUT_BINARY_ASSERT(LT, <, lh, rh)
 
-#define ASSERT_LE(lh, rh)                       \
-  CIUT_BINARY_ASSERT(LE, <=, lh, rh)
+#define ASSERT_LE(lh, rh) \
+  CRPCUT_BINARY_ASSERT(LE, <=, lh, rh)
 
 
-#define ASSERT_THROW(expr, exc)                                             \
-  do {                                                                      \
-    try {                                                                   \
-      expr;                                                                 \
-      std::ostringstream CIUT_LOCAL_NAME(os);                               \
-      CIUT_LOCAL_NAME(os) << "<failure>ASSERT_THROW(" #expr ", " #exc ")\n" \
-                             "  Did not throw</failure>\n";                 \
-      ciut::comm::report(ciut::comm::exit_fail,                             \
-                         CIUT_LOCAL_NAME(os));                              \
-    }                                                                       \
-    catch (exc) {                                                           \
-    }                                                                       \
+#define ASSERT_THROW(expr, exc)                                               \
+  do {                                                                        \
+    try {                                                                     \
+      expr;                                                                   \
+      std::ostringstream CRPCUT_LOCAL_NAME(os);                               \
+      CRPCUT_LOCAL_NAME(os) << "<failure>ASSERT_THROW(" #expr ", " #exc ")\n" \
+                             "  Did not throw</failure>\n";                   \
+      crpcut::comm::report(crpcut::comm::exit_fail,                           \
+                         CRPCUT_LOCAL_NAME(os));                              \
+    }                                                                         \
+    catch (exc) {                                                             \
+    }                                                                         \
   } while (0)
 
-#define ASSERT_NO_THROW(expr)                                           \
-  do {                                                                  \
-    try {                                                               \
-      expr;                                                             \
-    }                                                                   \
-    catch (std::exception &CIUT_LOCAL_NAME(e)) {                        \
-      std::ostringstream CIUT_LOCAL_NAME(os);                           \
-      CIUT_LOCAL_NAME(os) << "<failure>ASSERT_NO_THROW(" #expr ")\n"    \
-                             "  caught std::exception\n"                \
-                             "  what()=" << CIUT_LOCAL_NAME(e).what()   \
-                          << "\n</failure>\n";                          \
-      ciut::comm::report(ciut::comm::exit_fail, CIUT_LOCAL_NAME(os));   \
-    }                                                                   \
-    catch (...) {                                                       \
-      std::ostringstream CIUT_LOCAL_NAME(os);                           \
-      CIUT_LOCAL_NAME(os) << "<failure>ASSERT_NO_THROW(" #expr ")\n"    \
-                             "  caught ...\n</failure>\n";              \
-      ciut::comm::report(ciut::comm::exit_fail,                         \
-                         CIUT_LOCAL_NAME(os));                          \
-    }                                                                   \
+#define ASSERT_NO_THROW(expr)                                                \
+  do {                                                                       \
+    try {                                                                    \
+      expr;                                                                  \
+    }                                                                        \
+    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                           \
+      std::ostringstream CRPCUT_LOCAL_NAME(os);                              \
+      CRPCUT_LOCAL_NAME(os) << "<failure>ASSERT_NO_THROW(" #expr ")\n"       \
+                             "  caught std::exception\n"                     \
+                             "  what()=" << CRPCUT_LOCAL_NAME(e).what()      \
+                          << "\n</failure>\n";                               \
+      crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os));  \
+    }                                                                        \
+    catch (...) {                                                            \
+      std::ostringstream CRPCUT_LOCAL_NAME(os);                              \
+      CRPCUT_LOCAL_NAME(os) << "<failure>ASSERT_NO_THROW(" #expr ")\n"       \
+                             "  caught ...\n</failure>\n";                   \
+      crpcut::comm::report(crpcut::comm::exit_fail,                          \
+                         CRPCUT_LOCAL_NAME(os));                             \
+    }                                                                        \
   } while (0)
 
-namespace ciut {
+namespace crpcut {
   class none {};
 }
 
-extern ciut::implementation::namespace_info current_namespace;
+extern crpcut::implementation::namespace_info current_namespace;
 
-#define TEST(...) TEST_DEF(__VA_ARGS__, ciut::none)
-#define DISABLED_TEST(...) DISABLED_TEST_DEF(__VA_ARGS__, ciut::none)
+#define TEST(...) TEST_DEF(__VA_ARGS__, crpcut::none)
+#define DISABLED_TEST(...) DISABLED_TEST_DEF(__VA_ARGS__, crpcut::none)
 
 #define TESTSUITE(name)                                                 \
   namespace name {                                                      \
     namespace {                                                         \
-      static ciut::implementation::namespace_info *parent_namespace     \
+      static crpcut::implementation::namespace_info *parent_namespace   \
       = &current_namespace;                                             \
     }                                                                   \
-    static ciut::implementation::namespace_info                         \
+    static crpcut::implementation::namespace_info                       \
     current_namespace(#name, parent_namespace);                         \
   }                                                                     \
   namespace name
 
-#endif // CIUT_HPP
+#endif // CRPCUT_HPP

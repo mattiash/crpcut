@@ -1,4 +1,4 @@
-#include "ciut.hpp"
+#include "crpcut.hpp"
 #define POLL_USE_EPOLL
 #include "poll.hpp"
 extern "C" {
@@ -14,7 +14,7 @@ extern "C" {
 #include <list>
 #include <limits>
 
-namespace ciut {
+namespace crpcut {
 
   namespace policies {
     no_core_file::no_core_file()
@@ -273,7 +273,7 @@ namespace ciut {
       if (!death_note)
         {
           std::ostringstream out;
-          CIUT_XML_TAG(failure, out)
+          CRPCUT_XML_TAG(failure, out)
             {
               char dirname[std::numeric_limits<int>::digits/3+1];
               int len = std::snprintf(dirname, sizeof(dirname), "%d", dirnum);
@@ -579,14 +579,14 @@ namespace ciut {
                       std::ostringstream os;
                       if (t == comm::stdout)
                         {
-                          CIUT_XML_TAG(stdout, os)
+                          CRPCUT_XML_TAG(stdout, os)
                             {
                               stdout << std::string(buff, len);
                             }
                         }
                       else
                         {
-                          CIUT_XML_TAG(stderr, os)
+                          CRPCUT_XML_TAG(stderr, os)
                             {
                               stderr << std::string(buff, len);
                             }
@@ -876,8 +876,8 @@ namespace ciut {
       ::gethostname(machine_string, sizeof(machine_string));
       std::cout <<
         "<?xml version=\"1.0\"?>\n\n"
-        "<ciut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
-        " xsi:noNamespaceSchemaLocation=\"ciut.xsd\""
+        "<crpcut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+        " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
         " starttime=\"" << time_string <<
         "\" host=\"" << machine_string <<
         "\" name=\"" << argv[0] << "\">\n" << std::flush;
@@ -933,17 +933,17 @@ namespace ciut {
     if (tests_as_child_procs())
       {
         kill_presenter_process();
-        CIUT_XML_TAG(statistics, std::cout)
+        CRPCUT_XML_TAG(statistics, std::cout)
           {
-            CIUT_XML_TAG(registered_test_cases, statistics)
+            CRPCUT_XML_TAG(registered_test_cases, statistics)
               {
                 registered_test_cases << num_registered_tests;
               }
-            CIUT_XML_TAG(run_test_cases, statistics)
+            CRPCUT_XML_TAG(run_test_cases, statistics)
               {
                 run_test_cases << num_tests_run;
               }
-            CIUT_XML_TAG(failed_test_cases, statistics)
+            CRPCUT_XML_TAG(failed_test_cases, statistics)
               {
                 failed_test_cases << num_tests_run - num_successful_tests;
               }
@@ -978,7 +978,7 @@ namespace ciut {
         std::cout << "  </blocked_tests>\n";
       }
 
-    std::cout << "</ciut>\n";
+    std::cout << "</crpcut>\n";
     return num_tests_run - num_successful_tests;
   }
 
@@ -1057,6 +1057,6 @@ namespace ciut {
 
   } // namespace comm
 
-} // namespace ciut
+} // namespace crpcut
 
-ciut::implementation::namespace_info current_namespace(0,0);
+crpcut::implementation::namespace_info current_namespace(0,0);

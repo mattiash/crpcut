@@ -1,5 +1,5 @@
 #include <string>
-#include "ciut.hpp"
+#include "crpcut.hpp"
 extern "C" {
 #include <signal.h> // raise
 }
@@ -355,7 +355,8 @@ TESTSUITE(parametrized)
       a_test("orm", std::string("katt"));
     }
 }
+
 int main(int argc, const char *argv[])
 {
-  return ciut::test_case_factory::run_test(argc, argv);
+  return crpcut::test_case_factory::run_test(argc, argv);
 }

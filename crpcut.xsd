@@ -73,5 +73,5 @@
     <xs:attribute name="starttime" type="xs:dateTime" use="required"/>
   </xs:complexType>
 
-  <xs:element name="ciut" type="testrun"/>
+  <xs:element name="crpcut" type="testrun"/>
 </xs:schema>
