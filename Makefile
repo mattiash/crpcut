@@ -1,14 +1,25 @@
-CXXFLAGS=-ggdb -Wall -Wextra -Wno-variadic-macros -pipe -pedantic
+CXXFLAGS=-Iinclude -ggdb -Wall -Wextra -Wno-variadic-macros -pipe -pedantic
 
-testprog: unitt.o libcrpcut.a
-	g++ $(CXXFLAGS) unitt.o -L . -lcrpcut -lrt -o testprog
+all:    test doc
 
-libcrpcut.a: crpcut.o
-	ar -r libcrpcut.a crpcut.o
+test:   test/testprog
+doc:	html/doc.html
 
-unitt.o: unitt.cpp crpcut.hpp
-crpcut.o: crpcut.cpp crpcut.hpp poll.hpp array_v.hpp
-#	g++ -O3 -Wall -Wextra -Wno-variadic-macros -s -c crpcut.cpp
+test/testprog: test/unitt.o lib/libcrpcut.a
+	g++ $(CXXFLAGS) test/unitt.o -L lib -lcrpcut -lrt -o test/testprog
+
+lib/libcrpcut.a: obj/crpcut.o
+	ar -r lib/libcrpcut.a obj/crpcut.o
+
+test/unitt.o: test-src/unitt.cpp include/crpcut.hpp include/array_v.hpp
+	g++ $(CXXFLAGS) test-src/unitt.cpp -c -o test/unitt.o
+
+obj/crpcut.o: src/crpcut.cpp include/crpcut.hpp src/poll.hpp include/array_v.hpp
+	g++ $(CXXFLAGS) src/crpcut.cpp -c -o obj/crpcut.o
+
+html/doc.html: doc-src/doc.xml doc-src/doc2html.xsl
+	xsltproc doc-src/doc2html.xsl doc-src/doc.xml > html/doc.html
+
 clean:
-	rm -f *.a *.o *.rpo *.core testprog
+	rm -f */*.o */*.a */*.html test/testprog
 
