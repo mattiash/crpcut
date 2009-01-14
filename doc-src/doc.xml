@@ -1,0 +1,315 @@
+<doc title="crpcut - The Compartmented Robust Posix C++ Unit Tester">
+
+<chapter title="What is it">
+crpcut (pronounced &quot;crap cut&quot;) is the
+Compartmented Robust Posix C++ Unit Tester
+<p/>
+With crpcut it is easy to write tests that other unit-test frame works cannot
+manage.
+<p/>
+A complete example:<p/>
+<code>
+#include &lt;crpcut.hpp&gt;
+#include &lt;cassert&gt;
+TEST(catch_assert, NO_CORE_FILE, EXPECT_SIGNAL_DEATH(SIGABRT))
+{
+  int i = 3;
+  assert(i==8);
+}
+
+int main(int argc, char *argv[])
+{
+  return crpcut::test_case_factory::run_test(argc, argv);
+}
+</code>
+This test will fail if compiled without support for assertions, because it is
+expected to die on <id>SIGABRT</id>. It will also catch the output on
+<id>stderr</id> and add it to the test result log.
+</chapter>
+
+<chapter title="Why crpcut">
+With crpcut, every test case runs in its own process and its own working
+directory. If a test case fails, the process terminates immediately, before
+it does further harm. This means that every test case starts from a clean
+slate, unaffected by other tests. This is the compartmentalization.
+<p/>
+It also means that the test suite continues, even if a test crashes.
+You can set deadlines for test cases, and if the allowed time is seriously
+overdrawn, the test case process is killed. These two make up the robustness
+part.
+<p/>
+You can define dependencies between test cases, so that if a fundamental
+tests fails, the tests that are based on the fundamental functionality will
+not even be run.
+<p/>
+The crpcut main process does not have any dynamic memory allocated at the
+time a test case process is started, so you can run crpcut using a memory
+test tool, such as valgrind, and if there is memory allocated when the test
+case process terminates, you can be assured that you have found a memory leak
+in your test.
+<p/>
+If you have a multi-core CPU, it may be beneficial to run several test cases
+in parallel. crpcut allows that.
+<p/>
+If there are files left in the test process' working directory after the test
+case process has terminated, the test case is concidered failed. The working
+dir is left untouched by crpcut, for you to examine.
+</chapter>
+
+<chapter title="Requirements">
+crpcut relies on a few Posix functions, and three extensions to C++ (as defined
+by the 1998 standard and the 2003 corrigendum.)
+<p/>
+The C++ extensions are:
+<definitions notion="extension" meaning="where defined">
+  <def notion="variadic macros">C99/c++0x</def>
+  <def notion="decltype">c++0x (crpcut uses typeof, which in current gcc has
+                         similar enough meaning.)</def>
+  <def notion="_Exit()">C99/c++0x</def>
+</definitions>
+All will become standardized for C++ soon, and are since some time supported
+by gcc.
+<p/>
+The required Posix functions are:
+<definitions notion="Standard" meaning="Requirement">
+  <def notion="POSIX.1"><code>EEXIST
+EINTR</code></def>
+  <def notion="POSIX.1-2001"><code>alloca()
+chdir()
+clock_gettime(CLOCK_MONOTONIC)
+clock_gettime(CLOCK_PROCESS_CPUTIME_ID)
+close()
+closedir()
+dup2()
+fork()
+gethostname()
+kill()
+mkdir()
+opendir()
+pipe()
+read()
+readdir_r()
+rmdir()
+select()
+setrlimit(RLIMIT_CORE)
+setrlimit(RLIMIT_CPU)
+waitid()
+write()</code></def>
+  <def notion="POSIX.1-2008"><code>mkdtemp()</code></def>
+</definitions>
+This should apply for most Linux/*BSD systems. OS-X is currently not supported
+due to its lack of clock_gettime().
+</chapter>
+
+<chapter title="Writing tests">
+Test cases are defined using the <id>TEST()</id> macro. If several tests are
+connected, they can be grouped into a testsuite using the <id>TESTSUITE()</id>
+macro. Test cases can be written in several files and linked to one main
+program.
+<p/>
+In tests, assert correctness using unary and binary assertion macros.
+<p/>
+The unasy assertions are:
+<definitions notion="assert" meaning="condition">
+  <def notion="ASSERT_TRUE(expr)">Succeeds iff <id>expr</id> evaluates to
+                                 <id>true</id></def>
+  <def notion="ASSERT_FALSE(expr)">Succeeds iff <id>expr</id> evaluates to
+                                   <id>false</id></def>
+  <def notion="ASSERT_NO_THROW(expr)">Succeeds iff <id>expr</id> completes
+                                      without throwing anything</def>
+</definitions>
+<p/>
+The binary assertions are:
+<definitions notion="assert" meaning="condition">
+  <def notion="ASSERT_EQ(a, b)">Succeeds iff the expression <id>(a == b)</id>
+                                evaluates to <id>true</id></def>
+  <def notion="ASSERT_NE(a, b)">Succeeds iff the expression <id>(a != b)</id>
+                                evaluates to <id>true</id></def>
+  <def notion="ASSERT_GT(a, b)">Succeeds iff the expression <id>(a &gt; b)</id>
+                                evaluates to <id>true</id></def>
+  <def notion="ASSERT_GE(a, b)">Succeeds iff the expression <id>(a &gt;= b)</id>
+                                evaluates to <id>true</id></def>
+  <def notion="ASSERT_LT(a, b)">Succeeds iff the expression <id>(a &lt; b)</id>
+                                evaluates to <id>true</id></def>
+  <def notion="ASSERT_LE(a, b)">Succeeds iff the expression <id>(a &lt;= b)</id>
+                                evaluates to <id>true</id></def>
+</definitions>
+If the assertion fails because the expression evaluates to <id>false</id> the
+value of the parameters is included in the failure log (provided that the
+values are ouptut streamable.) All assert macros evaluates each parameter
+value exactly once, so providing paremeters with side effects is not a problem.
+The order of evaluation is undefined, however.
+<p/>
+If several test cases share the same test setup, a test fixture can be written.
+A fixture is just a <id>class</id> or <id>struct</id>, with the desired
+information. The default constructor is expected to fill in the desired
+information, and the destructor to clean up afterwards. Several fixtures can
+be combined.
+<p/>
+Small example:
+<code>
+TESTSUITE(string_length)
+{
+  class fixture1
+  {
+  protected:
+    fixture1() : i(3) {}
+    int i;
+  };
+  struct fixture2
+  {
+    std::string msg;
+    fixture2() : msg("cat");
+  };
+
+  TEST(check_length, fixture1, fixture2)
+  {
+    ASSERT_EQ(msg.length(), i);
+  }
+  TEST(check_c_length, fixture1, fixture2)
+  {
+    ASSERT_EQ(std::strlen(msg.c_str()) == i);
+  }
+}
+</code>
+In addition to using fixtures and asserts, the expected behaviour of
+test cases can be altered using modifiers. Modifiers are listed together with
+the fixtures.
+<p/>
+The test case modifiers are:
+<definitions>
+<def notion="NO_CORE_FILE">Make sure the test doesn't produce a core
+                           file, no matter how it crashes. Useful when
+                           testing that an <id>assert()</id> works as expected.
+                           </def>
+<def notion="EXPECT_EXIT(code)">For the test to suceed, it must exit with the
+                                supplied exit code. If any exit is OK, use
+                                <id>ANY_CODE</id> for <id>code</id>.</def>
+<def notion="EXPECT_SIGNAL_DEATH(code)">For the test to succeed, it must
+                                        terminate on the supplied signal number.
+                                        If any signal number is OK, use
+                                        <id>ANY_CODE</id> for <id>code</id>.
+                                        </def>
+<def notion="EXPECT_EXCEPTION(type)">For the test to succeed, it must exit by
+                                     throwing an instance of the provided type.
+                                     If any exception is good, use <id>...</id>
+                                     for <id>type</id>.</def>
+<def notion="DEADLINE_CPU_MS(duration_ms)">For the test to succeed it must run
+                                           to completion before consuming
+                                           <id>duration_ms</id> milliseconds
+                                           CPU-time. If the time consumed is
+                                           vastly more, the test process will
+                                           be killed (uses <id>setrlimit()</id>
+                                           with <id>RLIMIT_CPU</id>, and
+                                           <id>clock_gettime()</id> with
+                                           <id>CLOCK_PROCESS_CPUTIME_ID</id>)
+                                           </def>
+<def notion="DEADLINE_REALTIME_MS(duration_ms)">For the test to succeed it
+                                                must run to completion before
+                                                consuming <id>duration_ms</id>
+                                                milliseconds on the
+                                                rate-monotonic clock. If the
+                                                time consumed is vastly more,
+                                                the crpcut engine will kill it
+                                                using <id>kill()</id> with
+                                                signal <id>SIGKILL</id>.</def>
+<def notion="DEPENDS_ON(...)">... is a list of test cases. Before the test can
+                              run, all tests in the list must have finished
+                              successfully.</def>
+</definitions>
+</chapter>
+
+<chapter title="The main program">
+The normal <id>main()</id> is exactly the below:
+<code>
+int main(int argc, char *argv[])
+{
+  return crpcut::test_case_factory::run_test(argc, argv);
+}
+</code>
+<id>crpcut::test_case_factory::run_test()</id> expects parameters as a set of
+flags followed by a set of testcase or testsuite names. The flags are:
+<definitions>
+<def notion="-l">List all testcases matching the testcase or testsuite names
+                 on stdout, then exit with code 0.
+                 </def>
+<def notion="-d">Ignore dependencies when running tests.</def>
+<def notion="-v">Print the result of successful tests, in addition to that
+                 of the failed ones.</def>
+<def notion="-c&#xA0;num">Control the number of parallell spawned test
+                                case processes. The default is 1. If 0, the
+                                test cases are run in the parent process.</def>
+</definitions>
+Note that running test cases in the parent process has severe implications and
+should really only be used when debugging a test case (below.) The whole test
+program will terminate when reaching the first failed test. Tests that die,
+will also terminate the program, even if death is expected.
+<p/>
+To run the tests in testsuite <id>asserts</id>, 8 test cases in parallel,
+ignore all dependencies, and print also successful tests, start the
+test program using <id>-d&#xA0;-v&#xA;-c&#xA;8 asserts</id>.
+<p/>
+The exact prototype for <id>run_test</id> is:
+<code>
+namespace crpcut {
+  class test_case_factory
+  {
+  public:
+    static int run_test(int argc, const char *argv[], std::ostream &amp; = std::cerr);
+  };
+}
+</code>
+The return value is the number of failed tests, or -1 if anything was printed
+on the stream. The output stream is where to print information if the
+parameters in the call don&apos;t make sense.
+<p/>
+The result from a test run is always printed on stdout, using the XML Schema
+provided in <id>crpcut.xsd</id>. It is fairly human-readable.
+</chapter>
+
+<chapter title="Debugging">
+Debugging a test case is easy. Load the test program into your favourite
+debugger. Set a breakpoint on testcasename::test. Run with
+<id>-d&#xA0;-c&#xA0;0&#xA0;testcasename</id>. Example:
+<code>
+&gt; $ gdb ./testprog
+GNU gdb 6.7.1
+Copyright (C) 2007 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type &quot;show copying&quot;
+and &quot;show warranty&quot; for details.
+This GDB was configured as &quot;x86_64-pc-linux-gnu&quot;...
+Using host libthread_db library &quot;/lib/libthread_db.so.1&quot;.
+(gdb) break asserts::should_succeed_assert_no_throw::test
+Breakpoint 1 at 0x804a71c: file unitt.cpp, line 105.
+(gdb) run -c 0 -d asserts::should_succeed_assert_no_throw
+Starting program: ./testprog -c 0 -d asserts::should_succeed_assert_no_throw
+[Thread debugging using libthread_db enabled]
+[New Thread 0xf7c9a8e0 (LWP 25339)]
+&lt;?xml version=&quot;1.0&quot;?&gt;
+
+&lt;crpcut xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:noNamespaceSchemaLocation=&quot;crpcut.xsd&quot; starttime=&quot;2009-01-14T19:35:41Z&quot; host=&quot;pteranodon&quot; name=&quot;./testprog&quot;&gt;
+  &lt;test name=&quot;asserts::should_succeed_assert_no_throw[Switching to Thread 0xf7c9a8e0 (LWP 25339)]
+
+Breakpoint 1, asserts::should_succeed_assert_no_throw::test (this=0x807a688) at unitt.cpp:105
+105         ASSERT_NO_THROW(i=1);
+(gdb)
+</code>
+From there, you can single step the test case.
+</chapter>
+
+<chapter title="Further development">
+The todo list, without any regard to importance or desired implementation
+order is:
+<list>
+<li>Set regexp match rules for stdout and stderr</li>
+<li>ASSERT_*() macros for almost-equal tests of floating point numbers</li>
+<li>Use autoconf/automake for improved portability</li>
+<li>Better separation of fixture errors and test-case errors</li>
+<li>Optional non-XML output</li>
+<li>INFO() macros for sending data from test-case to report</li>
+<li>Better separation of files in the distribution package</li>
+</list>
+</chapter>
+</doc>
