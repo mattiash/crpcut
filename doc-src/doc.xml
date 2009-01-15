@@ -104,8 +104,9 @@ due to its lack of clock_gettime().
 <chapter title="Writing tests">
 Test cases are defined using the <id>TEST()</id> macro. If several tests are
 related, they can be grouped into a test suite using the <id>TESTSUITE()</id>
-macro. Test cases can be written in several files and linked to one main
-program. The <id>crpcut_</id> name prefix are reserved for crpcut.
+macro. For a large range of tests, it may be a good idea to nest test suites.
+Test cases can be written in several files and linked to one main
+program. The <id>crpcut_</id> name prefix is reserved for crpcut.
 <p/>
 In tests, assert correctness using unary and binary assertion macros.
 <p/>
@@ -169,7 +170,7 @@ TESTSUITE(string_length)
   }
   TEST(check_c_length, fixture1, fixture2)
   {
-    ASSERT_EQ(std::strlen(msg.c_str()) == i);
+    ASSERT_EQ(std::strlen(msg.c_str()), i);
   }
 }
 </code>
@@ -204,7 +205,7 @@ The defined test case modifiers are:
                                            be killed (uses <id>setrlimit()</id>
                                            with <id>RLIMIT_CPU</id>, and
                                            <id>clock_gettime()</id> with
-                                           <id>CLOCK_PROCESS_CPUTIME_ID</id>)
+                                           <id>CLOCK_PROCESS_CPUTIME_ID</id>.)
                                            </def>
 <def notion="DEADLINE_REALTIME_MS(duration_ms)">For the test to succeed it
                                                 must run to completion before
@@ -214,7 +215,10 @@ The defined test case modifiers are:
                                                 time consumed is vastly more,
                                                 the crpcut engine will kill it
                                                 using <id>kill()</id> with
-                                                signal <id>SIGKILL</id>.</def>
+                                                signal <id>SIGKILL</id>. Time
+                                                is measured using
+                                                <id>clock_gettime()</id> with
+                                                <id>CLOCK_MONOTONIC</id>.</def>
 <def notion="DEPENDS_ON(...)">... is a list of test cases. Before the test can
                               run, all tests in the list must have finished
                               successfully.</def>
