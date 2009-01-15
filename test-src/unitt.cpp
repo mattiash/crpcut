@@ -103,11 +103,11 @@ TEST(should_fail_with_wrong_exception, EXPECT_EXCEPTION(std::range_error))
   throw std::bad_alloc();
 }
 
-TEST(should_succed_with_any_exception, EXPECT_EXCEPTION(ANY_EXCEPTION))
+TEST(should_succed_with_any_exception, EXPECT_EXCEPTION(...))
 {
   throw "apa";
 }
-TEST(should_fail_any_exception, EXPECT_EXCEPTION(ANY_EXCEPTION))
+TEST(should_fail_any_exception, EXPECT_EXCEPTION(...))
 {
 }
 

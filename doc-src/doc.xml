@@ -134,7 +134,7 @@ The binary assertions are:
                                 evaluates to <id>true</id></def>
   <def notion="ASSERT_LE(a, b)">Succeeds iff the expression <id>(a &lt;= b)</id>
                                 evaluates to <id>true</id></def>
-  <def notion="ASSERT_THROW(expr, exc_type)">Succeeds iff the expression <id>expr</id> throws an exception of type <id>exc_type</id></def>
+  <def notion="ASSERT_THROW(expr, exc_type)">Succeeds iff the expression <id>expr</id> throws an exception of type <id>exc_type</id>. Use <id>...</id> for <id>exc_type</id> if any exception is good.</def>
 </definitions>
 If an assertion fails, the value of the parameters is included in the failure
 log (provided that the values are output streamable.) All assert macros
@@ -195,7 +195,7 @@ The defined test case modifiers are:
 <def notion="EXPECT_EXCEPTION(type)">For the test to succeed, it must exit by
                                      throwing an instance of the provided type.
                                      If any exception is good, use
-                                     <id>ANY_EXCEPTION</id> for
+                                     <id>...</id> for
                                      <id>type</id>.</def>
 <def notion="DEADLINE_CPU_MS(duration_ms)">For the test to succeed it must run
                                            to completion before consuming

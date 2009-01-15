@@ -12,7 +12,7 @@
     <xs:attribute name="nonempty_dir" type="xs:string" use="required"/>
   </xs:complexType>
 
-  <xs:complexType name="failure">
+  <xs:complexType name="termination">
      <xs:simpleContent>
        <xs:extension base="xs:string">
          <xs:attribute name="nonempty_dir" type="xs:string" use="optional"/>
@@ -22,7 +22,7 @@
 
   <xs:complexType name="log">
     <xs:sequence minOccurs="0" maxOccurs="unbounded">
-      <xs:element name="failure" type="failure" minOccurs="0"/>
+      <xs:element name="termination" type="termination" minOccurs="0"/>
       <xs:element name="stdout" type="xs:string" minOccurs="0"/>
       <xs:element name="stderr" type="xs:string" minOccurs="0"/>
       <xs:element name="remaining_files" type="remaining_files" minOccurs="0"/>

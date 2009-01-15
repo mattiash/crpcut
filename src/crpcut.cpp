@@ -40,6 +40,8 @@ extern "C" {
 #include <map>
 #include <list>
 #include <limits>
+#include <cstdlib>
+#include <cstdio>
 
 namespace crpcut {
 
@@ -77,11 +79,11 @@ namespace crpcut {
         if (ms > timeout_ms)
           {
             std::ostringstream os;
-            os << "<failure>";
+            os << "<termination>";
             os << (t == realtime ? "Realtime" : "Cputime")
                << " timeout " << timeout_ms
                << "ms exceeded.\n  Actual time to completion was "
-               << ms << "ms</failure>\n";
+               << ms << "ms</termination>\n";
             report(comm::exit_fail, os);
           }
       }
@@ -99,10 +101,10 @@ namespace crpcut {
       char buff[sizeof(dirent) + PATH_MAX];
       dirent *ent = reinterpret_cast<dirent*>(buff),*result = ent;
       bool empty = true;
-      while (empty && result && (readdir_r(d, ent, &result) == 0))
+      while (empty && result && (::readdir_r(d, ent, &result) == 0))
         {
-          if (strcmp(ent->d_name, ".") == 0 ||
-              strcmp(ent->d_name, "..") == 0)
+          if (std::strcmp(ent->d_name, ".") == 0 ||
+              std::strcmp(ent->d_name, "..") == 0)
             continue;
           empty = false;
         }
@@ -229,7 +231,7 @@ namespace crpcut {
       ::kill(pid_, SIGKILL);
       death_note = true;
       deadline.tv_sec = 0;
-      static const char msg[] = "<failure>Timed out - killed</failure>\n";
+      static const char msg[] = "<termination>Timed out - killed</termination>\n";
       test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
     }
 
@@ -275,7 +277,7 @@ namespace crpcut {
       (void)len; // silence warning when building with -DNDEBUG
       if (::chdir(name) != 0)
         {
-          report(comm::exit_fail, "<failure>Couldn't chdir working dir</failure>\n");
+          report(comm::exit_fail, "<termination>Couldn't chdir working dir</termination>\n");
           assert("unreachable code reached" == 0);
         }
     }
@@ -300,7 +302,7 @@ namespace crpcut {
       if (!death_note)
         {
           std::ostringstream out;
-          CRPCUT_XML_TAG(failure, out)
+          CRPCUT_XML_TAG(termination, out)
             {
               char dirname[std::numeric_limits<int>::digits/3+1];
               int len = std::snprintf(dirname, sizeof(dirname), "%d", dirnum);
@@ -319,7 +321,7 @@ namespace crpcut {
                 {
                 case CLD_EXITED:
                   {
-                    failure << "Unexpectedly exited with code " << info.si_status;
+                    termination << "Exited with code " << info.si_status;
                     bool success = !failed();
                     if (!success)
                       {
@@ -332,7 +334,7 @@ namespace crpcut {
                   break;
                 case CLD_KILLED:
                   {
-                    failure << "Unexpectedly died on signal " << info.si_status;
+                    termination << "Died on signal " << info.si_status;
                     bool success = !failed();
                     if (!success)
                       {
@@ -344,17 +346,16 @@ namespace crpcut {
                   }
                   break;
                 case CLD_DUMPED:
-                  failure << "Unexpectedly died with core dump";
+                  termination << "Died with core dump";
                   t = comm::exit_fail;
                   break;
                 default:
-                  failure << "Unexpectedly died for unknown reason, code=" << info.si_code;
+                  termination << "Died for unknown reason, code=" << info.si_code;
                   t = comm::exit_fail;
                 }
             }
           death_note = true;
           if (t == comm::exit_ok || !failed()) register_success();
-          //          if (t != comm::exit_ok)
             {
               const std::string &s = out.str();
               test_case_factory::present(pid_, t, s.length(), s.c_str());
@@ -664,12 +665,12 @@ namespace crpcut {
     if (type)
       {
         std::ostringstream out;
-        out << "<failure>Fixture contructor threw " << type;
+        out << "<termination>Fixture contructor threw " << type;
         if (msg)
           {
             out << "\n  what()=" << msg; 
           }
-        out << "</failure>";
+        out << "</termination>";
         report(comm::exit_fail, out);
       }
     // report start of test
@@ -679,8 +680,8 @@ namespace crpcut {
     catch (std::exception &e)
       {
         const size_t len = std::strlen(e.what());
-#define TEMPLATE_HEAD "<failure>Unexpectedly caught std::exception\n  what()="
-#define TEMPLATE_TAIL "</failure>\n"
+#define TEMPLATE_HEAD "<termination>Unexpectedly caught std::exception\n  what()="
+#define TEMPLATE_TAIL "</termination>\n"
         const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
         const size_t tail_size = sizeof(TEMPLATE_TAIL) - 1;
         char *msg = static_cast<char *>(alloca(head_size + len + tail_size + 1));
@@ -693,7 +694,7 @@ namespace crpcut {
       }
     catch (...)
       {
-        static const char msg[] = "<failure>Unexpectedly caught ...</failure>\n";
+        static const char msg[] = "<termination>Unexpectedly caught ...</termination>\n";
         report(comm::exit_fail, msg);
       }
     // report end of test

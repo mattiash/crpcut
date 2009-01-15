@@ -62,13 +62,13 @@ namespace std {
   protected virtual crpcut::policies::signal_death<num>
 
 #define EXPECT_EXCEPTION(type) \
-  protected virtual crpcut::policies::exception_specifier<type>
+  protected virtual crpcut::policies::exception_specifier<void (type)>
 
 #define DEPENDS_ON(...) \
   protected virtual crpcut::policies::dependency_policy<crpcut::policies::dependencies::tuple_maker<__VA_ARGS__>::type >
 
 #define ANY_CODE -1
-#define ANY_EXCEPTION crpcut::policies::any_exception
+
 
 #if defined(CLOCK_PROCESS_CPUTIME_ID)
 #define DEADLINE_CPU_MS(time) \
@@ -255,7 +255,6 @@ namespace crpcut {
     };
   }
   namespace policies {
-    class any_exception;
 
     namespace deaths {
       class none;
@@ -328,14 +327,26 @@ namespace crpcut {
       typedef deaths::exit<N>  crpcut_expected_death_cause;
     };
 
+    class any_exception_wrapper;
+
     template <typename exc>
     class exception_wrapper;
 
     template <typename T>
-    class exception_specifier : protected virtual default_policy
+    class exception_specifier;
+
+    template <typename T>
+    class exception_specifier<void (T)> : protected virtual default_policy
     {
     public:
       typedef exception_wrapper<T> crpcut_run_wrapper;
+    };
+
+    template <>
+    class exception_specifier<void (...)> : protected virtual default_policy
+    {
+    public:
+      typedef any_exception_wrapper crpcut_run_wrapper;
     };
 
     class no_core_file : protected virtual default_policy
@@ -927,7 +938,7 @@ namespace crpcut {
     };
 
     template <typename T>
-    class test_wrapper<policies::exception_wrapper<policies::any_exception>, T>
+    class test_wrapper<policies::any_exception_wrapper, T>
     {
     public:
       static void run(T* t)
@@ -939,7 +950,7 @@ namespace crpcut {
           return;
         }
         comm::report(comm::exit_fail,
-                     "<failure>Unexpectedly did not throw</failure>\n");
+                     "<termination>Unexpectedly did not throw</termination>\n");
       }
     };
 
@@ -954,10 +965,10 @@ namespace crpcut {
       }
       catch (...) {
         comm::report(comm::exit_fail,
-                     "<failure>Unexpectedly caught ...</failure>\n");
+                     "<termination>Unexpectedly caught ...</termination>\n");
       }
       comm::report(comm::exit_fail,
-                   "<failure>Unexpectedly did not throw</failure>\n");
+                   "<termination>Unexpectedly did not throw</termination>\n");
     }
 
     template <typename T>
@@ -970,7 +981,7 @@ namespace crpcut {
     void test_wrapper<policies::deaths::wrapper, T>::run(T *t)
     {
       t->test();
-      comm::report(comm::exit_fail, "<failure>Unexpectedly survived</failure>\n");
+      comm::report(comm::exit_fail, "<termination>Unexpectedly survived</termination>\n");
     }
 
   } // namespace implementation
@@ -1229,7 +1240,7 @@ namespace crpcut {
       {                                                                 \
         std::ostringstream CRPCUT_LOCAL_NAME(os);                       \
         CRPCUT_LOCAL_NAME(os) <<                                        \
-          "<failure>" __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)          \
+          "<termination>" __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)          \
           "\nASSERT_" #name "(" #lh ", " #rh ")";                       \
         static const char* CRPCUT_LOCAL_NAME(prefix)[] =                \
           { "\n  where ", "\n        " };                               \
@@ -1244,7 +1255,7 @@ namespace crpcut {
                                CRPCUT_LOCAL_NAME(prefix)[CRPCUT_LOCAL_NAME(printed)], \
                                #rh,                                     \
                                CRPCUT_LOCAL_NAME(rr));                  \
-        CRPCUT_LOCAL_NAME(os) << "</failure>\n";                        \
+        CRPCUT_LOCAL_NAME(os) << "</termination>\n";                        \
         crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os)); \
       }                                                                 \
   } while(0)
@@ -1258,14 +1269,14 @@ namespace crpcut {
     else                                                                \
       {                                                                 \
         std::ostringstream CRPCUT_LOCAL_NAME(os);                       \
-        CRPCUT_LOCAL_NAME(os) << "<failure>"                            \
+        CRPCUT_LOCAL_NAME(os) << "<termination>"                            \
           __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                      \
           "\nASSERT_TRUE(" #a ")\n";                                    \
         crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
                              "  where ",                                \
                              #a,                                        \
                              CRPCUT_LOCAL_NAME(ra));                    \
-        CRPCUT_LOCAL_NAME(os) << "</failure>\n";                        \
+        CRPCUT_LOCAL_NAME(os) << "</termination>\n";                        \
         crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os)); \
       }                                                                 \
   } while(0)
@@ -1278,14 +1289,14 @@ namespace crpcut {
     if (CRPCUT_LOCAL_NAME(ra))                                          \
       {                                                                 \
         std::ostringstream CRPCUT_LOCAL_NAME(os);                       \
-        CRPCUT_LOCAL_NAME(os) << "<failure>"                            \
+        CRPCUT_LOCAL_NAME(os) << "<termination>"                            \
           __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                      \
           "\nASSERT_FALSE(" #a ")\n";                                   \
         crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
                              "  where ",                                \
                              #a,                                        \
                              CRPCUT_LOCAL_NAME(ra));                    \
-        CRPCUT_LOCAL_NAME(os) << "</failure>\n";                        \
+        CRPCUT_LOCAL_NAME(os) << "</termination>\n";                        \
         crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os)); \
       }                                                                 \
   } while(0)
@@ -1314,10 +1325,10 @@ namespace crpcut {
     try {                                                               \
       expr;                                                             \
       std::ostringstream CRPCUT_LOCAL_NAME(os);                         \
-      CRPCUT_LOCAL_NAME(os) << "<failure>"                              \
+      CRPCUT_LOCAL_NAME(os) << "<termination>"                              \
         __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                        \
         "\nASSERT_THROW(" #expr ", " #exc ")\n"                         \
-        "  Did not throw</failure>\n";                                  \
+        "  Did not throw</termination>\n";                                  \
       crpcut::comm::report(crpcut::comm::exit_fail,                     \
                            CRPCUT_LOCAL_NAME(os));                      \
     }                                                                   \
@@ -1332,20 +1343,20 @@ namespace crpcut {
     }                                                                   \
     catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
       std::ostringstream CRPCUT_LOCAL_NAME(os);                         \
-      CRPCUT_LOCAL_NAME(os) << "<failure>"                              \
+      CRPCUT_LOCAL_NAME(os) << "<termination>"                              \
         __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                        \
         "\nASSERT_NO_THROW(" #expr ")\n"                                \
         "  caught std::exception\n"                                     \
         "  what()=" << CRPCUT_LOCAL_NAME(e).what()                      \
-                            << "\n</failure>\n";                        \
+                            << "\n</termination>\n";                        \
       crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os)); \
     }                                                                   \
     catch (...) {                                                       \
       std::ostringstream CRPCUT_LOCAL_NAME(os);                         \
-      CRPCUT_LOCAL_NAME(os) << "<failure>"                              \
+      CRPCUT_LOCAL_NAME(os) << "<termination>"                              \
         __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                        \
         "\nASSERT_NO_THROW(" #expr ")\n"                                \
-        "  caught ...\n</failure>\n";                                   \
+        "  caught ...\n</termination>\n";                                   \
       crpcut::comm::report(crpcut::comm::exit_fail,                     \
                            CRPCUT_LOCAL_NAME(os));                      \
     }                                                                   \
