@@ -44,7 +44,8 @@ not even be run.
 <p/>
 The crpcut main process does not have any dynamic memory allocated at the
 time a test case process is started, so you can run crpcut using a memory
-test tool, such as valgrind, and if there is memory allocated when the test
+test tool, such as <link url="http://www.valdrind.org">valgrind</link>,
+ and if there is memory allocated when the test
 case process terminates, you can be assured that you have found a memory leak
 in your test.
 <p/>
@@ -54,6 +55,47 @@ in parallel. crpcut allows that.
 If there are files left in the test process' working directory after the test
 case process has terminated, the test case is considered failed. The working
 directory is left untouched by crpcut, for you to examine.
+</chapter>
+
+<chapter title="Competition">
+You may want to check out the competition and decide which system is best for
+you.
+<list>
+<li><link url="http://code.google.com/p/googletest/">googletest</link></li>
+<li><link url="http://cppunit.sourceforge.net">CppUnit</link></li>
+<li><link url="http://unittest-cpp.sourceforge.net">UnitTest++</link></li>
+</list>
+</chapter>
+
+<chapter title="License">
+<code>
+/*
+ * Copyright 2009 Bjorn Fahller &lt;bjorn@fahller.se&gt;
+ * All rights reserved
+
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+</code>
 </chapter>
 
 <chapter title="Requirements">
@@ -134,7 +176,7 @@ The binary assertions are:
                                 evaluates to <id>true</id></def>
   <def notion="ASSERT_LE(a, b)">Succeeds iff the expression <id>(a &lt;= b)</id>
                                 evaluates to <id>true</id></def>
-  <def notion="ASSERT_THROW(expr, exc_type)">Succeeds iff the expression <id>expr</id> throws an exception of type <id>exc_type</id>. Use <id>...</id> for <id>exc_type</id> if any exception is good.</def>
+  <def notion="ASSERT_THROW(expr,&#xA0;exc_type)">Succeeds iff the expression <id>expr</id> throws an exception of type <id>exc_type</id>. Use <id>...</id> for <id>exc_type</id> if any exception is good.</def>
 </definitions>
 If an assertion fails, the value of the parameters is included in the failure
 log (provided that the values are output streamable.) All assert macros

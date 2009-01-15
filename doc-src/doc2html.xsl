@@ -45,6 +45,10 @@
     <ul><xsl:apply-templates/></ul>
   </xsl:template>
   <xsl:template match="li">
-    <li><xsl:value-of select="."/></li>
+    <li><xsl:apply-templates/></li>
+  </xsl:template>
+
+  <xsl:template match="link">
+    <A href="{@url}"><xsl:value-of select="."/></A>
   </xsl:template>
 </xsl:stylesheet>
