@@ -64,6 +64,7 @@ namespace std {
   protected virtual crpcut::policies::dependency_policy<crpcut::policies::dependencies::tuple_maker<__VA_ARGS__>::type >
 
 #define ANY_CODE -1
+#define ANY_EXCEPTION crpcut::policies::any_exception
 
 #if defined(CLOCK_PROCESS_CPUTIME_ID)
 #define DEADLINE_CPU_MS(time) \
@@ -250,6 +251,7 @@ namespace crpcut {
     };
   }
   namespace policies {
+    class any_exception;
 
     namespace deaths {
       class none;
@@ -920,6 +922,22 @@ namespace crpcut {
       static void run(T *t);
     };
 
+    template <typename T>
+    class test_wrapper<policies::exception_wrapper<policies::any_exception>, T>
+    {
+    public:
+      static void run(T* t)
+      {
+        try {
+          t->test();
+        }
+        catch (...) {
+          return;
+        }
+        comm::report(comm::exit_fail,
+                     "<failure>Unexpectedly did not throw</failure>\n");
+      }
+    };
 
     template <typename exc, typename T>
     void test_wrapper<policies::exception_wrapper<exc>, T>::run(T* t)
@@ -931,9 +949,11 @@ namespace crpcut {
         return;
       }
       catch (...) {
-        comm::report(comm::exit_fail, "<failure>Unexpectedly caught ...</failure>\n");
+        comm::report(comm::exit_fail,
+                     "<failure>Unexpectedly caught ...</failure>\n");
       }
-      comm::report(comm::exit_fail, "<failure>Unexpectedly did not throw</failure>\n");
+      comm::report(comm::exit_fail,
+                   "<failure>Unexpectedly did not throw</failure>\n");
     }
 
     template <typename T>

@@ -193,8 +193,9 @@ The defined test case modifiers are:
                                         </def>
 <def notion="EXPECT_EXCEPTION(type)">For the test to succeed, it must exit by
                                      throwing an instance of the provided type.
-                                     If any exception is good, use <id>...</id>
-                                     for <id>type</id>.</def>
+                                     If any exception is good, use
+                                     <id>ANY_EXCEPTION</id> for
+                                     <id>type</id>.</def>
 <def notion="DEADLINE_CPU_MS(duration_ms)">For the test to succeed it must run
                                            to completion before consuming
                                            <id>duration_ms</id> milliseconds
@@ -252,7 +253,7 @@ should really only be used when debugging a test case (below.) The whole test
 program will terminate when reaching the first failed test. Tests that die,
 will also terminate the program, even if death is expected.
 <p/>
-To run the tests in test suite <id>asserts</id>, 8 test cases in parallel,
+To run the tests in test suite asserts, 8 test cases in parallel,
 ignore all dependencies, and print also successful tests, start the
 test program using <id>-d&#xA0;-v&#xA;-c&#xA;8 asserts</id>.
 <p/>
