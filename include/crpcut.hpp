@@ -39,10 +39,14 @@
 #include <queue>
 #include <cmath>
 #include <ctime>
+#include <cstring>
+#include <cstdlib>
+
 extern "C"
 {
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <limits.h>
 }
 namespace std {
   using namespace std::tr1;
