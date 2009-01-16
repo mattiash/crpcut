@@ -26,6 +26,8 @@
 
 
 #include <string>
+#include <fstream>
+#include <ostream>
 #include "crpcut.hpp"
 extern "C" {
 #include <signal.h> // raise
@@ -46,74 +48,94 @@ TEST(very_slow_success)
   sleep(3);
 }
 
-TEST(should_fail_with_exit_code_3)
+TESTSUITE(exit_deaths)
 {
-  exit(3);
+  TEST(should_fail_with_exit_code_3)
+  {
+    exit(3);
+  }
+
+  TEST(should_succeed_with_exit_code_3, EXPECT_EXIT(3))
+    {
+      exit(3);
+    }
+
+  TEST(should_fail_with_no_exit, EXPECT_EXIT(3))
+    {
+    }
+
+  TEST(should_fail_with_wrong_exit_code, EXPECT_EXIT(3))
+    {
+      exit(4);
+    }
+}
+TESTSUITE(signal_deaths)
+{
+  TEST(should_fail_with_core_dump_due_to_death_on_signal_11)
+  {
+    raise(11);
+  }
+
+  TEST(should_fail_without_core_dump_with_death_on_signal_11, NO_CORE_FILE)
+    {
+      raise(11);
+    }
+
+  TEST(should_succeed_with_death_on_signal_11,
+       NO_CORE_FILE,
+       EXPECT_SIGNAL_DEATH(11))
+    {
+      raise(11);
+    }
+
+  TEST(should_fail_with_wrong_signal, NO_CORE_FILE, EXPECT_SIGNAL_DEATH(11))
+    {
+      raise(6);
+    }
+  TEST(should_fail_with_normal_exit, EXPECT_SIGNAL_DEATH(11))
+    {
+    }
 }
 
-TEST(should_fail_with_core_dump_due_to_death_on_signal_11)
+TESTSUITE(exception_deaths)
 {
-  raise(11);
+  TEST(should_fail_due_to_unknown_exception)
+  {
+    throw 1;
+  }
+
+  TEST(should_fail_due_to_std_exception_with_string_apa)
+  {
+    throw std::range_error("apa");
+  }
+
+  TEST(should_succeed_with_range_error_thrown,
+       EXPECT_EXCEPTION(std::range_error))
+    {
+      throw std::range_error("apa");
+    }
+  TEST(should_fail_with_wrong_exception, EXPECT_EXCEPTION(std::range_error))
+    {
+      throw std::bad_alloc();
+    }
+
+  TEST(should_succed_with_any_exception, EXPECT_EXCEPTION(...))
+    {
+      throw "apa";
+    }
+
+  TEST(should_fail_any_exception, EXPECT_EXCEPTION(...))
+    {
+    }
+
+  TEST(should_fail_with_no_exception, EXPECT_EXCEPTION(std::exception))
+    {
+    }
 }
 
-TEST(should_fail_due_to_unknown_exception)
-{
-  throw 1;
-}
 
-TEST(should_fail_due_to_std_exception_with_string_apa)
-{
-  throw std::range_error("apa");
-}
 
-TEST(should_fail_without_core_dump_with_death_on_signal_11, NO_CORE_FILE)
-{
-  raise(11);
-}
 
-TEST(should_succeed_with_death_on_signal_11,
-     NO_CORE_FILE,
-     EXPECT_SIGNAL_DEATH(11))
-{
-  raise(11);
-}
-
-TEST(should_succeed_with_exit_code_3, EXPECT_EXIT(3))
-{
-  exit(3);
-}
-
-TEST(should_fail_with_no_exit, EXPECT_EXIT(3))
-{
-}
-
-TEST(should_fail_with_wrong_exit_code, EXPECT_EXIT(3))
-{
-  exit(4);
-}
-
-TEST(should_succeed_with_range_error_thrown,
-     EXPECT_EXCEPTION(std::range_error))
-{
-  throw std::range_error("apa");
-}
-
-TEST(should_fail_with_wrong_exception, EXPECT_EXCEPTION(std::range_error))
-{
-  throw std::bad_alloc();
-}
-
-TEST(should_succed_with_any_exception, EXPECT_EXCEPTION(...))
-{
-  throw "apa";
-}
-TEST(should_fail_any_exception, EXPECT_EXCEPTION(...))
-{
-}
-
-TEST(should_fail_with_no_exception, EXPECT_EXCEPTION(std::exception))
-{
-}
 
 TESTSUITE(asserts)
 {
@@ -138,6 +160,16 @@ TESTSUITE(asserts)
   {
     int i;
     ASSERT_NO_THROW(i=1);
+  }
+
+  TEST(should_fail_assert_throw_any_with_no_exception)
+  {
+    int i;
+    ASSERT_THROW(i=1, ...);
+  }
+  TEST(should_succeed_throw_any_with_int_exception)
+  {
+    ASSERT_THROW(throw 1, ...);
   }
 
   TEST(should_fail_assert_no_throw_with_unknown_exception)
@@ -267,16 +299,17 @@ TESTSUITE(depends)
   TEST(should_succeed_after_success_dependencies,
        DEPENDS_ON(default_success,
                   asserts::should_succeed_on_assert_eq_with_fixture,
-                  should_succeed_with_death_on_signal_11,
-                  should_succeed_with_exit_code_3,
-                  should_succeed_with_range_error_thrown,
+                  signal_deaths::should_succeed_with_death_on_signal_11,
+                  exit_deaths::should_succeed_with_exit_code_3,
+                  exception_deaths::should_succeed_with_range_error_thrown,
                   very_slow_success))
     {
     }
 
   TEST(should_not_run_due_to_one_failed_dependency,
-       DEPENDS_ON(default_success, should_succeed_with_exit_code_3,
-                  should_fail_due_to_unknown_exception,
+       DEPENDS_ON(default_success,
+                  exit_deaths::should_succeed_with_exit_code_3,
+                  exception_deaths::should_fail_due_to_unknown_exception,
                   asserts::should_succeed_on_assert_eq_with_fixture))
     {
     }
@@ -347,6 +380,20 @@ TESTSUITE(stderr_and_stdout)
   {
     assert("apa" == 0);
   }
+  TEST(should_fail_with_death_due_to_core_file, EXPECT_SIGNAL_DEATH(SIGABRT))
+  {
+    assert("apa" == 0);
+  }
+}
+
+TEST(should_fail_due_to_left_behind_files)
+{
+  std::ofstream of("apa");
+  of << "katt";
+}
+TEST(should_not_run_due_to_failed_left_behind_files,
+     DEPENDS_ON(should_fail_due_to_left_behind_files))
+{
 }
 
 TESTSUITE(parametrized)

@@ -52,6 +52,31 @@ namespace crpcut {
       ::setrlimit(RLIMIT_CORE, &r);
     }
 
+    namespace deaths {
+      void none::expected_death(std::ostream &os)
+      {
+        os << "normal exit";
+      }
+    }
+
+    namespace dependencies {
+      void base::register_success(bool value)
+      {
+        if (value)
+          {
+            if (state != not_run) return;
+            state = success;
+            for (basic_enforcer *p = dependants; p; p = p->next)
+              {
+                --p->num;
+              }
+          }
+        else
+          {
+            state = fail;
+          }
+      }
+    }
     namespace timeout {
       basic_enforcer::basic_enforcer(type t, unsigned)
       {
@@ -79,11 +104,10 @@ namespace crpcut {
         if (ms > timeout_ms)
           {
             std::ostringstream os;
-            os << "<termination>";
             os << (t == realtime ? "Realtime" : "Cputime")
                << " timeout " << timeout_ms
                << "ms exceeded.\n  Actual time to completion was "
-               << ms << "ms</termination>\n";
+               << ms << "ms";
             report(comm::exit_fail, os);
           }
       }
@@ -146,9 +170,9 @@ namespace crpcut {
       } while (rv == -1 && errno == EINTR);
       if (rv == 0) return false; // eof
       assert(rv == sizeof(t));
-      if (t == comm::exit_ok)
+      if (t == comm::exit_fail)
         {
-          reg->register_success();
+          reg->register_success(false);
         }
       size_t len = 0;
       do {
@@ -231,7 +255,8 @@ namespace crpcut {
       ::kill(pid_, SIGKILL);
       death_note = true;
       deadline.tv_sec = 0;
-      static const char msg[] = "<termination>Timed out - killed</termination>\n";
+      static const char msg[] = "Timed out - killed";
+      register_success(false);
       test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
     }
 
@@ -277,7 +302,7 @@ namespace crpcut {
       (void)len; // silence warning when building with -DNDEBUG
       if (::chdir(name) != 0)
         {
-          report(comm::exit_fail, "<termination>Couldn't chdir working dir</termination>\n");
+          report(comm::exit_fail, "Couldn't chdir working dir");
           assert("unreachable code reached" == 0);
         }
     }
@@ -294,75 +319,85 @@ namespace crpcut {
           assert(rv == 0);
           break;
         }
+      assert(!succeeded());
       if (!death_note && deadline_is_set())
         {
           clear_deadline();
         }
       comm::type t = comm::exit_ok;
+      {
+        char dirname[std::numeric_limits<int>::digits/3+1];
+        int len = std::snprintf(dirname, sizeof(dirname), "%d", dirnum);
+        assert(len > 0 && len < int(sizeof(dirname)));
+        (void)len; // silence warning when building with -DNDEBUG
+        if (!is_dir_empty(dirname))
+          {
+            std::ostringstream tcname;
+            tcname << *this;
+            test_case_factory::present(pid_, comm::dir, 0, 0);
+            std::rename(dirname, tcname.str().c_str());
+            t = comm::exit_fail;
+            register_success(false);
+          }
+      }
       if (!death_note)
         {
           std::ostringstream out;
-          CRPCUT_XML_TAG(termination, out)
             {
-              char dirname[std::numeric_limits<int>::digits/3+1];
-              int len = std::snprintf(dirname, sizeof(dirname), "%d", dirnum);
-              assert(len > 0 && len < int(sizeof(dirname)));
-              (void)len; // silence warning when building with -DNDEBUG
-              if (!is_dir_empty(dirname))
-                {
-                  std::ostringstream tcname;
-                  tcname << *this;
-                  out << " nonempty_dir=\"" << test_case_factory::get_working_dir() << '/' << *this << "\"";
-                  std::rename(dirname, tcname.str().c_str());
-                  t = comm::exit_fail;
-                }
 
               switch (info.si_code)
                 {
                 case CLD_EXITED:
                   {
-                    termination << "Exited with code " << info.si_status;
-                    bool success = !failed();
-                    if (!success)
+                    if (!failed())
                       {
                         if (!is_expected_exit(info.si_status))
                           {
+                            out << "Exited with code "
+                                << info.si_status << "\nExpected ";
+                            expected_death(out);
                             t = comm::exit_fail;
                           }
-                  }
+                      }
                   }
                   break;
                 case CLD_KILLED:
                   {
-                    termination << "Died on signal " << info.si_status;
-                    bool success = !failed();
-                    if (!success)
+                    if (!failed())
                       {
                         if (!is_expected_signal(info.si_status))
                           {
+                            out << "Died on signal "
+                                << info.si_status << "\nExpected ";
+                            expected_death(out);
                             t = comm::exit_fail;
                           }
                       }
                   }
                   break;
                 case CLD_DUMPED:
-                  termination << "Died with core dump";
+                  out << "Died with core dump";
                   t = comm::exit_fail;
                   break;
                 default:
-                  termination << "Died for unknown reason, code=" << info.si_code;
+                  out << "Died for unknown reason, code=" << info.si_code;
                   t = comm::exit_fail;
                 }
             }
           death_note = true;
-          if (t == comm::exit_ok || !failed()) register_success();
             {
               const std::string &s = out.str();
               test_case_factory::present(pid_, t, s.length(), s.c_str());
             }
         }
+      register_success(t == comm::exit_ok);
       test_case_factory::return_dir(dirnum);
       test_case_factory::present(pid_, comm::end_test, 0, 0);
+      assert(succeeded() || failed());
+      if (succeeded())
+        {
+          test_case_factory::test_succeeded(this);
+        }
     }
   } // namespace implementation
 
@@ -462,14 +497,15 @@ namespace crpcut {
         rv = ::write(pipe, buff, len);
         assert(size_t(rv) == len);
       }
-    num_successful_tests += (t == comm::exit_ok);
   }
 
   namespace {
     struct test_case_result
     {
       bool                   success;
+      bool                   nonempty_dir;
       std::string            name;
+      std::string            termination;
       std::list<std::string> history;
     };
   }
@@ -540,6 +576,8 @@ namespace crpcut {
                   bytes_read += rv;
                 }
               s.name.assign(buff, len);
+              s.success = true;
+              s.nonempty_dir = false;
             }
             break;
           case comm::end_test:
@@ -578,6 +616,31 @@ namespace crpcut {
                         prev_ended = s[endpos-1] == '>';
                       }
                   }
+                if (!s.termination.empty() || s.nonempty_dir)
+                  {
+                    if (!history_print)
+                      {
+                        std::cout << ">\n    <log>\n";
+                      }
+                    std::cout << "      <termination";
+                    if (s.nonempty_dir)
+                      {
+                        std::cout << " nonempty_dir=\""
+                                  << test_case_factory::get_working_dir()
+                                  << '/'
+                                  << s.name
+                                  << '"';
+                      }
+                    if (s.termination.empty())
+                      {
+                        std::cout << "/>\n";
+                      }
+                    else
+                      {
+                        std::cout << '>' << s.termination << "</termination>\n";
+                      }
+                    history_print = true;
+                  }
                 if (history_print)
                   {
                     std::cout << "    </log>\n  </test>\n";
@@ -589,14 +652,26 @@ namespace crpcut {
               }
             messages.erase(test_case_id);
             break;
+          case comm::dir:
+            {
+              size_t len;
+              rv = ::read(presenter_pipe, &len, sizeof(len));
+              assert(rv == sizeof(len));
+              assert(len == 0);
+              (void)len; // silense warning
+              s.success = false;
+              s.nonempty_dir = true;
+            }
+            break;
           case comm::exit_ok:
           case comm::exit_fail:
-            s.success = t == comm::exit_ok; // fallthrough
+            s.success &= t == comm::exit_ok; // fallthrough
           case comm::stdout:
           case comm::stderr:
             {
               size_t len;
               rv = ::read(presenter_pipe, &len, sizeof(len));
+              assert(rv == sizeof(len));
               if (len)
                 {
                   char *buff = static_cast<char *>(alloca(len));
@@ -605,7 +680,7 @@ namespace crpcut {
 
                   if (t == comm::exit_ok || t == comm::exit_fail)
                     {
-                      s.history.push_back(std::string(buff, len));
+                      s.termination=std::string(buff, len);
                     }
                   else
                     {
@@ -670,12 +745,11 @@ namespace crpcut {
     if (type)
       {
         std::ostringstream out;
-        out << "<termination>Fixture contructor threw " << type;
+        out << "Fixture contructor threw " << type;
         if (msg)
           {
             out << "\n  what()=" << msg;
           }
-        out << "</termination>";
         report(comm::exit_fail, out);
       }
     // report start of test
@@ -685,21 +759,17 @@ namespace crpcut {
     catch (std::exception &e)
       {
         const size_t len = std::strlen(e.what());
-#define TEMPLATE_HEAD "<termination>Unexpectedly caught std::exception\n  what()="
-#define TEMPLATE_TAIL "</termination>\n"
+#define TEMPLATE_HEAD "Unexpectedly caught std::exception\n  what()="
         const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
-        const size_t tail_size = sizeof(TEMPLATE_TAIL) - 1;
-        char *msg = static_cast<char *>(alloca(head_size + len + tail_size + 1));
+        char *msg = static_cast<char *>(alloca(head_size + len + 1));
         std::strcpy(msg, TEMPLATE_HEAD);
         std::strcpy(msg + head_size, e.what());
-        std::strcpy(msg + head_size + len, TEMPLATE_TAIL);
 #undef TEMPLATE_HEAD
-#undef TEMPLATE_TAIL
-        report(comm::exit_fail, head_size + tail_size + len, msg);
+        report(comm::exit_fail, head_size + len, msg);
       }
     catch (...)
       {
-        static const char msg[] = "<termination>Unexpectedly caught ...</termination>\n";
+        static const char msg[] = "Unexpectedly caught ...";
         report(comm::exit_fail, msg);
       }
     // report end of test
