@@ -35,7 +35,7 @@
 #include <cerrno>
 #include <cassert>
 #include <tr1/type_traits>
-#include "array_v.hpp"
+#include <tr1/array>
 #include <queue>
 #include <cmath>
 #include <ctime>
@@ -65,7 +65,7 @@ namespace std {
   protected virtual crpcut::policies::exception_specifier<void (type)>
 
 #define DEPENDS_ON(...) \
-  protected virtual crpcut::policies::dependency_policy<crpcut::policies::dependencies::tlist_maker<__VA_ARGS__>::type >
+  protected virtual crpcut::policies::dependency_policy<crpcut::datatypes::tlist_maker<__VA_ARGS__>::type >
 
 #define ANY_CODE -1
 
@@ -85,17 +85,6 @@ namespace crpcut {
   namespace xml {
     class tag_t
     {
-      template <typename T>
-      struct attr
-      {
-        attr(const char *n, const T& v) : name(n), val(v) {}
-        const char *name;
-        const T&    val;
-        friend std::ostream &operator<<(std::ostream &os, const attr& a)
-        {
-          os << " " << a.name << "=\"" << a.val << "\""; return os;
-        }
-      };
     public:
       operator void*() const { return 0; }
       tag_t(const char *name, std::ostream &os)
@@ -117,128 +106,20 @@ namespace crpcut {
         introduce();
         parent.state_ = in_children;
       }
-      template <typename T1>
-      tag_t(const char *name, tag_t &parent,
-            const attr<T1>& a1)
-        : name_(name),
-          state_(in_name),
-          indent_(parent.indent_+1),
-          os_(parent.os_),
-          parent_(&parent)
-      {
-        introduce();
-        parent.state_ = in_children;
-        os_ << a1;
-      }
-      template <typename T1, typename T2>
-      tag_t(const char *name, tag_t &parent,
-            const attr<T1>& a1, const attr<T2> &a2)
-        : name_(name),
-          state_(in_name),
-          indent_(parent.indent_+1),
-          os_(parent.os_),
-          parent_(&parent)
-      {
-        introduce();
-        parent.state_ = in_children;
-        os_ << a1 << a2;
-      }
-      template <typename T1, typename T2, typename T3>
-      tag_t(const char *name, tag_t &parent,
-            const attr<T1>& a1, const attr<T2> &a2, const attr<T3> &a3)
-        : name_(name),
-          state_(in_name),
-          indent_(parent.indent_+1),
-          os_(parent.os_),
-          parent_(&parent)
-      {
-        introduce();
-        parent.state_ = in_children;
-        os_ << a1 << a2 << a3;
-      }
-      template <typename T1, typename T2, typename T3, typename T4>
-      tag_t(const char *name, tag_t &parent,
-            const attr<T1>& a1, const attr<T2> &a2, const attr<T3> &a3, const attr<T4> &a4)
-        : name_(name),
-          state_(in_name),
-          indent_(parent.indent_+1),
-          os_(parent.os_),
-          parent_(&parent)
-      {
-        introduce();
-        parent.state_ = in_children;
-        os_ << a1 << a2 << a3 << a4;
-      }
-      ~tag_t()
-      {
-        if (state_ == in_name)
-          {
-            os_ << "/>\n";
-          }
-        else
-          {
-            if (state_ == in_children)
-              {
-                os_  << std::setw(indent_*2) << "";
-              }
-            os_ << "</" << name_ << ">\n";
-          }
-      }
+      ~tag_t();
       template <typename T>
       tag_t & operator<<(const T& t)
       {
         std::ostringstream o;
         if (conditionally_stream(o, t))
           {
-            if (state_ != in_data)
-              {
-                os_ << ">";
-                state_ = in_data;
-              }
-            const std::string &s = o.str();
-            for (std::string::const_iterator i = s.begin(); i != s.end(); ++i)
-              {
-                unsigned char u = *i;
-                switch (u)
-                  {
-                  case '&':
-                    os_ << "&amp;"; break;
-                  case '<':
-                    os_ << "&lt;"; break;
-                  case '>':
-                    os_ << "&gt;"; break;
-                  case '"':
-                    os_ << "&quot;"; break;
-                  case '\'':
-                    os_ << "&apos;"; break;
-                  default:
-                    if (u < 128)
-                      {
-                    os_ << *i;
-                      }
-                    else
-                      {
-                        os_ << "&#" << int(u) << ';';
-                      }
-                  }
-              }
+            output_data(o);
           }
         return *this;
       }
     private:
-      void introduce()
-      {
-        if (parent_ && parent_->state_ != in_data)
-          {
-            if (parent_->state_ == in_name)
-              {
-                os_ << ">\n";
-              }
-            parent_->state_ = in_children;
-            os_ << std::setw(indent_ * 2) << "";
-          }
-        os_ << '<' << name_;
-      }
+      void output_data(std::ostringstream &o);
+      void introduce();
 
       const char *name_;
       enum { in_name, in_children, in_data } state_;
@@ -246,14 +127,152 @@ namespace crpcut {
       std::ostream &os_;
       tag_t *parent_;
 
-      template <typename T>
-      friend tag_t::attr<T> attr(const char *name, const T& t)
-      {
-        tag_t::attr<T> a(name, t);
-        return a;
-      }
     };
   }
+
+  namespace datatypes {
+
+    template <typename T, std::size_t N>
+    class array_v : private std::array<T, N>
+    {
+      typedef std::array<T, N> array;
+    public:
+      typedef typename array::value_type             value_type;
+      typedef typename array::reference              reference;
+      typedef typename array::const_reference        const_reference;
+      typedef typename array::iterator               iterator;
+      typedef typename array::const_iterator         const_iterator;
+      typedef typename array::size_type              size_type;
+      typedef typename array::difference_type        difference_type;
+      typedef typename array::reverse_iterator       reverse_iterator;
+      typedef typename array::const_reverse_iterator const_reverse_iterator;
+
+      array_v() : num_elements(0) {}
+      using array::assign;
+      void swap(array_v &other)
+      {
+        array &ta = *this;
+        array &to = other;
+        ta.swap(to);
+        std::swap(num_elements, other.num_elements);
+      }
+      using array::begin;
+      iterator end() { return iterator(&operator[](size())); }
+      const_iterator end() const { return iterator(&operator[](size())); }
+      reverse_iterator rbegin() { return reverse_iterator(end()); }
+      const reverse_iterator rbegin() const { return reverse_iterator(end()); }
+      using array::rend;
+      size_type size() const { return num_elements; }
+      using array::max_size;
+      bool empty() const { return size() == 0; }
+
+      using array::operator[];
+      reference at(size_type n)
+      {
+        if (n >= num_elements) throw std::out_of_range("array_v::at");
+        return operator[](n);
+      }
+      const_reference at(size_type n) const
+      {
+        if (n >= num_elements) throw std::out_of_range("array_v::at");
+        return operator[](n);
+      }
+      using array::front;
+      reference back() { return *(end() - !empty()); }
+      using array::data;
+      const_reference back() const { *(end() - !empty()); }
+      void push_back(const value_type &x)
+      {
+        assert(num_elements <= N);
+        operator[](num_elements++) = x;
+      }
+      void pop_back() { assert(num_elements); --num_elements; }
+    private:
+      size_t num_elements;
+    };
+
+    class none;
+
+    template <typename T1 = none, typename T2 = none>
+    class tlist : public T1,
+                  public T2
+    {
+    public:
+      typedef T1 head;
+      typedef T2 tail;
+    };
+
+    template <typename T>
+    struct tlist<none, T>
+    {
+      typedef none head;
+    };
+
+    // Man, I'm longing for variadic templates... this is insanity
+    template <typename T1 = none, typename T2 = none, typename T3 = none,
+              typename T4 = none, typename T5 = none, typename T6 = none,
+              typename T7 = none, typename T8 = none, typename T9 = none,
+              typename T10 = none, typename T11 = none, typename T12 = none,
+              typename T13 = none, typename T14 = none, typename T15 = none,
+              typename T16 = none, typename T17 = none, typename T18 = none>
+    struct tlist_maker
+    {
+      typedef tlist<
+        T1,
+        tlist<
+          T2,
+          tlist<
+            T3,
+            tlist<
+              T4,
+              tlist<
+                T5,
+                tlist<
+                  T6,
+                  tlist<
+                    T7,
+                    tlist<
+                      T8,
+                      tlist<
+                        T9,
+                        tlist<
+                          T10,
+                          tlist<
+                            T11,
+                            tlist<
+                              T12,
+                              tlist<
+                                T13,
+                                tlist<
+                                  T14,
+                                  tlist<
+                                    T15,
+                                    tlist<
+                                      T16,
+                                      tlist<
+                                        T17,
+                                        tlist<T18>
+                                        >
+                                      >
+                                    >
+                                  >
+                                >
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+            >
+          >
+        >
+      type;
+    };
+  }
+
   namespace policies {
     namespace deaths {
       class none;
@@ -379,7 +398,6 @@ namespace crpcut {
 
     namespace dependencies {
 
-      class none;
       class basic_enforcer;
       class base
       {
@@ -419,98 +437,20 @@ namespace crpcut {
         enforcer() { inc(); T::crpcut_reg.add(this); }
       };
 
-      template <typename T1 = none, typename T2 = none>
-      class tlist : public T1,
-                    public T2
-      {
-      public:
-        typedef T1 head;
-        typedef T2 tail;
-      };
-
-      template <typename T>
-      class tlist<none, T>
-      {
-        typedef none head;
-      };
-
-      // Man, I'm longing for variadic templates... this is insanity
-      template <typename T1 = none, typename T2 = none, typename T3 = none,
-                typename T4 = none, typename T5 = none, typename T6 = none,
-                typename T7 = none, typename T8 = none, typename T9 = none,
-                typename T10 = none, typename T11 = none, typename T12 = none,
-                typename T13 = none, typename T14 = none, typename T15 = none,
-                typename T16 = none, typename T17 = none, typename T18 = none>
-      struct tlist_maker
-      {
-        typedef tlist<
-          T1,
-          tlist<
-            T2,
-            tlist<
-              T3,
-              tlist<
-                T4,
-                tlist<
-                  T5,
-                  tlist<
-                    T6,
-                    tlist<
-                      T7,
-                      tlist<
-                        T8,
-                        tlist<
-                          T9,
-                          tlist<
-                            T10,
-                            tlist<
-                              T11,
-                              tlist<
-                                T12,
-                                tlist<
-                                  T13,
-                                  tlist<
-                                    T14,
-                                    tlist<
-                                      T15,
-                                      tlist<
-                                        T16,
-                                        tlist<
-                                          T17,
-                                          tlist<T18>
-                                          >
-                                        >
-                                      >
-                                    >
-                                  >
-                                >
-                              >
-                            >
-                          >
-                        >
-                      >
-                    >
-                  >
-                >
-              >
-            >
-          >
-        type;
-      };
-
       template <template <typename> class envelope, typename T>
       class wrap
       {
       public:
-        typedef tlist<envelope<typename T::head>,
-                      typename wrap<envelope, typename T::tail>::type> type;
+        typedef datatypes::tlist<envelope<typename T::head>,
+                                 typename wrap<envelope,
+                                               typename T::tail>::type> type;
       };
 
       template <template <typename> class envelope, typename T>
-      class wrap<envelope, tlist<none, T> >
+      class wrap<envelope, datatypes::tlist<datatypes::none, T> >
       {
       public:
-        typedef tlist<> type;
+        typedef datatypes::tlist<> type;
       };
     } // namespace dependencies
 
@@ -529,8 +469,10 @@ namespace crpcut {
       {
       protected:
         basic_enforcer(type t, unsigned timeout_ms);
-        void check(type t, unsigned timeout_ms);
+        void check(type t);
         timespec ts;
+      private:
+        unsigned duration_ms;
       };
 
       template <type t, unsigned timeout_ms>
@@ -540,32 +482,34 @@ namespace crpcut {
         enforcer();
       };
 
-      class cpuenforcer : public basic_enforcer
+      class cputime_enforcer : public basic_enforcer
       {
       protected:
-        cpuenforcer(unsigned timeout_ms);
+        cputime_enforcer(unsigned timeout_ms);
+        ~cputime_enforcer();
+      };
+
+      class monotonic_enforcer : public basic_enforcer
+      {
+      protected:
+        monotonic_enforcer(unsigned timeout_ms);
+        ~monotonic_enforcer();
       };
 
 #if defined(CLOCK_PROCESS_CPUTIME_ID)
       template <unsigned timeout_ms>
-      class enforcer<cputime, timeout_ms> : public basic_enforcer
+      class enforcer<cputime, timeout_ms> : public cputime_enforcer
       {
       public:
-        enforcer()  : basic_enforcer(cputime, timeout_ms)
-        {
-          rlimit r = { (timeout_ms + 1500) / 1000, (timeout_ms + 2500) / 1000 };
-          setrlimit(RLIMIT_CPU, &r);
-        }
-        ~enforcer() { basic_enforcer::check(cputime, timeout_ms); }
+        enforcer() : cputime_enforcer(timeout_ms) {}
       };
 #endif
 #if defined(CLOCK_MONOTONIC)
       template <unsigned timeout_ms>
-      class enforcer<realtime, timeout_ms> : public basic_enforcer
+      class enforcer<realtime, timeout_ms> : public monotonic_enforcer
       {
       public:
-        enforcer();
-        ~enforcer();
+        enforcer() : monotonic_enforcer(timeout_ms) {}
       };
 #endif
     } // namespace timeout
@@ -640,30 +584,6 @@ namespace crpcut {
 
   } // namespace comm
 
-  namespace policies
-  {
-    namespace timeout
-    {
-      template <unsigned timeout_ms>
-      enforcer<realtime, timeout_ms>::enforcer()
-        : basic_enforcer(realtime, timeout_ms)
-      {
-        timespec deadline = ts;
-        deadline.tv_nsec += (timeout_ms % 1000) * 1000000;
-        deadline.tv_sec += deadline.tv_nsec / 1000000000;
-        deadline.tv_nsec %= 1000000000;
-        deadline.tv_sec += timeout_ms / 1000 + 1;
-        // calculated deadline + 1 sec should give plenty of slack
-        report(comm::set_timeout, deadline);
-      }
-      template <unsigned timeout_ms>
-      enforcer<realtime, timeout_ms>::~enforcer()
-      {
-        report(comm::cancel_timeout, 0, 0);
-        basic_enforcer::check(realtime, timeout_ms);
-      }
-    }
-  }
   namespace implementation {
 
     struct namespace_info
@@ -737,7 +657,6 @@ namespace crpcut {
       {
         return t.print_name(os);
       }
-      bool has_obituary() const { return death_note; }
       virtual bool match_name(const char *name) const = 0;
       test_case_base *instantiate_obj() const { return &func_(); }
       void setup(pid_t pid,
@@ -751,16 +670,7 @@ namespace crpcut {
         return next;
       }
       void kill();
-      int ms_until_deadline() const
-      {
-        struct timespec now;
-        ::clock_gettime(CLOCK_MONOTONIC, &now);
-        int ms = (deadline.tv_sec - now.tv_sec)*1000;
-        if (ms < 0) return 0;
-        ms+= (deadline.tv_nsec - now.tv_nsec) / 1000000;
-        if (ms < 0) return 0;
-        return ms;
-      }
+      int ms_until_deadline() const;
       void clear_deadline();
       bool deadline_is_set() const { return deadline.tv_sec > 0; }
       static bool timeout_compare(const test_case_registrator *lh,
@@ -894,8 +804,8 @@ namespace crpcut {
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
     };
 
-    typedef array_v<implementation::test_case_registrator*,
-                    max_parallel> timeout_queue;
+    typedef datatypes::array_v<implementation::test_case_registrator*,
+                               max_parallel> timeout_queue;
 
 
     registrator_list reg;
@@ -1085,6 +995,7 @@ namespace crpcut {
       }
     };
   }
+
   template <typename T>
   bool conditionally_stream(std::ostream &os, const T& t)
   {

@@ -45,6 +45,75 @@ extern "C" {
 
 namespace crpcut {
 
+  namespace xml {
+    tag_t::~tag_t()
+    {
+      if (state_ == in_name)
+        {
+          os_ << "/>\n";
+        }
+      else
+        {
+          if (state_ == in_children)
+            {
+              os_  << std::setw(indent_*2) << "";
+            }
+          os_ << "</" << name_ << ">\n";
+        }
+    }
+
+    void tag_t::output_data(std::ostringstream &o)
+    {
+      if (state_ != in_data)
+        {
+          os_ << ">";
+          state_ = in_data;
+        }
+      const std::string &s = o.str();
+      for (std::string::const_iterator i = s.begin(); i != s.end(); ++i)
+        {
+          unsigned char u = *i;
+          switch (u)
+            {
+            case '&':
+              os_ << "&amp;"; break;
+            case '<':
+              os_ << "&lt;"; break;
+            case '>':
+              os_ << "&gt;"; break;
+            case '"':
+              os_ << "&quot;"; break;
+            case '\'':
+              os_ << "&apos;"; break;
+            default:
+              if (u < 128)
+                {
+                  os_ << *i;
+                }
+              else
+                {
+                  os_ << "&#" << int(u) << ';';
+                }
+            }
+        }
+    }
+
+    void tag_t::introduce()
+    {
+      if (parent_ && parent_->state_ != in_data)
+        {
+          if (parent_->state_ == in_name)
+            {
+              os_ << ">\n";
+            }
+          parent_->state_ = in_children;
+          os_ << std::setw(indent_ * 2) << "";
+        }
+      os_ << '<' << name_;
+    }
+
+  }
+
   namespace policies {
     no_core_file::no_core_file()
     {
@@ -78,7 +147,8 @@ namespace crpcut {
       }
     }
     namespace timeout {
-      basic_enforcer::basic_enforcer(type t, unsigned)
+      basic_enforcer::basic_enforcer(type t, unsigned ms)
+        : duration_ms(ms)
       {
         ::clock_gettime(t == realtime
                         ? CLOCK_MONOTONIC
@@ -86,7 +156,7 @@ namespace crpcut {
                         &ts);
       }
 
-      void basic_enforcer::check(type t, unsigned timeout_ms)
+      void basic_enforcer::check(type t)
       {
         timespec now;
         ::clock_gettime(t == realtime
@@ -101,15 +171,44 @@ namespace crpcut {
           }
         now.tv_nsec -= ts.tv_nsec;
         unsigned long ms = now.tv_sec*1000 + now.tv_nsec / 1000000;
-        if (ms > timeout_ms)
+        if (ms > duration_ms)
           {
             std::ostringstream os;
             os << (t == realtime ? "Realtime" : "Cputime")
-               << " timeout " << timeout_ms
+               << " timeout " << duration_ms
                << "ms exceeded.\n  Actual time to completion was "
                << ms << "ms";
             report(comm::exit_fail, os);
           }
+      }
+
+      cputime_enforcer::cputime_enforcer(unsigned timeout_ms)
+        : basic_enforcer(cputime, timeout_ms)
+      {
+        rlimit r = { (timeout_ms + 1500) / 1000, (timeout_ms + 2500) / 1000 };
+        setrlimit(RLIMIT_CPU, &r);
+      }
+
+      cputime_enforcer::~cputime_enforcer()
+      {
+        basic_enforcer::check(cputime);
+      }
+
+      monotonic_enforcer::monotonic_enforcer(unsigned timeout_ms)
+        : basic_enforcer(realtime, timeout_ms)
+      {
+        timespec deadline = ts;
+        deadline.tv_nsec += (timeout_ms % 1000) * 1000000;
+        deadline.tv_sec += deadline.tv_nsec / 1000000000;
+        deadline.tv_nsec %= 1000000000;
+        deadline.tv_sec += timeout_ms / 1000 + 1;
+        // calculated deadline + 1 sec should give plenty of slack
+        report(comm::set_timeout, deadline);
+      }
+      monotonic_enforcer::~monotonic_enforcer()
+      {
+        report(comm::cancel_timeout, 0, 0);
+        basic_enforcer::check(realtime);
       }
 
     } // namespace timeout
@@ -258,6 +357,17 @@ namespace crpcut {
       static const char msg[] = "Timed out - killed";
       register_success(false);
       test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
+    }
+
+    int test_case_registrator::ms_until_deadline() const
+    {
+      struct timespec now;
+      ::clock_gettime(CLOCK_MONOTONIC, &now);
+      int ms = (deadline.tv_sec - now.tv_sec)*1000;
+      if (ms < 0) return 0;
+      ms+= (deadline.tv_nsec - now.tv_nsec) / 1000000;
+      if (ms < 0) return 0;
+      return ms;
     }
 
     void test_case_registrator::clear_deadline()
@@ -1040,21 +1150,12 @@ namespace crpcut {
     if (tests_as_child_procs())
       {
         kill_presenter_process();
-        CRPCUT_XML_TAG(statistics, std::cout)
-          {
-            CRPCUT_XML_TAG(registered_test_cases, statistics)
-              {
-                registered_test_cases << num_registered_tests;
-              }
-            CRPCUT_XML_TAG(run_test_cases, statistics)
-              {
-                run_test_cases << num_tests_run;
-              }
-            CRPCUT_XML_TAG(failed_test_cases, statistics)
-              {
-                failed_test_cases << num_tests_run - num_successful_tests;
-              }
-          }
+        std::cout <<
+          "<statistics>\n"
+          "  <registered_test_cases>" << num_registered_tests << "</registered_test_cases>\n"
+          "  <run_test_cases>" << num_tests_run << "</run_test_cases>\n"
+          "  <failed_test_cases>" << num_tests_run - num_successful_tests << "</failed_test_cases>\n"
+          "</statistics>\n";
 
         for (unsigned n = 0; n < max_parallel; ++n)
           {

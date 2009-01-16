@@ -14,11 +14,11 @@ lib/libcrpcut.a: obj/crpcut.o
 	@[ -d lib ] || mkdir lib
 	ar -r lib/libcrpcut.a obj/crpcut.o
 
-test/unitt.o: test-src/unitt.cpp include/crpcut.hpp include/array_v.hpp
+test/unitt.o: test-src/unitt.cpp include/crpcut.hpp
 	@[ -d test ] || mkdir test
 	g++ $(CXXFLAGS) test-src/unitt.cpp -c -o test/unitt.o
 
-obj/crpcut.o: src/crpcut.cpp include/crpcut.hpp src/poll.hpp include/array_v.hpp
+obj/crpcut.o: src/crpcut.cpp include/crpcut.hpp src/poll.hpp
 	@[ -d obj ] || mkdir obj
 	g++ $(CXXFLAGS) src/crpcut.cpp -c -o obj/crpcut.o
 
