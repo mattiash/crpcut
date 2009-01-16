@@ -65,7 +65,7 @@ namespace std {
   protected virtual crpcut::policies::exception_specifier<void (type)>
 
 #define DEPENDS_ON(...) \
-  protected virtual crpcut::policies::dependency_policy<crpcut::policies::dependencies::tuple_maker<__VA_ARGS__>::type >
+  protected virtual crpcut::policies::dependency_policy<crpcut::policies::dependencies::tlist_maker<__VA_ARGS__>::type >
 
 #define ANY_CODE -1
 
@@ -408,7 +408,7 @@ namespace crpcut {
       };
 
       template <typename T1 = none, typename T2 = none>
-      class tuple : public T1,
+      class tlist : public T1,
                     public T2
       {
       public:
@@ -417,7 +417,7 @@ namespace crpcut {
       };
 
       template <typename T>
-      class tuple<none, T>
+      class tlist<none, T>
       {
         typedef none head;
       };
@@ -429,43 +429,43 @@ namespace crpcut {
                 typename T10 = none, typename T11 = none, typename T12 = none,
                 typename T13 = none, typename T14 = none, typename T15 = none,
                 typename T16 = none, typename T17 = none, typename T18 = none>
-      struct tuple_maker
+      struct tlist_maker
       {
-        typedef tuple<
+        typedef tlist<
           T1,
-          tuple<
+          tlist<
             T2,
-            tuple<
+            tlist<
               T3,
-              tuple<
+              tlist<
                 T4,
-                tuple<
+                tlist<
                   T5,
-                  tuple<
+                  tlist<
                     T6,
-                    tuple<
+                    tlist<
                       T7,
-                      tuple<
+                      tlist<
                         T8,
-                        tuple<
+                        tlist<
                           T9,
-                          tuple<
+                          tlist<
                             T10,
-                            tuple<
+                            tlist<
                               T11,
-                              tuple<
+                              tlist<
                                 T12,
-                                tuple<
+                                tlist<
                                   T13,
-                                  tuple<
+                                  tlist<
                                     T14,
-                                    tuple<
+                                    tlist<
                                       T15,
-                                      tuple<
+                                      tlist<
                                         T16,
-                                        tuple<
+                                        tlist<
                                           T17,
-                                          tuple<T18>
+                                          tlist<T18>
                                           >
                                         >
                                       >
@@ -490,15 +490,15 @@ namespace crpcut {
       class wrap
       {
       public:
-        typedef tuple<envelope<typename T::head>,
+        typedef tlist<envelope<typename T::head>,
                       typename wrap<envelope, typename T::tail>::type> type;
       };
 
       template <template <typename> class envelope, typename T>
-      class wrap<envelope, tuple<none, T> >
+      class wrap<envelope, tlist<none, T> >
       {
       public:
-        typedef tuple<> type;
+        typedef tlist<> type;
       };
     } // namespace dependencies
 
@@ -747,7 +747,9 @@ namespace crpcut {
                                   const test_case_registrator *rh)
       {
         if (lh->deadline.tv_sec == rh->deadline.tv_sec)
-          return lh->deadline.tv_nsec > rh->deadline.tv_nsec;
+          {
+            return lh->deadline.tv_nsec > rh->deadline.tv_nsec;
+          }
         return lh->deadline.tv_sec > rh->deadline.tv_sec;
       }
       void unregister_fds();
@@ -796,7 +798,8 @@ namespace crpcut {
   public:
     static const unsigned max_parallel = 8;
 
-    static unsigned run_test(int argc, const char *argv[], std::ostream &os = std::cerr)
+    static unsigned run_test(int argc, const char *argv[],
+                             std::ostream &os = std::cerr)
     {
       return obj().do_run(argc, argv, os);
     }
@@ -981,7 +984,8 @@ namespace crpcut {
     void test_wrapper<policies::deaths::wrapper, T>::run(T *t)
     {
       t->test();
-      comm::report(comm::exit_fail, "<termination>Unexpectedly survived</termination>\n");
+      comm::report(comm::exit_fail,
+                   "<termination>Unexpectedly survived</termination>\n");
     }
 
   } // namespace implementation
@@ -1008,11 +1012,13 @@ namespace crpcut {
     {
       static const bool value = is_output_streamable<T>::value;
     };
+
     template <typename T>
     struct is_output_streamable<volatile T>
     {
       static const bool value = is_output_streamable<T>::value;
     };
+
     template <typename T>
     struct is_output_streamable<T&>
     {
@@ -1033,7 +1039,8 @@ namespace crpcut {
   }
 
   namespace implementation {
-    template <typename T, bool b = stream_checker::is_output_streamable<T>::value>
+    template <typename T,
+              bool b = stream_checker::is_output_streamable<T>::value>
     struct conditional_streamer
     {
       static bool stream(std::ostream &os, const T& t)

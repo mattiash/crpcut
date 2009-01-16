@@ -412,6 +412,7 @@ namespace crpcut {
     working_dirs[num] = first_free_working_dir;
     first_free_working_dir = num;
   }
+
   void test_case_factory::do_introduce_name(pid_t pid, const std::string &name)
   {
     int pipe = presenter_pipe;
@@ -472,6 +473,7 @@ namespace crpcut {
       std::list<std::string> history;
     };
   }
+
   void test_case_factory::start_presenter_process()
   {
     int fds[2];
@@ -570,7 +572,9 @@ namespace crpcut {
                         endpos = s.find('\n', prevpos);
                         if (endpos == std::string::npos) break;
                         static const char *prefix[] = { "", "      " };
-                        std::cout << prefix[prev_ended] << std::string(s, prevpos, endpos - prevpos) << "\n";
+                        std::cout << prefix[prev_ended]
+                                  << std::string(s, prevpos, endpos - prevpos)
+                                  << "\n";
                         prev_ended = s[endpos-1] == '>';
                       }
                   }
@@ -645,7 +649,8 @@ namespace crpcut {
       }
   }
 
-  void test_case_factory::run_test_case(implementation::test_case_registrator *i) const
+  void test_case_factory
+  ::run_test_case(implementation::test_case_registrator *i) const
   {
     test_case_base *p = 0;
     const char *msg = 0;
@@ -668,7 +673,7 @@ namespace crpcut {
         out << "<termination>Fixture contructor threw " << type;
         if (msg)
           {
-            out << "\n  what()=" << msg; 
+            out << "\n  what()=" << msg;
           }
         out << "</termination>";
         report(comm::exit_fail, out);
@@ -713,10 +718,13 @@ namespace crpcut {
   {
     while (pending_children >= max_pending_children)
       {
+        using namespace implementation;
+
         int timeout_ms = deadlines.size()
           ? deadlines.front()->ms_until_deadline()
           : -1;
-        implementation::polltype::descriptor desc = implementation::poller.wait(timeout_ms);
+        polltype::descriptor desc = poller.wait(timeout_ms);
+
         if (desc.timeout())
           {
             assert(deadlines.size());
@@ -733,7 +741,7 @@ namespace crpcut {
         if (read_failed || desc.hup())
           {
             desc->unregister();
-            implementation::test_case_registrator *r = desc->get_registrator();
+            test_case_registrator *r = desc->get_registrator();
             if (!r->has_active_readers())
               {
                 r->manage_death();

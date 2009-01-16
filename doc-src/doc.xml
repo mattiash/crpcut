@@ -44,7 +44,7 @@ not even be run.
 <p/>
 The crpcut main process does not have any dynamic memory allocated at the
 time a test case process is started, so you can run crpcut using a memory
-test tool, such as <link url="http://www.valdrind.org">valgrind</link>,
+test tool, such as <link url="http://www.valgrind.org">valgrind</link>,
  and if there is memory allocated when the test
 case process terminates, you can be assured that you have found a memory leak
 in your test.
