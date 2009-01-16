@@ -25,492 +25,22 @@
  */
 
 
-#include "crpcut.hpp"
 #define POLL_USE_EPOLL
+#include <crpcut.hpp>
 #include "poll.hpp"
+#include "implementation.hpp"
+
 extern "C" {
-#include <signal.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/wait.h>
-#include <fcntl.h>
 }
 #include <map>
 #include <list>
-#include <limits>
-#include <cstdlib>
 #include <cstdio>
+#include <limits>
+#include <ctime>
+#include <queue>
 
 namespace crpcut {
-
-  namespace xml {
-    tag_t::~tag_t()
-    {
-      if (state_ == in_name)
-        {
-          os_ << "/>\n";
-        }
-      else
-        {
-          if (state_ == in_children)
-            {
-              os_  << std::setw(indent_*2) << "";
-            }
-          os_ << "</" << name_ << ">\n";
-        }
-    }
-
-    void tag_t::output_data(std::ostringstream &o)
-    {
-      if (state_ != in_data)
-        {
-          os_ << ">";
-          state_ = in_data;
-        }
-      const std::string &s = o.str();
-      for (std::string::const_iterator i = s.begin(); i != s.end(); ++i)
-        {
-          unsigned char u = *i;
-          switch (u)
-            {
-            case '&':
-              os_ << "&amp;"; break;
-            case '<':
-              os_ << "&lt;"; break;
-            case '>':
-              os_ << "&gt;"; break;
-            case '"':
-              os_ << "&quot;"; break;
-            case '\'':
-              os_ << "&apos;"; break;
-            default:
-              if (u < 128)
-                {
-                  os_ << *i;
-                }
-              else
-                {
-                  os_ << "&#" << int(u) << ';';
-                }
-            }
-        }
-    }
-
-    void tag_t::introduce()
-    {
-      if (parent_ && parent_->state_ != in_data)
-        {
-          if (parent_->state_ == in_name)
-            {
-              os_ << ">\n";
-            }
-          parent_->state_ = in_children;
-          os_ << std::setw(indent_ * 2) << "";
-        }
-      os_ << '<' << name_;
-    }
-
-  }
-
-  namespace policies {
-    no_core_file::no_core_file()
-    {
-      rlimit r = { 0, 0};
-      ::setrlimit(RLIMIT_CORE, &r);
-    }
-
-    namespace deaths {
-      void none::expected_death(std::ostream &os)
-      {
-        os << "normal exit";
-      }
-    }
-
-    namespace dependencies {
-      void base::register_success(bool value)
-      {
-        if (value)
-          {
-            if (state != not_run) return;
-            state = success;
-            for (basic_enforcer *p = dependants; p; p = p->next)
-              {
-                --p->num;
-              }
-          }
-        else
-          {
-            state = fail;
-          }
-      }
-    }
-    namespace timeout {
-      basic_enforcer::basic_enforcer(type t, unsigned ms)
-        : duration_ms(ms)
-      {
-        ::clock_gettime(t == realtime
-                        ? CLOCK_MONOTONIC
-                        : CLOCK_PROCESS_CPUTIME_ID,
-                        &ts);
-      }
-
-      void basic_enforcer::check(type t)
-      {
-        timespec now;
-        ::clock_gettime(t == realtime
-                        ? CLOCK_MONOTONIC
-                        : CLOCK_PROCESS_CPUTIME_ID,
-                        &now);
-        now.tv_sec -= ts.tv_sec;
-        if (now.tv_nsec < ts.tv_nsec)
-          {
-            now.tv_nsec += 1000000000;
-            now.tv_sec -= 1;
-          }
-        now.tv_nsec -= ts.tv_nsec;
-        unsigned long ms = now.tv_sec*1000 + now.tv_nsec / 1000000;
-        if (ms > duration_ms)
-          {
-            std::ostringstream os;
-            os << (t == realtime ? "Realtime" : "Cputime")
-               << " timeout " << duration_ms
-               << "ms exceeded.\n  Actual time to completion was "
-               << ms << "ms";
-            report(comm::exit_fail, os);
-          }
-      }
-
-      cputime_enforcer::cputime_enforcer(unsigned timeout_ms)
-        : basic_enforcer(cputime, timeout_ms)
-      {
-        rlimit r = { (timeout_ms + 1500) / 1000, (timeout_ms + 2500) / 1000 };
-        setrlimit(RLIMIT_CPU, &r);
-      }
-
-      cputime_enforcer::~cputime_enforcer()
-      {
-        basic_enforcer::check(cputime);
-      }
-
-      monotonic_enforcer::monotonic_enforcer(unsigned timeout_ms)
-        : basic_enforcer(realtime, timeout_ms)
-      {
-        timespec deadline = ts;
-        deadline.tv_nsec += (timeout_ms % 1000) * 1000000;
-        deadline.tv_sec += deadline.tv_nsec / 1000000000;
-        deadline.tv_nsec %= 1000000000;
-        deadline.tv_sec += timeout_ms / 1000 + 1;
-        // calculated deadline + 1 sec should give plenty of slack
-        report(comm::set_timeout, deadline);
-      }
-      monotonic_enforcer::~monotonic_enforcer()
-      {
-        report(comm::cancel_timeout, 0, 0);
-        basic_enforcer::check(realtime);
-      }
-
-    } // namespace timeout
-
-  } // namespace policies
-
-  namespace {
-
-    bool is_dir_empty(const char *name)
-    {
-      DIR *d = ::opendir(name);
-      assert(d);
-      char buff[sizeof(dirent) + PATH_MAX];
-      dirent *ent = reinterpret_cast<dirent*>(buff),*result = ent;
-      bool empty = true;
-      while (empty && result && (::readdir_r(d, ent, &result) == 0))
-        {
-          if (std::strcmp(ent->d_name, ".") == 0 ||
-              std::strcmp(ent->d_name, "..") == 0)
-            continue;
-          empty = false;
-        }
-      ::closedir(d);
-      return empty;
-    }
-  } // unnamed namespace
-
-  namespace implementation {
-
-    typedef poll<fdreader, test_case_factory::max_parallel*3> polltype;
-
-    polltype poller;
-
-    void fdreader::set_fd(int fd_)
-    {
-      assert(fd == 0);
-      assert(reg != 0);
-      fd = fd_;
-      poller.add_fd(fd, this);
-      reg->activate_reader();
-    }
-
-    void fdreader::unregister()
-    {
-      assert(fd != 0);
-      assert(reg != 0);
-      reg->deactivate_reader();
-      poller.del_fd(fd);
-      fd = 0;
-    }
-
-    bool report_reader::do_read(int fd)
-    {
-      comm::type t;
-      int rv;
-      do {
-        rv = ::read(fd, &t, sizeof(t));
-      } while (rv == -1 && errno == EINTR);
-      if (rv == 0) return false; // eof
-      assert(rv == sizeof(t));
-      if (t == comm::exit_fail)
-        {
-          reg->register_success(false);
-        }
-      size_t len = 0;
-      do {
-        rv = ::read(fd, &len, sizeof(len));
-      } while (rv == -1 && errno == EINTR);
-      assert(rv == sizeof(len));
-
-      size_t bytes_read = 0;
-      if (t == comm::set_timeout)
-        {
-          assert(len == sizeof(reg->deadline));
-          assert(!reg->deadline_is_set());
-          char *p = static_cast<char*>(static_cast<void*>(&reg->deadline));
-          while (bytes_read < len)
-            {
-              rv = ::read(fd, p + bytes_read, len - bytes_read);
-              if (rv == -1 && errno == EINTR) continue;
-              assert(rv > 0);
-              bytes_read += rv;
-            }
-          do {
-            rv = ::write(response_fd, &len, sizeof(len));
-          } while (rv == -1 && errno == EINTR);
-          assert(reg->deadline_is_set());
-          test_case_factory::set_deadline(reg);
-          return true;
-        }
-      if (t == comm::cancel_timeout)
-        {
-          assert(len == 0);
-          reg->clear_deadline();
-          do {
-            rv = ::write(response_fd, &len, sizeof(len));
-          } while (rv == -1 && errno == EINTR);
-          return true;
-        }
-      char *buff = static_cast<char *>(::alloca(len));
-      while (bytes_read < len)
-        {
-          rv = ::read(fd, buff + bytes_read, len - bytes_read);
-          if (rv == 0) break;
-          if (rv == -1 && errno == EINTR) continue;
-          assert(rv > 0);
-          bytes_read += rv;
-        }
-      do {
-        rv = ::write(response_fd, &len, sizeof(len));
-      } while (rv == -1 && errno == EINTR);
-      test_case_factory::present(reg->get_pid(), t, len, buff);
-      if (t == comm::exit_ok || t == comm::exit_fail)
-        {
-          if (!reg->death_note && reg->deadline_is_set())
-            {
-              reg->clear_deadline();
-            }
-          reg->death_note = true;
-        }
-      return true;
-    }
-
-
-    test_case_registrator
-    ::test_case_registrator(const char *name,
-                            test_case_base & (*func)())
-      : name_(name),
-        next(&test_case_factory::obj().reg),
-        prev(test_case_factory::obj().reg.prev),
-        func_(func),
-        death_note(false),
-        rep_reader(this),
-        stdout_reader(this),
-        stderr_reader(this)
-    {
-      test_case_factory::obj().reg.prev = this;
-      prev->next = this;
-    }
-
-    void test_case_registrator::kill()
-    {
-      ::kill(pid_, SIGKILL);
-      death_note = true;
-      deadline.tv_sec = 0;
-      static const char msg[] = "Timed out - killed";
-      register_success(false);
-      test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
-    }
-
-    int test_case_registrator::ms_until_deadline() const
-    {
-      struct timespec now;
-      ::clock_gettime(CLOCK_MONOTONIC, &now);
-      int ms = (deadline.tv_sec - now.tv_sec)*1000;
-      if (ms < 0) return 0;
-      ms+= (deadline.tv_nsec - now.tv_nsec) / 1000000;
-      if (ms < 0) return 0;
-      return ms;
-    }
-
-    void test_case_registrator::clear_deadline()
-    {
-      assert(deadline_is_set());
-      test_case_factory::clear_deadline(this);
-      deadline.tv_sec = 0;
-    }
-
-    void test_case_registrator::setup(pid_t pid,
-                                      int in_fd, int out_fd,
-                                      int stdout_fd,
-                                      int stderr_fd)
-    {
-      pid_ = pid;
-      stdout_reader.set_fd(stdout_fd);
-      stderr_reader.set_fd(stderr_fd);
-      rep_reader.set_fds(in_fd, out_fd);
-      std::ostringstream os;
-      os << *this;
-      test_case_factory::introduce_name(pid, os.str());
-    }
-
-    void test_case_registrator::set_wd(int n)
-    {
-      dirnum = n;
-      char name[std::numeric_limits<int>::digits/3+1];
-      int len = snprintf(name, sizeof(name), "%d", n);
-      assert(len > 0 && len < int(sizeof(name)));
-      (void)len; // silence warning when building with -DNDEBUG
-      if (::mkdir(name, 0700) != 0)
-        {
-          assert(errno == EEXIST);
-        }
-    }
-
-    void test_case_registrator::goto_wd() const
-    {
-      char name[std::numeric_limits<int>::digits/3+1];
-      int len = snprintf(name, sizeof(name), "%d", dirnum);
-      assert(len > 0 && len < int(sizeof(len)));
-      (void)len; // silence warning when building with -DNDEBUG
-      if (::chdir(name) != 0)
-        {
-          report(comm::exit_fail, "Couldn't chdir working dir");
-          assert("unreachable code reached" == 0);
-        }
-    }
-
-
-    void test_case_registrator::manage_death()
-    {
-      ::siginfo_t info;
-      for (;;)
-        {
-          int rv = ::waitid(P_PID, pid_, &info, WEXITED);
-          int n = errno;
-          if (rv == -1 && n == EINTR) continue;
-          assert(rv == 0);
-          break;
-        }
-      assert(!succeeded());
-      if (!death_note && deadline_is_set())
-        {
-          clear_deadline();
-        }
-      comm::type t = comm::exit_ok;
-      {
-        char dirname[std::numeric_limits<int>::digits/3+1];
-        int len = std::snprintf(dirname, sizeof(dirname), "%d", dirnum);
-        assert(len > 0 && len < int(sizeof(dirname)));
-        (void)len; // silence warning when building with -DNDEBUG
-        if (!is_dir_empty(dirname))
-          {
-            std::ostringstream tcname;
-            tcname << *this;
-            test_case_factory::present(pid_, comm::dir, 0, 0);
-            std::rename(dirname, tcname.str().c_str());
-            t = comm::exit_fail;
-            register_success(false);
-          }
-      }
-      if (!death_note)
-        {
-          std::ostringstream out;
-            {
-
-              switch (info.si_code)
-                {
-                case CLD_EXITED:
-                  {
-                    if (!failed())
-                      {
-                        if (!is_expected_exit(info.si_status))
-                          {
-                            out << "Exited with code "
-                                << info.si_status << "\nExpected ";
-                            expected_death(out);
-                            t = comm::exit_fail;
-                          }
-                      }
-                  }
-                  break;
-                case CLD_KILLED:
-                  {
-                    if (!failed())
-                      {
-                        if (!is_expected_signal(info.si_status))
-                          {
-                            out << "Died on signal "
-                                << info.si_status << "\nExpected ";
-                            expected_death(out);
-                            t = comm::exit_fail;
-                          }
-                      }
-                  }
-                  break;
-                case CLD_DUMPED:
-                  out << "Died with core dump";
-                  t = comm::exit_fail;
-                  break;
-                default:
-                  out << "Died for unknown reason, code=" << info.si_code;
-                  t = comm::exit_fail;
-                }
-            }
-          death_note = true;
-            {
-              const std::string &s = out.str();
-              test_case_factory::present(pid_, t, s.length(), s.c_str());
-            }
-        }
-      register_success(t == comm::exit_ok);
-      test_case_factory::return_dir(dirnum);
-      test_case_factory::present(pid_, comm::end_test, 0, 0);
-      assert(succeeded() || failed());
-      if (succeeded())
-        {
-          test_case_factory::test_succeeded(this);
-        }
-    }
-  } // namespace implementation
-
 
   void test_case_factory
   ::do_set_deadline(implementation::test_case_registrator *i)
@@ -520,6 +50,7 @@ namespace crpcut {
     std::push_heap(deadlines.begin(), deadlines.end(),
                    &implementation::test_case_registrator::timeout_compare);
   }
+
   void test_case_factory
   ::do_clear_deadline(implementation::test_case_registrator *i)
   {
@@ -701,7 +232,8 @@ namespace crpcut {
               {
                 bool history_print = false;
                 std::cout << "  <test name=\"" << s.name
-                          << "\" result=\"" << (s.success ? "OK" : "FAILED") << '"';
+                          << "\" result=\""
+                          << (s.success ? "OK" : "FAILED") << '"';
                 for (std::list<std::string>::iterator i = s.history.begin();
                      i != s.history.end();
                      ++i)
@@ -1008,10 +540,10 @@ namespace crpcut {
             unsigned long l = std::strtol(*p, &end, 10);
             if (*end != 0 || l > max_parallel)
               {
-                os
-                  << "num child processes must be a positive integer no greater than "
-                  << max_parallel
-                  << "\nA value of 0 means test cases are executed in the parent process"
+                os <<
+                  "num child processes must be a positive integer no greater than "
+                   << max_parallel
+                   << "\nA value of 0 means test cases are executed in the parent process"
                   "\n";
                 return -1;
               }
@@ -1023,7 +555,8 @@ namespace crpcut {
             const char **names = ++p;
             if (*names && **names == '-')
               {
-                os << "-l must be followed by a (possibly empty) test case list\n";
+                os <<
+                  "-l must be followed by a (possibly empty) test case list\n";
                 return -1;
               }
             for (implementation::test_case_registrator *i = reg.get_next();
@@ -1055,6 +588,7 @@ namespace crpcut {
         }
         ++p;
       }
+
     if (tests_as_child_procs())
       {
         if (!::mkdtemp(dirbase))
@@ -1147,14 +681,19 @@ namespace crpcut {
           }
       }
     if (pending_children) manage_children(1);
+
     if (tests_as_child_procs())
       {
         kill_presenter_process();
         std::cout <<
           "<statistics>\n"
-          "  <registered_test_cases>" << num_registered_tests << "</registered_test_cases>\n"
+          "  <registered_test_cases>"
+                  << num_registered_tests
+                  << "</registered_test_cases>\n"
           "  <run_test_cases>" << num_tests_run << "</run_test_cases>\n"
-          "  <failed_test_cases>" << num_tests_run - num_successful_tests << "</failed_test_cases>\n"
+          "  <failed_test_cases>"
+                  << num_tests_run - num_successful_tests
+                  << "</failed_test_cases>\n"
           "</statistics>\n";
 
         for (unsigned n = 0; n < max_parallel; ++n)
@@ -1165,9 +704,12 @@ namespace crpcut {
             (void)len; // silence warning
             ::rmdir(name);
           }
-        if (!is_dir_empty("."))
+
+        if (!implementation::is_dir_empty("."))
           {
-            std::cout << "  <remaining_files nonempty_dir=\"" << dirbase << "\"/>\n";
+            std::cout << "  <remaining_files nonempty_dir=\""
+                      << dirbase
+                      << "\"/>\n";
           }
         else
           {
@@ -1175,6 +717,7 @@ namespace crpcut {
             ::rmdir(dirbase);
           }
       }
+
     if (reg.get_next() != &reg)
       {
         std::cout << "  <blocked_tests>\n";
@@ -1190,81 +733,6 @@ namespace crpcut {
     std::cout << "</crpcut>\n";
     return num_tests_run - num_successful_tests;
   }
-
-  namespace implementation {
-
-    const char *namespace_info::match_name(const char *n) const
-    {
-      if (!parent) return n;
-
-      const char *match = parent->match_name(n);
-      if (!match) return match;
-      if (!*match) return match; // actually a perfect match
-      if (match != n && *match++ != ':') return 0;
-      if (match != n && *match++ != ':') return 0;
-
-      const char *p = name;
-      while (*p && *n && *p == *n)
-        {
-          ++p;
-          ++n;
-        }
-      return *p ? 0 : n;
-    }
-
-    std::ostream &operator<<(std::ostream &os, const namespace_info &ns)
-    {
-      if (!ns.parent) return os;
-      os << *ns.parent;
-      os << ns.name;
-      os << "::";
-      return os;
-    }
-
-  } // namespace implementation
-
-
-
-  namespace comm {
-
-    void reporter::operator()(type t, size_t len, const char *msg) const
-    {
-      if (!test_case_factory::tests_as_child_procs())
-        {
-          // this is strange. If I use std::cout, output is lost, despite
-          // that it's set to unbuffered, and even if it's explicitly
-          // flushed.
-          ::write(1, msg, len);
-          if (t == exit_fail)
-            {
-              ::abort();
-            }
-          return;
-        }
-      std::cout << std::flush;
-      write(t);
-      write(len);
-      const char *p = msg;
-      size_t bytes_written = 0;
-      while (bytes_written < len)
-        {
-          int rv = ::write(write_fd,
-                           p + bytes_written,
-                           len - bytes_written);
-          if (rv == -1 && errno == EINTR) continue;
-          if (rv <= 0) throw "report failed";
-          bytes_written += rv;
-        }
-      read(bytes_written);
-      assert(len == bytes_written);
-      bool terminal = (t == comm::exit_ok) || (t == comm::exit_fail);
-      if (!terminal) return;
-      std::_Exit(0);
-    }
-
-    reporter report;
-
-  } // namespace comm
 
 } // namespace crpcut
 

@@ -31,23 +31,18 @@
 #include <sstream>
 #include <iostream>
 #include <ostream>
-#include <iomanip>
 #include <cerrno>
 #include <cassert>
 #include <tr1/type_traits>
 #include <tr1/array>
-#include <queue>
-#include <cmath>
-#include <ctime>
 #include <cstring>
 #include <cstdlib>
 
 extern "C"
 {
-#include <sys/resource.h>
-#include <sys/time.h>
 #include <limits.h>
 }
+
 namespace std {
   using namespace std::tr1;
 }
@@ -83,6 +78,7 @@ namespace std {
 namespace crpcut {
 
   namespace xml {
+
     class tag_t
     {
     public:
@@ -113,12 +109,13 @@ namespace crpcut {
         std::ostringstream o;
         if (conditionally_stream(o, t))
           {
-            output_data(o);
+            output_data(o.str().c_str());
           }
         return *this;
       }
+      tag_t &operator<<(const char *p) { output_data(p); return *this; }
     private:
-      void output_data(std::ostringstream &o);
+      void output_data(const char *p);
       void introduce();
 
       const char *name_;
@@ -283,18 +280,16 @@ namespace crpcut {
     }
 
     namespace timeout {
-      class no_enforcer
-      {
-      };
+      class none { };
     }
 
     class default_policy
     {
     protected:
-      typedef void crpcut_run_wrapper;
-      typedef deaths::none crpcut_expected_death_cause;
+      typedef void               crpcut_run_wrapper;
+      typedef deaths::none       crpcut_expected_death_cause;
       typedef dependencies::none crpcut_dependency;
-      typedef timeout::no_enforcer crpcut_timeout_enforcer;
+      typedef timeout::none      crpcut_timeout_enforcer;
     };
 
     namespace deaths {

@@ -363,10 +363,7 @@ order is:
 <li>Better separation of fixture errors and test-case errors</li>
 <li>Optional non-XML output</li>
 <li>INFO() macros for sending data from test-case to report</li>
-<li>Better separation of files in the distribution package</li>
 </list>
 </chapter>
 </doc>
 
-<!--  LocalWords:  crpcut
- -->
