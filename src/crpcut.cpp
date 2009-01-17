@@ -43,6 +43,23 @@ extern "C" {
 
 namespace crpcut {
 
+  test_case_factory::test_case_factory()
+    : pending_children(0),
+      verbose_mode(false),
+      nodeps(false),
+      num_parallel(1),
+      num_registered_tests(0),
+      num_tests_run(0),
+      num_successful_tests(0),
+      first_free_working_dir(0)
+  {
+    std::strcpy(dirbase, "/tmp/crpcutXXXXXX");
+    for (unsigned n = 0; n < max_parallel; ++n)
+      {
+        working_dirs[n] = n+1;
+      }
+  }
+
   void test_case_factory
   ::do_set_deadline(implementation::test_case_registrator *i)
   {

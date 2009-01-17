@@ -76,6 +76,7 @@ namespace std {
 
 
 namespace crpcut {
+  class none {};
 
   namespace datatypes {
 
@@ -94,46 +95,27 @@ namespace crpcut {
       typedef typename array::reverse_iterator       reverse_iterator;
       typedef typename array::const_reverse_iterator const_reverse_iterator;
 
-      array_v() : num_elements(0) {}
+      array_v();
       using array::assign;
-      void swap(array_v &other)
-      {
-        array &ta = *this;
-        array &to = other;
-        ta.swap(to);
-        std::swap(num_elements, other.num_elements);
-      }
       using array::begin;
-      iterator end() { return iterator(&operator[](size())); }
-      const_iterator end() const { return iterator(&operator[](size())); }
-      reverse_iterator rbegin() { return reverse_iterator(end()); }
-      const reverse_iterator rbegin() const { return reverse_iterator(end()); }
+      iterator end();
+      const_iterator end() const;
+      reverse_iterator rbegin();
+      const_reverse_iterator rbegin() const;
       using array::rend;
-      size_type size() const { return num_elements; }
+      size_type size() const;
       using array::max_size;
-      bool empty() const { return size() == 0; }
+      bool empty() const;
 
       using array::operator[];
-      reference at(size_type n)
-      {
-        if (n >= num_elements) throw std::out_of_range("array_v::at");
-        return operator[](n);
-      }
-      const_reference at(size_type n) const
-      {
-        if (n >= num_elements) throw std::out_of_range("array_v::at");
-        return operator[](n);
-      }
+      reference at(size_type n);
+      const_reference at(size_type n) const;
       using array::front;
-      reference back() { return *(end() - !empty()); }
+      reference back();
+      const_reference back() const;
       using array::data;
-      const_reference back() const { *(end() - !empty()); }
-      void push_back(const value_type &x)
-      {
-        assert(num_elements <= N);
-        operator[](num_elements++) = x;
-      }
-      void pop_back() { assert(num_elements); --num_elements; }
+      void push_back(const value_type &x);
+      void pop_back();
     private:
       size_t num_elements;
     };
@@ -218,7 +200,28 @@ namespace crpcut {
         >
       type;
     };
-  }
+
+    template <template <typename> class envelope, typename T>
+    class wrap
+    {
+    public:
+      typedef datatypes::tlist<envelope<typename T::head>,
+                               typename wrap<envelope,
+                                             typename T::tail>::type> type;
+    };
+
+    template <template <typename> class envelope, typename T>
+    class wrap<envelope, datatypes::tlist<none, T> >
+    {
+    public:
+      typedef datatypes::tlist<> type;
+    };
+
+    template <typename T>
+    const typename std::remove_cv<typename std::remove_reference<T>::type>::type&
+    gettype();
+
+  } // namespace datatypes
 
   namespace policies {
     namespace deaths {
@@ -248,8 +251,8 @@ namespace crpcut {
       {
       public:
         virtual ~none() {}
-        virtual bool is_expected_exit(int) const { return false; }
-        virtual bool is_expected_signal(int) const { return false; }
+        virtual bool is_expected_exit(int) const;
+        virtual bool is_expected_signal(int) const;
         virtual void expected_death(std::ostream &os);
       };
 
@@ -257,40 +260,16 @@ namespace crpcut {
       class signal : public virtual none
       {
       public:
-        virtual bool is_expected_signal(int code) const {
-          return N == ANY_CODE || code == N;
-        }
-        virtual void expected_death(std::ostream &os)
-        {
-          if (N == ANY_CODE)
-            {
-              os << "any signal";
-            }
-          else
-            {
-              os << "signal " << N;
-            }
-        }
+        virtual bool is_expected_signal(int code) const;
+        virtual void expected_death(std::ostream &os);
       };
 
       template <int N>
       class exit : public virtual none
       {
       public:
-        virtual bool is_expected_exit(int code) const {
-          return N == ANY_CODE || code == N;
-        }
-        virtual void expected_death(std::ostream &os)
-        {
-          if (N == ANY_CODE)
-            {
-              os << "exit with any code";
-            }
-          else
-            {
-              os << "exit with code " << N;
-            }
-        }
+        virtual bool is_expected_exit(int code) const;
+        virtual void expected_death(std::ostream &os);
       };
 
       class wrapper;
@@ -347,13 +326,13 @@ namespace crpcut {
       class base
       {
       protected:
-        void inc() { ++num; }
+        void inc();
       public:
-        base() : state(not_run), num(0), dependants(0) {};
+        base();
         void add(basic_enforcer * other);
-        bool can_run() const { return num == 0; }
-        bool failed() const { return state == fail; }
-        bool succeeded() const { return state == success; }
+        bool can_run() const;
+        bool failed() const;
+        bool succeeded() const;
         void register_success(bool value = true);
       private:
         enum { success, fail, not_run } state;
@@ -366,44 +345,25 @@ namespace crpcut {
         friend class base;
         basic_enforcer *next;
       protected:
-        basic_enforcer() : next(0) {}
+        basic_enforcer();
       };
 
-      inline void base::add(basic_enforcer *other)
-      {
-        other->next = dependants;
-        dependants = other;
-      }
 
       template <typename T>
       class enforcer : private basic_enforcer
       {
       public:
-        enforcer() { inc(); T::crpcut_reg.add(this); }
+        enforcer();
       };
 
-      template <template <typename> class envelope, typename T>
-      class wrap
-      {
-      public:
-        typedef datatypes::tlist<envelope<typename T::head>,
-                                 typename wrap<envelope,
-                                               typename T::tail>::type> type;
-      };
-
-      template <template <typename> class envelope, typename T>
-      class wrap<envelope, datatypes::tlist<datatypes::none, T> >
-      {
-      public:
-        typedef datatypes::tlist<> type;
-      };
     } // namespace dependencies
 
     template <typename T>
     class dependency_policy : protected virtual default_policy
     {
     public:
-      typedef typename dependencies::wrap<dependencies::enforcer, T>::type crpcut_dependency;
+      typedef typename datatypes::wrap<dependencies::enforcer,
+                                       T>::type  crpcut_dependency;
     };
 
     namespace timeout {
@@ -446,7 +406,7 @@ namespace crpcut {
       class enforcer<cputime, timeout_ms> : public cputime_enforcer
       {
       public:
-        enforcer() : cputime_enforcer(timeout_ms) {}
+        enforcer();
       };
 #endif
 #if defined(CLOCK_MONOTONIC)
@@ -454,7 +414,7 @@ namespace crpcut {
       class enforcer<realtime, timeout_ms> : public monotonic_enforcer
       {
       public:
-        enforcer() : monotonic_enforcer(timeout_ms) {}
+        enforcer();
       };
 #endif
     } // namespace timeout
@@ -474,10 +434,8 @@ namespace crpcut {
   class test_case_base : protected virtual policies::default_policy
   {
   public:
-    virtual ~test_case_base() {}
-    void run() {
-      run_test();
-    }
+    virtual ~test_case_base();
+    void run();
   private:
     virtual void run_test() = 0;
   };
@@ -502,17 +460,10 @@ namespace crpcut {
       int write_fd;
       int read_fd;
     public:
-      reporter() : write_fd(0), read_fd(0) {}
-      void set_fds(int read, int write) { write_fd = write, read_fd = read; }
-      void operator()(type t, std::ostringstream &os) const
-      {
-        const std::string &s = os.str();
-        operator()(t, s.length(), s.c_str());
-      }
-      void operator()(type t, const char *msg) const
-      {
-        operator()(t, std::strlen(msg), msg);
-      }
+      reporter();
+      void set_fds(int read, int write);
+      void operator()(type t, std::ostringstream &os) const;
+      void operator()(type t, const char *msg) const;
       void operator()(type t, size_t len, const char *msg) const;
       template <typename T>
       void operator()(type t, const T& data) const;
@@ -534,7 +485,7 @@ namespace crpcut {
     struct namespace_info
     {
     public:
-      namespace_info(const char *n, namespace_info *p) : name(n), parent(p) {}
+      namespace_info(const char *n, namespace_info *p);
       const char* match_name(const char *n) const;
       // returns 0 on mismatch, otherwise a pointer into n where namespace name
       // ended.
@@ -549,13 +500,13 @@ namespace crpcut {
     class fdreader
     {
     public:
-      bool read() { return do_read(fd); }
-      test_case_registrator *get_registrator() const { return reg; }
-      void close() { if (fd) { ::close(fd); } unregister(); }
+      bool read();
+      test_case_registrator *get_registrator() const;
+      void close();
       void unregister();
       virtual ~fdreader() {} // silence gcc, it's really not needed
     protected:
-      fdreader(test_case_registrator *r, int fd_ = 0) : reg(r), fd(fd_) {}
+      fdreader(test_case_registrator *r, int fd_ = 0);
       void set_fd(int fd_);
       test_case_registrator *const reg;
     private:
@@ -567,12 +518,8 @@ namespace crpcut {
     class reader : public fdreader
     {
     public:
-      reader(test_case_registrator *r, int fd = 0) : fdreader(r, fd) {}
-      void set_fd(int fd)
-      {
-        fdreader::set_fd(fd);
-      }
-
+      reader(test_case_registrator *r, int fd = 0);
+      void set_fd(int fd);
     private:
       virtual bool do_read(int fd);
     };
@@ -580,12 +527,8 @@ namespace crpcut {
     class report_reader : public fdreader
     {
     public:
-      report_reader(test_case_registrator *r) : fdreader(r) {}
-      void set_fds(int in_fd, int out_fd)
-      {
-        fdreader::set_fd(in_fd);
-        response_fd = out_fd;
-      }
+      report_reader(test_case_registrator *r);
+      void set_fds(int in_fd, int out_fd);
     private:
       virtual bool do_read(int fd);
       int response_fd;
@@ -603,51 +546,30 @@ namespace crpcut {
         return t.print_name(os);
       }
       virtual bool match_name(const char *name) const = 0;
-      test_case_base *instantiate_obj() const { return &func_(); }
+      test_case_base *instantiate_obj() const;
       void setup(pid_t pid,
                  int in_fd, int out_fd,
                  int stdout_fd,
                  int stderr_fd);
       void manage_death();
-      test_case_registrator *unlink() {
-        next->prev = prev;
-        prev->next = next;
-        return next;
-      }
+      test_case_registrator *unlink();
       void kill();
       int ms_until_deadline() const;
       void clear_deadline();
-      bool deadline_is_set() const { return deadline.tv_sec > 0; }
+      bool deadline_is_set() const;
       static bool timeout_compare(const test_case_registrator *lh,
-                                  const test_case_registrator *rh)
-      {
-        if (lh->deadline.tv_sec == rh->deadline.tv_sec)
-          {
-            return lh->deadline.tv_nsec > rh->deadline.tv_nsec;
-          }
-        return lh->deadline.tv_sec > rh->deadline.tv_sec;
-      }
+                                  const test_case_registrator *rh);
       void unregister_fds();
-      test_case_registrator *get_next() const { return next; }
+      test_case_registrator *get_next() const;
       void set_wd(int n);
       void goto_wd() const;
-      pid_t get_pid() const { return pid_; }
-      bool has_active_readers() const { return active_readers > 0U; }
-      void deactivate_reader() { --active_readers; }
-      void activate_reader()   { ++active_readers; }
+      pid_t get_pid() const;
+      bool has_active_readers() const;
+      void deactivate_reader();
+      void activate_reader();
     protected:
       const char *name_;
-      test_case_registrator()
-        : next(this),
-          prev(this),
-          active_readers(0),
-          death_note(false),
-          rep_reader(0),
-          stdout_reader(0),
-          stderr_reader(0)
-      {
-        deadline.tv_sec = 0;
-      }
+      test_case_registrator();
     private:
       virtual std::ostream &print_name(std::ostream &) const = 0;
 
@@ -674,60 +596,18 @@ namespace crpcut {
     static const unsigned max_parallel = 8;
 
     static unsigned run_test(int argc, const char *argv[],
-                             std::ostream &os = std::cerr)
-    {
-      return obj().do_run(argc, argv, os);
-    }
-    static void introduce_name(pid_t pid, const std::string &s)
-    {
-      obj().do_introduce_name(pid, s);
-    };
-    static void present(pid_t pid, comm::type t, size_t len, const char *buff)
-    {
-      obj().do_present(pid, t, len, buff);
-    }
-    static bool tests_as_child_procs()
-    {
-      return obj().num_parallel > 0;
-    }
-    static void set_deadline(implementation::test_case_registrator *i)
-    {
-      obj().do_set_deadline(i);
-    }
-    static void clear_deadline(implementation::test_case_registrator *i)
-    {
-      obj().do_clear_deadline(i);
-    }
-    static void return_dir(int num)
-    {
-      obj().do_return_dir(num);
-    }
-    static const char *get_working_dir()
-    {
-      return obj().do_get_working_dir();
-    }
-    static void test_succeeded(implementation::test_case_registrator*)
-    {
-      ++obj().num_successful_tests;
-    }
+                             std::ostream &os = std::cerr);
+    static void introduce_name(pid_t pid, const std::string &s);
+    static void present(pid_t pid, comm::type t, size_t len, const char *buff);
+    static bool tests_as_child_procs();
+    static void set_deadline(implementation::test_case_registrator *i);
+    static void clear_deadline(implementation::test_case_registrator *i);
+    static void return_dir(int num);
+    static const char *get_working_dir();
+    static void test_succeeded(implementation::test_case_registrator*);
   private:
-    static test_case_factory& obj() { static test_case_factory f; return f; }
-    test_case_factory()
-      : pending_children(0),
-        verbose_mode(false),
-        nodeps(false),
-        num_parallel(1),
-        num_registered_tests(0),
-        num_tests_run(0),
-        num_successful_tests(0),
-        first_free_working_dir(0)
-    {
-      std::strcpy(dirbase, "/tmp/crpcutXXXXXX");
-      for (unsigned n = 0; n < max_parallel; ++n)
-        {
-          working_dirs[n] = n+1;
-        }
-    }
+    static test_case_factory& obj();
+    test_case_factory();
     void start_presenter_process();
     void kill_presenter_process();
     void manage_children(unsigned max_pending_children);
@@ -740,7 +620,7 @@ namespace crpcut {
     void do_set_deadline(implementation::test_case_registrator *i);
     void do_clear_deadline(implementation::test_case_registrator *i);
     void do_return_dir(int num);
-    const char *do_get_working_dir() const { return dirbase; }
+    const char *do_get_working_dir() const;
     friend class implementation::test_case_registrator;
 
     class registrator_list : public implementation::test_case_registrator
@@ -963,13 +843,286 @@ namespace crpcut {
     return false;
   }
 
-  //// template func implementations
+  //// template and inline func implementations
 
+  namespace datatypes {
+    template <typename T, std::size_t N>
+    inline array_v<T, N>::array_v()
+      : num_elements(0)
+    {
+    }
 
-  namespace comm
+    template <typename T, std::size_t N>
+    inline typename array_v<T, N>::iterator
+    array_v<T, N>::end()
+    {
+      return iterator(&operator[](size()));
+    }
+
+    template <typename T, std::size_t N>
+    inline typename array_v<T, N>::const_iterator
+    array_v<T, N>::end() const
+    {
+      return iterator(&operator[](size()));
+    }
+
+    template <typename T, std::size_t N>
+    inline typename array_v<T, N>::reverse_iterator
+    array_v<T, N>::rbegin()
+    {
+      return reverse_iterator(end());
+    }
+
+    template <typename T, std::size_t N>
+    inline typename array_v<T, N>::const_reverse_iterator
+    array_v<T, N>::rbegin() const
+    {
+      return reverse_iterator(end());
+    }
+
+    template <typename T, std::size_t N>
+    inline typename array_v<T, N>::size_type
+    array_v<T, N>::size() const
+    {
+      return num_elements;
+    }
+
+    template <typename T, std::size_t N>
+    inline bool
+    array_v<T, N>::empty() const
+    {
+      return size() == 0;
+    }
+
+    template <typename T, std::size_t N>
+    inline typename array_v<T, N>::reference
+    array_v<T, N>::at(size_type n)
+    {
+      if (n >= num_elements) throw std::out_of_range("array_v::at");
+      return operator[](n);
+    }
+
+    template <typename T, std::size_t N>
+    inline typename array_v<T, N>::const_reference
+    array_v<T, N>::at(size_type n) const
+    {
+      if (n >= num_elements) throw std::out_of_range("array_v::at");
+      return operator[](n);
+    }
+
+    template <typename T, std::size_t N>
+    inline typename array_v<T, N>::reference
+    array_v<T, N>::back()
+    {
+      return *(end() - !empty());
+    }
+
+    template <typename T, std::size_t N>
+    inline typename array_v<T, N>::const_reference
+    array_v<T, N>::back() const
+    {
+      *(end() - !empty());
+    }
+
+    template <typename T, std::size_t N>
+    inline void
+    array_v<T, N>::push_back(const value_type &x)
+    {
+      assert(num_elements <= N);
+      operator[](num_elements++) = x;
+    }
+
+    template <typename T, std::size_t N>
+    inline void
+    array_v<T, N>::pop_back()
+    {
+      assert(num_elements);
+      --num_elements;
+    }
+  } // namespace datatypes
+
+  namespace policies {
+
+    namespace deaths{
+
+      inline bool
+      none::is_expected_exit(int) const
+      {
+        return false;
+      }
+
+      inline bool
+      none::is_expected_signal(int) const
+      {
+        return false;
+      }
+
+      template <int N>
+      inline bool
+      signal<N>::is_expected_signal(int code) const
+      {
+        return N == ANY_CODE || code == N;
+      }
+
+      template <int N>
+      inline void
+      signal<N>::expected_death(std::ostream &os)
+      {
+        if (N == ANY_CODE)
+          {
+            os << "any signal";
+          }
+        else
+          {
+            os << "signal " << N;
+          }
+      }
+
+      template <int N>
+      inline bool
+      exit<N>::is_expected_exit(int code) const
+      {
+        return N == ANY_CODE || code == N;
+      }
+
+      template <int N>
+      inline void
+      exit<N>::expected_death(std::ostream &os)
+      {
+        if (N == ANY_CODE)
+          {
+            os << "exit with any code";
+          }
+        else
+          {
+            os << "exit with code " << N;
+          }
+      }
+
+    } // namespace deaths
+
+    namespace dependencies {
+
+      inline
+      base::base()
+        : state(not_run),
+          num(0),
+          dependants(0)
+      {
+      }
+
+      inline void
+      base::add(basic_enforcer *other)
+      {
+        other->next = dependants;
+        dependants = other;
+      }
+
+      inline void
+      base::inc()
+      {
+        ++num;
+      }
+
+      inline bool
+      base::can_run() const
+      {
+        return num == 0;
+      }
+
+      inline bool
+      base::failed() const
+      {
+        return state == fail;
+      }
+
+      inline bool
+      base::succeeded() const
+      {
+        return state == success;
+      }
+
+      inline
+      basic_enforcer::basic_enforcer()
+        : next(0)
+      {
+      }
+
+      template <typename T>
+      inline
+      enforcer<T>::enforcer()
+      {
+        inc();
+        T::crpcut_reg.add(this);
+      }
+    } // namespace dependencies
+
+    namespace timeout {
+
+#if defined(CLOCK_PROCESS_CPUTIME_ID)
+      template <unsigned timeout_ms>
+      inline
+      enforcer<cputime, timeout_ms>::enforcer()
+        : cputime_enforcer(timeout_ms)
+      {
+      }
+#endif
+
+#if defined(CLOCK_MONOTONIC)
+      template <unsigned timeout_ms>
+      inline
+      enforcer<realtime, timeout_ms>::enforcer()
+        : monotonic_enforcer(timeout_ms)
+      {
+      }
+#endif
+    } // namespace timeout
+
+  } // namespace policies
+
+  inline
+  test_case_base::~test_case_base()
   {
+  }
+
+  inline void
+  test_case_base::run()
+  {
+    run_test();
+  }
+
+  namespace comm {
+
+    inline
+    reporter::reporter()
+      : write_fd(0),
+        read_fd(0)
+    {
+    }
+
+    inline void
+    reporter::set_fds(int read, int write)
+    {
+      write_fd = write;
+      read_fd = read;
+    }
+
+    inline void
+    reporter::operator()(type t, std::ostringstream &os) const
+    {
+      const std::string &s = os.str();
+      operator()(t, s.length(), s.c_str());
+    }
+
+    inline void
+    reporter::operator()(type t, const char *msg) const
+    {
+      operator()(t, std::strlen(msg), msg);
+    }
+
     template <typename T>
-    void reporter::write(const T& t) const
+    void
+    reporter::write(const T& t) const
     {
       const size_t len = sizeof(T);
       size_t bytes_written = 0;
@@ -986,7 +1139,8 @@ namespace crpcut {
     }
 
     template <typename T>
-    void reporter::operator()(comm::type t, const T& data) const
+    void
+    reporter::operator()(comm::type t, const T& data) const
     {
       assert(test_case_factory::tests_as_child_procs());
       write(t);
@@ -998,7 +1152,8 @@ namespace crpcut {
     }
 
     template <typename T>
-    void reporter::read(T& t) const
+    void
+    reporter::read(T& t) const
     {
       const size_t len = sizeof(T);
       size_t bytes_read = 0;
@@ -1015,8 +1170,218 @@ namespace crpcut {
           bytes_read += rv;
         }
     }
+  } // namespace comm
+
+  namespace implementation {
+
+    inline
+    namespace_info::namespace_info(const char *n, namespace_info *p)
+      : name(n),
+        parent(p)
+    {
+    }
+
+
+    inline bool
+    fdreader::read()
+    {
+      return do_read(fd);
+    }
+
+    inline test_case_registrator *
+    fdreader::get_registrator() const
+    {
+      return reg;
+    }
+
+    inline void
+    fdreader::close()
+    {
+      if (fd)
+        {
+          ::close(fd);
+        }
+      unregister();
+    }
+
+    inline
+    fdreader::fdreader(test_case_registrator *r, int fd_)
+      : reg(r),
+        fd(fd_)
+    {
+    }
+
+    template <comm::type t>
+    inline
+    reader<t>::reader(test_case_registrator *r, int fd)
+      : fdreader(r, fd)
+    {
+    }
+
+    template <comm::type t>
+    inline void
+    reader<t>::set_fd(int fd)
+    {
+      fdreader::set_fd(fd);
+    }
+
+    inline
+    report_reader::report_reader(test_case_registrator *r)
+      : fdreader(r)
+    {
+    }
+
+    inline void
+    report_reader::set_fds(int in_fd, int out_fd)
+    {
+      fdreader::set_fd(in_fd);
+      response_fd = out_fd;
+    }
+
+    inline test_case_base *
+    test_case_registrator::instantiate_obj() const
+    {
+      return &func_();
+    }
+
+    inline test_case_registrator *
+    test_case_registrator::unlink()
+    {
+      next->prev = prev;
+      prev->next = next;
+      return next;
+    }
+
+    inline bool
+    test_case_registrator::deadline_is_set() const
+    {
+      return deadline.tv_sec > 0;
+    }
+
+    inline bool
+    test_case_registrator::timeout_compare(const test_case_registrator *lh,
+                                           const test_case_registrator *rh)
+    {
+      if (lh->deadline.tv_sec == rh->deadline.tv_sec)
+        {
+          return lh->deadline.tv_nsec > rh->deadline.tv_nsec;
+        }
+      return lh->deadline.tv_sec > rh->deadline.tv_sec;
+    }
+
+    inline test_case_registrator *
+    test_case_registrator::get_next() const
+    {
+      return next;
+    }
+
+    inline pid_t
+    test_case_registrator::get_pid() const
+    {
+      return pid_;
+    }
+
+    inline bool
+    test_case_registrator::has_active_readers() const
+    {
+      return active_readers > 0U;
+    }
+
+    inline void
+    test_case_registrator::deactivate_reader()
+    {
+      --active_readers;
+    }
+
+    inline void
+    test_case_registrator::activate_reader()
+    {
+      ++active_readers;
+    }
+
+    inline
+    test_case_registrator::test_case_registrator()
+      : next(this),
+        prev(this),
+        active_readers(0),
+        death_note(false),
+        rep_reader(0),
+        stdout_reader(0),
+        stderr_reader(0)
+    {
+      deadline.tv_sec = 0;
+    }
+
+  } // implementation
+
+  inline unsigned
+  test_case_factory::run_test(int argc, const char *argv[],
+                                              std::ostream &os)
+  {
+    return obj().do_run(argc, argv, os);
   }
 
+  inline void
+  test_case_factory::introduce_name(pid_t pid, const std::string &s)
+  {
+    obj().do_introduce_name(pid, s);
+  }
+
+  inline void
+  test_case_factory::present(pid_t pid, comm::type t,
+                             size_t len, const char *buff)
+  {
+    obj().do_present(pid, t, len, buff);
+  }
+
+  inline bool
+  test_case_factory::tests_as_child_procs()
+  {
+    return obj().num_parallel > 0;
+  }
+
+  inline void
+  test_case_factory::set_deadline(implementation::test_case_registrator *i)
+  {
+    obj().do_set_deadline(i);
+  }
+
+  inline void
+  test_case_factory::clear_deadline(implementation::test_case_registrator *i)
+  {
+    obj().do_clear_deadline(i);
+  }
+
+  inline void
+  test_case_factory::return_dir(int num)
+  {
+    obj().do_return_dir(num);
+  }
+
+  inline const char *
+  test_case_factory::get_working_dir()
+  {
+    return obj().do_get_working_dir();
+  }
+
+  inline void
+  test_case_factory::test_succeeded(implementation::test_case_registrator*)
+  {
+    ++obj().num_successful_tests;
+  }
+
+  inline test_case_factory &
+  test_case_factory::obj()
+  {
+    static test_case_factory f;
+    return f;
+  }
+
+  inline const char *
+  test_case_factory::do_get_working_dir() const
+  {
+    return dirbase;
+  }
 } // namespace crpcut
 
 #define decltype typeof
@@ -1102,18 +1467,8 @@ namespace crpcut {
 #define CRPCUT_STRINGIZE(a) #a
 #define CRPCUT_STRINGIZE_(a) CRPCUT_STRINGIZE(a)
 
-namespace crpcut {
-  namespace implementation {
-    template <typename T>
-    const typename std::remove_cv<typename std::remove_reference<T>::type>::type&
-    gettype();
-  }
-}
-
 #define CRPCUT_REFTYPE(expr) \
-  decltype(crpcut::implementation::gettype<decltype(expr)>())
-
-
+  decltype(crpcut::datatypes::gettype<decltype(expr)>())
 
 
 #define CRPCUT_BINARY_ASSERT(name, oper, lh, rh)                        \
@@ -1241,10 +1596,6 @@ namespace crpcut {
                            CRPCUT_LOCAL_NAME(os));                      \
     }                                                                   \
   } while (0)
-
-namespace crpcut {
-  class none {};
-}
 
 extern crpcut::implementation::namespace_info current_namespace;
 
