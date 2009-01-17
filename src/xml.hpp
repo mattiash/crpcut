@@ -24,76 +24,62 @@
  * SUCH DAMAGE.
  */
 
-#include <ostream>
-#include <iomanip>
-#include "xml.hpp"
+#ifndef XML_HPP
+#define XML_HPP
+
+#include <sstream>
 
 namespace xml {
 
-  tag_t::~tag_t()
+  class tag_t
   {
-    if (state_ == in_name)
-      {
-        os_ << "/>\n";
-      }
-    else
-      {
-        if (state_ == in_children)
-          {
-            os_  << std::setw(indent_*2) << "";
-          }
-        os_ << "</" << name_ << ">\n";
-      }
-  }
+  public:
+    operator void*() const { return 0; }
+    tag_t(const char *name, std::ostream &os)
+      : name_(name),
+        state_(in_name),
+        indent_(0),
+        os_(os),
+        parent_(0)
+    {
+      introduce();
+    }
+    tag_t(const char *name, tag_t &parent)
+      : name_(name),
+        state_(in_name),
+        indent_(parent.indent_+1),
+        os_(parent.os_),
+        parent_(&parent)
+    {
+      introduce();
+      parent.state_ = in_children;
+    }
+    ~tag_t();
+    template <typename T>
+    tag_t & operator<<(const T& t)
+    {
+      std::ostringstream o;
+      o << t;
+      output_data(o.str().c_str());
+      return *this;
+    }
+    tag_t &operator<<(const char *p) { output_data(p); return *this; }
+  private:
+    void output_data(const char *p);
+    void introduce();
 
-  void tag_t::output_data(const char *i)
-  {
-    if (state_ != in_data)
-      {
-        os_ << ">";
-        state_ = in_data;
-        }
-    for (; *i; ++i)
-      {
-        unsigned char u = *i;
-        switch (u)
-          {
-          case '&':
-            os_ << "&amp;"; break;
-          case '<':
-              os_ << "&lt;"; break;
-          case '>':
-            os_ << "&gt;"; break;
-          case '"':
-            os_ << "&quot;"; break;
-          case '\'':
-            os_ << "&apos;"; break;
-          default:
-            if (u < 128)
-              {
-                os_ << *i;
-              }
-            else
-              {
-                os_ << "&#" << int(u) << ';';
-              }
-          }
-      }
-  }
+    const char *name_;
+    enum { in_name, in_children, in_data } state_;
+    int indent_;
+    std::ostream &os_;
+    tag_t *parent_;
+  };
+}
 
-  void tag_t::introduce()
-  {
-    if (parent_ && parent_->state_ != in_data)
-      {
-        if (parent_->state_ == in_name)
-          {
-            os_ << ">\n";
-          }
-        parent_->state_ = in_children;
-        os_ << std::setw(indent_ * 2) << "";
-      }
-    os_ << '<' << name_;
-  }
+#define CRPCUT_XML_TAG(name, ...)                                       \
+  if (xml::tag_t name = xml::tag_t(#name, __VA_ARGS__))                 \
+    {                                                                   \
+    }                                                                   \
+  else
 
-} // namespace xml
-
+#endif // XML_HPP

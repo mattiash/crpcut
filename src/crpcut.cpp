@@ -29,6 +29,7 @@
 #include <crpcut.hpp>
 #include "poll.hpp"
 #include "implementation.hpp"
+#include "xml.hpp"
 
 extern "C" {
 #include <sys/wait.h>

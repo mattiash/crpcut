@@ -18,7 +18,7 @@ test/unitt.o: test-src/unitt.cpp include/crpcut.hpp
 	@[ -d test ] || mkdir test
 	g++ $(CXXFLAGS) test-src/unitt.cpp -c -o test/unitt.o
 
-obj/crpcut.o: src/crpcut.cpp include/crpcut.hpp src/poll.hpp src/implementation.hpp
+obj/crpcut.o: src/crpcut.cpp include/crpcut.hpp src/poll.hpp src/implementation.hpp src/xml.hpp
 	@[ -d obj ] || mkdir obj
 	g++ $(CXXFLAGS) src/crpcut.cpp -c -o obj/crpcut.o
 
@@ -34,7 +34,7 @@ obj/policies.o: src/policies.cpp include/crpcut.hpp
 	@[ -d obj ] || mkdir obj
 	g++ $(CXXFLAGS) src/policies.cpp -c -o obj/policies.o
 
-obj/xml.o: src/xml.cpp include/crpcut.hpp
+obj/xml.o: src/xml.cpp src/xml.hpp
 	@[ -d obj ] || mkdir obj
 	g++ $(CXXFLAGS) src/xml.cpp -c -o obj/xml.o
 
