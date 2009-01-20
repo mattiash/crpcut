@@ -202,7 +202,7 @@ TESTSUITE(asserts)
       ASSERT_NE(num, 3);
     }
 
-  TEST(should_succeed_on_asert_gt_with_fixture, fixture<4>)
+  TEST(should_succeed_on_assert_gt_with_fixture, fixture<4>)
     {
       ASSERT_GT(num, 3);
     }
@@ -212,7 +212,7 @@ TESTSUITE(asserts)
       ASSERT_GT(num, 3);
     }
 
-  TEST(should_succeed_on_asert_ge_with_fixture, fixture<3>)
+  TEST(should_succeed_on_assert_ge_with_fixture, fixture<3>)
     {
       ASSERT_GE(num, 3);
     }
@@ -372,14 +372,17 @@ TESTSUITE(stderr_and_stdout)
   {
     std::cout << "hello";
   }
+
   TEST(should_succeed_with_stderr)
   {
     std::cerr << "hello";
   }
-  TEST(should_fail_with_death_due_to_assert_on_stderr)
+
+  TEST(should_fail_with_death_due_to_assert_on_stderr, NO_CORE_FILE)
   {
     assert("apa" == 0);
   }
+
   TEST(should_fail_with_death_due_to_core_file, EXPECT_SIGNAL_DEATH(SIGABRT))
   {
     assert("apa" == 0);

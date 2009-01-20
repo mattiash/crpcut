@@ -8,12 +8,27 @@
     <title><xsl:value-of select="@title"/></title>
     <body>
     <H3><xsl:value-of select="@title"/></H3>
+    <xsl:apply-templates select="abstract"/>
+    <ul><xsl:apply-templates select="chapter" mode="toc"/></ul>
     <xsl:for-each select="chapter">
-      <H4><xsl:value-of select="@title"/></H4>
+      <a name="{generate-id()}"><H4><xsl:value-of select="@title"/></H4></a>
       <xsl:apply-templates/>
     </xsl:for-each>
     </body>
     </html>
+  </xsl:template>
+
+  <xsl:template match="abstract">
+    <table><tr><td width="10%"/><td width="80%"><xsl:apply-templates/></td><td width="10%"/></tr></table>
+  </xsl:template>
+
+  <xsl:template match="section">
+    <a name="{@title}"><H5><xsl:value-of select="@title"/></H5></a>
+    <xsl:apply-templates/>
+  </xsl:template>
+
+  <xsl:template match="chapter" mode="toc">
+    <li><a href="#{generate-id()}"><xsl:value-of select="@title"/></a></li>
   </xsl:template>
 
   <xsl:template match="//definitions">
@@ -49,6 +64,11 @@
   </xsl:template>
 
   <xsl:template match="link">
-    <A href="{@url}"><xsl:value-of select="."/></A>
+    <xsl:for-each select="@section">
+      <A href="#{.}"><xsl:value-of select="."/></A>
+    </xsl:for-each>
+    <xsl:for-each select="@url">
+      <A href="{.}"><xsl:value-of select="."/></A>
+    </xsl:for-each>
   </xsl:template>
 </xsl:stylesheet>

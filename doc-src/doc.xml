@@ -1,11 +1,12 @@
 <doc title="crpcut - The Compartmented Robust Posix C++ Unit Tester">
-
-<chapter title="What is it">
+<abstract>
 crpcut (pronounced &quot;crap cut&quot;) is the
 Compartmented Robust Posix C++ Unit Tester
 <p/>
 With crpcut it is easy to write tests that other unit-test frame works cannot
-manage.
+manage.<p/>
+</abstract>
+<chapter title="Introductory example">
 <p/>
 A complete example:<p/>
 <code>
@@ -140,15 +141,25 @@ write()</code></def>
   <def notion="POSIX.1-2008"><code>mkdtemp()</code></def>
 </definitions>
 This should apply for most Linux/*BSD systems. OS-X is currently not supported
-due to its lack of clock_gettime().
+due to its lack of <id>clock_gettime()</id>.
 </chapter>
 
 <chapter title="Writing tests">
-Test cases are defined using the <id>TEST()</id> macro. If several tests are
-related, they can be grouped into a test suite using the <id>TESTSUITE()</id>
-macro. For a large range of tests, it may be a good idea to nest test suites.
-Test cases can be written in several files and linked to one main
-program. The <id>crpcut_</id> name prefix is reserved for crpcut.
+Test cases are defined using the <id>TEST()</id> macro as:<p/>
+<code>
+TEST(name_of_testcase (,(fixture|modifier))*)
+{
+  ... code
+}
+</code>
+Both <link section="Fixtures">fixtures</link> and
+<link section="Modifiers">modifiers</link>
+are explained below.
+<p/>
+If several tests are related, they can be grouped into a test suite using the
+<id>TESTSUITE()</id> macro. For a large range of tests, it may be a good idea
+to nest test suites. Test cases can be written in several files and linked to
+one main program. The <id>crpcut_</id> name prefix is reserved for crpcut.
 <p/>
 In tests, assert correctness using unary and binary assertion macros.
 <p/>
@@ -184,6 +195,7 @@ evaluates each parameter value exactly once, so providing parameters with
 side effects is not a problem. The order of evaluation of the parameters is
 undefined, however.
 <p/>
+<section title="Fixtures">
 If several test cases share the same test setup, test fixtures can be written.
 A fixture is just a <id>class</id> or <id>struct</id>, with the desired
 information. The default constructor is expected to fill in the desired
@@ -216,6 +228,8 @@ TESTSUITE(string_length)
   }
 }
 </code>
+</section>
+<section title="Modifiers">
 In addition to using fixtures and asserts, the expected behaviour of
 test cases can be altered using modifiers. Modifiers are listed together with
 the fixtures.
@@ -265,12 +279,15 @@ The defined test case modifiers are:
                               run, all tests in the list must have finished
                               successfully.</def>
 </definitions>
+</section>
+<section title="Disbaled tests">
 If, for whatever reason, you have tests that you currently don&apos;t want to
 run, but you intend for them to be included later, define them using
 <id>DISABLED_TEST()</id> instead of <id>TEST()</id>. Test cases defined with
 <id>DISABLED_TEST()</id> are compiled, preventing code-rot, but will never be
 a candidate for running. It is not possible to state dependency on a disabled
 test.
+</section>
 </chapter>
 
 <chapter title="The main program">
@@ -355,7 +372,9 @@ From there, you can single step the test case.
 
 <chapter title="Further development">
 Currently crpcut is early in the development and is rapidly changing. If you're
-daring enough to give it a try anyway, feel free to get it from the <link url="http://www.github.com/airbear/crpcut">GitHub</link> page, or a direct clone of the git repository <id>git://github.com/airbear/crpcut.git</id>
+daring enough to give it a try anyway, feel free to get it from the
+<link url="http://www.github.com/airbear/crpcut">GitHub</link> page, or a
+direct clone of the git repository <id>git://github.com/airbear/crpcut.git</id>
 <p/>
 The todo list, without any regard to importance or desired implementation
 order is:
