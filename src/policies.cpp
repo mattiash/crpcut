@@ -25,6 +25,7 @@
  */
 
 #include <crpcut.hpp>
+#include "clocks.hpp"
 extern "C" {
 #include <sys/resource.h>
 }
@@ -70,34 +71,25 @@ namespace crpcut {
       basic_enforcer::basic_enforcer(type t, unsigned ms)
         : duration_ms(ms)
       {
-        ::clock_gettime(t == realtime
-                        ? CLOCK_MONOTONIC
-                        : CLOCK_PROCESS_CPUTIME_ID,
-                        &ts);
+        start_timestamp_ms = t == realtime
+          ? clocks::monotonic::timestamp_ms_absolute()
+          : clocks::cputime::timestamp_ms_absolute();
       }
 
       void basic_enforcer::check(type t)
       {
-        timespec now;
-        ::clock_gettime(t == realtime
-                        ? CLOCK_MONOTONIC
-                        : CLOCK_PROCESS_CPUTIME_ID,
-                        &now);
-        now.tv_sec -= ts.tv_sec;
-        if (now.tv_nsec < ts.tv_nsec)
-          {
-            now.tv_nsec += 1000000000;
-            now.tv_sec -= 1;
-          }
-        now.tv_nsec -= ts.tv_nsec;
-        unsigned long ms = now.tv_sec*1000 + now.tv_nsec / 1000000;
-        if (ms > duration_ms)
+        unsigned now = t == realtime
+          ? clocks::monotonic::timestamp_ms_absolute()
+          : clocks::cputime::timestamp_ms_absolute();
+
+        int diff = now - start_timestamp_ms;
+        if (diff > duration_ms)
           {
             std::ostringstream os;
             os << (t == realtime ? "Realtime" : "Cputime")
                << " timeout " << duration_ms
                << "ms exceeded.\n  Actual time to completion was "
-               << ms << "ms";
+               << diff << "ms";
             report(comm::exit_fail, os);
           }
       }
@@ -117,11 +109,7 @@ namespace crpcut {
       monotonic_enforcer::monotonic_enforcer(unsigned timeout_ms)
         : basic_enforcer(realtime, timeout_ms)
       {
-        timespec deadline = ts;
-        deadline.tv_nsec += (timeout_ms % 1000) * 1000000;
-        deadline.tv_sec += deadline.tv_nsec / 1000000000;
-        deadline.tv_nsec %= 1000000000;
-        deadline.tv_sec += timeout_ms / 1000 + 1;
+        unsigned deadline = timeout_ms + 1000;
         // calculated deadline + 1 sec should give plenty of slack
         report(comm::set_timeout, deadline);
       }

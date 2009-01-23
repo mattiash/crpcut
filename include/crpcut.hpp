@@ -65,14 +65,12 @@ namespace std {
 #define ANY_CODE -1
 
 
-#if defined(CLOCK_PROCESS_CPUTIME_ID)
 #define DEADLINE_CPU_MS(time) \
   crpcut::policies::timeout_policy<crpcut::policies::timeout::cputime, time>
-#endif
-#if defined(CLOCK_MONOTONIC)
+
 #define DEADLINE_REALTIME_MS(time) \
   crpcut::policies::timeout_policy<crpcut::policies::timeout::realtime, time>
-#endif
+
 
 
 namespace crpcut {
@@ -375,7 +373,7 @@ namespace crpcut {
       protected:
         basic_enforcer(type t, unsigned timeout_ms);
         void check(type t);
-        timespec ts;
+        unsigned start_timestamp_ms;
       private:
         unsigned duration_ms;
       };
@@ -401,22 +399,20 @@ namespace crpcut {
         ~monotonic_enforcer();
       };
 
-#if defined(CLOCK_PROCESS_CPUTIME_ID)
       template <unsigned timeout_ms>
       class enforcer<cputime, timeout_ms> : public cputime_enforcer
       {
       public:
         enforcer();
       };
-#endif
-#if defined(CLOCK_MONOTONIC)
+
       template <unsigned timeout_ms>
       class enforcer<realtime, timeout_ms> : public monotonic_enforcer
       {
       public:
         enforcer();
       };
-#endif
+
     } // namespace timeout
 
 
@@ -578,8 +574,9 @@ namespace crpcut {
       test_case_creator      func_;
       unsigned               active_readers;
       bool                   death_note;
+      bool                   deadline_set;
       pid_t                  pid_;
-      timespec               deadline;
+      unsigned               absolute_deadline_ms;
       int                    dirnum;
       report_reader          rep_reader;
       reader<comm::stdout>   stdout_reader;
@@ -1059,23 +1056,19 @@ namespace crpcut {
 
     namespace timeout {
 
-#if defined(CLOCK_PROCESS_CPUTIME_ID)
       template <unsigned timeout_ms>
       inline
       enforcer<cputime, timeout_ms>::enforcer()
         : cputime_enforcer(timeout_ms)
       {
       }
-#endif
 
-#if defined(CLOCK_MONOTONIC)
       template <unsigned timeout_ms>
       inline
       enforcer<realtime, timeout_ms>::enforcer()
         : monotonic_enforcer(timeout_ms)
       {
       }
-#endif
     } // namespace timeout
 
   } // namespace policies
@@ -1255,18 +1248,18 @@ namespace crpcut {
     inline bool
     test_case_registrator::deadline_is_set() const
     {
-      return deadline.tv_sec > 0;
+      return deadline_set;
     }
 
     inline bool
     test_case_registrator::timeout_compare(const test_case_registrator *lh,
                                            const test_case_registrator *rh)
     {
-      if (lh->deadline.tv_sec == rh->deadline.tv_sec)
-        {
-          return lh->deadline.tv_nsec > rh->deadline.tv_nsec;
-        }
-      return lh->deadline.tv_sec > rh->deadline.tv_sec;
+      assert(lh->deadline_set);
+      assert(rh->deadline_set);
+
+      int diff = lh->absolute_deadline_ms - rh->absolute_deadline_ms;
+      return diff >= 0;
     }
 
     inline test_case_registrator *
@@ -1305,11 +1298,11 @@ namespace crpcut {
         prev(this),
         active_readers(0),
         death_note(false),
+        deadline_set(false),
         rep_reader(0),
         stdout_reader(0),
         stderr_reader(0)
     {
-      deadline.tv_sec = 0;
     }
 
   } // implementation

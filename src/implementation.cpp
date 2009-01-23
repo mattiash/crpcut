@@ -25,6 +25,7 @@
  */
 
 #include <crpcut.hpp>
+#include "clocks.hpp"
 extern "C" {
 #include <unistd.h>
 #include <dirent.h>
@@ -41,6 +42,7 @@ extern "C" {
 #include <cassert>
 #include <limits>
 #include <cstdio>
+
 namespace crpcut {
 
   namespace implementation {
@@ -133,9 +135,10 @@ namespace crpcut {
       size_t bytes_read = 0;
       if (t == comm::set_timeout)
         {
-          assert(len == sizeof(reg->deadline));
+          assert(len == sizeof(reg->absolute_deadline_ms));
           assert(!reg->deadline_is_set());
-          char *p = static_cast<char*>(static_cast<void*>(&reg->deadline));
+          unsigned ts;
+          char *p = static_cast<char*>(static_cast<void*>(&ts));
           while (bytes_read < len)
             {
               rv = ::read(fd, p + bytes_read, len - bytes_read);
@@ -143,6 +146,9 @@ namespace crpcut {
               assert(rv > 0);
               bytes_read += rv;
             }
+          ts+= clocks::monotonic::timestamp_ms_absolute();
+          reg->absolute_deadline_ms = ts;
+          reg->deadline_set = true;
           do {
             rv = ::write(response_fd, &len, sizeof(len));
           } while (rv == -1 && errno == EINTR);
@@ -204,7 +210,7 @@ namespace crpcut {
     {
       ::kill(pid_, SIGKILL);
       death_note = true;
-      deadline.tv_sec = 0;
+      deadline_set = false;
       static const char msg[] = "Timed out - killed";
       register_success(false);
       test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
@@ -212,20 +218,16 @@ namespace crpcut {
 
     int test_case_registrator::ms_until_deadline() const
     {
-      struct timespec now;
-      ::clock_gettime(CLOCK_MONOTONIC, &now);
-      int ms = (deadline.tv_sec - now.tv_sec)*1000;
-      if (ms < 0) return 0;
-      ms+= (deadline.tv_nsec - now.tv_nsec) / 1000000;
-      if (ms < 0) return 0;
-      return ms;
+      unsigned now = clocks::monotonic::timestamp_ms_absolute();
+      int diff = absolute_deadline_ms - now;
+      return diff < 0 ? 0 : diff;
     }
 
     void test_case_registrator::clear_deadline()
     {
       assert(deadline_is_set());
       test_case_factory::clear_deadline(this);
-      deadline.tv_sec = 0;
+      deadline_set = false;
     }
 
     void test_case_registrator::setup(pid_t pid,

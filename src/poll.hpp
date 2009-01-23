@@ -30,7 +30,7 @@
 
 #include <cassert>
 
-#ifdef POLL_USE_EPOLL
+#ifdef HAVE_EPOLL
 extern "C"
 {
 #include <sys/epoll.h>
@@ -40,9 +40,8 @@ struct polldata
 {
   int epoll_fd;
 };
-#endif
+#else
 
-#ifdef POLL_USE_SELECT
 extern "C"
 {
 #include <sys/select.h>
@@ -69,9 +68,6 @@ struct polldata
   static const int readbit = 1;
   static const int hupbit = 2;
 };
-#endif
-
-#ifdef POLL_USE_POLL
 #endif
 
 template <typename T, size_t N>
@@ -103,7 +99,69 @@ private:
   polldata<N> data;
 };
 
-#ifdef POLL_USE_SELECT
+#ifdef HAVE_EPOLL
+
+template <typename T, size_t N>
+inline bool poll<T, N>::descriptor::read() const
+{
+  return mode & EPOLLIN;
+}
+template <typename T, size_t N>
+inline bool poll<T, N>::descriptor::hup() const
+{
+  return mode & EPOLLHUP;
+}
+
+template <typename T, size_t N>
+inline poll<T, N>::poll()
+{
+  data.epoll_fd = epoll_create(N);
+  assert(data.epoll_fd != -1);
+}
+template <typename T, size_t N>
+inline poll<T, N>::~poll()
+{
+  ::close(data.epoll_fd);
+}
+template <typename T, size_t N>
+inline void poll<T, N>::add_fd(int fd, T* data)
+{
+  epoll_event ev;
+  ev.events = EPOLLIN | EPOLLHUP;
+  ev.data.ptr = data;
+  int rv = epoll_ctl(this->data.epoll_fd, EPOLL_CTL_ADD, fd, &ev);
+  assert(rv == 0);
+  (void)rv; // silence warning
+}
+
+template <typename T, size_t N>
+inline void poll<T, N>::del_fd(int fd)
+{
+  int rv = epoll_ctl(data.epoll_fd, EPOLL_CTL_DEL, fd, 0);
+  assert(rv == 0);
+  (void)rv; // silence warning
+}
+
+template <typename T, size_t N>
+inline typename poll<T, N>::descriptor poll<T, N>::wait(int timeout_ms)
+{
+  epoll_event ev;
+  for (;;)
+    {
+      int rv = epoll_wait(data.epoll_fd, &ev, 1, timeout_ms);
+      if (rv == 0)
+        {
+          return descriptor(0,0); // timeout
+        }
+      if (rv == 1)
+        {
+          return descriptor(static_cast<T*>(ev.data.ptr), ev.events);
+        }
+    }
+}
+
+#else
+
 template <typename T, size_t N>
 inline bool poll<T, N>::descriptor::read() const
 {
@@ -197,66 +255,6 @@ inline typename poll<T, N>::descriptor poll<T, N>::wait(int timeout_ms)
         }
     }
   assert("no matching fd" == 0);
-}
-#endif
-#ifdef POLL_USE_EPOLL
-template <typename T, size_t N>
-inline bool poll<T, N>::descriptor::read() const
-{
-  return mode & EPOLLIN;
-}
-template <typename T, size_t N>
-inline bool poll<T, N>::descriptor::hup() const
-{
-  return mode & EPOLLHUP;
-}
-
-template <typename T, size_t N>
-inline poll<T, N>::poll()
-{
-  data.epoll_fd = epoll_create(N);
-  assert(data.epoll_fd != -1);
-}
-template <typename T, size_t N>
-inline poll<T, N>::~poll()
-{
-  ::close(data.epoll_fd);
-}
-template <typename T, size_t N>
-inline void poll<T, N>::add_fd(int fd, T* data)
-{
-  epoll_event ev;
-  ev.events = EPOLLIN | EPOLLHUP;
-  ev.data.ptr = data;
-  int rv = epoll_ctl(this->data.epoll_fd, EPOLL_CTL_ADD, fd, &ev);
-  assert(rv == 0);
-  (void)rv; // silence warning
-}
-
-template <typename T, size_t N>
-inline void poll<T, N>::del_fd(int fd)
-{
-  int rv = epoll_ctl(data.epoll_fd, EPOLL_CTL_DEL, fd, 0);
-  assert(rv == 0);
-  (void)rv; // silence warning
-}
-
-template <typename T, size_t N>
-inline typename poll<T, N>::descriptor poll<T, N>::wait(int timeout_ms)
-{
-  epoll_event ev;
-  for (;;)
-    {
-      int rv = epoll_wait(data.epoll_fd, &ev, 1, timeout_ms);
-      if (rv == 0)
-        {
-          return descriptor(0,0); // timeout
-        }
-      if (rv == 1)
-        {
-          return descriptor(static_cast<T*>(ev.data.ptr), ev.events);
-        }
-    }
 }
 #endif
 

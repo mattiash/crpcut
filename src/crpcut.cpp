@@ -25,7 +25,6 @@
  */
 
 
-#define POLL_USE_EPOLL
 #include <crpcut.hpp>
 #include "poll.hpp"
 #include "implementation.hpp"
