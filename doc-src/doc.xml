@@ -119,13 +119,15 @@ The required Posix functions are:
 EINTR</code></def>
   <def notion="POSIX.1-2001"><code>alloca()
 chdir()
-clock_gettime(CLOCK_MONOTONIC)
-clock_gettime(CLOCK_PROCESS_CPUTIME_ID)
+** clock_gettime(CLOCK_MONOTONIC)
+** clock_gettime(CLOCK_PROCESS_CPUTIME_ID)
 close()
 closedir()
 dup2()
 fork()
 gethostname()
+** getitimer(ITIMER_REAL)
+** getitimer(ITIMER_VIRTUAL)
 kill()
 mkdir()
 opendir()
@@ -134,14 +136,24 @@ read()
 readdir_r()
 rmdir()
 select()
+** setitimer(ITIMER_REAL)
+** setitimer(ITIMER_VIRTUAL)
 setrlimit(RLIMIT_CORE)
 setrlimit(RLIMIT_CPU)
 waitid()
 write()</code></def>
   <def notion="POSIX.1-2008"><code>mkdtemp()</code></def>
 </definitions>
-This should apply for most Linux/*BSD systems. OS-X is currently not supported
-due to its lack of <id>clock_gettime()</id>.
+<definitions>
+<def notion="**"><id>clock_gettime()</id> will be used if available.
+<id>*itimer()</id> will be used as a fallback.</def>
+<def notion="">On OS-X <id>mach_absolute_time()</id> and
+<id>mach_timebase_info()</id> will be used for realtime measurements.</def>
+</definitions>
+This should work for most Linux/*BSD systems. It is also likely to work for
+<link url="http://www.opensolaris.org">OpenSolaris</link> and
+ <link url="http://www.apple.com/macosx/">OS-X</link>, but it has not yet
+been tested.
 </chapter>
 
 <chapter title="Writing tests">
@@ -381,7 +393,6 @@ order is:
 <list>
 <li>Set regexp match rules for stdout and stderr</li>
 <li>ASSERT_*() macros for almost-equal tests of floating point numbers</li>
-<li>Use autoconf/automake for improved portability</li>
 <li>Better separation of fixture errors and test-case errors</li>
 <li>Optional non-XML output</li>
 <li>INFO() macros for sending data from test-case to report</li>

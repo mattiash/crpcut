@@ -68,7 +68,7 @@
       <A href="#{.}"><xsl:value-of select="."/></A>
     </xsl:for-each>
     <xsl:for-each select="@url">
-      <A href="{.}"><xsl:value-of select="."/></A>
+      <A href="{.}"><xsl:value-of select=".."/></A>
     </xsl:for-each>
   </xsl:template>
 </xsl:stylesheet>
