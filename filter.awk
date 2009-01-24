@@ -1,25 +1,26 @@
 #!/usr/bin/awk
 
 /<test name=.*should_fail.*result=\"FAILED\">/,/<\/test>/ {
-    if ($0 ~ /<test name/) ++failures;
+    if ($0 ~ /<test name/) ++failures; next;
 }
 /<test name=.*should_fail.*result=\"OK\"/ {
-    unexpected_success[failed_ok++]=$0;
+    unexpected_success[failed_ok++]=$0; next;
 }
 /<test name=.*succ.*FAILED/ {
-    unexpected_fail[ok_fail++]=$0;
+    unexpected_fail[ok_fail++]=$0; next;
 }
-/<test name=.*succ.*OK\"\/>/ { ++succeeded; }
-/<test name=.*succ.*OK\">/,/<\/test>/ { if ($0 ~ /<test name/) ++succeeded; }
+/<test name=.*succ.*OK\"\/>/ { ++succeeded; next;}
+/<test name=.*succ.*OK\">/,/<\/test>/ { if ($0 ~ /<test name/) ++succeeded; next;}
 /<registered_test_cases>/ {
-    e_registered=gensub(/<\/?[a-z_]*>/, "", "g") + 0;
+    e_registered=gensub(/<\/?[a-z_]*>/, "", "g") + 0; next;
 }
 /<run_test_cases>/ {
-    e_run=gensub(/<\/?[a-z_]*>/, "", "g") + 0;
+    e_run=gensub(/<\/?[a-z_]*>/, "", "g") + 0; next;
 }
 /<failed_test_cases>/ {
-    e_failed=gensub(/<\/?[a-z_]*>/, "", "g") + 0;
+    e_failed=gensub(/<\/?[a-z_]*>/, "", "g") + 0; next;
 }
+{ print $0 }
 END {
     report=0;
     if (e_failed != failures) {

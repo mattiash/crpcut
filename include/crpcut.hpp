@@ -368,35 +368,29 @@ namespace crpcut {
 
       typedef enum { realtime, cputime } type;
 
-      class basic_enforcer
-      {
-      protected:
-        basic_enforcer(type t, unsigned timeout_ms);
-        void check(type t);
-        unsigned start_timestamp_ms;
-      private:
-        unsigned duration_ms;
-      };
-
       template <type t, unsigned timeout_ms>
-      class enforcer : private basic_enforcer
-      {
-      public:
-        enforcer();
-      };
+      class enforcer;
 
-      class cputime_enforcer : public basic_enforcer
+      class cputime_enforcer
       {
       protected:
         cputime_enforcer(unsigned timeout_ms);
         ~cputime_enforcer();
+      private:
+
+        unsigned duration_ms;
+        unsigned start_timestamp_ms;
       };
 
-      class monotonic_enforcer : public basic_enforcer
+      class monotonic_enforcer
       {
       protected:
         monotonic_enforcer(unsigned timeout_ms);
         ~monotonic_enforcer();
+      private:
+
+        unsigned duration_ms;
+        unsigned start_timestamp_ms;
       };
 
       template <unsigned timeout_ms>

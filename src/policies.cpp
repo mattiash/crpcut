@@ -68,55 +68,51 @@ namespace crpcut {
 
     namespace timeout {
 
-      basic_enforcer::basic_enforcer(type t, unsigned ms)
-        : duration_ms(ms)
-      {
-        start_timestamp_ms = t == realtime
-          ? clocks::monotonic::timestamp_ms_absolute()
-          : clocks::cputime::timestamp_ms_absolute();
-      }
-
-      void basic_enforcer::check(type t)
-      {
-        unsigned now = t == realtime
-          ? clocks::monotonic::timestamp_ms_absolute()
-          : clocks::cputime::timestamp_ms_absolute();
-
-        int diff = now - start_timestamp_ms;
-        if (diff > duration_ms)
-          {
-            std::ostringstream os;
-            os << (t == realtime ? "Realtime" : "Cputime")
-               << " timeout " << duration_ms
-               << "ms exceeded.\n  Actual time to completion was "
-               << diff << "ms";
-            report(comm::exit_fail, os);
-          }
-      }
-
       cputime_enforcer::cputime_enforcer(unsigned timeout_ms)
-        : basic_enforcer(cputime, timeout_ms)
+        : duration_ms(timeout_ms),
+          start_timestamp_ms(clocks::cputime::timestamp_ms_absolute())
       {
-        rlimit r = { (timeout_ms + 1500) / 1000, (timeout_ms + 2500) / 1000 };
+        rlimit r = { (duration_ms + 1500) / 1000, (duration_ms + 2500) / 1000 };
         setrlimit(RLIMIT_CPU, &r);
       }
 
       cputime_enforcer::~cputime_enforcer()
       {
-        basic_enforcer::check(cputime);
+        unsigned now = clocks::cputime::timestamp_ms_absolute();
+        int diff = now - start_timestamp_ms;
+        if  (diff > duration_ms)
+          {
+            std::ostringstream os;
+            os << "CPU-time timeout " << duration_ms
+               << "ms exceeded.\n  Actual time to completion was " << diff
+               << "ms";
+            report(comm::exit_fail, os);
+          }
       }
 
       monotonic_enforcer::monotonic_enforcer(unsigned timeout_ms)
-        : basic_enforcer(realtime, timeout_ms)
+        : duration_ms(timeout_ms),
+          start_timestamp_ms(clocks::monotonic::timestamp_ms_absolute())
       {
-        unsigned deadline = timeout_ms + 1000;
+
         // calculated deadline + 1 sec should give plenty of slack
+        unsigned deadline = duration_ms + 1000;
         report(comm::set_timeout, deadline);
       }
+
       monotonic_enforcer::~monotonic_enforcer()
       {
+        unsigned now = clocks::monotonic::timestamp_ms_absolute();
         report(comm::cancel_timeout, 0, 0);
-        basic_enforcer::check(realtime);
+        int diff = now - start_timestamp_ms;
+        if (diff > duration_ms)
+          {
+            std::ostringstream os;
+            os << "Realtime timeout " << duration_ms
+               << "ms exceeded.\n  Actual time to completion was " << diff
+               << "ms";
+            report(comm::exit_fail, os);
+          }
       }
 
     } // namespace timeout
