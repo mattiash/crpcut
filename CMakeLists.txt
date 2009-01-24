@@ -30,6 +30,14 @@ endif(COMMAND cmake_policy)
 project(crpcut)
 include(CheckFunctionExists)
 include(CheckLibraryExists)
+
+set(CRPCUT_LIB_MAJOR_VERSION "0")
+set(CRPCUT_LIB_MINOR_VERSION "1")
+set(CRPCUT_LIB_PATCH_VERSION "0")
+
+set(CRPCUT_LIB_VERSION "${CRPCUT_LIB_MAJOR_VERSION}.${CRPCUT_LIB_MINOR_VERSION}.${CRPCUT_LIB_PATCH_VERSION}")
+set(CRPCUT_LIB_SOVERSION ${CRPCUT_LIB_MAJOR_VERSION})
+
 aux_source_directory(src LIB_SRCS)
 if (NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX /usr)
@@ -138,7 +146,12 @@ endif(HAVE_EPOLL)
 
 
 include_directories(include)
-add_library(crpcut STATIC ${LIB_SRCS})
+#add_library(crpcut STATIC ${LIB_SRCS})
+add_library(crpcut SHARED ${LIB_SRCS})
+set_target_properties(crpcut PROPERTIES
+  VERSION ${CRPCUT_LIB_VERSION}
+  SOVERSION ${CRPCUT_LIB_SOVERSION})
+
 set(TEST_SRCS test-src/unitt.cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEATURE_SELECTION}")
 add_executable(testprog ${TEST_SRCS})
@@ -175,7 +188,7 @@ install(
 )
 
 install(
-  FILES lib/libcrpcut.a
+  TARGETS crpcut
   DESTINATION lib
 )
 
