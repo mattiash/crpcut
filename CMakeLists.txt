@@ -60,8 +60,8 @@ if(NOT HAVE_DECLTYPE)
   if(NOT HAVE_DECLTYPE)
     message(FATAL_ERROR "Your compiler doesn't support decltype or typeof")
   else(NOT HAVE_DECLTYPE)
+    set(USING_TYPEOF 1)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ddecltype=typeof")
-    message("*** IMPORTANT *** Compile your tests using -Ddecltype=typeof")
   endif(NOT HAVE_DECLTYPE)
 endif(NOT HAVE_DECLTYPE)
 
@@ -161,6 +161,13 @@ endif(XSLTPROC)
 
 set(LIBRARY_OUTPUT_PATH lib)
 set(EXECUTABLE_OUTPUT_PATH test)
+
+if(USING_TYPEOF)
+  message("*** IMPORTANT *** Compile your tests using -Ddecltype=typeof")
+endif(USING_TYPEOF)
+if(RT_HAS_CLOCK_GETTIME)
+  message("*** IMPORTANT *** Link your tests programs using -lrt")
+endif(RT_HAS_CLOCK_GETTIME)
 
 install(
   FILES include/crpcut.hpp
