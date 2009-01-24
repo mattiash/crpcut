@@ -50,18 +50,20 @@ extern "C"
 #if defined(HAVE_MACH_ABSOLUTE_TIME)
 
 namespace {
-  double getconv()
+  mach_timebase_info_data_t getconv()
   {
     mach_timebase_info_data_t info;
     mach_timebase_info(&info);
-    return ((double)info.numer/(double)info.denom)/1000;
+    return info;
   }
   unsigned get_mach_high_res_timestamp()
   {
-    static double conv = getconv();
-    return static_cast<unsigned>(mach_absolute_time()*conv);
+    static mach_timebase_info_data_t conv = getconv();
+    uint64_t ts_ms = mach_absolute_time()/1000000*conv.numer/conv.denom;
+    return static_cast<unsigned>(ts_ms);
   }
 }
+
 namespace clocks {
   inline monotonic::timestamp_func monotonic::try_mach_high_res_timer()
   {
@@ -88,6 +90,7 @@ namespace {
     return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
   }
 }
+
 namespace clocks {
   inline monotonic::timestamp_func monotonic::try_clock_gettime_monotonic()
   {
@@ -116,6 +119,7 @@ namespace {
     return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
   }
 }
+
 namespace clocks {
   inline cputime::timestamp_func cputime::try_clock_gettime_cputime()
   {
@@ -154,6 +158,7 @@ namespace {
     return (99999 - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
   }
 }
+
 namespace clocks {
   inline monotonic::timestamp_func monotonic::try_getitimer_real()
   {
@@ -190,6 +195,7 @@ namespace {
     return (99999 - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
   }
 }
+
 namespace clocks {
   inline cputime::timestamp_func cputime::try_getitimer_virtual()
   {
@@ -225,6 +231,7 @@ namespace {
     return (99999 - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
   }
 }
+
 namespace clocks {
   inline cputime::timestamp_func cputime::try_getitimer_prof()
   {
@@ -254,6 +261,7 @@ namespace {
     return tv.tv_sec*1000 + tv.tv_usec/1000;
   }
 }
+
 namespace clocks {
   inline monotonic::timestamp_func monotonic::try_gettimeofday()
   {
