@@ -146,16 +146,16 @@ endif(HAVE_EPOLL)
 
 
 include_directories(include)
-#add_library(crpcut STATIC ${LIB_SRCS})
 add_library(crpcut SHARED ${LIB_SRCS})
 set_target_properties(crpcut PROPERTIES
   VERSION ${CRPCUT_LIB_VERSION}
-  SOVERSION ${CRPCUT_LIB_SOVERSION})
+  SOVERSION ${CRPCUT_LIB_SOVERSION}
+  LINK_FLAGS ${EXTRA_LIBS})
 
 set(TEST_SRCS test-src/unitt.cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEATURE_SELECTION}")
 add_executable(testprog ${TEST_SRCS})
-target_link_libraries(testprog crpcut ${EXTRA_LIBS})
+target_link_libraries(testprog crpcut)
 
 
 find_program(XSLTPROC "xsltproc")
@@ -178,9 +178,9 @@ set(EXECUTABLE_OUTPUT_PATH test)
 if(USING_TYPEOF)
   message("*** IMPORTANT *** Compile your tests using -Ddecltype=typeof")
 endif(USING_TYPEOF)
-if(RT_HAS_CLOCK_GETTIME)
-  message("*** IMPORTANT *** Link your tests programs using -lrt")
-endif(RT_HAS_CLOCK_GETTIME)
+#if(RT_HAS_CLOCK_GETTIME)
+#  message("*** IMPORTANT *** Link your tests programs using -lrt")
+#endif(RT_HAS_CLOCK_GETTIME)
 
 install(
   FILES include/crpcut.hpp
