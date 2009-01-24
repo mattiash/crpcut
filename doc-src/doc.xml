@@ -159,7 +159,7 @@ been tested.
   crpcut uses <link url="http://www.cmake.org">CMake</link> to manage builds and
   installs.<p/>
 First obtain the crpcut sources from the git repository
-<id>git://github.com/airbear/crpcut</id>
+<id>git://github.com/rollbear/crpcut</id>
 <p/>
 In the source directory type:
 <code>
@@ -412,8 +412,8 @@ From there, you can single step the test case.
 <chapter title="Further development">
 Currently crpcut is early in the development and is rapidly changing. If you're
 daring enough to give it a try anyway, feel free to get it from the
-<link url="http://www.github.com/airbear/crpcut">GitHub</link> page, or a
-direct clone of the git repository <id>git://github.com/airbear/crpcut.git</id>
+<link url="http://www.github.com/rollbear/crpcut">GitHub</link> page, or a
+direct clone of the git repository <id>git://github.com/rollbear/crpcut.git</id>
 <p/>
 The todo list, without any regard to importance or desired implementation
 order is:
