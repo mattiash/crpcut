@@ -111,7 +111,7 @@ The C++ extensions are:
   <def notion="_Exit()">C99/c++0x</def>
 </definitions>
 All will become standardized for C++ soon, and are since some time supported
-by gcc.
+by gcc. The lowest version tested with is 4.1.2.
 <p/>
 The required Posix functions are:
 <definitions notion="Standard" meaning="Requirement">
@@ -155,7 +155,34 @@ This should work for most Linux/*BSD systems. It is also likely to work for
  <link url="http://www.apple.com/macosx/">OS-X</link>, but it has not yet
 been tested.
 </chapter>
-
+<chapter title="Build and Install">
+  crpcut uses <link url="http://www.cmake.org">CMake</link> to manage builds and
+  installs.<p/>
+First obtain the crpcut sources from the git repository
+<id>git://github.com/airbear/crpcut</id>
+<p/>
+In the source directory type:
+<code>
+&gt; cmake .
+</code>
+Should you want to use a different install directory than the
+<link url="http://www.cmake.org">CMake</link> default, type instead
+<code>
+&gt; cmake . -DCMAKE_INSTALL_PREFIX=&lt;desired_install_directory&gt;
+</code>
+<p/>
+Now build by typing:
+<code>
+&gt; make
+</code>
+<p/>
+Once built, crpcut can be installed on your system. Type:
+<code>
+&gt; make install
+</code>
+The file <id>install_manifest.txt</id> is created and includes the full path
+of all installed files.
+</chapter>
 <chapter title="Writing tests">
 Test cases are defined using the <id>TEST()</id> macro as:<p/>
 <code>

@@ -1,97 +1,141 @@
+#  Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+#  All rights reserved
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#  1. Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+
+#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+#  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+#  OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+#  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+#  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+#  SUCH DAMAGE.
+
+
+
 cmake_minimum_required(VERSION 2.4)
 if (COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
-PROJECT(crpcut)
-INCLUDE(CheckFunctionExists)
-INCLUDE(CheckLibraryExists)
-AUX_SOURCE_DIRECTORY(src LIB_SRCS)
+project(crpcut)
+include(CheckFunctionExists)
+include(CheckLibraryExists)
+aux_source_directory(src LIB_SRCS)
+if (NOT CMAKE_INSTALL_PREFIX)
+  set(CMAKE_INSTALL_PREFIX /usr)
+endif (NOT CMAKE_INSTALL_PREFIX)
 
 # check for clock_gettime()
 
-CHECK_FUNCTION_EXISTS("clock_gettime()" HAVE_CLOCK_GETTIME)
-IF(NOT HAVE_CLOCK_GETTIME)
-  CHECK_LIBRARY_EXISTS("rt" "clock_gettime" "" RT_HAS_CLOCK_GETTIME)
-  IF(RT_HAS_CLOCK_GETTIME)
-    SET(EXTRA_LIBS ${EXTRA_LIBS} -lrt)
-    SET(HAVE_CLOCK_GETTIME 1)
-  ENDIF(RT_HAS_CLOCK_GETTIME)
-ENDIF(NOT HAVE_CLOCK_GETTIME)
-IF(HAVE_CLOCK_GETTIME)
-  SET(MAY_HAVE_MONO 1)
-  SET(MAY_HAVE_CPU 1)
-  SET(HAVE_CLOCK 1)
-  SET(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_CLOCK_GETTIME")
-ENDIF(HAVE_CLOCK_GETTIME)
+check_function_exists("clock_gettime()" HAVE_CLOCK_GETTIME)
+if(NOT HAVE_CLOCK_GETTIME)
+  check_library_exists("rt" "clock_gettime" "" RT_HAS_CLOCK_GETTIME)
+  if(RT_HAS_CLOCK_GETTIME)
+    set(EXTRA_LIBS ${EXTRA_LIBS} -lrt)
+    set(HAVE_CLOCK_GETTIME 1)
+  endif(RT_HAS_CLOCK_GETTIME)
+endif(NOT HAVE_CLOCK_GETTIME)
+if(HAVE_CLOCK_GETTIME)
+  set(MAY_HAVE_MONO 1)
+  set(MAY_HAVE_CPU 1)
+  set(HAVE_CLOCK 1)
+  set(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_CLOCK_GETTIME")
+endif(HAVE_CLOCK_GETTIME)
 
 # check for mach_absolute_time()
 
-CHECK_FUNCTION_EXISTS("mach_absolute_time" HAVE_MACH_ABSOLUTE_TIME)
-IF(HAVE_MACH_ABSOLUTE_TIME)
-  SET(MAY_HAVE_MONO 1)
-  SET(HAVE_CLOCK 1)
-  SET(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_MACH_ABSOLUTE_TIME")
-ENDIF(HAVE_MACH_ABSOLUTE_TIME)
+check_function_exists("mach_absolute_time" HAVE_MACH_ABSOLUTE_TIME)
+if(HAVE_MACH_ABSOLUTE_TIME)
+  set(MAY_HAVE_MONO 1)
+  set(HAVE_CLOCK 1)
+  set(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_MACH_ABSOLUTE_TIME")
+endif(HAVE_MACH_ABSOLUTE_TIME)
 
 
 # check for getitimer()
 
-CHECK_FUNCTION_EXISTS("getitimer" HAVE_ITIMER)
-IF(HAVE_ITIMER)
-  SET(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_ITIMER")
-  SET(MAY_HAVE_CPU 1)
-  SET(HAVE_CLOCK 1)
-ENDIF(HAVE_ITIMER)
+check_function_exists("getitimer" HAVE_ITIMER)
+if(HAVE_ITIMER)
+  set(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_ITIMER")
+  set(MAY_HAVE_CPU 1)
+  set(HAVE_CLOCK 1)
+endif(HAVE_ITIMER)
 
 # check for gettimeofday()
 
-CHECK_FUNCTION_EXISTS("gettimeofday" HAVE_GETTIMEOFDAY)
-IF(HAVE_GETTIMEOFDAY)
-  SET(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_GETTIMEOFDAY")
-  SET(HAVE_CLOCK 1)
-ENDIF(HAVE_GETTIMEOFDAY)
+check_function_exists("gettimeofday" HAVE_GETTIMEOFDAY)
+if(HAVE_GETTIMEOFDAY)
+  set(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_GETTIMEOFDAY")
+  set(HAVE_CLOCK 1)
+endif(HAVE_GETTIMEOFDAY)
 
 
-IF (NOT HAVE_CLOCK)
-  MESSAGE(FATAL_ERROR "Velly velly solly, but you have no clocks!")
-ENDIF (NOT HAVE_CLOCK)
-IF (NOT MAY_HAVE_CPU)
-  MESSAGE(FATAL_ERROR "Velly velly solly, but I can't measure CPU-time")
-ENDIF (NOT MAY_HAVE_CPU)
-IF (NOT MAY_HAVE_MONO)
-  MESSAGE("Monotonic time source unavailable - using realtime clocks!")
-ENDIF (NOT MAY_HAVE_MONO)
+if (NOT HAVE_CLOCK)
+  message(FATAL_ERROR "Velly velly solly, but you have no clocks!")
+endif (NOT HAVE_CLOCK)
+if (NOT MAY_HAVE_CPU)
+  message(FATAL_ERROR "Velly velly solly, but I can't measure CPU-time")
+endif (NOT MAY_HAVE_CPU)
+if (NOT MAY_HAVE_MONO)
+  message("Monotonic time source unavailable - using realtime clocks!")
+endif (NOT MAY_HAVE_MONO)
 
 # check for epoll_*
 
-CHECK_FUNCTION_EXISTS("epoll_ctl" HAVE_EPOLL)
-IF(HAVE_EPOLL)
-  SET(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_EPOLL")
-ENDIF(HAVE_EPOLL)
+check_function_exists("epoll_ctl" HAVE_EPOLL)
+if(HAVE_EPOLL)
+  set(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_EPOLL")
+endif(HAVE_EPOLL)
 
 
-INCLUDE_DIRECTORIES(include)
-ADD_LIBRARY(crpcut STATIC ${LIB_SRCS})
-SET(TEST_SRCS test-src/unitt.cpp)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEATURE_SELECTION}")
-ADD_EXECUTABLE(testprog ${TEST_SRCS})
-TARGET_LINK_LIBRARIES(testprog crpcut ${EXTRA_LIBS})
+include_directories(include)
+add_library(crpcut STATIC ${LIB_SRCS})
+set(TEST_SRCS test-src/unitt.cpp)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEATURE_SELECTION}")
+add_executable(testprog ${TEST_SRCS})
+target_link_libraries(testprog crpcut ${EXTRA_LIBS})
 
 
-FIND_PROGRAM(XSLTPROC "xsltproc")
-IF(XSLTPROC)
-  FILE(GLOB DOC_SOURCES  "doc-src/*.xml")
-  FILE(GLOB XSL_TEMPLATE "doc-src/doc2html.xsl")
-  ADD_CUSTOM_TARGET(
+find_program(XSLTPROC "xsltproc")
+if(XSLTPROC)
+  file(GLOB DOC_SOURCES  "doc-src/*.xml")
+  file(GLOB XSL_TEMPLATE "doc-src/doc2html.xsl")
+  add_custom_target(
     doc.html ALL
     COMMAND ${XSLTPROC} ${XSL_TEMPLATE} ${DOC_SOURCES} > doc.html
     DEPENDS ${XSL_TEMPLATE} ${DOC_SOURCES}
     WORKING_DIRECTORY html)
-ELSE(XSLTPROC)
-  MESSAGE("xsltproc is not found - Can't build documentation")
-ENDIF(XSLTPROC)
+else(XSLTPROC)
+  message("xsltproc is not found - Can't build documentation")
+endif(XSLTPROC)
 
 
-SET(LIBRARY_OUTPUT_PATH lib)
-SET(EXECUTABLE_OUTPUT_PATH test)
+set(LIBRARY_OUTPUT_PATH lib)
+set(EXECUTABLE_OUTPUT_PATH test)
 
+install(
+  FILES include/crpcut.hpp
+  DESTINATION include
+)
+
+install(
+  FILES lib/libcrpcut.a
+  DESTINATION lib
+)
+
+if(XSLTPROC)
+  install(
+    FILES html/doc.html
+    DESTINATION share/crpcut
+    )
+endif(XSLTPROC)
