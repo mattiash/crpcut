@@ -47,12 +47,20 @@ endif (NOT CMAKE_INSTALL_PREFIX)
 
 
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/variadic_macro.cpp
-  "#define APA(...) main(__VA_ARGS__)\nint APA(int argc, char *argv[]) {}")
+  "#define APA(...) main(__VA_ARGS__)\nint APA(int argc, char *argv[]) {}\n")
 try_compile(HAVE_VARIADIC_MACROS ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/CMakeTmp/variadic_macro.cpp)
 if (NOT HAVE_VARIADIC_MACROS)
   message(FATAL_ERROR "Your compiler doesn't support variadic macros")
 endif(NOT HAVE_VARIADIC_MACROS)
+
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/exit.cpp
+  "#include <cstdlib>\nmain() { std::_Exit(0); }\n")
+try_compile(HAVE__EXIT ${CMAKE_BINARY_DIR}
+  ${CMAKE_BINARY_DIR}/CMakeTmp/exit.cpp)
+if (NOT HAVE__EXIT)
+  message(FATAL_ERROR "Your compiler doesn't support std::_Exit()")
+endif(NOT HAVE__EXIT)
 
 # Check for decltype
 
