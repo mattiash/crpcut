@@ -320,16 +320,16 @@ flags followed by a set of test case or test suite names. The flags are:
 <def notion="-v">Print the result of successful tests, in addition to that
                  of the failed ones.</def>
 <def notion="-c&#xA0;num">Control the number of parallel spawned test
-                                case processes. The default is 1. If 0, the
-                                test cases are run in the parent process.</def>
+                          case processes. The default is 1. If 0, the
+                          test cases are run in the parent process.</def>
 </definitions>
 Note that running test cases in the parent process has severe implications and
 should really only be used when debugging a test case (below.) The whole test
 program will terminate when reaching the first failed test. Tests that die,
 will also terminate the program, even if death is expected.
 <p/>
-To run the tests in test suite asserts, 8 test cases in parallel,
-ignore all dependencies, and print also successful tests, start the
+To run the tests in test suite named &quot;asserts&quot;, 8 test cases in
+parallel, ignore all dependencies, and print also successful tests, start the
 test program using <id>-d&#xA0;-v&#xA;-c&#xA;8 asserts</id>.
 <p/>
 The exact prototype for <id>run_test</id> is:
@@ -352,7 +352,7 @@ provided in <id>crpcut.xsd</id>. It is fairly human-readable.
 
 <chapter title="Debugging">
 Debugging a test case is easy. Load the test program into your favourite
-debugger. Set a break point on testcasename::test. Run with
+debugger. Set a break point on <id>testcasename::test</id>. Run with
 <id>-d&#xA0;-c&#xA0;0&#xA0;testcasename</id>. Example:
 <code>
 &gt; $ gdb ./testprog
