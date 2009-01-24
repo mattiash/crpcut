@@ -423,7 +423,6 @@ order is:
 <li>Better separation of fixture errors and test-case errors</li>
 <li>Optional non-XML output</li>
 <li>INFO() macros for sending data from test-case to report</li>
-<li>crpcut.so</li>
 </list>
 </chapter>
 </doc>
