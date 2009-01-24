@@ -35,6 +35,45 @@ if (NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX /usr)
 endif (NOT CMAKE_INSTALL_PREFIX)
 
+# Check for variadic macros
+
+
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/variadic_macro.cpp
+  "#define APA(...) main(__VA_ARGS__)\nint APA(int argc, char *argv[]) {}")
+try_compile(HAVE_VARIADIC_MACROS ${CMAKE_BINARY_DIR}
+  ${CMAKE_BINARY_DIR}/CMakeTmp/variadic_macro.cpp)
+if (NOT HAVE_VARIADIC_MACROS)
+  message(FATAL_ERROR "Your compiler doesn't support variadic macros")
+endif(NOT HAVE_VARIADIC_MACROS)
+
+# Check for decltype
+
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp
+  "template <typename T> T* func(T); typedef decltype(func(3.14)) apa; int main() {} \n")
+try_compile(HAVE_DECLTYPE ${CMAKE_BINARY_DIR}
+  ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp)
+if(NOT HAVE_DECLTYPE)
+  file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp
+    "template <typename T> T* func(T); typedef typeof(func(3.14)) apa; int main() {}\n")
+  try_compile(HAVE_DECLTYPE ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp)
+  if(NOT HAVE_DECLTYPE)
+    message(FATAL_ERROR "Your compiler doesn't support decltype or typeof")
+  else(NOT HAVE_DECLTYPE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ddecltype=typeof")
+    message("*** IMPORTANT *** Compile your tests using -Ddecltype=typeof")
+  endif(NOT HAVE_DECLTYPE)
+endif(NOT HAVE_DECLTYPE)
+
+# check for TR1
+
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/tr1.cpp
+  "#include <tr1/type_traits>\nconst bool v = std::tr1::is_reference<int>::type::value; int main() { return v; }\n")
+try_compile(HAVE_TR1 ${CMAKE_BINARY_DIR}
+  ${CMAKE_BINARY_DIR}/CMakeTmp/tr1.cpp)
+if(NOT HAVE_TR1)
+  message(FATAL_ERROR "Your compiler doesn't have std/tr1")
+endif(NOT HAVE_TR1)
 # check for clock_gettime()
 
 check_function_exists("clock_gettime()" HAVE_CLOCK_GETTIME)

@@ -1371,9 +1371,6 @@ namespace crpcut {
   }
 } // namespace crpcut
 
-#define decltype typeof
-
-
 #define CRPCUT_TEST_CASE_DEF(test_case_name, ...)                           \
   class test_case_name                                                      \
     : crpcut::test_case_base, __VA_ARGS__                                   \
