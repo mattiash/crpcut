@@ -171,9 +171,12 @@ if(XSLTPROC)
   file(GLOB DOC_SOURCES  "doc-src/*.xml")
   file(GLOB XSL_TEMPLATE "doc-src/doc2html.xsl")
   add_custom_target(
+    html bash -c "test -d html || mkdir html"
+    VERBATIM)
+  add_custom_target(
     doc.html ALL
-    COMMAND ${XSLTPROC} ${XSL_TEMPLATE} ${DOC_SOURCES} > doc.html
-    DEPENDS ${XSL_TEMPLATE} ${DOC_SOURCES}
+    ${XSLTPROC} ${XSL_TEMPLATE} ${DOC_SOURCES} > doc.html
+    DEPENDS html ${XSL_TEMPLATE} ${DOC_SOURCES}
     WORKING_DIRECTORY html)
 else(XSLTPROC)
   message("xsltproc is not found - Can't build documentation")
