@@ -71,7 +71,7 @@ TESTSUITE(exit_deaths)
 }
 TESTSUITE(signal_deaths)
 {
-  TEST(should_fail_with_core_dump_due_to_death_on_signal_11)
+  TEST(should_fail_with_left_behind_core_dump_due_to_death_on_signal_11)
   {
     raise(11);
   }
@@ -306,7 +306,7 @@ TESTSUITE(depends)
     {
     }
 
-  TEST(should_not_run_due_to_one_failed_dependency,
+  TEST(should_not_run_due_to_one_failed_dependency_success_otherwise,
        DEPENDS_ON(default_success,
                   exit_deaths::should_succeed_with_exit_code_3,
                   exception_deaths::should_fail_due_to_unknown_exception,
@@ -383,7 +383,7 @@ TESTSUITE(stderr_and_stdout)
     assert("apa" == 0);
   }
 
-  TEST(should_fail_with_death_due_to_core_file, EXPECT_SIGNAL_DEATH(SIGABRT))
+  TEST(should_fail_with_death_and_left_behind_core_dump, EXPECT_SIGNAL_DEATH(SIGABRT))
   {
     assert("apa" == 0);
   }
@@ -394,7 +394,7 @@ TEST(should_fail_due_to_left_behind_files)
   std::ofstream of("apa");
   of << "katt";
 }
-TEST(should_not_run_due_to_failed_left_behind_files,
+TEST(should_not_run_due_to_failed_left_behind_files_success_otherwise,
      DEPENDS_ON(should_fail_due_to_left_behind_files))
 {
 }

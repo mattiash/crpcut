@@ -176,7 +176,16 @@ Now build by typing:
 &gt; make
 </code>
 <p/>
-Once built, crpcut can be installed on your system. Type:
+Once built, you may want to check that it works correctly. Do that by
+running:
+<code>
+&gt; ./sanitycheck.sh
+</code>
+It takes a while to run through all tests. It verifies that the test cases
+in <id>test-src/unitt.cpp</id> completes with the expected ok/fail
+depending on the command line switches set.
+<p/>
+You can now install crpcut by typing:
 <code>
 &gt; make install
 </code>

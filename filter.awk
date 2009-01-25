@@ -1,7 +1,49 @@
-#!/usr/bin/awk
+#!/usr/bin/awk -f
 
+BEGIN{
+    succeeded=0;
+}
+/<blocked_tests>/ { counting_blocks=1; next }
+/<\/blocked_tests/ { counting_blocks=0; next }
+counting_blocks==1 && /<test name=.*\"\/>/  {
+    if (nodeps) {
+        unexpected_blocked[unexpected_block_count++]=$0;
+    }
+    else
+    {
+        block_count++;
+    }
+    next;
+}
 /<test name=.*should_fail.*result=\"FAILED\">/,/<\/test>/ {
-    if ($0 ~ /<test name/) ++failures; next;
+    if ($0 ~ /<\/test>/)
+    {
+        if (files_left)
+        {
+            if (testname !~ /left_behind/)
+            {
+                unexpected_files_behind[unexpected_files_behind_count++]=testname;
+            }
+        }
+        else
+        {
+            if (testname ~ /left_behind/)
+            {
+                unexpected_clean[unexpected_clean_count++]=testname;
+            }
+        }
+        files_left=0;
+        testname="";
+        next;
+    }
+    if ($0 ~ /<test name/) {
+        testname=$0;
+        ++counted_failures;
+        if ($1 ~ /should_not_run/ && !nodeps) {
+            unexpected_run[unexpected_run_count++]=$0;
+        }
+        next;
+    }
 }
 /<test name=.*should_fail.*result=\"OK\"/ {
     unexpected_success[failed_ok++]=$0; next;
@@ -9,31 +51,103 @@
 /<test name=.*succ.*FAILED/ {
     unexpected_fail[ok_fail++]=$0; next;
 }
-/<test name=.*succ.*OK\"\/>/ { ++succeeded; next;}
-/<test name=.*succ.*OK\">/,/<\/test>/ { if ($0 ~ /<test name/) ++succeeded; next;}
+/<test name=.*succ.*OK\"\/>/ {
+    ++counted_succeeded;
+    if (($0 ~ /should_not_run/) && !nodeps) {
+        unexpected_run[unexpected_run_count++]=$0;
+        echo "apa"
+    }
+    next;
+}
+/<test name=.*succ.*OK\">/,/<\/test>/ {
+    if ($0 ~ /<\/test>/) {
+        if (files_left)
+        {
+            unexpected_files_behind[unexpected_files_behind_count++]=testname;
+        }
+        else
+        {
+            if (testname ~ /left_behind/)
+            {
+                unexpected_clean[unexpected_clean_count++]=testname;
+            }
+        }
+        files_left=0;
+        testname="";
+        next;
+    }
+    if ($0 ~ /<test name/) {
+        testname=$0;
+        ++counted_succeeded;
+        if (($0 ~ /should_not_run/) && !nodeps) {
+            echo "apa"
+            unexpected_run[unexpected_run_count++]=$0;
+        }
+        next;
+    }
+}
 /<registered_test_cases>/ {
-    e_registered=gensub(/<\/?[a-z_]*>/, "", "g") + 0; next;
+    stat_registered=gensub(/<\/?[a-z_]*>/, "", "g") + 0; next;
 }
 /<run_test_cases>/ {
-    e_run=gensub(/<\/?[a-z_]*>/, "", "g") + 0; next;
+    stat_run=gensub(/<\/?[a-z_]*>/, "", "g") + 0; next;
 }
 /<failed_test_cases>/ {
-    e_failed=gensub(/<\/?[a-z_]*>/, "", "g") + 0; next;
+    stat_failed=gensub(/<\/?[a-z_]*>/, "", "g") + 0; next;
 }
-{ print $0 }
+/nonempty_dir/ {
+    split($0, parts, /"/);
+    dirname=parts[2];
+    if (testname!="")
+    {
+        files_left=1
+    }
+}
 END {
     report=0;
-    if (e_failed != failures) {
-        print "expected ", e_failed, "failures whereas ", failures, "were detected"
+    if (registered != stat_registered) {
+        printf("ERROR: Expected %d registered tests and found %d in stats\n",
+               registered, stat_registered);
         report=1;
     }
-    if (e_run - e_failed != succeeded) {
-        print "expected ", e_run - e_failed, "successful tests, but found", succeeded;
+    if (run != stat_run) {
+        printf("ERROR: Expected %d run tests and found %d in stats\n",
+               run, stat_run);
+        report=1;
+    }
+    if (failed != stat_failed) {
+        printf("ERROR: Expected %d failed and %d found in stats\n",
+               failed, stat_failed);
+        report=1
+    }
+    if (stat_failed != counted_failures) {
+        printf("ERROR stats:%d failed and %d found in log\n",
+               stat_failed, counted_failures);
+        report=1;
+    }
+    if (rv != stat_failed) {
+        printf("ERROR return value was %d end %d tests failed\n",
+               rv, stat_failed);
+        report=1
+    }
+    if (verbose && (stat_run - stat_failed != counted_succeeded)) {
+        printf("ERROR stats:%d successful, and %d found in log\n",
+               stat_run - stat_failed, counted_succeeded);
+        report=1;
+    }
+    if (!verbose && counted_succeeded) {
+        printf("ERROR: OK tests printed without verbose flag\n");
+        report=1;
+    }
+    if (blocked != block_count)
+    {
+        printf("ERROR: Expected %d blocked tests and found %d\n",
+               blocked, block_count)
         report=1;
     }
     if (failed_ok) {
         report=1;
-        print "The following tests shouldn't have succeeded:";
+        print "ERROR: The following tests shouldn't have succeeded:";
         for (a in unexpected_success)
         {
             reason=""
@@ -46,14 +160,57 @@ END {
     }
     if (ok_failed) {
         report=1;
-        print "The following tests shouldn't have failed:"
+        print "ERROR: The following tests shouldn't have failed:"
         for (a in unexpected_fail)
         {
             print unexpected_fail[a];
         }
     }
-    if (!report)
-    {
-        print "Looks OK";
+    if (unexpected_run_count) {
+        report=1;
+        print "ERROR: The following tests shouldn't have run:"
+        for (a in unexpected_run)
+        {
+            print unexpected_run[a];
+        }
     }
+    if (unexpected_blocked_count) {
+        report=1;
+        print "ERROR: The following tests shouldn't have been blocekd:"
+        for (a in unexpecteded_block)
+        {
+            print unexpected_blocked[a]
+        }
+    }
+    if (unexpected_files_behind_count) {
+        report=1;
+        print "ERROR: The following tests shouldn't have left files behind:"
+        for (a in unexpected_files_behind)
+        {
+            print unexpected_files_behind[a];
+        }
+    }
+    if (unexpected_clean_count) {
+        report=1;
+        print "ERROR: The following files should've left files behind:"
+        for (a in unexpected_clean)
+        {
+            print unexpected_clean[a];
+        }
+    }
+    if (report)
+    {
+        if (dirname != "")
+        {
+            print dirname " contains files left behind by test cases";
+        }
+    }
+    else
+    {
+        if (dirname != "") {
+            system("rm -r " dirname);
+        }
+
+    }
+    exit(report);
 }
