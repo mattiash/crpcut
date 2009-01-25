@@ -51,7 +51,7 @@ file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/variadic_macro.cpp
 try_compile(HAVE_VARIADIC_MACROS ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/CMakeTmp/variadic_macro.cpp)
 if (NOT HAVE_VARIADIC_MACROS)
-  message(FATAL_ERROR "Your compiler doesn't support variadic macros")
+  message(FATAL_ERROR "${CMAKE_CXX_COMPILER} doesn't support variadic macros")
 endif(NOT HAVE_VARIADIC_MACROS)
 
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/exit.cpp
@@ -59,7 +59,7 @@ file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/exit.cpp
 try_compile(HAVE__EXIT ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/CMakeTmp/exit.cpp)
 if (NOT HAVE__EXIT)
-  message(FATAL_ERROR "Your compiler doesn't support std::_Exit()")
+  message(FATAL_ERROR "${CMAKE_CXX_COMPILER} doesn't support std::_Exit()")
 endif(NOT HAVE__EXIT)
 
 # Check for decltype
@@ -74,10 +74,10 @@ if(NOT HAVE_DECLTYPE)
   try_compile(HAVE_DECLTYPE ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp)
   if(NOT HAVE_DECLTYPE)
-    message(FATAL_ERROR "Your compiler doesn't support decltype or typeof")
+    message(FATAL_ERROR "${CMAKE_CXX_COMPILER} doesn't support decltype or typeof")
   else(NOT HAVE_DECLTYPE)
     set(USING_TYPEOF 1)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ddecltype=typeof")
+    add_definitions(-Ddecltype=typeof)
   endif(NOT HAVE_DECLTYPE)
 endif(NOT HAVE_DECLTYPE)
 
@@ -88,7 +88,7 @@ file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/tr1.cpp
 try_compile(HAVE_TR1 ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/CMakeTmp/tr1.cpp)
 if(NOT HAVE_TR1)
-  message(FATAL_ERROR "Your compiler doesn't have std/tr1")
+  message(FATAL_ERROR "${CMAKE_CXX_COMPILER} doesn't have std/tr1")
 endif(NOT HAVE_TR1)
 # check for clock_gettime()
 
@@ -104,7 +104,7 @@ if(HAVE_CLOCK_GETTIME)
   set(MAY_HAVE_MONO 1)
   set(MAY_HAVE_CPU 1)
   set(HAVE_CLOCK 1)
-  set(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_CLOCK_GETTIME")
+  add_definitions(-DHAVE_CLOCK_GETTIME)
 endif(HAVE_CLOCK_GETTIME)
 
 # check for mach_absolute_time()
@@ -113,7 +113,7 @@ check_function_exists("mach_absolute_time" HAVE_MACH_ABSOLUTE_TIME)
 if(HAVE_MACH_ABSOLUTE_TIME)
   set(MAY_HAVE_MONO 1)
   set(HAVE_CLOCK 1)
-  set(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_MACH_ABSOLUTE_TIME")
+  add_definitions(-DHAVE_MACH_ABSOLUTE_TIME)
 endif(HAVE_MACH_ABSOLUTE_TIME)
 
 
@@ -121,7 +121,7 @@ endif(HAVE_MACH_ABSOLUTE_TIME)
 
 check_function_exists("getitimer" HAVE_ITIMER)
 if(HAVE_ITIMER)
-  set(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_ITIMER")
+  add_definitions(-DHAVE_ITIMER)
   set(MAY_HAVE_CPU 1)
   set(HAVE_CLOCK 1)
 endif(HAVE_ITIMER)
@@ -130,7 +130,7 @@ endif(HAVE_ITIMER)
 
 check_function_exists("gettimeofday" HAVE_GETTIMEOFDAY)
 if(HAVE_GETTIMEOFDAY)
-  set(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_GETTIMEOFDAY")
+  add_definitions(-DHAVE_GETTIMEOFDAY)
   set(HAVE_CLOCK 1)
 endif(HAVE_GETTIMEOFDAY)
 
@@ -149,7 +149,7 @@ endif (NOT MAY_HAVE_MONO)
 
 check_function_exists("epoll_ctl" HAVE_EPOLL)
 if(HAVE_EPOLL)
-  set(FEATURE_SELECTION "${FEATURE_SELECTION} -DHAVE_EPOLL")
+  add_definitions(-DHAVE_EPOLL)
 endif(HAVE_EPOLL)
 
 
@@ -186,9 +186,6 @@ set(EXECUTABLE_OUTPUT_PATH test)
 if(USING_TYPEOF)
   message("*** IMPORTANT *** Compile your tests using -Ddecltype=typeof")
 endif(USING_TYPEOF)
-#if(RT_HAS_CLOCK_GETTIME)
-#  message("*** IMPORTANT *** Link your tests programs using -lrt")
-#endif(RT_HAS_CLOCK_GETTIME)
 
 install(
   FILES include/crpcut.hpp
