@@ -31,6 +31,7 @@
 #include "crpcut.hpp"
 extern "C" {
 #include <signal.h> // raise
+#include <sys/time.h> // gettimeofday
 }
 template <int N>
 struct fixture
@@ -45,7 +46,7 @@ TEST(default_success)
 
 TEST(very_slow_success)
 {
-  sleep(3);
+  sleep(1);
 }
 
 TESTSUITE(death)
@@ -324,40 +325,47 @@ TESTSUITE(depends)
 TESTSUITE(timeouts)
 {
   TEST(should_succeed_slow_realtime_deadline,
-       DEADLINE_REALTIME_MS(1500),
+       DEADLINE_REALTIME_MS(200),
        NO_CORE_FILE)
   {
-    sleep(1);
+    usleep(100000);
   }
   TEST(should_fail_slow_realtime_deadline,
-       DEADLINE_REALTIME_MS(500),
+       DEADLINE_REALTIME_MS(100),
        NO_CORE_FILE)
   {
-    sleep(1);
+    usleep(200000);
   }
 
-  TEST(should_succeed_slow_cputime_deadline, DEADLINE_CPU_MS(500), NO_CORE_FILE)
+  TEST(should_succeed_slow_cputime_deadline, DEADLINE_CPU_MS(100), NO_CORE_FILE)
   {
-    sleep(3);
+    usleep(300000); // should usleep busy-wait, this test would fail miserably
   }
 
   TEST(should_fail_slow_cputime_deadline, DEADLINE_CPU_MS(500), NO_CORE_FILE)
   {
-    struct timespec deadline;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &deadline);
+    // Note! This test case will fail for the wrong reason if NTP makes an
+    // unfortunate time adjustment here, or in the unlikely event that
+    // gettimeofday() consumes lots and lots of real time and very little
+    // cpu time.
+
+    struct timeval deadline;
+    gettimeofday(&deadline, 0);
     deadline.tv_sec+=1;
     for (;;)
       {
-        struct timespec now;
-        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now);
+        for (volatile int n = 0; n < 100000; ++n)
+          ;
+        struct timeval now;
+        gettimeofday(&now, 0);
         if (now.tv_sec > deadline.tv_sec) break;
-        if (now.tv_sec == deadline.tv_sec && now.tv_nsec >= deadline.tv_nsec)
+        if (now.tv_sec == deadline.tv_sec && now.tv_usec >= deadline.tv_usec)
           break;
       }
   }
 
   TEST(should_fail_slow_cputime_deadline_by_death,
-       DEADLINE_CPU_MS(500),
+       DEADLINE_CPU_MS(100),
        NO_CORE_FILE)
   {
     for (;;)
@@ -366,10 +374,10 @@ TESTSUITE(timeouts)
   }
 
   TEST(should_fail_slow_realtime_deadline_by_death,
-       DEADLINE_REALTIME_MS(500),
+       DEADLINE_REALTIME_MS(100),
        NO_CORE_FILE)
   {
-    sleep(3);
+    sleep(2);
   }
 }
 
