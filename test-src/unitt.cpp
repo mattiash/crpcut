@@ -48,89 +48,95 @@ TEST(very_slow_success)
   sleep(3);
 }
 
-TESTSUITE(exit_deaths)
+TESTSUITE(death)
 {
-  TEST(should_fail_with_exit_code_3)
+  TESTSUITE(by_exit)
   {
-    exit(3);
-  }
-
-  TEST(should_succeed_with_exit_code_3, EXPECT_EXIT(3))
+    TEST(should_fail_with_exit_code_3)
     {
       exit(3);
     }
 
-  TEST(should_fail_with_no_exit, EXPECT_EXIT(3))
+    TEST(should_succeed_with_exit_code_3, EXPECT_EXIT(3))
+    {
+      exit(3);
+    }
+
+    TEST(should_fail_with_no_exit, EXPECT_EXIT(3))
     {
     }
 
-  TEST(should_fail_with_wrong_exit_code, EXPECT_EXIT(3))
+    TEST(should_fail_with_wrong_exit_code, EXPECT_EXIT(3))
     {
       exit(4);
     }
-}
-TESTSUITE(signal_deaths)
-{
-  TEST(should_fail_with_left_behind_core_dump_due_to_death_on_signal_11)
-  {
-    raise(11);
   }
 
-  TEST(should_fail_without_core_dump_with_death_on_signal_11, NO_CORE_FILE)
+  TESTSUITE(by_signal)
+  {
+    TEST(should_fail_with_left_behind_core_dump_due_to_death_on_signal_11)
     {
       raise(11);
     }
 
-  TEST(should_succeed_with_death_on_signal_11,
-       NO_CORE_FILE,
-       EXPECT_SIGNAL_DEATH(11))
+    TEST(should_fail_without_core_dump_with_death_on_signal_11, NO_CORE_FILE)
     {
       raise(11);
     }
 
-  TEST(should_fail_with_wrong_signal, NO_CORE_FILE, EXPECT_SIGNAL_DEATH(11))
+    TEST(should_succeed_with_death_on_signal_11,
+         NO_CORE_FILE,
+         EXPECT_SIGNAL_DEATH(11))
+    {
+      raise(11);
+    }
+
+    TEST(should_fail_with_wrong_signal, NO_CORE_FILE, EXPECT_SIGNAL_DEATH(11))
     {
       raise(6);
     }
-  TEST(should_fail_with_normal_exit, EXPECT_SIGNAL_DEATH(11))
+
+    TEST(should_fail_with_normal_exit, EXPECT_SIGNAL_DEATH(11))
     {
     }
-}
-
-TESTSUITE(exception_deaths)
-{
-  TEST(should_fail_due_to_unknown_exception)
-  {
-    throw 1;
   }
 
-  TEST(should_fail_due_to_std_exception_with_string_apa)
+  TESTSUITE(by_exception)
   {
-    throw std::range_error("apa");
-  }
+    TEST(should_fail_due_to_unknown_exception)
+    {
+      throw 1;
+    }
 
-  TEST(should_succeed_with_range_error_thrown,
-       EXPECT_EXCEPTION(std::range_error))
+    TEST(should_fail_due_to_std_exception_with_string_apa)
     {
       throw std::range_error("apa");
     }
-  TEST(should_fail_with_wrong_exception, EXPECT_EXCEPTION(std::range_error))
+
+    TEST(should_succeed_with_range_error_thrown,
+         EXPECT_EXCEPTION(std::range_error))
+    {
+      throw std::range_error("apa");
+    }
+
+    TEST(should_fail_with_wrong_exception, EXPECT_EXCEPTION(std::range_error))
     {
       throw std::bad_alloc();
     }
 
-  TEST(should_succed_with_any_exception, EXPECT_EXCEPTION(...))
+    TEST(should_succed_with_any_exception, EXPECT_EXCEPTION(...))
     {
       throw "apa";
     }
 
-  TEST(should_fail_any_exception, EXPECT_EXCEPTION(...))
+    TEST(should_fail_any_exception, EXPECT_EXCEPTION(...))
     {
     }
 
-  TEST(should_fail_with_no_exception, EXPECT_EXCEPTION(std::exception))
+    TEST(should_fail_with_no_exception, EXPECT_EXCEPTION(std::exception))
     {
     }
+  }
 }
 
 
@@ -183,84 +189,84 @@ TESTSUITE(asserts)
   }
 
   TEST(should_succeed_on_assert_eq_with_fixture, fixture<3>)
-    {
-      ASSERT_EQ(num, 3);
-    }
+  {
+    ASSERT_EQ(num, 3);
+  }
 
   TEST(should_fail_on_assert_eq_with_fixture, fixture<4>)
-    {
-      ASSERT_EQ(num, 3);
-    }
+  {
+    ASSERT_EQ(num, 3);
+  }
 
   TEST(should_succeed_on_assert_ne_with_fixture, fixture<4>)
-    {
-      ASSERT_NE(num, 3);
-    }
+  {
+    ASSERT_NE(num, 3);
+  }
 
   TEST(should_fail_on_assert_ne_with_fixture, fixture<3>)
-    {
-      ASSERT_NE(num, 3);
-    }
+  {
+    ASSERT_NE(num, 3);
+  }
 
   TEST(should_succeed_on_assert_gt_with_fixture, fixture<4>)
-    {
-      ASSERT_GT(num, 3);
-    }
+  {
+    ASSERT_GT(num, 3);
+  }
 
   TEST(should_fail_on_assert_gt_with_fixture, fixture<3>)
-    {
-      ASSERT_GT(num, 3);
-    }
+  {
+    ASSERT_GT(num, 3);
+  }
 
   TEST(should_succeed_on_assert_ge_with_fixture, fixture<3>)
-    {
-      ASSERT_GE(num, 3);
-    }
+  {
+    ASSERT_GE(num, 3);
+  }
 
   TEST(should_fail_on_assert_ge_with_fixture, fixture<2>)
-    {
-      ASSERT_GE(num, 3);
-    }
+  {
+    ASSERT_GE(num, 3);
+  }
 
   TEST(should_succeed_on_assert_lt_with_fixture, fixture<2>)
-    {
-      ASSERT_LT(num, 3);
-    }
+  {
+    ASSERT_LT(num, 3);
+  }
 
   TEST(should_fail_on_assert_lt_with_fixture, fixture<3>)
-    {
-      ASSERT_LT(num, 3);
-    }
+  {
+    ASSERT_LT(num, 3);
+  }
 
   TEST(should_succeed_on_assert_le_with_fixture, fixture<3>)
-    {
-      ASSERT_LE(num, 3);
-    }
+  {
+    ASSERT_LE(num, 3);
+  }
 
   TEST(should_fail_on_assert_le_with_fixture, fixture<4>)
-    {
-      ASSERT_LE(num, 3);
-    }
+  {
+    ASSERT_LE(num, 3);
+  }
 
   TEST(should_succeed_on_assert_true_with_fixture, fixture<3>)
-    {
-      ASSERT_TRUE(num);
-    }
+  {
+    ASSERT_TRUE(num);
+  }
 
   TEST(should_fail_on_assert_true_with_fixture, fixture<0>)
-    {
-      ASSERT_TRUE(num);
-    }
+  {
+    ASSERT_TRUE(num);
+  }
 
   TEST(should_succeed_on_assert_false_with_fixture, fixture<0>)
-    {
-      ASSERT_FALSE(num);
-    }
+  {
+    ASSERT_FALSE(num);
+  }
 
   TEST(should_fail_on_assert_false_with_fixture, fixture<3>)
-    {
-      ASSERT_FALSE(num);
-    }
+  {
+    ASSERT_FALSE(num);
+  }
 
   template <typename T>
     class unstreamable
@@ -281,10 +287,10 @@ TESTSUITE(asserts)
   };
 
   TEST(should_fail_on_assert_gt_with_unstreamable_param_i, fixture<3>)
-    {
-      unstreamable<int> i(3);
-      ASSERT_GT(i, num);
-    }
+  {
+    unstreamable<int> i(3);
+    ASSERT_GT(i, num);
+  }
 
 }
 
@@ -299,20 +305,20 @@ TESTSUITE(depends)
   TEST(should_succeed_after_success_dependencies,
        DEPENDS_ON(default_success,
                   asserts::should_succeed_on_assert_eq_with_fixture,
-                  signal_deaths::should_succeed_with_death_on_signal_11,
-                  exit_deaths::should_succeed_with_exit_code_3,
-                  exception_deaths::should_succeed_with_range_error_thrown,
+                  death::by_signal::should_succeed_with_death_on_signal_11,
+                  death::by_exit::should_succeed_with_exit_code_3,
+                  death::by_exception::should_succeed_with_range_error_thrown,
                   very_slow_success))
-    {
-    }
+  {
+  }
 
   TEST(should_not_run_due_to_one_failed_dependency_success_otherwise,
        DEPENDS_ON(default_success,
-                  exit_deaths::should_succeed_with_exit_code_3,
-                  exception_deaths::should_fail_due_to_unknown_exception,
+                  death::by_exit::should_succeed_with_exit_code_3,
+                  death::by_exception::should_fail_due_to_unknown_exception,
                   asserts::should_succeed_on_assert_eq_with_fixture))
-    {
-    }
+  {
+  }
 }
 
 TESTSUITE(timeouts)
@@ -320,52 +326,53 @@ TESTSUITE(timeouts)
   TEST(should_succeed_slow_realtime_deadline,
        DEADLINE_REALTIME_MS(1500),
        NO_CORE_FILE)
-    {
-      sleep(1);
-    }
+  {
+    sleep(1);
+  }
   TEST(should_fail_slow_realtime_deadline,
        DEADLINE_REALTIME_MS(500),
        NO_CORE_FILE)
-    {
-      sleep(1);
-    }
+  {
+    sleep(1);
+  }
 
   TEST(should_succeed_slow_cputime_deadline, DEADLINE_CPU_MS(500), NO_CORE_FILE)
-    {
-      sleep(3);
-    }
+  {
+    sleep(3);
+  }
 
   TEST(should_fail_slow_cputime_deadline, DEADLINE_CPU_MS(500), NO_CORE_FILE)
-    {
-      struct timespec deadline;
-      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &deadline);
-      deadline.tv_sec+=1;
-      for (;;)
-        {
-          struct timespec now;
-          clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now);
-          if (now.tv_sec > deadline.tv_sec) break;
-          if (now.tv_sec == deadline.tv_sec && now.tv_nsec >= deadline.tv_nsec)
-            break;
-        }
-    }
+  {
+    struct timespec deadline;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &deadline);
+    deadline.tv_sec+=1;
+    for (;;)
+      {
+        struct timespec now;
+        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now);
+        if (now.tv_sec > deadline.tv_sec) break;
+        if (now.tv_sec == deadline.tv_sec && now.tv_nsec >= deadline.tv_nsec)
+          break;
+      }
+  }
 
   TEST(should_fail_slow_cputime_deadline_by_death,
        DEADLINE_CPU_MS(500),
        NO_CORE_FILE)
-    {
-      for (;;)
-        {
-        }
-    }
+  {
+    for (;;)
+      {
+      }
+  }
 
   TEST(should_fail_slow_realtime_deadline_by_death,
        DEADLINE_REALTIME_MS(500),
        NO_CORE_FILE)
-    {
-      sleep(3);
-    }
+  {
+    sleep(3);
+  }
 }
+
 TESTSUITE(stderr_and_stdout)
 {
   TEST(should_succeed_with_stdout)
@@ -402,40 +409,44 @@ TEST(should_not_run_due_to_failed_left_behind_files_success_otherwise,
 TESTSUITE(parametrized)
 {
   class ptest : DEPENDS_ON(very_slow_success)
+  {
+  protected:
+    template <typename T1, typename T2>
+    void a_test(T1 p1, T2 p2)
     {
-    protected:
-      template <typename T1, typename T2>
-        void a_test(T1 p1, T2 p2)
-        {
-          ASSERT_LT(p1, p2);
-        }
-    };
+      ASSERT_LT(p1, p2);
+    }
+  };
 
   TEST(should_succeed_assert_lt_int_double, ptest)
-    {
-      a_test(3, 3.1415);
-    }
+  {
+    a_test(3, 3.1415);
+  }
+
   TEST(should_succeed_assert_lt_int_char, ptest)
-    {
-      a_test(32, 'A');
-    }
+  {
+    a_test(32, 'A');
+  }
+
   TEST(should_succeed_assert_lt_char_array_string, ptest)
-    {
-      a_test("apa", std::string("katt"));
-    }
+  {
+    a_test("apa", std::string("katt"));
+  }
 
   TEST(should_fail_assert_lt_int_double, ptest)
-    {
-      a_test(4, 3.1415);
-    }
+  {
+    a_test(4, 3.1415);
+  }
+
   TEST(should_fail_assert_lt_int_char, ptest)
-    {
-      a_test(800, 'A');
-    }
+  {
+    a_test(800, 'A');
+  }
+
   TEST(should_fail_assert_lt_char_array_string, ptest)
-    {
-      a_test("orm", std::string("katt"));
-    }
+  {
+    a_test("orm", std::string("katt"));
+  }
 }
 
 int main(int argc, const char *argv[])

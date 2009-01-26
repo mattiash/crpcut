@@ -58,12 +58,12 @@ namespace crpcut {
       if (match != n && *match++ != ':') return 0;
 
       const char *p = name;
-      while (*p && *n && *p == *n)
+      while (*p && *match && *p == *match)
         {
           ++p;
-          ++n;
+          ++match;
         }
-      return *p ? 0 : n;
+      return *p ? 0 : match;
     }
 
     std::ostream &operator<<(std::ostream &os, const namespace_info &ns)
