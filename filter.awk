@@ -30,6 +30,9 @@ counting_blocks==1 && /<test name=.*\"\/>/  {
             if (testname ~ /left_behind/)
             {
                 unexpected_clean[unexpected_clean_count++]=testname;
+                if (testname ~ /core/) {
+                    core_msg="Is your ulimit setting preventing core dumps?";
+                }
             }
         }
         files_left=0;
@@ -61,15 +64,14 @@ counting_blocks==1 && /<test name=.*\"\/>/  {
 }
 /<test name=.*succ.*OK\">/,/<\/test>/ {
     if ($0 ~ /<\/test>/) {
-        if (files_left)
-        {
+        if (files_left) {
             unexpected_files_behind[unexpected_files_behind_count++]=testname;
-        }
-        else
-        {
-            if (testname ~ /left_behind/)
-            {
+        } else  {
+            if (testname ~ /left_behind/) {
                 unexpected_clean[unexpected_clean_count++]=testname;
+                if (testname ~ /core/) {
+                    core_msg="Is your ulimit setting preventing core dumps?";
+                }
             }
         }
         files_left=0;
@@ -152,9 +154,6 @@ END {
         {
             reason=""
             line=unexpected_success[a]
-            if (line ~ /core/) {
-                reason="\n     (is your ulimit setting preventing core dumps?)"
-            }
             print line reason
         }
     }
@@ -197,6 +196,7 @@ END {
         {
             print unexpected_clean[a];
         }
+        print "    " core_msg
     }
     if (report)
     {
