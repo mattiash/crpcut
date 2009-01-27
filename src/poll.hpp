@@ -128,6 +128,7 @@ inline void poll<T, N>::add_fd(int fd, T* data)
 {
   epoll_event ev;
   ev.events = EPOLLIN | EPOLLHUP;
+  ev.data.u64 = 0; // Unnecessary, but silences valgrind msg about uninit mem
   ev.data.ptr = data;
   int rv = epoll_ctl(this->data.epoll_fd, EPOLL_CTL_ADD, fd, &ev);
   assert(rv == 0);
