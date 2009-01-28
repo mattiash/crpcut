@@ -82,11 +82,11 @@ namespace crpcut {
         int diff = now - start_timestamp_ms;
         if  (diff > duration_ms)
           {
-            std::ostringstream os;
+            stream::toastream<128> os;
             os << "CPU-time timeout " << duration_ms
                << "ms exceeded.\n  Actual time to completion was " << diff
                << "ms";
-            report(comm::exit_fail, os);
+            report(comm::exit_fail, os.size(), os.begin());
           }
       }
 
@@ -107,11 +107,11 @@ namespace crpcut {
         int diff = now - start_timestamp_ms;
         if (diff > duration_ms)
           {
-            std::ostringstream os;
+            stream::toastream<128> os;
             os << "Realtime timeout " << duration_ms
                << "ms exceeded.\n  Actual time to completion was " << diff
                << "ms";
-            report(comm::exit_fail, os);
+            report(comm::exit_fail, os.size(), os.begin());
           }
       }
 

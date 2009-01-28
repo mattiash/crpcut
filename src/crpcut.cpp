@@ -106,7 +106,7 @@ namespace crpcut {
     first_free_working_dir = num;
   }
 
-  void test_case_factory::do_introduce_name(pid_t pid, const std::string &name)
+  void test_case_factory::do_introduce_name(pid_t pid, const char *name, size_t len)
   {
     int pipe = presenter_pipe;
     for (;;)
@@ -123,7 +123,6 @@ namespace crpcut {
         assert(rv == -1 && errno == EINTR);
       }
 
-    size_t len = name.length();
     for (;;)
       {
         int rv = ::write(pipe, &len, sizeof(len));
@@ -132,7 +131,7 @@ namespace crpcut {
       }
     for (;;)
       {
-        int rv = ::write(pipe, name.c_str(), len);
+        int rv = ::write(pipe, name, len);
         if (size_t(rv) == len) break;
         assert(rv == -1 && errno == EINTR);
       }
@@ -553,9 +552,9 @@ namespace crpcut {
         case 'c':
           ++p;
           {
-            char *end;
-            unsigned long l = std::strtol(*p, &end, 10);
-            if (*end != 0 || l > max_parallel)
+            stream::iastream i(*p);
+            unsigned l;
+            if (!(i >> l) || l > max_parallel)
               {
                 os <<
                   "num child processes must be a positive integer no greater than "

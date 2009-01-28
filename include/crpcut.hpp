@@ -470,6 +470,86 @@ namespace crpcut {
 
   } // namespace comm
 
+  namespace stream {
+    template <typename charT, class traits = std::char_traits<charT> >
+    class oabuf : public std::basic_streambuf<charT, traits>
+    {
+      typedef std::basic_streambuf<charT, traits> parent;
+    public:
+      oabuf(charT *begin, charT *end)
+      {
+        setp(begin, end);
+      }
+      const charT *begin() const { return parent::pbase(); }
+      const charT *end() const { return parent::pptr(); }
+    };
+
+    template <typename charT, typename traits = std::char_traits<charT> >
+    class basic_oastream : public std::basic_ostream<charT, traits>
+    {
+    public:
+      basic_oastream(charT *begin, charT *end)
+        : buf(begin, end)
+      {
+        init(&buf);
+      }
+      basic_oastream(charT *begin, size_t size)
+        : buf(begin, begin + size)
+      {
+        init(&buf);
+      }
+      const charT *begin() const { return buf.begin(); }
+      const charT *end() const { return buf.end(); }
+      std::size_t size() const { return end() - begin(); }
+    private:
+      oabuf<charT, traits> buf;
+    };
+
+    template <typename charT, class traits = std::char_traits<charT> >
+    class iabuf : public std::basic_streambuf<charT, traits>
+    {
+    public:
+      iabuf(const charT *begin, const charT *end)
+      {
+        setg(const_cast<charT *>(begin),
+             const_cast<charT *>(begin),
+             const_cast<charT *>(end));
+      }
+    };
+
+    template <typename charT, typename traits = std::char_traits<charT> >
+    class basic_iastream : public std::basic_istream<charT, traits>
+    {
+    public:
+      basic_iastream(const charT *begin, const charT *end)
+        : buf(begin, end)
+      {
+        init(&buf);
+      }
+      basic_iastream(const charT *begin)
+        :
+        buf(begin, begin + std::strlen(begin))
+      {
+        init(&buf);
+      }
+    private:
+      iabuf<charT, traits> buf;
+    };
+
+    template <size_t N, typename charT = char, typename traits = std::char_traits<charT> >
+    class toastream : public basic_oastream<charT, traits>
+    {
+    public:
+      toastream() : basic_oastream<charT, traits>(buffer, N) {}
+    private:
+      charT buffer[N];
+    };
+
+    typedef basic_oastream<char> oastream;
+    typedef basic_iastream<char> iastream;
+
+  } // stream
+
   namespace implementation {
 
     struct namespace_info
@@ -588,7 +668,7 @@ namespace crpcut {
 
     static unsigned run_test(int argc, const char *argv[],
                              std::ostream &os = std::cerr);
-    static void introduce_name(pid_t pid, const std::string &s);
+    static void introduce_name(pid_t pid, const char *name, size_t len);
     static void present(pid_t pid, comm::type t, size_t len, const char *buff);
     static bool tests_as_child_procs();
     static void set_deadline(implementation::test_case_registrator *i);
@@ -607,7 +687,7 @@ namespace crpcut {
 
     unsigned do_run(int argc, const char *argv[], std::ostream &os);
     void do_present(pid_t pid, comm::type t, size_t len, const char *buff);
-    void do_introduce_name(pid_t pid, const std::string &s);
+    void do_introduce_name(pid_t pid, const char *name, size_t len);
     void do_set_deadline(implementation::test_case_registrator *i);
     void do_clear_deadline(implementation::test_case_registrator *i);
     void do_return_dir(int num);
@@ -734,10 +814,10 @@ namespace crpcut {
     void test_wrapper<policies::deaths::wrapper, T>::run(T *t)
     {
       t->test();
-      std::ostringstream os;
+      stream::toastream<128> os;
       os << "Unexpectedly survived\nExpected ";
       T::crpcut_reg.expected_death(os);
-      comm::report(comm::exit_fail, os);
+      comm::report(comm::exit_fail, os.size(), os.begin());
     }
 
   } // namespace implementation
@@ -1309,9 +1389,9 @@ namespace crpcut {
   }
 
   inline void
-  test_case_factory::introduce_name(pid_t pid, const std::string &s)
+  test_case_factory::introduce_name(pid_t pid, const char *name, size_t len)
   {
-    obj().do_introduce_name(pid, s);
+    obj().do_introduce_name(pid, name, len);
   }
 
   inline void

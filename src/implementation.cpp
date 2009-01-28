@@ -239,19 +239,17 @@ namespace crpcut {
       stdout_reader.set_fd(stdout_fd);
       stderr_reader.set_fd(stderr_fd);
       rep_reader.set_fds(in_fd, out_fd);
-      std::ostringstream os;
+      stream::toastream<1024> os;
       os << *this;
-      test_case_factory::introduce_name(pid, os.str());
+      test_case_factory::introduce_name(pid, os.begin(), os.size());
     }
 
     void test_case_registrator::set_wd(int n)
     {
       dirnum = n;
-      char name[std::numeric_limits<int>::digits/3+1];
-      int len = snprintf(name, sizeof(name), "%d", n);
-      assert(len > 0 && len < int(sizeof(name)));
-      (void)len; // silence warning when building with -DNDEBUG
-      if (::mkdir(name, 0700) != 0)
+      stream::toastream<std::numeric_limits<int>::digits/3+1> name;
+      name << n << '\0';
+      if (::mkdir(name.begin(), 0700) != 0)
         {
           assert(errno == EEXIST);
         }
@@ -259,11 +257,9 @@ namespace crpcut {
 
     void test_case_registrator::goto_wd() const
     {
-      char name[std::numeric_limits<int>::digits/3+1];
-      int len = snprintf(name, sizeof(name), "%d", dirnum);
-      assert(len > 0 && len < int(sizeof(len)));
-      (void)len; // silence warning when building with -DNDEBUG
-      if (::chdir(name) != 0)
+      stream::toastream<std::numeric_limits<int>::digits/3+1> name;
+      name << dirnum << '\0';
+      if (::chdir(name.begin()) != 0)
         {
           report(comm::exit_fail, "Couldn't chdir working dir");
           assert("unreachable code reached" == 0);
@@ -289,23 +285,21 @@ namespace crpcut {
         }
       comm::type t = comm::exit_ok;
       {
-        char dirname[std::numeric_limits<int>::digits/3+1];
-        int len = std::snprintf(dirname, sizeof(dirname), "%d", dirnum);
-        assert(len > 0 && len < int(sizeof(dirname)));
-        (void)len; // silence warning when building with -DNDEBUG
-        if (!is_dir_empty(dirname))
+        stream::toastream<std::numeric_limits<int>::digits/3+1> dirname;
+        dirname << dirnum << '\0';
+        if (!is_dir_empty(dirname.begin()))
           {
-            std::ostringstream tcname;
-            tcname << *this;
+            stream::toastream<1024> tcname;
+            tcname << *this << '\0';
             test_case_factory::present(pid_, comm::dir, 0, 0);
-            std::rename(dirname, tcname.str().c_str());
+            std::rename(dirname.begin(), tcname.begin());
             t = comm::exit_fail;
             register_success(false);
           }
       }
       if (!death_note)
         {
-          std::ostringstream out;
+          stream::toastream<1024> out;
             {
 
               switch (info.si_code)
@@ -349,8 +343,7 @@ namespace crpcut {
             }
           death_note = true;
             {
-              const std::string &s = out.str();
-              test_case_factory::present(pid_, t, s.length(), s.c_str());
+              test_case_factory::present(pid_, t, out.size(), out.begin());
             }
         }
       register_success(t == comm::exit_ok);

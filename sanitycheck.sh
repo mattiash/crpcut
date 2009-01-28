@@ -45,7 +45,7 @@ do
     rv=$?
     xmllint --noout --schema crpcut.xsd $filename 2> /dev/null || {
         echo "$filename violates crpcut.xsd XML Schema"
-        return 1
+        exit 1
     }
     r=()
     lineno=0
