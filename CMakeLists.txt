@@ -160,7 +160,7 @@ set_target_properties(crpcut PROPERTIES
   SOVERSION ${CRPCUT_LIB_SOVERSION}
   LINK_FLAGS ${EXTRA_LIBS})
 
-set(TEST_SRCS test-src/unitt.cpp)
+set(TEST_SRCS test-src/unitt.cpp test-src/deaths.cpp test-src/parametrized.cpp test-src/stderr_and_stdout.cpp test-src/timeouts.cpp test-src/asserts_and_depends.cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEATURE_SELECTION}")
 add_executable(testprog ${TEST_SRCS})
 target_link_libraries(testprog crpcut)

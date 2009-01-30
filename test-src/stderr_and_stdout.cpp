@@ -26,8 +26,29 @@
 
 
 #include <crpcut.hpp>
-
-int main(int argc, const char *argv[])
+extern "C"
 {
-  return crpcut::test_case_factory::run_test(argc, argv);
+#include <signal.h>
+}
+TESTSUITE(stderr_and_stdout)
+{
+  TEST(should_succeed_with_stdout)
+  {
+    std::cout << "hello";
+  }
+
+  TEST(should_succeed_with_stderr)
+  {
+    std::cerr << "hello";
+  }
+
+  TEST(should_fail_with_death_due_to_assert_on_stderr, NO_CORE_FILE)
+  {
+    assert("apa" == 0);
+  }
+
+  TEST(should_fail_with_death_and_left_behind_core_dump, EXPECT_SIGNAL_DEATH(SIGABRT))
+  {
+    assert("apa" == 0);
+  }
 }
