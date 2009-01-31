@@ -525,8 +525,14 @@ RUNS={
 }
 
 
+ulimit = open("|bash -c ulimit -c").read.to_i
+if ulimit == 0 then
+  puts "You must allow core dumps for the selt test to succeed."
+  puts "Do that by issuing the command:"
+  puts "> ulimit -c 100000"
+  exit 1
+end
 puts "Self test takes approximately 30 seconds to complete"
-
 RUNS.each do | params, expects |
   print "%-50s: " % "./test/testprog#{params}"
   STDOUT.flush
