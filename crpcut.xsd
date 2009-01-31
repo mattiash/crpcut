@@ -68,7 +68,7 @@
       <xs:element name="remaining_files" type="remaining_files" minOccurs="0"/>
       <xs:element name="blocked_tests" type="blocked_tests" minOccurs="0"/>
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="command" type="xs:string" use="required"/>
     <xs:attribute name="host" type="xs:string" use="required"/>
     <xs:attribute name="starttime" type="xs:dateTime" use="required"/>
   </xs:complexType>

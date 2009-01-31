@@ -167,7 +167,7 @@ namespace crpcut {
     };
   }
 
-  void test_case_factory::start_presenter_process()
+  void test_case_factory::start_presenter_process(int argc, const char *argv[])
   {
     int fds[2];
     int rv = ::pipe(fds);
@@ -183,6 +183,32 @@ namespace crpcut {
       }
     presenter_pipe = fds[0];
     ::close(fds[1]);
+
+    char time_string[] = "2009-01-09T23:59:59Z";
+    time_t now = std::time(0);
+    struct tm *tmdata = std::gmtime(&now);
+    std::sprintf(time_string, "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
+                 tmdata->tm_year + 1900,
+                 tmdata->tm_mon + 1,
+                 tmdata->tm_mday,
+                 tmdata->tm_hour,
+                 tmdata->tm_min,
+                 tmdata->tm_sec);
+    char machine_string[PATH_MAX];
+    ::gethostname(machine_string, sizeof(machine_string));
+    std::cout <<
+      "<?xml version=\"1.0\"?>\n\n"
+      "<crpcut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+      " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
+      " starttime=\"" << time_string <<
+      "\" host=\"" << machine_string <<
+      "\" command=\"";
+    for (const char **p = argv; *p; ++p)
+      {
+        if (p != argv) std::cout << " ";
+        std::cout << *p;
+      }
+    std::cout << "\">\n" << std::flush;
 
     std::map<pid_t, test_case_result> messages;
     for (;;)
@@ -539,7 +565,7 @@ namespace crpcut {
     manage_children(num_parallel);
   }
 
-  unsigned test_case_factory::do_run(int, const char *argv[], std::ostream &os)
+  unsigned test_case_factory::do_run(int argc, const char *argv[], std::ostream &os)
   {
     const char **p = argv+1;
     while (const char *param = *p)
@@ -619,38 +645,7 @@ namespace crpcut {
             return 1;
           }
       }
-    else
-      {
-        // strangely needed to get decent output for failed test cases,
-        // even though the failed test-case output needs posix ::write()
-        // to even show!
-        std::setvbuf(::stdout, 0, _IONBF, 0);
-        std::cout.rdbuf()->pubsetbuf(0, 0);
-        std::cout.sync_with_stdio();
-      }
-    {
-      char time_string[] = "2009-01-09T23:59:59Z";
-      time_t now = std::time(0);
-      struct tm *tmdata = std::gmtime(&now);
-      std::sprintf(time_string, "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
-                   tmdata->tm_year + 1900,
-                   tmdata->tm_mon + 1,
-                   tmdata->tm_mday,
-                   tmdata->tm_hour,
-                   tmdata->tm_min,
-                   tmdata->tm_sec);
-      char machine_string[PATH_MAX];
-      ::gethostname(machine_string, sizeof(machine_string));
-      std::cout <<
-        "<?xml version=\"1.0\"?>\n\n"
-        "<crpcut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
-        " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
-        " starttime=\"" << time_string <<
-        "\" host=\"" << machine_string <<
-        "\" name=\"" << argv[0] << "\">\n" << std::flush;
-    }
-
-    if (tests_as_child_procs()) start_presenter_process();
+    if (tests_as_child_procs()) start_presenter_process(argc, argv);
     const char **names = p;
     for (;;)
       {
@@ -702,15 +697,15 @@ namespace crpcut {
       {
         kill_presenter_process();
         std::cout <<
-          "<statistics>\n"
-          "  <registered_test_cases>"
+          "  <statistics>\n"
+          "    <registered_test_cases>"
                   << num_registered_tests
                   << "</registered_test_cases>\n"
-          "  <run_test_cases>" << num_tests_run << "</run_test_cases>\n"
-          "  <failed_test_cases>"
+          "    <run_test_cases>" << num_tests_run << "</run_test_cases>\n"
+          "    <failed_test_cases>"
                   << num_tests_run - num_successful_tests
                   << "</failed_test_cases>\n"
-          "</statistics>\n";
+          "  </statistics>\n";
 
         for (unsigned n = 0; n < max_parallel; ++n)
           {
