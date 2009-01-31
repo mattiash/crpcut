@@ -525,7 +525,7 @@ RUNS={
 }
 
 
-ulimit = open("|bash -c ulimit -c").read.to_i
+ulimit = open("|bash -c \"ulimit -c\"").read.to_i
 if ulimit == 0 then
   puts "You must allow core dumps for the selt test to succeed."
   puts "Do that by issuing the command:"
