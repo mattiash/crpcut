@@ -382,6 +382,12 @@ def check_file(file_name, names, results, reg_count, run_count, fail_count, succ
   report = false
   file = open("|#{file_name}")
   doc = REXML::Document.new file
+  file.close
+  rc = $?.exitstatus
+  if rc != fail_count then
+    puts "\lwrong retcode #{rc}, expecting #{fail_count}"
+    report = true
+  end
   doc.elements.each('crpcut/test') do |e|
     name = e.attributes['name'];
     t = TESTS[name]
