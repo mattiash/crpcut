@@ -183,6 +183,7 @@ else(XSLTPROC)
 endif(XSLTPROC)
 
 add_custom_target(selftest ./selftest.rb VERBATIM)
+add_custom_target(sanitycheck ./sanitycheck.sh VERBATIM)
 
 set(LIBRARY_OUTPUT_PATH lib)
 set(EXECUTABLE_OUTPUT_PATH test)

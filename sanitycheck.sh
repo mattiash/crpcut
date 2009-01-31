@@ -55,12 +55,13 @@ tests=(
     "-d -c 8 -v"               "run=64 failed=37 blocked=0 nodeps=1 verbose=1"
     )
 
+echo "sanity check takes about 30 seconds to complete"
 n=0
 while [ $n -lt ${#tests[*]} ]
 do
     param="${tests[$n]}"
     expect="${tests[$(($n+1))]}"
-    printf "testrun %-32s: " "$param"
+    printf "./test/testprog %-34s: " "$param"
     filename=/tmp/crpcut_sanity$$_$(($n/2+1)).xml
     reportfile=/tmp/crpcut_sanity_report$$_$(($n/2+1))
     ./test/testprog $param > $filename

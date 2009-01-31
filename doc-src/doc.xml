@@ -179,11 +179,11 @@ Now build by typing:
 Once built, you may want to check that it works correctly. Do that by
 running:
 <code>
-&gt; ./sanitycheck.sh
+&gt; make selftest
 </code>
-It takes a while to run through all tests. It verifies that the test cases
-in <id>test-src/unitt.cpp</id> completes with the expected ok/fail
-depending on the command line switches set.
+It takes about 30 seconds to run through all tests. It verifies that the test
+cases under <id>test-src</id> completes with the expected result for a large set
+of command-line switches.
 <p/>
 You can now install crpcut by typing:
 <code>

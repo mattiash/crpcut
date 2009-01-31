@@ -522,7 +522,7 @@ RUNS={
 puts "Self test takes approximately 30 seconds to complete"
 
 RUNS.each do | params, expects |
-  print "%-50s" % "./test/testprog#{params}"
+  print "%-50s: " % "./test/testprog#{params}"
   STDOUT.flush
   exit 1 if !check_file("./test/testprog#{params}", *expects)
 end
