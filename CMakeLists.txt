@@ -182,6 +182,7 @@ else(XSLTPROC)
   message("xsltproc is not found - Can't build documentation")
 endif(XSLTPROC)
 
+add_custom_target(selftest ./selftest.rb VERBATIM)
 
 set(LIBRARY_OUTPUT_PATH lib)
 set(EXECUTABLE_OUTPUT_PATH test)
