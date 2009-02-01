@@ -1,0 +1,40 @@
+Requirements
+============
+
+A modern C++ compiler (g++ 4.1 or later works) that supports:
+
+* C99 variadic macros
+* C99 _Exit() function
+* typeof or prefereably c++0x decltype
+* tr1 includes (available from http://www.boost.org if your compiler doesn't
+  ship with it)
+
+xsltproc (http://xmlsoft.org/XSLT/xsltproc2.html) if you want to build
+documentation. html-documentation for the latest releas can always be found
+on http://crpcut.sourceforge.net
+
+
+Ruby (http://www.ruby-lang.org/en/) if you want to run a selftest
+
+
+
+Build
+=====
+
+1. 'cd' to the directory containing the unpacked crpcut files and type
+   'cmake .', or if you want to control the installation directory,
+   type 'cmake . -DCMAKE_INSTALL_PREFIX=<desired install directory>'.
+
+2. Type 'make'
+
+3. If you have Ruby, and you want to check that crpcut works, type
+   'make selftest'. The self test takes about 30 seconds to complete.
+
+
+
+Install
+=======
+
+1. Type 'make install'.
+
+2. The file 'install_manifest.txt' lists the full path to all installed files.

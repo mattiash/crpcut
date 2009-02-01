@@ -37,8 +37,8 @@ set(CRPCUT_LIB_PATCH_VERSION "0")
 
 set(CRPCUT_LIB_VERSION "${CRPCUT_LIB_MAJOR_VERSION}.${CRPCUT_LIB_MINOR_VERSION}.${CRPCUT_LIB_PATCH_VERSION}")
 set(CRPCUT_LIB_SOVERSION ${CRPCUT_LIB_MAJOR_VERSION})
-
-aux_source_directory(src LIB_SRCS)
+set(SHAREDIR "share/crpcut-${CRPCUT_LIB_VERSION}")
+file(GLOB LIB_SRCS src/*.cpp)
 if (NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX /usr)
 endif (NOT CMAKE_INSTALL_PREFIX)
@@ -65,16 +65,23 @@ endif(NOT HAVE__EXIT)
 # Check for decltype
 
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp
-  "template <typename T> T* func(T); typedef decltype(func(3.14)) apa; int main() {} \n")
+  "template <typename T> T* func(T);\n"
+  "typedef decltype(func(3.14)) apa;\n"
+  "int main() {}\n")
+
 try_compile(HAVE_DECLTYPE ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp)
 if(NOT HAVE_DECLTYPE)
   file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp
-    "template <typename T> T* func(T); typedef typeof(func(3.14)) apa; int main() {}\n")
+    "template <typename T> T* func(T);\n"
+    "typedef typeof(func(3.14)) apa;\n"
+    "int main() {}\n")
   try_compile(HAVE_DECLTYPE ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp)
   if(NOT HAVE_DECLTYPE)
-    message(FATAL_ERROR "${CMAKE_CXX_COMPILER} doesn't support decltype or typeof")
+    message(
+      FATAL_ERROR
+      "${CMAKE_CXX_COMPILER} doesn't support decltype or typeof")
   else(NOT HAVE_DECLTYPE)
     set(USING_TYPEOF 1)
     add_definitions(-Ddecltype=typeof)
@@ -84,7 +91,9 @@ endif(NOT HAVE_DECLTYPE)
 # check for TR1
 
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/tr1.cpp
-  "#include <tr1/type_traits>\nconst bool v = std::tr1::is_reference<int>::type::value; int main() { return v; }\n")
+  "#include <tr1/type_traits>\n"
+  "const bool v = std::tr1::is_reference<int>::type::value;\n"
+  "int main() { return v; }\n")
 try_compile(HAVE_TR1 ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/CMakeTmp/tr1.cpp)
 if(NOT HAVE_TR1)
@@ -160,7 +169,8 @@ set_target_properties(crpcut PROPERTIES
   SOVERSION ${CRPCUT_LIB_SOVERSION}
   LINK_FLAGS ${EXTRA_LIBS})
 
-set(TEST_SRCS test-src/unitt.cpp test-src/deaths.cpp test-src/parametrized.cpp test-src/stderr_and_stdout.cpp test-src/timeouts.cpp test-src/asserts_and_depends.cpp)
+file(GLOB TEST_SRCS test-src/*.cpp)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEATURE_SELECTION}")
 add_executable(testprog ${TEST_SRCS})
 target_link_libraries(testprog crpcut)
@@ -205,10 +215,17 @@ install(
   TARGETS crpcut
   DESTINATION lib
 )
-
+install(
+  FILES ${TEST_SRCS}
+  DESTINATION "${SHAREDIR}/example_source"
+)
+install(
+  FILES crpcut.xsd FAQ TODO
+  DESTINATION "${SHAREDIR}"
+  )
 if(XSLTPROC)
   install(
     FILES html/doc.html
-    DESTINATION share/crpcut
+    DESTINATION "${SHAREDIR}/html"
     )
 endif(XSLTPROC)

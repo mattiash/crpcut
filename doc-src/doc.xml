@@ -150,16 +150,17 @@ write()</code></def>
 <def notion="">On OS-X <id>mach_absolute_time()</id> and
 <id>mach_timebase_info()</id> will be used for realtime measurements.</def>
 </definitions>
-This should work for most Linux/*BSD systems. It is also likely to work for
-<link url="http://www.opensolaris.org">OpenSolaris</link> and
+This should work for most Linux systems. It is also likely to work for
  <link url="http://www.apple.com/macosx/">OS-X</link>, but it has not yet
 been tested.
 </chapter>
 <chapter title="Build and Install">
   crpcut uses <link url="http://www.cmake.org">CMake</link> to manage builds and
   installs.<p/>
-First obtain the crpcut sources from the git repository
-<id>git://github.com/rollbear/crpcut</id>
+First obtain the crpcut sources, either a release (current is 0.1.0) from the
+sourceforge
+<link url="https://sourceforge.net:443/project/showfiles.php?group_id=251473">download</link>
+page, or a from the git repository <id>git://github.com/rollbear/crpcut</id>
 <p/>
 In the source directory type:
 <code>
@@ -419,11 +420,6 @@ From there, you can single step the test case.
 </chapter>
 
 <chapter title="Further development">
-Currently crpcut is early in the development and is rapidly changing. If you're
-daring enough to give it a try anyway, feel free to get it from the
-<link url="http://www.github.com/rollbear/crpcut">GitHub</link> page, or a
-direct clone of the git repository <id>git://github.com/rollbear/crpcut.git</id>
-<p/>
 The todo list, without any regard to importance or desired implementation
 order is:
 <list>
@@ -432,7 +428,18 @@ order is:
 <li>Better separation of fixture errors and test-case errors</li>
 <li>Optional non-XML output</li>
 <li>INFO() macros for sending data from test-case to report</li>
+<li>Integration with some mock framework</li>
 </list>
+</chapter>
+<chapter title="Contact">
+Discussions on how to use crpcut is best managed on the crpcut-users
+mailinglist. Visit the
+<link url="http://lists.sourceforge.net/mailman/listinfo/crpcut-users">source-forge</link>
+page for subscription.
+<p/>
+For bug reports, visit the
+<link url="http://sourceforge.net/tracker/?group_id=251473&amp;atid=1126597">bug-tracker</link>
+page on sourceforge. Make sure you really have a new bug before reporting.
 </chapter>
 </doc>
 
