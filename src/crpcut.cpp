@@ -352,6 +352,7 @@ namespace crpcut {
             s.success &= t == comm::exit_ok; // fallthrough
           case comm::stdout:
           case comm::stderr:
+          case comm::info:
             {
               size_t len;
               rv = ::read(presenter_pipe, &len, sizeof(len));
@@ -376,11 +377,18 @@ namespace crpcut {
                               stdout << std::string(buff, len);
                             }
                         }
-                      else
+                      else if (t == comm::stderr)
                         {
                           CRPCUT_XML_TAG(stderr, os)
                             {
                               stderr << std::string(buff, len);
+                            }
+                        }
+                      else
+                        {
+                          CRPCUT_XML_TAG(info, os)
+                            {
+                              info << std::string(buff, len);
                             }
                         }
                       s.history.push_back(os.str());

@@ -244,6 +244,24 @@ evaluates each parameter value exactly once, so providing parameters with
 side effects is not a problem. The order of evaluation of the parameters is
 undefined, however.
 <p/>
+In addition to the assertions, two output streamers are available, which both
+are used as normal <id>std::ostream</id> objects.
+<definitions notion="streamer" meaning="action">
+<def notion="FAIL">Immediately terminate the test case as a failure with the
+                   streamed message.</def>
+<def notion="INFO">Add the streamed message to the test-case log, but do
+                   not fail it.</def>
+</definitions>
+<p/>
+An example:
+<code>
+TEST(fail_immediately)
+{
+  int n = random();
+  INFO &lt;&lt; "random value is " &lt;&lt; n;
+  FAIL &lt;&lt; "Goodbye cruel world";
+}
+</code>
 <section title="Fixtures">
 If several test cases share the same test setup, test fixtures can be written.
 A fixture is just a <id>class</id> or <id>struct</id>, with the desired

@@ -30,7 +30,7 @@ extern "C"
 {
 #include <signal.h>
 }
-TESTSUITE(stderr_and_stdout)
+TESTSUITE(output)
 {
   TEST(should_succeed_with_stdout)
   {
@@ -50,5 +50,24 @@ TESTSUITE(stderr_and_stdout)
   TEST(should_fail_with_death_and_left_behind_core_dump, EXPECT_SIGNAL_DEATH(SIGABRT))
   {
     assert("apa" == 0);
+  }
+
+  TEST(should_succeed_with_info)
+  {
+    const char msg[] = "apa";
+    INFO << msg << "=" << 3;
+  }
+
+  TEST(should_fail_with_info)
+  {
+    const char msg[] = "apa";
+    INFO << msg << "=" << 31;
+    exit(1);
+  }
+
+  TEST(should_fail_with_terminate)
+  {
+    const char msg[] = "apa";
+    FAIL << msg << "=" << std::hex << 31;
   }
 }

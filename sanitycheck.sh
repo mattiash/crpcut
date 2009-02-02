@@ -44,15 +44,15 @@ tests=(
     "-d -c 8    asserts death" "run=41 failed=26 nodeps=1"
     "-d -c 8 -v asserts death" "run=41 failed=26 nodeps=1 verbose=1"
 
-    ""                         "run=62 failed=37 blocked=2"
-    "-v"                       "run=62 failed=37 blocked=2 verbose=1 "
-    "-c 8"                     "run=62 failed=37 blocked=2"
-    "-c 8 -v"                  "run=62 failed=37 blocked=2 verbose=1"
+    ""                         "run=65 failed=39 blocked=2"
+    "-v"                       "run=65 failed=39 blocked=2 verbose=1 "
+    "-c 8"                     "run=65 failed=39 blocked=2"
+    "-c 8 -v"                  "run=65 failed=39 blocked=2 verbose=1"
 
-    "-d"                       "run=64 failed=37 blocked=0 nodeps=1"
-    "-d -v"                    "run=64 failed=37 blocked=0 nodeps=1 verbose=1"
-    "-d -c 8"                  "run=64 failed=37 blocked=0 nodeps=1"
-    "-d -c 8 -v"               "run=64 failed=37 blocked=0 nodeps=1 verbose=1"
+    "-d"                       "run=67 failed=39 blocked=0 nodeps=1"
+    "-d -v"                    "run=67 failed=39 blocked=0 nodeps=1 verbose=1"
+    "-d -c 8"                  "run=67 failed=39 blocked=0 nodeps=1"
+    "-d -c 8 -v"               "run=67 failed=39 blocked=0 nodeps=1 verbose=1"
     )
 
 echo "sanity check takes about 30 seconds to complete"
@@ -72,7 +72,7 @@ do
     }
     r=()
     lineno=0
-    ./filter.awk -- registered=64 rv=$rv $expect < $filename > $reportfile
+    ./filter.awk -- registered=67 rv=$rv $expect < $filename > $reportfile
     [ $? == 0 ] || {
         echo FAILED
         cat $reportfile

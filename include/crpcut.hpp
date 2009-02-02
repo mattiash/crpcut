@@ -436,11 +436,12 @@ namespace crpcut {
 
     typedef enum {
       exit_ok, exit_fail, dir,
-      stdout, stderr,
+      stdout, stderr, info,
       set_timeout, cancel_timeout,
       begin_test,
       end_test
     } type;
+
 
     // protocol is type -> size_t(length) -> char[length]. length may be 0.
     // reader acknowledges with length.
@@ -465,8 +466,21 @@ namespace crpcut {
       void read(T& t) const;
     };
 
-
     extern reporter report;
+
+    template <type t>
+    class direct_reporter
+    {
+    public:
+      direct_reporter() {}
+      template <typename V>
+      direct_reporter& operator<<(V v) { os << v; }
+      ~direct_reporter() { report(t, os); }
+    private:
+      direct_reporter(const direct_reporter &);
+      direct_reporter& operator=(const direct_reporter&);
+      std::ostringstream os;
+    };
 
   } // namespace comm
 
@@ -1624,13 +1638,9 @@ namespace crpcut {
   do {                                                                  \
     try {                                                               \
       expr;                                                             \
-      std::ostringstream CRPCUT_LOCAL_NAME(os);                         \
-      CRPCUT_LOCAL_NAME(os) <<                                          \
-        __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                        \
+      FAIL <<                                                           \
         "\nASSERT_THROW(" #expr ", " #exc ")\n"                         \
         "  Did not throw";                                              \
-      crpcut::comm::report(crpcut::comm::exit_fail,                     \
-                           CRPCUT_LOCAL_NAME(os));                      \
     }                                                                   \
     catch (exc) {                                                       \
     }                                                                   \
@@ -1642,22 +1652,15 @@ namespace crpcut {
       expr;                                                             \
     }                                                                   \
     catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
-      std::ostringstream CRPCUT_LOCAL_NAME(os);                         \
-      CRPCUT_LOCAL_NAME(os) <<                                          \
-        __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                        \
+      FAIL <<                                                           \
         "\nASSERT_NO_THROW(" #expr ")\n"                                \
         "  caught std::exception\n"                                     \
         "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
-      crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os)); \
     }                                                                   \
     catch (...) {                                                       \
-      std::ostringstream CRPCUT_LOCAL_NAME(os);                         \
-      CRPCUT_LOCAL_NAME(os) <<                                          \
-        __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                        \
+      FAIL <<                                                           \
         "\nASSERT_NO_THROW(" #expr ")\n"                                \
         "  caught ...";                                                 \
-      crpcut::comm::report(crpcut::comm::exit_fail,                     \
-                           CRPCUT_LOCAL_NAME(os));                      \
     }                                                                   \
   } while (0)
 
@@ -1676,5 +1679,11 @@ extern crpcut::implementation::namespace_info current_namespace;
     current_namespace(#name, parent_namespace);                         \
   }                                                                     \
   namespace name
+
+
+#define INFO crpcut::comm::direct_reporter<crpcut::comm::info>()
+#define FAIL crpcut::comm::direct_reporter<crpcut::comm::exit_fail>()   \
+  << __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__) << '\n'
+
 
 #endif // CRPCUT_HPP

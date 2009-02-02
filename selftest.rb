@@ -319,26 +319,43 @@ TESTS = {
  'should_not_run_due_to_failed_left_behind_files_success_otherwise' =>
   Test.new('OK'),
 
-  'stderr_and_stdout::should_fail_with_death_and_left_behind_core_dump' =>
+  'output::should_fail_with_terminate' =>
+  Test.new('FAILED').
+  log('termination',
+      /output.cpp:\d+\n\s*apa=(0[Xx])?1[fF]/),
+
+  'output::should_succeed_with_info' =>
+  Test.new('OK').
+  log('info',
+      /apa=3/),
+
+  'output::should_fail_with_info' =>
+  Test.new('FAILED').
+  log('info',
+      /apa=3/).
+  log('termination',
+      /Exited with code 1\s+Expected normal exit/me),
+
+  'output::should_fail_with_death_and_left_behind_core_dump' =>
   Test.new('FAILED').
   log('stderr',
-      /stderr_and_stdout\.cpp:\d+.*[Aa]ssert/me).
+      /output\.cpp:\d+.*[Aa]ssert/me).
   log('termination',
       /Died with core dump/).
   file('core'),
 
-  'stderr_and_stdout::should_fail_with_death_due_to_assert_on_stderr' =>
+  'output::should_fail_with_death_due_to_assert_on_stderr' =>
   Test.new('FAILED').
   log('stderr',
-      /stderr_and_stdout\.cpp:\d+.*[Aa]ssert/me).
+      /output\.cpp:\d+.*[Aa]ssert/me).
   log('termination',
       /Died on signal \d+\s+Expected normal exit/me),
 
-  'stderr_and_stdout::should_succeed_with_stderr' =>
+  'output::should_succeed_with_stderr' =>
   Test.new('OK').
   log('stderr', /hello/),
 
-  'stderr_and_stdout::should_succeed_with_stdout' =>
+  'output::should_succeed_with_stdout' =>
   Test.new('OK').
   log('stdout', /hello/),
 
@@ -452,76 +469,76 @@ end
 
 RUNS={
   "            asserts" =>
-  [ /^asserts::/,         /FAILED/, 64, 25, 14,  0, BLOCKED_TESTS ],
+  [ /^asserts::/,         /FAILED/, 67, 25, 14,  0, BLOCKED_TESTS ],
 
   " -v         asserts" =>
-  [ /^asserts::/,         /.*/,     64, 25, 14, 11, BLOCKED_TESTS ],
+  [ /^asserts::/,         /.*/,     67, 25, 14, 11, BLOCKED_TESTS ],
 
   " -c 8       asserts" =>
-  [ /^asserts::/,         /FAILED/, 64, 25, 14,  0, BLOCKED_TESTS ],
+  [ /^asserts::/,         /FAILED/, 67, 25, 14,  0, BLOCKED_TESTS ],
 
   " -c 8 -v    asserts" =>
-  [ /^asserts::/,         /.*/,     64, 25, 14, 11, BLOCKED_TESTS ],
+  [ /^asserts::/,         /.*/,     67, 25, 14, 11, BLOCKED_TESTS ],
 
   " -d         asserts" =>
-  [ /^asserts::/,         /FAILED/, 64, 25, 14,  0, [] ],
+  [ /^asserts::/,         /FAILED/, 67, 25, 14,  0, [] ],
 
   " -d -v      asserts" =>
-  [ /^asserts::/,         /.*/,     64, 25, 14, 11, [] ],
+  [ /^asserts::/,         /.*/,     67, 25, 14, 11, [] ],
 
   " -d -c 8    asserts" =>
-  [ /^asserts::/,         /FAILED/, 64, 25, 14,  0, [] ],
+  [ /^asserts::/,         /FAILED/, 67, 25, 14,  0, [] ],
 
   " -d -c 8 -v asserts" =>
-  [ /^asserts::/,         /.*/,     64, 25, 14, 11, [] ],
+  [ /^asserts::/,         /.*/,     67, 25, 14, 11, [] ],
 
   "            asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 64, 41, 26,  0, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /FAILED/, 67, 41, 26,  0, BLOCKED_TESTS ],
 
   " -v         asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     64, 41, 26, 15, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, BLOCKED_TESTS ],
 
   " -c 8       asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 64, 41, 26,  0, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /FAILED/, 67, 41, 26,  0, BLOCKED_TESTS ],
 
   " -c 8 -v    asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     64, 41, 26, 15, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, BLOCKED_TESTS ],
 
   " -d         asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 64, 41, 26,  0, [] ],
+  [ /^(asserts|death)::/, /FAILED/, 67, 41, 26,  0, [] ],
 
   " -d -v      asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     64, 41, 26, 15, [] ],
+  [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, [] ],
 
   " -d -c 8    asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 64, 41, 26,  0, [] ],
+  [ /^(asserts|death)::/, /FAILED/, 67, 41, 26,  0, [] ],
 
   " -d -c 8 -v asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     64, 41, 26, 15, [] ],
+  [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, [] ],
 
   ""         =>
-  [ /.*/,                 /FAILED/, 64, 62, 37,  0, BLOCKED_TESTS ],
+  [ /.*/,                 /FAILED/, 67, 65, 39,  0, BLOCKED_TESTS ],
 
   " -v"      =>
-  [ /.*/,                 /.*/,     64, 62, 37, 25, BLOCKED_TESTS ],
+  [ /.*/,                 /.*/,     67, 65, 39, 26, BLOCKED_TESTS ],
 
   " -c 8"    =>
-  [ /.*/,                 /FAILED/, 64, 62, 37,  0, BLOCKED_TESTS ],
+  [ /.*/,                 /FAILED/, 67, 65, 39,  0, BLOCKED_TESTS ],
 
   " -c 8 -v" =>
-  [ /.*/,                 /.*/,     64, 62, 37, 25, BLOCKED_TESTS ],
+  [ /.*/,                 /.*/,     67, 65, 39, 26, BLOCKED_TESTS ],
 
   " -d"         =>
-  [ /.*/,                 /FAILED/, 64, 64, 37,  0, [] ],
+  [ /.*/,                 /FAILED/, 67, 67, 39,  0, [] ],
 
   " -d -v"      =>
-  [ /.*/,                 /.*/,     64, 64, 37, 27, [] ],
+  [ /.*/,                 /.*/,     67, 67, 39, 28, [] ],
 
   " -d -c 8"    =>
-  [ /.*/,                 /FAILED/, 64, 64, 37,  0, [] ],
+  [ /.*/,                 /FAILED/, 67, 67, 39,  0, [] ],
 
   " -d -c 8 -v" =>
-  [ /.*/,                 /.*/,     64, 64, 37, 27, [] ]
+  [ /.*/,                 /.*/,     67, 67, 39, 28, [] ]
 }
 
 

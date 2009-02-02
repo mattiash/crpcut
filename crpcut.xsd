@@ -25,6 +25,7 @@
       <xs:element name="termination" type="termination" minOccurs="0"/>
       <xs:element name="stdout" type="xs:string" minOccurs="0"/>
       <xs:element name="stderr" type="xs:string" minOccurs="0"/>
+      <xs:element name="info" type="xs:string" minOccurs="0"/>
       <xs:element name="remaining_files" type="remaining_files" minOccurs="0"/>
     </xs:sequence>
   </xs:complexType>
