@@ -538,7 +538,10 @@ RUNS={
   [ /.*/,                 /FAILED/, 67, 67, 39,  0, [] ],
 
   " -d -c 8 -v" =>
-  [ /.*/,                 /.*/,     67, 67, 39, 28, [] ]
+  [ /.*/,                 /.*/,     67, 67, 39, 28, [] ],
+
+  " -o /tmp/crpcutst$$ -q;v=$?;cat /tmp/crpcutst$$;rm /tmp/crpcutst$$;exit $v" =>
+  [ /.*/,                 /FAILED/, 67, 65, 39,  0, BLOCKED_TESTS ]
 }
 
 

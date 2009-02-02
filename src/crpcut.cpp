@@ -39,7 +39,7 @@ extern "C" {
 #include <limits>
 #include <ctime>
 #include <queue>
-
+#include <fstream>
 namespace crpcut {
 
   test_case_factory::test_case_factory()
@@ -165,242 +165,241 @@ namespace crpcut {
       std::string            termination;
       std::list<std::string> history;
     };
-  }
-
-  void test_case_factory::start_presenter_process(int argc, const char *argv[])
-  {
-    int fds[2];
-    int rv = ::pipe(fds);
-    assert(rv == 0);
-    (void)rv; // silence warning
-    pid_t pid = ::fork();
-    if (pid != 0)
-      {
-        presenter_pipe = fds[1];
-        ::close(fds[0]);
-        presenter_pid = pid;
-        return;
-      }
-    presenter_pipe = fds[0];
-    ::close(fds[1]);
-
-    char time_string[] = "2009-01-09T23:59:59Z";
-    time_t now = std::time(0);
-    struct tm *tmdata = std::gmtime(&now);
-    std::sprintf(time_string, "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
-                 tmdata->tm_year + 1900,
-                 tmdata->tm_mon + 1,
-                 tmdata->tm_mday,
-                 tmdata->tm_hour,
-                 tmdata->tm_min,
-                 tmdata->tm_sec);
-    char machine_string[PATH_MAX];
-    ::gethostname(machine_string, sizeof(machine_string));
-    std::cout <<
-      "<?xml version=\"1.0\"?>\n\n"
-      "<crpcut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
-      " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
-      " starttime=\"" << time_string <<
-      "\" host=\"" << machine_string <<
-      "\" command=\"";
-    for (const char **p = argv; *p; ++p)
-      {
-        if (p != argv) std::cout << " ";
-        std::cout << *p;
-      }
-    std::cout << "\">\n" << std::flush;
-
-    std::map<pid_t, test_case_result> messages;
-    for (;;)
-      {
-        pid_t test_case_id;
-        int rv = ::read(presenter_pipe, &test_case_id, sizeof(test_case_id));
-        if (rv == 0)
-          {
-            assert(messages.size() == 0);
-            exit(0);
-          }
-        assert(rv == sizeof(test_case_id));
-        test_case_result &s = messages[test_case_id];
 
 
-        comm::type t;
-        rv = ::read(presenter_pipe, &t, sizeof(t));
-        assert(rv == sizeof(t));
+    int start_presenter_process(std::ostream &os, int verbose,
+                                int argc, const char *argv[])
+    {
+      int fds[2];
+      int rv = ::pipe(fds);
+      assert(rv == 0);
+      (void)rv; // silence warning
+      pid_t pid = ::fork();
+      if (pid != 0)
+        {
+          ::close(fds[0]);
+          return fds[1];;
+        }
+      int presenter_pipe = fds[0];
+      ::close(fds[1]);
 
-        switch (t)
-          {
-          case comm::begin_test:
+      char time_string[] = "2009-01-09T23:59:59Z";
+      time_t now = std::time(0);
+      struct tm *tmdata = std::gmtime(&now);
+      std::sprintf(time_string, "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
+                   tmdata->tm_year + 1900,
+                   tmdata->tm_mon + 1,
+                   tmdata->tm_mday,
+                   tmdata->tm_hour,
+                   tmdata->tm_min,
+                   tmdata->tm_sec);
+      char machine_string[PATH_MAX];
+      ::gethostname(machine_string, sizeof(machine_string));
+      os <<
+        "<?xml version=\"1.0\"?>\n\n"
+        "<crpcut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+        " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
+        " starttime=\"" << time_string <<
+        "\" host=\"" << machine_string <<
+        "\" command=\"";
+      for (const char **p = argv; *p; ++p)
+        {
+          if (p != argv) os << " ";
+          os << *p;
+        }
+      os << "\">\n" << std::flush;
+
+      std::map<pid_t, test_case_result> messages;
+      for (;;)
+        {
+          pid_t test_case_id;
+          int rv = ::read(presenter_pipe, &test_case_id, sizeof(test_case_id));
+          if (rv == 0)
             {
-              assert(s.name.length() == 0);
-              assert(s.history.size() == 0);
-
-              // introduction to test case, name follows
-
-              size_t len = 0;
-              char *p = static_cast<char*>(static_cast<void*>(&len));
-              size_t bytes_read = 0;
-              while (bytes_read < sizeof(len))
-                {
-                  rv = ::read(presenter_pipe,
-                              p + bytes_read,
-                              sizeof(len) - bytes_read);
-                  assert(rv > 0);
-                  bytes_read += rv;
-                }
-              char *buff = static_cast<char *>(::alloca(len));
-              bytes_read = 0;
-              while (bytes_read < len)
-                {
-                  rv = ::read(presenter_pipe,
-                              buff + bytes_read,
-                              len - bytes_read);
-                  assert(rv >= 0);
-                  bytes_read += rv;
-                }
-              s.name.assign(buff, len);
-              s.success = true;
-              s.nonempty_dir = false;
+              assert(messages.size() == 0);
+              exit(0);
             }
-            break;
-          case comm::end_test:
+          assert(rv == sizeof(test_case_id));
+          test_case_result &s = messages[test_case_id];
+
+          comm::type t;
+          rv = ::read(presenter_pipe, &t, sizeof(t));
+          assert(rv == sizeof(t));
+
+          switch (t)
             {
-              size_t len;
-              rv = ::read(presenter_pipe, &len, sizeof(len));
-              assert(rv == sizeof(len));
-              assert(len == 0);
-            }
-            if (!s.success || verbose_mode)
+            case comm::begin_test:
               {
-                bool history_print = false;
-                std::cout << "  <test name=\"" << s.name
-                          << "\" result=\""
-                          << (s.success ? "OK" : "FAILED") << '"';
-                for (std::list<std::string>::iterator i = s.history.begin();
-                     i != s.history.end();
-                     ++i)
-                  {
-                    bool prev_ended = true;
-                    std::string &s = *i;
-                    for (std::string::size_type prevpos = 0, endpos = 0;
-                         ;
-                         prevpos = endpos + 1)
-                      {
-                        if (!history_print)
-                          {
-                            std::cout  << ">\n    <log>\n";
-                            history_print = true;
-                          }
-                        endpos = s.find('\n', prevpos);
-                        if (endpos == std::string::npos) break;
-                        static const char *prefix[] = { "", "      " };
-                        std::cout << prefix[prev_ended]
-                                  << std::string(s, prevpos, endpos - prevpos)
-                                  << "\n";
-                        prev_ended = s[endpos-1] == '>';
-                      }
-                  }
-                if (!s.termination.empty() || s.nonempty_dir)
-                  {
-                    if (!history_print)
-                      {
-                        std::cout << ">\n    <log>\n";
-                      }
-                    std::cout << "      <termination";
-                    if (s.nonempty_dir)
-                      {
-                        std::cout << " nonempty_dir=\""
-                                  << test_case_factory::get_working_dir()
-                                  << '/'
-                                  << s.name
-                                  << '"';
-                      }
-                    if (s.termination.empty())
-                      {
-                        std::cout << "/>\n";
-                      }
-                    else
-                      {
-                        std::cout << '>' << s.termination << "</termination>\n";
-                      }
-                    history_print = true;
-                  }
-                if (history_print)
-                  {
-                    std::cout << "    </log>\n  </test>\n";
-                  }
-                else
-                  {
-                    std::cout << "/>\n";
-                  }
-              }
-            messages.erase(test_case_id);
-            break;
-          case comm::dir:
-            {
-              size_t len;
-              rv = ::read(presenter_pipe, &len, sizeof(len));
-              assert(rv == sizeof(len));
-              assert(len == 0);
-              (void)len; // silense warning
-              s.success = false;
-              s.nonempty_dir = true;
-            }
-            break;
-          case comm::exit_ok:
-          case comm::exit_fail:
-            s.success &= t == comm::exit_ok; // fallthrough
-          case comm::stdout:
-          case comm::stderr:
-          case comm::info:
-            {
-              size_t len;
-              rv = ::read(presenter_pipe, &len, sizeof(len));
-              assert(rv == sizeof(len));
-              if (len)
-                {
-                  char *buff = static_cast<char *>(alloca(len));
-                  rv = ::read(presenter_pipe, buff, len);
-                  assert(size_t(rv) == len);
+                assert(s.name.length() == 0);
+                assert(s.history.size() == 0);
 
-                  if (t == comm::exit_ok || t == comm::exit_fail)
+                // introduction to test case, name follows
+
+                size_t len = 0;
+                char *p = static_cast<char*>(static_cast<void*>(&len));
+                size_t bytes_read = 0;
+                while (bytes_read < sizeof(len))
+                  {
+                    rv = ::read(presenter_pipe,
+                                p + bytes_read,
+                                sizeof(len) - bytes_read);
+                    assert(rv > 0);
+                    bytes_read += rv;
+                  }
+                char *buff = static_cast<char *>(::alloca(len));
+                bytes_read = 0;
+                while (bytes_read < len)
+                  {
+                    rv = ::read(presenter_pipe,
+                                buff + bytes_read,
+                                len - bytes_read);
+                    assert(rv >= 0);
+                    bytes_read += rv;
+                  }
+                s.name.assign(buff, len);
+                s.success = true;
+                s.nonempty_dir = false;
+              }
+              break;
+            case comm::end_test:
+              {
+                size_t len;
+                rv = ::read(presenter_pipe, &len, sizeof(len));
+                assert(rv == sizeof(len));
+                assert(len == 0);
+              }
+              if (!s.success || verbose)
+                {
+                  bool history_print = false;
+                  os << "  <test name=\"" << s.name
+                     << "\" result=\""
+                     << (s.success ? "OK" : "FAILED") << '"';
+                  for (std::list<std::string>::iterator i = s.history.begin();
+                       i != s.history.end();
+                       ++i)
                     {
-                      s.termination=std::string(buff, len);
-                    }
-                  else
-                    {
-                      std::ostringstream os;
-                      if (t == comm::stdout)
+                      bool prev_ended = true;
+                      std::string &s = *i;
+                      for (std::string::size_type prevpos = 0, endpos = 0;
+                           ;
+                           prevpos = endpos + 1)
                         {
-                          CRPCUT_XML_TAG(stdout, os)
+                          if (!history_print)
                             {
-                              stdout << std::string(buff, len);
+                              os  << ">\n    <log>\n";
+                              history_print = true;
                             }
+                          endpos = s.find('\n', prevpos);
+                          if (endpos == std::string::npos) break;
+                          static const char *prefix[] = { "", "      " };
+                          os << prefix[prev_ended]
+                             << std::string(s, prevpos, endpos - prevpos)
+                             << "\n";
+                          prev_ended = s[endpos-1] == '>';
                         }
-                      else if (t == comm::stderr)
+                    }
+                  if (!s.termination.empty() || s.nonempty_dir)
+                    {
+                      if (!history_print)
                         {
-                          CRPCUT_XML_TAG(stderr, os)
-                            {
-                              stderr << std::string(buff, len);
-                            }
+                          os << ">\n    <log>\n";
+                      }
+                      os << "      <termination";
+                      if (s.nonempty_dir)
+                        {
+                          os << " nonempty_dir=\""
+                             << test_case_factory::get_working_dir()
+                             << '/'
+                             << s.name
+                             << '"';
+                        }
+                      if (s.termination.empty())
+                        {
+                          os << "/>\n";
                         }
                       else
                         {
-                          CRPCUT_XML_TAG(info, os)
-                            {
-                              info << std::string(buff, len);
-                            }
+                          os << '>' << s.termination << "</termination>\n";
                         }
-                      s.history.push_back(os.str());
+                      history_print = true;
+                    }
+                  if (history_print)
+                    {
+                      os << "    </log>\n  </test>\n";
+                    }
+                  else
+                    {
+                      os << "/>\n";
                     }
                 }
+              messages.erase(test_case_id);
+              break;
+            case comm::dir:
+              {
+                size_t len;
+                rv = ::read(presenter_pipe, &len, sizeof(len));
+                assert(rv == sizeof(len));
+                assert(len == 0);
+                (void)len; // silense warning
+                s.success = false;
+                s.nonempty_dir = true;
+              }
+              break;
+            case comm::exit_ok:
+            case comm::exit_fail:
+              s.success &= t == comm::exit_ok; // fallthrough
+            case comm::stdout:
+            case comm::stderr:
+            case comm::info:
+              {
+                size_t len;
+                rv = ::read(presenter_pipe, &len, sizeof(len));
+                assert(rv == sizeof(len));
+                if (len)
+                  {
+                    char *buff = static_cast<char *>(alloca(len));
+                    rv = ::read(presenter_pipe, buff, len);
+                    assert(size_t(rv) == len);
+
+                    if (t == comm::exit_ok || t == comm::exit_fail)
+                      {
+                        s.termination=std::string(buff, len);
+                      }
+                    else
+                      {
+                        std::ostringstream oss;
+                        if (t == comm::stdout)
+                          {
+                            CRPCUT_XML_TAG(stdout, oss)
+                              {
+                                stdout << std::string(buff, len);
+                              }
+                          }
+                        else if (t == comm::stderr)
+                          {
+                            CRPCUT_XML_TAG(stderr, oss)
+                              {
+                                stderr << std::string(buff, len);
+                              }
+                          }
+                        else
+                          {
+                            CRPCUT_XML_TAG(info, oss)
+                              {
+                                info << std::string(buff, len);
+                              }
+                          }
+                        s.history.push_back(oss.str());
+                      }
+                  }
+              }
+              break;
+            default:
+              assert("unreachable code reached" == 0);
             }
-            break;
-          default:
-            assert("unreachable code reached" == 0);
-          }
-      }
-    assert("unreachable code reached" == 0);
+        }
+      assert("unreachable code reached" == 0);
+    }
   }
 
   void test_case_factory::kill_presenter_process()
@@ -409,7 +408,7 @@ namespace crpcut {
     ::siginfo_t info;
     for (;;)
       {
-        int rv = ::waitid(P_PID, presenter_pid, &info, WEXITED);
+        int rv = ::waitid(P_ALL, 0, &info, WEXITED);
         if (rv == -1 && errno == EINTR) continue;
         assert(rv == 0);
         break;
@@ -573,13 +572,31 @@ namespace crpcut {
     manage_children(num_parallel);
   }
 
-  unsigned test_case_factory::do_run(int argc, const char *argv[], std::ostream &os)
+  unsigned test_case_factory::do_run(int argc, const char *argv[], 
+                                     std::ostream &err_os)
   {
+    bool quiet = false;
+    std::ostream *output = &std::cout;
     const char **p = argv+1;
     while (const char *param = *p)
       {
         if (param[0] != '-') break;
         switch (param[1]) {
+        case 'q':
+          quiet = true;
+          break;
+        case 'o':
+          {
+            ++p;
+            static std::ofstream of(*p);
+            if (!of)
+              {
+                err_os << "Failed to open " << *p << " for writing\n";
+                return -1;
+              }
+            output = &of;
+          }
+          break;
         case 'v':
           verbose_mode = true;
           break;
@@ -590,7 +607,7 @@ namespace crpcut {
             unsigned l;
             if (!(i >> l) || l > max_parallel)
               {
-                os <<
+                err_os <<
                   "num child processes must be a positive integer no greater than "
                    << max_parallel
                    << "\nA value of 0 means test cases are executed in the parent process"
@@ -605,7 +622,7 @@ namespace crpcut {
             const char **names = ++p;
             if (*names && **names == '-')
               {
-                os <<
+                err_os <<
                   "-l must be followed by a (possibly empty) test case list\n";
                 return -1;
               }
@@ -626,14 +643,18 @@ namespace crpcut {
           nodeps = true;
           break;
         default:
-          os <<
+          err_os <<
             "Usage: " << argv[0] << " [flags] {testcases}\n"
             "  where flags can be:\n"
             "    -l           - list test cases\n"
             "    -d           - ignore dependencies\n"
             "    -v           - verbose mode\n"
             "    -c number    - Control number of spawned test case processes\n"
-            "                   if 0 the tests are run in the parent process\n";
+            "                   if 0 the tests are run in the parent process\n"
+            "    -o file      - Direct xml output to named file. Brief result\n"
+            "                   will be displayed on stdout\n"
+            "    -q           - Don't display the -o brief\n";
+
           return -1;
         }
         ++p;
@@ -643,17 +664,21 @@ namespace crpcut {
       {
         if (!::mkdtemp(dirbase))
           {
-            os << argv[0] << ": failed to create working directory\n";
+            err_os << argv[0] << ": failed to create working directory\n";
             return 1;
           }
         if (::chdir(dirbase) != 0)
           {
-            os << argv[0] << ": couldn't move to working directoryy\n";
+            err_os << argv[0] << ": couldn't move to working directoryy\n";
             ::rmdir(dirbase);
             return 1;
           }
       }
-    if (tests_as_child_procs()) start_presenter_process(argc, argv);
+    if (tests_as_child_procs())
+      {
+        presenter_pipe = start_presenter_process(*output, verbose_mode,
+                                                 argc, argv);
+      }
     const char **names = p;
     for (;;)
       {
@@ -704,7 +729,7 @@ namespace crpcut {
     if (tests_as_child_procs())
       {
         kill_presenter_process();
-        std::cout <<
+        *output <<
           "  <statistics>\n"
           "    <registered_test_cases>"
                   << num_registered_tests
@@ -714,7 +739,13 @@ namespace crpcut {
                   << num_tests_run - num_successful_tests
                   << "</failed_test_cases>\n"
           "  </statistics>\n";
-
+        if (output != &std::cout && !quiet)
+          {
+            std::cout << num_registered_tests << " registered, "
+                      << num_tests_run << " run, "
+                      << num_successful_tests << " OK, "
+                      << num_tests_run - num_successful_tests << " FAILED!\n";
+          }
         for (unsigned n = 0; n < max_parallel; ++n)
           {
             char name[std::numeric_limits<unsigned>::digits/3+2];
@@ -726,9 +757,13 @@ namespace crpcut {
 
         if (!implementation::is_dir_empty("."))
           {
-            std::cout << "  <remaining_files nonempty_dir=\""
-                      << dirbase
-                      << "\"/>\n";
+            *output << "  <remaining_files nonempty_dir=\""
+                    << dirbase
+                    << "\"/>\n";
+            if (output != &std::cout && !quiet)
+              {
+                std::cout << "Files remain in " << dirbase << '\n';
+              }
           }
         else
           {
@@ -739,17 +774,22 @@ namespace crpcut {
 
     if (reg.get_next() != &reg)
       {
-        std::cout << "  <blocked_tests>\n";
+        *output << "  <blocked_tests>\n";
+        if (output != &std::cout && !quiet)
+          {
+            std::cout << "Blocked tests:\n";
+          }
         for (implementation::test_case_registrator *i = reg.get_next();
              i != &reg;
              i = i->get_next())
           {
-            std::cout << "    <test name=\"" << *i << "\"/>\n";
+           *output << "    <test name=\"" << *i << "\"/>\n";
+           if (output != &std::cout && !quiet) std::cout << "  " << *i << '\n';
           }
-        std::cout << "  </blocked_tests>\n";
+        *output << "  </blocked_tests>\n";
       }
 
-    std::cout << "</crpcut>\n";
+    *output << "</crpcut>\n";
     return num_tests_run - num_successful_tests;
   }
 

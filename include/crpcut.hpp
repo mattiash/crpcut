@@ -693,7 +693,6 @@ namespace crpcut {
   private:
     static test_case_factory& obj();
     test_case_factory();
-    void start_presenter_process(int argc, const char *argv[]);
     void kill_presenter_process();
     void manage_children(unsigned max_pending_children);
     void run_test_case(implementation::test_case_registrator *i) const;
@@ -727,7 +726,6 @@ namespace crpcut {
     unsigned         num_registered_tests;
     unsigned         num_tests_run;
     unsigned         num_successful_tests;
-    pid_t            presenter_pid;
     int              presenter_pipe;
     timeout_queue    deadlines;
     int              working_dirs[max_parallel];
