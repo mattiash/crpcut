@@ -1,6 +1,5 @@
 * Features:
   - ASSERT_ macros for almost-equal tests of floating point numbers
-  - INFO() macro for sending data from the test-case to the report
   - Optional non-XML output
   - Regexp match rules for stdout and stderr
   - Integration with some mock framework.
