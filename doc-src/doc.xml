@@ -367,16 +367,19 @@ int main(int argc, char *argv[])
 </code>
 <id>crpcut::test_case_factory::run_test()</id> expects parameters as a set of
 flags followed by a set of test case or test suite names. The flags are:
-<definitions>
+<definitions notion="flag" meaning="meaning">
 <def notion="-l">List on stdout, all test cases matching the test case or test
                  suite names, then exit with code 0.
                  </def>
 <def notion="-d">Ignore dependencies when running tests.</def>
-<def notion="-v">Print the result of successful tests, in addition to that
-                 of the failed ones.</def>
+<def notion="-v">Include the result of successful tests, in addition to that
+                 of the failed ones, in the test report.</def>
 <def notion="-c&#xA0;num">Control the number of parallel spawned test
                           case processes. The default is 1. If 0, the
                           test cases are run in the parent process.</def>
+<def notion="-o&#xA0;file">Direct xml output to named file. Brief result
+                           will be displayed on stdout.</def>
+<def notion="-q">Don't display the -o brief</def>
 </definitions>
 Note that running test cases in the parent process has severe implications and
 should really only be used when debugging a test case (below.) The whole test
