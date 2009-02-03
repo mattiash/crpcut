@@ -194,7 +194,7 @@ endif(XSLTPROC)
 
 find_program(RUBY "ruby")
 if(RUBY)
-  add_custom_target(selftest ${RUBY} ./selftest.rb VERBATIM)
+  add_custom_target(selftest ${RUBY} ${CMAKE_SOURCE_DIR}/selftest.rb VERBATIM)
 else(RUBY)
   message("ruby is not found - selftest target not available")
 endif(RUBY)
