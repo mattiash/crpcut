@@ -157,7 +157,7 @@ been tested.
 <chapter title="Build and Install">
   crpcut uses <link url="http://www.cmake.org">CMake</link> to manage builds and
   installs.<p/>
-First obtain the crpcut sources, either a release (current is 0.1.1) from the
+First obtain the crpcut sources, either a release (current is 0.2.---) from the
 sourceforge
 <link url="https://sourceforge.net:443/project/showfiles.php?group_id=251473">download</link>
 page, or a from the git repository <id>git://github.com/rollbear/crpcut</id>
@@ -371,7 +371,9 @@ flags followed by a set of test case or test suite names. The flags are:
 <def notion="-l">List on stdout, all test cases matching the test case or test
                  suite names, then exit with code 0.
                  </def>
-<def notion="-d">Ignore dependencies when running tests.</def>
+<def notion="-d">Set working dir for test. Must exist prior to run. By default
+                 a directory is created under /tmp/crpcut??????</def>
+<def notion="-n">Ignore dependencies when running tests.</def>
 <def notion="-v">Include the result of successful tests, in addition to that
                  of the failed ones, in the test report.</def>
 <def notion="-c&#xA0;num">Control the number of parallel spawned test

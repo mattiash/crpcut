@@ -480,16 +480,16 @@ RUNS={
   " -c 8 -v    asserts" =>
   [ /^asserts::/,         /.*/,     67, 25, 14, 11, BLOCKED_TESTS ],
 
-  " -d         asserts" =>
+  " -n         asserts" =>
   [ /^asserts::/,         /FAILED/, 67, 25, 14,  0, [] ],
 
-  " -d -v      asserts" =>
+  " -n -v      asserts" =>
   [ /^asserts::/,         /.*/,     67, 25, 14, 11, [] ],
 
-  " -d -c 8    asserts" =>
+  " -n -c 8    asserts" =>
   [ /^asserts::/,         /FAILED/, 67, 25, 14,  0, [] ],
 
-  " -d -c 8 -v asserts" =>
+  " -n -c 8 -v asserts" =>
   [ /^asserts::/,         /.*/,     67, 25, 14, 11, [] ],
 
   "            asserts death" =>
@@ -504,16 +504,16 @@ RUNS={
   " -c 8 -v    asserts death" =>
   [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, BLOCKED_TESTS ],
 
-  " -d         asserts death" =>
+  " -n         asserts death" =>
   [ /^(asserts|death)::/, /FAILED/, 67, 41, 26,  0, [] ],
 
-  " -d -v      asserts death" =>
+  " -n -v      asserts death" =>
   [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, [] ],
 
-  " -d -c 8    asserts death" =>
+  " -n -c 8    asserts death" =>
   [ /^(asserts|death)::/, /FAILED/, 67, 41, 26,  0, [] ],
 
-  " -d -c 8 -v asserts death" =>
+  " -n -c 8 -v asserts death" =>
   [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, [] ],
 
   ""         =>
@@ -528,19 +528,19 @@ RUNS={
   " -c 8 -v" =>
   [ /.*/,                 /.*/,     67, 65, 39, 26, BLOCKED_TESTS ],
 
-  " -d"         =>
+  " -n"         =>
   [ /.*/,                 /FAILED/, 67, 67, 39,  0, [] ],
 
-  " -d -v"      =>
+  " -n -v"      =>
   [ /.*/,                 /.*/,     67, 67, 39, 28, [] ],
 
-  " -d -c 8"    =>
+  " -n -c 8"    =>
   [ /.*/,                 /FAILED/, 67, 67, 39,  0, [] ],
 
-  " -d -c 8 -v" =>
+  " -n -c 8 -v" =>
   [ /.*/,                 /.*/,     67, 67, 39, 28, [] ],
 
-  " -o /tmp/crpcutst$$ -q;v=$?;cat /tmp/crpcutst$$;rm /tmp/crpcutst$$;exit $v" =>
+  " -c 8 -o /tmp/crpcutst$$ -q;v=$?;cat /tmp/crpcutst$$;rm /tmp/crpcutst$$;exit $v" =>
   [ /.*/,                 /FAILED/, 67, 65, 39,  0, BLOCKED_TESTS ]
 }
 
@@ -558,4 +558,3 @@ RUNS.each do | params, expects |
   STDOUT.flush
   exit 1 if !check_file("./test/testprog#{params}", *expects)
 end
-

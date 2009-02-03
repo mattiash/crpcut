@@ -575,6 +575,7 @@ namespace crpcut {
   unsigned test_case_factory::do_run(int argc, const char *argv[], 
                                      std::ostream &err_os)
   {
+    const char *working_dir = 0;
     bool quiet = false;
     std::ostream *output = &std::cout;
     const char **p = argv+1;
@@ -640,6 +641,15 @@ namespace crpcut {
             return 0;
           }
         case 'd':
+          working_dir = *++p;
+          if (!working_dir)
+            {
+              err_os << "-d must be followed by a directory name\n";
+              return -1;
+            }
+          strcpy(dirbase, working_dir);
+          break;
+        case 'n':
           nodeps = true;
           break;
         default:
@@ -647,7 +657,8 @@ namespace crpcut {
             "Usage: " << argv[0] << " [flags] {testcases}\n"
             "  where flags can be:\n"
             "    -l           - list test cases\n"
-            "    -d           - ignore dependencies\n"
+            "    -n           - ignore dependencies\n"
+            "    -d dir       - specify workind directory (must exist)\n"
             "    -v           - verbose mode\n"
             "    -c number    - Control number of spawned test case processes\n"
             "                   if 0 the tests are run in the parent process\n"
@@ -662,7 +673,7 @@ namespace crpcut {
 
     if (tests_as_child_procs())
       {
-        if (!::mkdtemp(dirbase))
+        if (!working_dir && !::mkdtemp(dirbase))
           {
             err_os << argv[0] << ": failed to create working directory\n";
             return 1;
