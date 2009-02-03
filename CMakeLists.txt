@@ -225,7 +225,7 @@ install(
   )
 if(XSLTPROC)
   install(
-    FILES html/doc.html
+    FILES ${CMAKE_CURRENT_BINARY_DIR}//html/doc.html
     DESTINATION "${SHAREDIR}/html"
     )
 endif(XSLTPROC)
