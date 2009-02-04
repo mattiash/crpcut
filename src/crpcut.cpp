@@ -776,7 +776,7 @@ namespace crpcut {
                 std::cout << "Files remain in " << dirbase << '\n';
               }
           }
-        else
+        else if (working_dir == 0)
           {
             ::chdir("..");
             ::rmdir(dirbase);
