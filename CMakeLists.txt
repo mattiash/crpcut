@@ -49,7 +49,7 @@ file(GLOB LIB_SRCS
 if (GMOCK_DIR)
    file(GLOB GMOCK_LIB_SRCS src/gmock.cpp)
    include_directories(${GMOCK_DIR}/include)
-   set(EXTRA_LIBS "${EXTRA_LIBS} -L${GMOCK_DIR}/lib -lgmock")
+   set(GMOCK_LIBS "-Wl,-rpath,${GMOCK_DIR}/lib -L${GMOCK_DIR}/lib -lgmock")
 endif (GMOCK_DIR)
 include_directories(include)
 
@@ -186,7 +186,8 @@ if(GMOCK_DIR)
   add_library(crpcut_gmock SHARED ${GMOCK_LIB_SRCS})
   set_target_properties(crpcut_gmock PROPERTIES
     VERSION ${CRPCUT_LIB_VERSION}
-    SOVERSION ${CRPCUT_LIB_SOVERSION})
+    SOVERSION ${CRPCUT_LIB_SOVERSION}
+    LINK_FLAGS "${GMOCK_LIB}")
   file(GLOB GMOCK_TEST_SRCS   test-src/gmock.cpp)
 endif(GMOCK_DIR)
 file(GLOB TEST_SRCS
@@ -202,7 +203,7 @@ file(GLOB TEST_SRCS
 add_executable(testprog ${TEST_SRCS})
 target_link_libraries(testprog crpcut)
 if (GMOCK_DIR)
-  target_link_libraries(testprog crpcut_gmock)
+  target_link_libraries(testprog crpcut_gmock ${GMOCK_LIBS})
 endif (GMOCK_DIR)
 
 find_program(XSLTPROC "xsltproc")
