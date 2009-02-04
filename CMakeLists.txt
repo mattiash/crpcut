@@ -189,7 +189,7 @@ if(GMOCK_DIR)
   set_target_properties(crpcut_gmock PROPERTIES
     VERSION ${CRPCUT_LIB_VERSION}
     SOVERSION ${CRPCUT_LIB_SOVERSION}
-    LINK_FLAGS "${GMOCK_LIBS}"
+    LINK_FLAGS "${GMOCK_LIBS}")
   file(GLOB GMOCK_TEST_SRCS   test-src/gmock.cpp)
 endif(GMOCK_DIR)
 file(GLOB TEST_SRCS
