@@ -1,0 +1,9 @@
+The google-mock support is highly experimental. To build you must have an
+installed google-mock somewhere. When running cmake, add -DGMOCK_DIR=<path>.
+The path shall be to the same as the path given as --prefix=<path> when
+running ./configure on google-test. Look into test-src/gmock.cpp to see
+how it can be used (and also the full extent of the tests made so far.)
+
+There's an important difference when running gmock under crpcut compared
+to running under gtest. crpcut is very heavy-handed. Violations are greeted
+with immediate termination.
