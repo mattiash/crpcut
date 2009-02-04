@@ -32,13 +32,27 @@ include(CheckFunctionExists)
 include(CheckLibraryExists)
 
 set(CRPCUT_LIB_MAJOR_VERSION "0")
-set(CRPCUT_LIB_MINOR_VERSION "1")
+set(CRPCUT_LIB_MINOR_VERSION "2")
 set(CRPCUT_LIB_PATCH_VERSION "0")
 
 set(CRPCUT_LIB_VERSION "${CRPCUT_LIB_MAJOR_VERSION}.${CRPCUT_LIB_MINOR_VERSION}.${CRPCUT_LIB_PATCH_VERSION}")
 set(CRPCUT_LIB_SOVERSION ${CRPCUT_LIB_MAJOR_VERSION})
 set(SHAREDIR "share/crpcut-${CRPCUT_LIB_VERSION}")
-file(GLOB LIB_SRCS src/*.cpp)
+file(GLOB LIB_SRCS
+     src/clocks.cpp
+     src/implementation.cpp
+     src/comm.cpp
+     src/policies.cpp
+     src/crpcut.cpp
+     src/xml.cpp
+)
+if (GMOCK_DIR)
+   file(GLOB GMOCK_LIB_SRCS src/gmock.cpp)
+   include_directories(${GMOCK_DIR}/include)
+   set(EXTRA_LIBS "${EXTRA_LIBS} -L${GMOCK_DIR}/lib -lgmock")
+endif (GMOCK_DIR)
+include_directories(include)
+
 if (NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX /usr)
 endif (NOT CMAKE_INSTALL_PREFIX)
@@ -105,7 +119,7 @@ check_function_exists("clock_gettime()" HAVE_CLOCK_GETTIME)
 if(NOT HAVE_CLOCK_GETTIME)
   check_library_exists("rt" "clock_gettime" "" RT_HAS_CLOCK_GETTIME)
   if(RT_HAS_CLOCK_GETTIME)
-    set(EXTRA_LIBS ${EXTRA_LIBS} -lrt)
+    set(EXTRA_LIBS "${EXTRA_LIBS} -lrt")
     set(HAVE_CLOCK_GETTIME 1)
   endif(RT_HAS_CLOCK_GETTIME)
 endif(NOT HAVE_CLOCK_GETTIME)
@@ -162,19 +176,34 @@ if(HAVE_EPOLL)
 endif(HAVE_EPOLL)
 
 
-include_directories(include)
 add_library(crpcut SHARED ${LIB_SRCS})
 set_target_properties(crpcut PROPERTIES
-  VERSION ${CRPCUT_LIB_VERSION}
-  SOVERSION ${CRPCUT_LIB_SOVERSION}
-  LINK_FLAGS ${EXTRA_LIBS})
+ VERSION ${CRPCUT_LIB_VERSION}
+ SOVERSION ${CRPCUT_LIB_SOVERSION}
+ LINK_FLAGS "${EXTRA_LIBS}")
 
-file(GLOB TEST_SRCS test-src/*.cpp)
+if(GMOCK_DIR)
+  add_library(crpcut_gmock SHARED ${GMOCK_LIB_SRCS})
+  set_target_properties(crpcut_gmock PROPERTIES
+    VERSION ${CRPCUT_LIB_VERSION}
+    SOVERSION ${CRPCUT_LIB_SOVERSION})
+  file(GLOB GMOCK_TEST_SRCS   test-src/gmock.cpp)
+endif(GMOCK_DIR)
+file(GLOB TEST_SRCS
+     test-src/asserts_and_depends.cpp
+     test-src/output.cpp
+     test-src/timeouts.cpp
+     test-src/deaths.cpp
+     test-src/parametrized.cpp
+     test-src/unitt.cpp
+     ${GMOCK_TEST_SRCS}
+)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEATURE_SELECTION}")
 add_executable(testprog ${TEST_SRCS})
 target_link_libraries(testprog crpcut)
-
+if (GMOCK_DIR)
+  target_link_libraries(testprog crpcut_gmock)
+endif (GMOCK_DIR)
 
 find_program(XSLTPROC "xsltproc")
 if(XSLTPROC)

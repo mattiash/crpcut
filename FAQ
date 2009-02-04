@@ -41,9 +41,11 @@
       and encourage me to spend the time on it. ;-)
 
 5. Q: I like google-mock, can I use it with crpcut
-   A: Currently no. Maybe some day. google-mock is very tightly knit with
-      google-test, so either google-mock must be changed, or crpcut must
-      implement the interface used by google-mock.
+   A: If you're daring, yes, maybe. Run cmake with "-DGMOCK_DIR=<path_to_gmock>".
+      An additional libcrpcut_gmock library is then built. This is not very
+      carefully tested, and if you run with Unicode strings, things *will*
+      break. Some minimalistic tests have worked, however, so perhaps
+      there's hope. Please report the results, both good and bad.
 
 6. Q: OK, so what is the downside of crpcut?
    A: It requires a bleeding-edge C++ compiler (some of the features required
