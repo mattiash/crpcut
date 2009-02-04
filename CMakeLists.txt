@@ -203,7 +203,7 @@ file(GLOB TEST_SRCS
 add_executable(testprog ${TEST_SRCS})
 target_link_libraries(testprog crpcut)
 if (GMOCK_DIR)
-  target_link_libraries(testprog crpcut_gmock ${GMOCK_LIBS})
+  target_link_libraries(testprog crpcut_gmock "${GMOCK_LIBS}")
 endif (GMOCK_DIR)
 
 find_program(XSLTPROC "xsltproc")
