@@ -3,43 +3,46 @@
 
 TESTSUITE(google_mock)
 {
+  template <typename T>
   class iface_base
   {
   public:
-    virtual void func(int n) = 0;
+    virtual void func(T n) = 0;
   };
 
-  class iface : public iface_base
+  template <typename T>
+    class iface : public iface_base<T>
   {
   public:
-    MOCK_METHOD1(func, void(int));
+    MOCK_METHOD1_T(func, void(T));
   };
 
+  template <typename T>
   struct mock_fix
   {
-    iface obj;
+    iface<T> obj;
   };
 
-  TEST(basic_success, mock_fix)
+  TEST(basic_success, mock_fix<int>)
   {
     EXPECT_CALL(obj, func(3)).Times(1);
     obj.func(3);
   }
 
-  TEST(fail_by_calling_with_wrong_value, mock_fix)
+  TEST(fail_by_calling_with_wrong_value, mock_fix<int>)
   {
     EXPECT_CALL(obj, func(3)).Times(1);
     obj.func(4);
   }
 
-  TEST(fail_by_calling_too_often, mock_fix)
+  TEST(fail_by_calling_too_often, mock_fix<int>)
   {
     EXPECT_CALL(obj, func(3)).Times(1);
     obj.func(3);
     obj.func(3);
   }
 
-  TEST(fail_by_not_calling, mock_fix)
+  TEST(fail_by_not_calling, mock_fix<int>)
   {
     EXPECT_CALL(obj, func(3)).Times(1);
   }
@@ -47,7 +50,7 @@ TESTSUITE(google_mock)
   struct seq_fix
   {
     testing::Sequence s1, s2;
-    iface o1, o2;
+    iface<int> o1, o2;
 
     seq_fix()
     {
@@ -100,5 +103,27 @@ TESTSUITE(google_mock)
     o2.func(4);
     o1.func(1);
     o1.func(4);
+  }
+
+  template <typename T>
+  class unstreamable
+  {
+  public:
+    unstreamable(T v) : t(v) {}
+    operator T&() { return t; }
+    operator const T&() const { return t; }
+  private:
+    T t;
+  };
+
+  TEST(success_with_unstreamable_type, mock_fix<unstreamable<int> >)
+  {
+    EXPECT_CALL(obj, func(unstreamable<int>(3)));
+    obj.func(unstreamable<int>(3));
+  }
+  TEST(fail_with_unstreamable_type_wrong_value, mock_fix<unstreamable<int> >)
+  {
+    EXPECT_CALL(obj, func(unstreamable<int>(3)));
+    obj.func(unstreamable<int>(4));
   }
 }
