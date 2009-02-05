@@ -167,6 +167,30 @@ namespace crpcut {
     };
 
 
+    class escaped_string
+    {
+    public:
+      escaped_string(const std::string &an_s) : s(an_s) {}
+      friend std::ostream &operator<<(std::ostream &os, const escaped_string &e)
+      {
+        for (std::string::const_iterator i = e.s.begin(); i != e.s.end(); ++i)
+          {
+            switch (*i)
+              {
+              case '<': os << "&lt;"; break;
+              case '>': os << "&gt;"; break;
+              case '&': os << "&amp;"; break;
+              case '"': os << "&quot;"; break;
+              case '\'': os << "&apos;"; break;
+              default: os << *i;
+              }
+          }
+        return os;
+      }
+    private:
+      const std::string &s;
+    };
+
     int start_presenter_process(std::ostream &os, int verbose,
                                 int argc, const char *argv[])
     {
@@ -293,7 +317,7 @@ namespace crpcut {
                           if (endpos == std::string::npos) break;
                           static const char *prefix[] = { "", "      " };
                           os << prefix[prev_ended]
-                             << std::string(s, prevpos, endpos - prevpos)
+                             << escaped_string(std::string(s, prevpos, endpos - prevpos))
                              << "\n";
                           prev_ended = s[endpos-1] == '>';
                         }
@@ -319,7 +343,7 @@ namespace crpcut {
                         }
                       else
                         {
-                          os << '>' << s.termination << "</termination>\n";
+                          os << '>' << escaped_string(s.termination) << "</termination>\n";
                         }
                       history_print = true;
                     }
@@ -572,7 +596,7 @@ namespace crpcut {
     manage_children(num_parallel);
   }
 
-  unsigned test_case_factory::do_run(int argc, const char *argv[], 
+  unsigned test_case_factory::do_run(int argc, const char *argv[],
                                      std::ostream &err_os)
   {
     const char *working_dir = 0;
