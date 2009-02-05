@@ -389,17 +389,78 @@ TESTS = {
   Test.new('OK')
  }
 
-BLOCKED_TESTS = (
- 'depends::should_not_run_due_to_one_failed_dependency_success_otherwise'
- 'should_not_run_due_to_failed_left_behind_files_success_otherwise'
-)
+GMOCK_TESTS = {
+  'google_mock::basic_success' =>
+  Test.new('OK'),
 
-def check_file(file_name, names, results, reg_count, run_count, fail_count, success_count, blocked)
+  'google_mock::fail_by_calling_with_wrong_value' =>
+  Test.new('FAILED').
+  log('termination',
+      /mock function call.*call: func\(4\).*equal to 3\s+Actual: 4/me),
+
+  'google_mock::fail_by_calling_too_often' =>
+  Test.new('FAILED').
+  log('termination',
+      /more times than expected.*func\(3\)/me),
+
+  'google_mock::fail_by_not_calling' =>
+  Test.new('FAILED').
+  log('termination',
+      /call count doesn't match this expectation.*Actual: never called/me),
+
+  'google_mock::sequence_success_1' =>
+  Test.new('OK'),
+
+  'google_mock::sequence_success_2' =>
+  Test.new('OK'),
+
+  'google_mock::sequence_fail_incomplete' =>
+  Test.new('FAILED').
+  log('termination',
+      /call count doesn't match this expectation.*Actual: never called/me),
+
+  'google_mock::sequence_fail_one_too_many' =>
+  Test.new('FAILED').
+  log('termination',
+      /called more times than expected.*Actual: called twice/me),
+
+  'google_mock::sequence_fail_one_wrong_value' =>
+  Test.new('FAILED').
+  log('termination',
+      /Unexpected mock function call.*call: func\(4\).*none matched:/me),
+
+  'google_mock::success_with_unstreamable_type' =>
+  Test.new('OK'),
+
+  'google_mock::fail_with_unstreamable_type_wrong_value' =>
+  Test.new('FAILED').
+  log('termination',
+      /Unexpected mock.*Expected.*object <[03 ]*>.*Actual.*object <[04 ]*>/me)
+}
+tests=TESTS;
+tests.merge! GMOCK_TESTS if ARGV[0] == 'gmock'
+fails = 0
+oks = 0
+tests.each do |key, val|
+  if val.expected_result?(/OK/) then
+    oks+=1
+  else
+    fails+= 1
+  end
+end
+
+BLOCKED_TESTS = [
+ 'depends::should_not_run_due_to_one_failed_dependency_success_otherwise',
+ 'should_not_run_due_to_failed_left_behind_files_success_otherwise'
+]
+
+def check_file(file_name, tests, names, results, run_count, fail_count, success_count, blocked)
   collection = {}
   report = false
   file = open("|#{file_name}")
-  doc = REXML::Document.new file
+  s = file.read
   file.close
+  doc = REXML::Document.new s
   rc = $?.exitstatus
   if rc != fail_count then
     puts "\lwrong retcode #{rc}, expecting #{fail_count}"
@@ -407,7 +468,7 @@ def check_file(file_name, names, results, reg_count, run_count, fail_count, succ
   end
   doc.elements.each('crpcut/test') do |e|
     name = e.attributes['name'];
-    t = TESTS[name]
+    t = tests[name]
     if !t then
       r = "unknown test case"
     elsif blocked.include?(name) || name !~ names || !t.expected_result?(results) then
@@ -431,7 +492,7 @@ def check_file(file_name, names, results, reg_count, run_count, fail_count, succ
     puts "\nworking dir not empty"
   rescue
   end
-  t = collection.delete('FAILED');
+  t = collection.delete('FAILED')
   count = (t && t.size) || 0
   if count != fail_count then
     puts "\n#{count} failed cases, expected #{fail_count}"
@@ -445,8 +506,8 @@ def check_file(file_name, names, results, reg_count, run_count, fail_count, succ
     puts "\n#{runs} run tests in statistics, expected #{run_count}"
     report = true
   end
-  if regs != reg_count then
-    puts "\n#{regs} registered tests in statistics, expected #{reg_count}"
+  if regs != tests.size then
+    puts "\n#{regs} registered tests in statistics, expected #{tests.size}"
 report = true
   end
   t = collection.delete('OK');
@@ -469,81 +530,80 @@ end
 
 RUNS={
   "            asserts" =>
-  [ /^asserts::/,         /FAILED/, 67, 25, 14,  0, BLOCKED_TESTS ],
+  [ /^asserts::/,         /FAILED/, 25, 14,  0, BLOCKED_TESTS ],
 
   " -v         asserts" =>
-  [ /^asserts::/,         /.*/,     67, 25, 14, 11, BLOCKED_TESTS ],
+  [ /^asserts::/,         /.*/,     25, 14, 11, BLOCKED_TESTS ],
 
   " -c 8       asserts" =>
-  [ /^asserts::/,         /FAILED/, 67, 25, 14,  0, BLOCKED_TESTS ],
+  [ /^asserts::/,         /FAILED/, 25, 14,  0, BLOCKED_TESTS ],
 
   " -c 8 -v    asserts" =>
-  [ /^asserts::/,         /.*/,     67, 25, 14, 11, BLOCKED_TESTS ],
+  [ /^asserts::/,         /.*/,     25, 14, 11, BLOCKED_TESTS ],
 
   " -n         asserts" =>
-  [ /^asserts::/,         /FAILED/, 67, 25, 14,  0, [] ],
+  [ /^asserts::/,         /FAILED/, 25, 14,  0, [] ],
 
   " -n -v      asserts" =>
-  [ /^asserts::/,         /.*/,     67, 25, 14, 11, [] ],
+  [ /^asserts::/,         /.*/,     25, 14, 11, [] ],
 
   " -n -c 8    asserts" =>
-  [ /^asserts::/,         /FAILED/, 67, 25, 14,  0, [] ],
+  [ /^asserts::/,         /FAILED/, 25, 14,  0, [] ],
 
   " -n -c 8 -v asserts" =>
-  [ /^asserts::/,         /.*/,     67, 25, 14, 11, [] ],
+  [ /^asserts::/,         /.*/,     25, 14, 11, [] ],
 
   "            asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 67, 41, 26,  0, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, BLOCKED_TESTS ],
 
   " -v         asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /.*/,     41, 26, 15, BLOCKED_TESTS ],
 
   " -c 8       asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 67, 41, 26,  0, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, BLOCKED_TESTS ],
 
   " -c 8 -v    asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /.*/,     41, 26, 15, BLOCKED_TESTS ],
 
   " -n         asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 67, 41, 26,  0, [] ],
+  [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, [] ],
 
   " -n -v      asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, [] ],
+  [ /^(asserts|death)::/, /.*/,     41, 26, 15, [] ],
 
   " -n -c 8    asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 67, 41, 26,  0, [] ],
+  [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, [] ],
 
   " -n -c 8 -v asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     67, 41, 26, 15, [] ],
+  [ /^(asserts|death)::/, /.*/,     41, 26, 15, [] ],
 
   ""         =>
-  [ /.*/,                 /FAILED/, 67, 65, 39,  0, BLOCKED_TESTS ],
+  [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ],
 
   " -v"      =>
-  [ /.*/,                 /.*/,     67, 65, 39, 26, BLOCKED_TESTS ],
+  [ /.*/,                 /.*/,     tests.size - BLOCKED_TESTS.size, fails, oks - BLOCKED_TESTS.size, BLOCKED_TESTS ],
 
   " -c 8"    =>
-  [ /.*/,                 /FAILED/, 67, 65, 39,  0, BLOCKED_TESTS ],
+  [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ],
 
   " -c 8 -v" =>
-  [ /.*/,                 /.*/,     67, 65, 39, 26, BLOCKED_TESTS ],
+  [ /.*/,                 /.*/,     tests.size - BLOCKED_TESTS.size, fails, oks - BLOCKED_TESTS.size, BLOCKED_TESTS ],
 
   " -n"         =>
-  [ /.*/,                 /FAILED/, 67, 67, 39,  0, [] ],
+  [ /.*/,                 /FAILED/, tests.size, fails,  0,                       [] ],
 
   " -n -v"      =>
-  [ /.*/,                 /.*/,     67, 67, 39, 28, [] ],
+  [ /.*/,                 /.*/,     tests.size, fails, oks, [] ],
 
   " -n -c 8"    =>
-  [ /.*/,                 /FAILED/, 67, 67, 39,  0, [] ],
+  [ /.*/,                 /FAILED/, tests.size, fails,  0,                       [] ],
 
   " -n -c 8 -v" =>
-  [ /.*/,                 /.*/,     67, 67, 39, 28, [] ],
+  [ /.*/,                 /.*/,     tests.size, fails, oks, [] ],
 
   " -c 8 -o /tmp/crpcutst$$ -q;v=$?;cat /tmp/crpcutst$$;rm /tmp/crpcutst$$;exit $v" =>
-  [ /.*/,                 /FAILED/, 67, 65, 39,  0, BLOCKED_TESTS ]
+  [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ]
 }
-
 
 ulimit = open("|bash -c \"ulimit -c\"").read.to_i
 if ulimit == 0 then
@@ -556,7 +616,7 @@ puts "Self test takes approximately 30 seconds to complete"
 RUNS.each do | params, expects |
   print "%-70s: " % "./test/testprog#{params}"
   STDOUT.flush
-  exit 1 if !check_file("./test/testprog#{params}", *expects)
+  exit 1 if !check_file("./test/testprog#{params}", tests, *expects)
 end
 dirname = "/tmp/crpcut_selftest_dir_#{$$}"
 Dir.mkdir(dirname)

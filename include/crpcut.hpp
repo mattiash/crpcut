@@ -1729,7 +1729,7 @@ namespace crpcut {
     try {                                                               \
       expr;                                                             \
       FAIL <<                                                           \
-        "\nASSERT_THROW(" #expr ", " #exc ")\n"                         \
+        "ASSERT_THROW(" #expr ", " #exc ")\n"                         \
         "  Did not throw";                                              \
     }                                                                   \
     catch (exc) {                                                       \
@@ -1743,13 +1743,13 @@ namespace crpcut {
     }                                                                   \
     catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
       FAIL <<                                                           \
-        "\nASSERT_NO_THROW(" #expr ")\n"                                \
+        "ASSERT_NO_THROW(" #expr ")\n"                                \
         "  caught std::exception\n"                                     \
         "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
     }                                                                   \
     catch (...) {                                                       \
       FAIL <<                                                           \
-        "\nASSERT_NO_THROW(" #expr ")\n"                                \
+        "ASSERT_NO_THROW(" #expr ")\n"                                \
         "  caught ...";                                                 \
     }                                                                   \
   } while (0)
