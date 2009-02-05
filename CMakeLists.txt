@@ -251,10 +251,11 @@ install(
   DESTINATION include
 )
 
-install(
-  TARGETS crpcut
-  DESTINATION lib
-)
+install(TARGETS crpcut DESTINATION lib)
+
+if(GMOCK_DIR)
+  install(TARGETS crpcut_gmock DESTINATION lib)
+endif(GMOCK_DIR)
 install(
   FILES ${TEST_SRCS}
   DESTINATION "${SHAREDIR}/example_source"
