@@ -317,7 +317,7 @@ namespace crpcut {
                           if (endpos == std::string::npos) break;
                           static const char *prefix[] = { "", "      " };
                           os << prefix[prev_ended]
-                             << std::string(s, prevpos, endpos - prevpos)
+                             << esc(std::string(s, prevpos, endpos - prevpos))
                              << "\n";
                           prev_ended = s[endpos-1] == '>';
                         }
