@@ -23,6 +23,17 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 #  SUCH DAMAGE.
 
+AWK=$1
+DIR=$2
+
+R=65
+RN=67
+F=39
+[ "$3" == "gmock" ] && {
+  R=76
+  RN=78
+  F=46
+}
 tests=(
     "           asserts"       "run=25 failed=14"
     "-v         asserts"       "run=25 failed=14 verbose=1"
@@ -44,18 +55,16 @@ tests=(
     "-n -c 8    asserts death" "run=41 failed=26 nodeps=1"
     "-n -c 8 -v asserts death" "run=41 failed=26 nodeps=1 verbose=1"
 
-    ""                         "run=65 failed=39 blocked=2"
-    "-v"                       "run=65 failed=39 blocked=2 verbose=1 "
-    "-c 8"                     "run=65 failed=39 blocked=2"
-    "-c 8 -v"                  "run=65 failed=39 blocked=2 verbose=1"
+    ""                         "run=$R failed=$F blocked=2"
+    "-v"                       "run=$R failed=$F blocked=2 verbose=1 "
+    "-c 8"                     "run=$R failed=$F blocked=2"
+    "-c 8 -v"                  "run=$R failed=$F blocked=2 verbose=1"
 
-    "-n"                       "run=67 failed=39 blocked=0 nodeps=1"
-    "-n -v"                    "run=67 failed=39 blocked=0 nodeps=1 verbose=1"
-    "-n -c 8"                  "run=67 failed=39 blocked=0 nodeps=1"
-    "-n -c 8 -v"               "run=67 failed=39 blocked=0 nodeps=1 verbose=1"
+    "-n"                       "run=$RN failed=$F blocked=0 nodeps=1"
+    "-n -v"                    "run=$RN failed=$F blocked=0 nodeps=1 verbose=1"
+    "-n -c 8"                  "run=$RN failed=$F blocked=0 nodeps=1"
+    "-n -c 8 -v"               "run=$RN failed=$F blocked=0 nodeps=1 verbose=1"
     )
-AWK=$1
-DIR=$2
 echo "sanity check takes about 30 seconds to complete"
 n=0
 while [ $n -lt ${#tests[*]} ]
@@ -73,7 +82,7 @@ do
     }
     r=()
     lineno=0
-    $AWK -f $DIR/filter.awk -- registered=67 rv=$rv $expect < $filename > $reportfile
+    $AWK -f $DIR/filter.awk -- registered=$RN rv=$rv $expect < $filename > $reportfile
     [ $? == 0 ] || {
         echo FAILED
         cat $reportfile

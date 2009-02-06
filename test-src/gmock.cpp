@@ -55,20 +55,20 @@ TESTSUITE(google_mock)
     obj.func(3);
   }
 
-  TEST(fail_by_calling_with_wrong_value, mock_fix<int>)
+  TEST(should_fail_by_calling_with_wrong_value, mock_fix<int>)
   {
     EXPECT_CALL(obj, func(3)).Times(1);
     obj.func(4);
   }
 
-  TEST(fail_by_calling_too_often, mock_fix<int>)
+  TEST(should_fail_by_calling_too_often, mock_fix<int>)
   {
     EXPECT_CALL(obj, func(3)).Times(1);
     obj.func(3);
     obj.func(3);
   }
 
-  TEST(fail_by_not_calling, mock_fix<int>)
+  TEST(should_fail_by_not_calling, mock_fix<int>)
   {
     EXPECT_CALL(obj, func(3)).Times(1);
   }
@@ -107,14 +107,14 @@ TESTSUITE(google_mock)
     o1.func(0);
   }
 
-  TEST(sequence_fail_incomplete, seq_fix)
+  TEST(sequence_should_fail_incomplete, seq_fix)
   {
     o1.func(3);
     o2.func(4);
     o1.func(1);
   }
 
-  TEST(sequence_fail_one_too_many, seq_fix)
+  TEST(sequence_should_fail_one_too_many, seq_fix)
   {
     o1.func(3);
     o2.func(4);
@@ -123,7 +123,7 @@ TESTSUITE(google_mock)
     o1.func(0);
   }
 
-  TEST(sequence_fail_one_wrong_value, seq_fix)
+  TEST(sequence_should_fail_one_wrong_value, seq_fix)
   {
     o1.func(3);
     o2.func(4);
@@ -147,7 +147,7 @@ TESTSUITE(google_mock)
     EXPECT_CALL(obj, func(unstreamable<int>(3)));
     obj.func(unstreamable<int>(3));
   }
-  TEST(fail_with_unstreamable_type_wrong_value, mock_fix<unstreamable<int> >)
+  TEST(should_fail_with_unstreamable_type_wrong_value, mock_fix<unstreamable<int> >)
   {
     EXPECT_CALL(obj, func(unstreamable<int>(3)));
     obj.func(unstreamable<int>(4));

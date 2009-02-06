@@ -393,17 +393,17 @@ GMOCK_TESTS = {
   'google_mock::basic_success' =>
   Test.new('OK'),
 
-  'google_mock::fail_by_calling_with_wrong_value' =>
+  'google_mock::should_fail_by_calling_with_wrong_value' =>
   Test.new('FAILED').
   log('termination',
       /mock function call.*call: func\(4\).*equal to 3\s+Actual: 4/me),
 
-  'google_mock::fail_by_calling_too_often' =>
+  'google_mock::should_fail_by_calling_too_often' =>
   Test.new('FAILED').
   log('termination',
       /more times than expected.*func\(3\)/me),
 
-  'google_mock::fail_by_not_calling' =>
+  'google_mock::should_fail_by_not_calling' =>
   Test.new('FAILED').
   log('termination',
       /call count doesn't match this expectation.*Actual: never called/me),
@@ -414,17 +414,17 @@ GMOCK_TESTS = {
   'google_mock::sequence_success_2' =>
   Test.new('OK'),
 
-  'google_mock::sequence_fail_incomplete' =>
+  'google_mock::sequence_should_fail_incomplete' =>
   Test.new('FAILED').
   log('termination',
       /call count doesn't match this expectation.*Actual: never called/me),
 
-  'google_mock::sequence_fail_one_too_many' =>
+  'google_mock::sequence_should_fail_one_too_many' =>
   Test.new('FAILED').
   log('termination',
       /called more times than expected.*Actual: called twice/me),
 
-  'google_mock::sequence_fail_one_wrong_value' =>
+  'google_mock::sequence_should_fail_one_wrong_value' =>
   Test.new('FAILED').
   log('termination',
       /Unexpected mock function call.*call: func\(4\).*none matched:/me),
@@ -432,7 +432,7 @@ GMOCK_TESTS = {
   'google_mock::success_with_unstreamable_type' =>
   Test.new('OK'),
 
-  'google_mock::fail_with_unstreamable_type_wrong_value' =>
+  'google_mock::should_fail_with_unstreamable_type_wrong_value' =>
   Test.new('FAILED').
   log('termination',
       /Unexpected mock.*Expected.*object <[03 ]*>.*Actual.*object <[04 ]*>/me)
