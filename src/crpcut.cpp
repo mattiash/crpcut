@@ -167,11 +167,11 @@ namespace crpcut {
     };
 
 
-    class escaped_string
+    class esc
     {
     public:
-      escaped_string(const std::string &an_s) : s(an_s) {}
-      friend std::ostream &operator<<(std::ostream &os, const escaped_string &e)
+      esc(const std::string &an_s) : s(an_s) {}
+      friend std::ostream &operator<<(std::ostream &os, const esc &e)
       {
         for (std::string::const_iterator i = e.s.begin(); i != e.s.end(); ++i)
           {
@@ -317,7 +317,7 @@ namespace crpcut {
                           if (endpos == std::string::npos) break;
                           static const char *prefix[] = { "", "      " };
                           os << prefix[prev_ended]
-                             << escaped_string(std::string(s, prevpos, endpos - prevpos))
+                             << esc(std::string(s, prevpos, endpos - prevpos))
                              << "\n";
                           prev_ended = s[endpos-1] == '>';
                         }
@@ -334,7 +334,7 @@ namespace crpcut {
                           os << " nonempty_dir=\""
                              << test_case_factory::get_working_dir()
                              << '/'
-                             << s.name
+                             << esc(s.name)
                              << '"';
                         }
                       if (s.termination.empty())
@@ -343,7 +343,8 @@ namespace crpcut {
                         }
                       else
                         {
-                          os << '>' << escaped_string(s.termination) << "</termination>\n";
+                          os << '>' << esc(s.termination)
+                             << "</termination>\n";
                         }
                       history_print = true;
                     }
