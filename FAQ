@@ -1,6 +1,6 @@
 1. Q: Isn't it slow to run tests in separate processes?
    A: Not really. The overhead is very low. Often tests take much less than a
-      millisecond to run. You have to have a very long testsuite for those
+      millisecond to run. You have to have a very long test suite for those
       numbers to add up to anything worth bothering with. Also, if you have
       test cases that take a long time to complete, and a multi-core CPU,
       you can shorten the time to run a test suite by running several test
@@ -41,12 +41,7 @@
       and encourage me to spend the time on it. ;-)
 
 5. Q: I like google-mock, can I use it with crpcut
-   A: If you're daring, yes, maybe. Get the gmock_experimental branch
-      from git://github.com/rollbear/crpcut.git and follow the README.
-      This is not very carefully tested, and if you run with Unicode
-      strings, things *will* break. Some minimalistic tests have worked,
-      however, so perhaps there's hope. Please report the results, both
-      good and bad.
+   A: If you're daring, yes, maybe. Read README_GOOGLE_MOCK for details
 
 6. Q: OK, so what is the downside of crpcut?
    A: It requires a bleeding-edge C++ compiler (some of the features required

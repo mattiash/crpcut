@@ -46,12 +46,22 @@ file(GLOB LIB_SRCS
      src/crpcut.cpp
      src/xml.cpp
 )
-if (GMOCK_DIR)
+if (WITH_GOOGLE_MOCK)
+   if (NOT GOOGLE_MOCK_DIR)
+      find_library(GOOGLE_MOCK_LIB "gmock")
+      if (NOT GOOGLE_MOCK_LIB)
+         message(FATAL_ERROR
+                 "Can't find google mock, try -DGOOGLE_MOCK_DIR=<path>")
+      endif (NOT GOOGLE_MOCK_LIB)
+      set(GMOCK_LIBS "-lgmock")
+   else (NOT GOOGLE_MOCK_DIR)
+      include_directories(${GOOGLE_MOCK_DIR}/include)
+      set(GMOCK_LIBS "-Wl,-rpath,${GOOGLE_MOCK_DIR}/lib -L${GOOGLE_MOCK_DIR}/lib -lgmock")
+   endif (NOT GOOGLE_MOCK_DIR)
    file(GLOB GMOCK_LIB_SRCS src/gmock.cpp)
-   include_directories(${GMOCK_DIR}/include)
-   set(GMOCK_LIBS "-Wl,-rpath,${GMOCK_DIR}/lib -L${GMOCK_DIR}/lib -lgmock")
    set(SELFTEST_PARAM ${SELFTEST_PARAM} gmock)
-endif (GMOCK_DIR)
+endif (WITH_GOOGLE_MOCK)
+
 include_directories(include)
 
 if (NOT CMAKE_INSTALL_PREFIX)
@@ -183,7 +193,7 @@ set_target_properties(crpcut PROPERTIES
  SOVERSION ${CRPCUT_LIB_SOVERSION}
  LINK_FLAGS "${EXTRA_LIBS}")
 
-if(GMOCK_DIR)
+if(GMOCK_LIBS)
   add_library(crpcut_gmock SHARED ${GMOCK_LIB_SRCS})
   set_target_properties(crpcut_gmock PROPERTIES
     VERSION ${CRPCUT_LIB_VERSION}
@@ -191,7 +201,7 @@ if(GMOCK_DIR)
     LINK_FLAGS "${GMOCK_LIBS}"
 )
 file(GLOB GMOCK_TEST_SRCS   test-src/gmock.cpp)
-endif(GMOCK_DIR)
+endif(GMOCK_LIBS)
 file(GLOB TEST_SRCS
      test-src/asserts_and_depends.cpp
      test-src/output.cpp
@@ -204,9 +214,9 @@ file(GLOB TEST_SRCS
 
 add_executable(testprog ${TEST_SRCS})
 target_link_libraries(testprog crpcut)
-if (GMOCK_DIR)
+if (GMOCK_LIBS)
   target_link_libraries(testprog crpcut_gmock "${GMOCK_LIBS}")
-endif (GMOCK_DIR)
+endif (GMOCK_LIBS)
 
 find_program(XSLTPROC "xsltproc")
 if(XSLTPROC)
@@ -245,9 +255,9 @@ install(
 
 install(TARGETS crpcut DESTINATION lib)
 
-if(GMOCK_DIR)
+if(GMOCK_LIBS)
   install(TARGETS crpcut_gmock DESTINATION lib)
-endif(GMOCK_DIR)
+endif(GMOCK_LIBS)
 install(
   FILES ${TEST_SRCS}
   DESTINATION "${SHAREDIR}/example_source"
