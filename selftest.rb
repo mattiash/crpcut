@@ -554,7 +554,40 @@ if ulimit == 0 then
 end
 puts "Self test takes approximately 30 seconds to complete"
 RUNS.each do | params, expects |
-  print "%-50s: " % "./test/testprog#{params}"
+  print "%-70s: " % "./test/testprog#{params}"
   STDOUT.flush
   exit 1 if !check_file("./test/testprog#{params}", *expects)
 end
+dirname = "/tmp/crpcut_selftest_dir_#{$$}"
+Dir.mkdir(dirname)
+prog="./test/testprog -o /dev/null -q -d #{dirname} should_fail_due_to_left_behind_files"
+print "%-70s: " % prog
+file = open("|#{prog}")
+s = file.read
+file.close
+is_error=false
+if !s.empty? then
+  puts
+  puts "Unexpected stdout for -q"
+  is_error = true
+end
+file_found = nil
+begin
+file_found = File.stat("#{dirname}/should_fail_due_to_left_behind_files/apa").file?
+rescue
+end
+if !file_found then
+  puts if !is_error
+  puts "File was not created"
+  is_error = true
+end
+begin
+  File.unlink "#{dirname}/should_fail_due_to_left_behind_files/apa"
+  Dir.rmdir "#{dirname}/should_fail_due_to_left_behind_files"
+  Dir.rmdir dirname
+rescue
+  puts if !is_error
+  puts "Couldn't remove created files"
+  is_error = true
+end
+puts "OK" if !is_error
