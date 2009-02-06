@@ -133,7 +133,7 @@ namespace testing
       std::ostringstream os;
       for (;*wstr; ++wstr)
         {
-          os << static_cast<char>(*wstr & 0xff);
+          os << static_cast<char>(*wstr & 0x7f);
         }
       return os.str();
     }
