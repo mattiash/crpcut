@@ -31,6 +31,19 @@ Build
    'make selftest'. The self test takes about 30 seconds to complete.
 
 
+Out-of-tree Build
+=================
+
+1. 'cd' to the directory where wou want to build crpcut. You may want
+   this to be an empty directory.
+
+2. type 'cmake <crpcut source directory>", optionally together with the
+   -DCMAKE_INSTALL_PREFIX=<path> described above.
+
+3. type 'make'
+
+4. If you have Ruby, and you want to check that crpcut works, type
+   'make selftest'. The self test takes about 30 seconds to complete.
 
 Install
 =======

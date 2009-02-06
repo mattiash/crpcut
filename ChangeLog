@@ -1,3 +1,5 @@
+	   Experimental support for google-mock
+
 2009-02-03 0.1.1 Bugfix patch release
 
            TR 2558190 - Install fail when building out-of-tree
