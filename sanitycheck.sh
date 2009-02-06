@@ -54,7 +54,8 @@ tests=(
     "-n -c 8"                  "run=67 failed=39 blocked=0 nodeps=1"
     "-n -c 8 -v"               "run=67 failed=39 blocked=0 nodeps=1 verbose=1"
     )
-
+AWK=$1
+DIR=$2
 echo "sanity check takes about 30 seconds to complete"
 n=0
 while [ $n -lt ${#tests[*]} ]
@@ -66,13 +67,13 @@ do
     reportfile=/tmp/crpcut_sanity_report$$_$(($n/2+1))
     ./test/testprog $param > $filename
     rv=$?
-    xmllint --noout --schema crpcut.xsd $filename 2> /dev/null || {
+    xmllint --noout --schema $DIR/crpcut.xsd $filename 2> /dev/null || {
         echo "$filename violates crpcut.xsd XML Schema"
         exit 1
     }
     r=()
     lineno=0
-    ./filter.awk -- registered=67 rv=$rv $expect < $filename > $reportfile
+    $AWK -f $DIR/filter.awk -- registered=67 rv=$rv $expect < $filename > $reportfile
     [ $? == 0 ] || {
         echo FAILED
         cat $reportfile
