@@ -67,8 +67,8 @@ namespace testing
     {
       va_list args;
       va_start(args, format);
-
-      size_t len = std::vsnprintf("", 0, format, args);
+      char dummy[1];
+      size_t len = std::vsnprintf(dummy, 0, format, args);
       char *array = static_cast<char*>(::alloca(len + 1));
       std::vsnprintf(array, len + 1, format, args);
       va_end(args);
