@@ -1,8 +1,38 @@
-	   Experimental support for google-mock
+2009-02-08 0.2.0
+
+         * Optional support for google-mock. See README_GOOGLE_MOCK for
+	   details.
+
+         * Added INFO and FAIL output streamers from test cases.
+
+           INFO << expr1 << expr2 << expr3
+
+           Sends the streamed output to the result log, but does not
+	   change the state of the test.
+
+           FAIL << exp1 << expr2 << expr3
+
+           Immediately terminates the test case as failed, with the
+	   output streamed data as the error cause.
+
+         * A number of new command line flags:
+
+	   -d flag for selecting named working directory
+
+	   -o flag to direct XML output to a named file
+
+           -q flag for silencing summation print when -o is used
+
+           Use -n flag instead of -d for nodeps
+
+         * Fixed numerous problems with out-of-tree builds
+
+         * Improved selftest.
+
 
 2009-02-03 0.1.1 Bugfix patch release
 
-           TR 2558190 - Install fail when building out-of-tree
+         * TR 2558190 - Install fail when building out-of-tree
 
 
 2009-02-01 0.1.0 First release

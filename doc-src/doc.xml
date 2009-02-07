@@ -157,22 +157,42 @@ been tested.
 <chapter title="Build and Install">
   crpcut uses <link url="http://www.cmake.org">CMake</link> to manage builds and
   installs.<p/>
-First obtain the crpcut sources, either a release (current is 0.2.---) from the
+First obtain the crpcut sources, either a release (current is 0.2.0) from the
 sourceforge
 <link url="https://sourceforge.net:443/project/showfiles.php?group_id=251473">download</link>
 page, or a from the git repository <id>git://github.com/rollbear/crpcut</id>
 <p/>
-In the source directory type:
+In a build directory (can be the same as the source directory)
 <code>
-&gt; cmake .
+&gt; cmake path
 </code>
+Where <id>path</id> is the path to the crpcut source directory.
+<p/>
 Should you want to use a different install directory than the
 <link url="http://www.cmake.org">CMake</link> default, type instead
 <code>
-&gt; cmake . -DCMAKE_INSTALL_PREFIX=&lt;desired_install_directory&gt;
+&gt; cmake path -DCMAKE_INSTALL_PREFIX=&lt;desired_install_directory&gt;
 </code>
 <p/>
-Now build by typing:
+If you want to enable support for
+<link url="http://code.google.com/p/googlemock">google-mock</link> add also
+<code>
+-DWITH_GOOGLE_MOCK=yes
+</code>
+to the <link url="http://www.cmake.org">cmake</link> line. If
+<link url="http://code.google.com/p/googlemock">google-mock</link> is not
+installed in a directory that is reachable by you C++ compiler and
+linker, without additional flags, provide
+<link url="http://www.cmake.org">CMake</link> with the directory of
+<link url="http://code.google.com/p/googlemock">google-mock</link> using:
+<code>
+-DGOOGLE_MOCK_DIR=path
+</code>
+where path is the exact same as used in the <id>--prefix=path</id> option for
+<id>configure</id>.
+<p/>
+Once <link url="http://www.cmake.org">CMake</link> has completed, build crpcut
+by typing:
 <code>
 &gt; make
 </code>
@@ -368,7 +388,7 @@ int main(int argc, char *argv[])
 <id>crpcut::test_case_factory::run_test()</id> expects parameters as a set of
 flags followed by a set of test case or test suite names. The flags are:
 <definitions notion="flag" meaning="meaning">
-<def notion="-l">List on stdout, all test cases matching the test case or test
+<def notion="-l">List, on stdout, all test cases matching the test case or test
                  suite names, then exit with code 0.
                  </def>
 <def notion="-d">Set working dir for test. Must exist prior to run. By default
@@ -450,7 +470,7 @@ order is:
 <li>ASSERT_*() macros for almost-equal tests of floating point numbers</li>
 <li>Better separation of fixture errors and test-case errors</li>
 <li>Optional non-XML output</li>
-<li>Integration with some mock framework</li>
+<li>Handle <id>wchar_t</id> -&gt; UTF-8 conversion for google-mock</li>
 </list>
 </chapter>
 <chapter title="Contact">
