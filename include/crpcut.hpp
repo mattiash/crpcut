@@ -527,8 +527,8 @@ namespace crpcut {
   namespace comm {
 
     typedef enum {
-      exit_ok, exit_fail, dir,
       stdout, stderr, info,
+      exit_ok, exit_fail, dir,
       set_timeout, cancel_timeout,
       begin_test,
       end_test
@@ -566,7 +566,7 @@ namespace crpcut {
     public:
       direct_reporter() {}
       template <typename V>
-      direct_reporter& operator<<(V v) { os << v; }
+      direct_reporter& operator<<(V v) { os << v; return *this;}
       ~direct_reporter() { report(t, os); }
     private:
       direct_reporter(const direct_reporter &);

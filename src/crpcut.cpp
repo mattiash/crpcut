@@ -28,7 +28,6 @@
 #include <crpcut.hpp>
 #include "poll.hpp"
 #include "implementation.hpp"
-#include "xml.hpp"
 
 extern "C" {
 #include <sys/wait.h>
@@ -157,13 +156,18 @@ namespace crpcut {
   }
 
   namespace {
+    struct event
+    {
+      std::string tag;
+      std::string body;
+    };
     struct test_case_result
     {
-      bool                   success;
-      bool                   nonempty_dir;
-      std::string            name;
-      std::string            termination;
-      std::list<std::string> history;
+      bool             success;
+      bool             nonempty_dir;
+      std::string      name;
+      std::string      termination;
+      std::list<event> history;
     };
 
 
@@ -192,7 +196,7 @@ namespace crpcut {
     };
 
     int start_presenter_process(std::ostream &os, int verbose,
-                                int argc, const char *argv[])
+                                int, const char *argv[])
     {
       int fds[2];
       int rv = ::pipe(fds);
@@ -298,29 +302,18 @@ namespace crpcut {
                   os << "  <test name=\"" << s.name
                      << "\" result=\""
                      << (s.success ? "OK" : "FAILED") << '"';
-                  for (std::list<std::string>::iterator i = s.history.begin();
+                  for (std::list<event>::iterator i = s.history.begin();
                        i != s.history.end();
                        ++i)
                     {
-                      bool prev_ended = true;
-                      std::string &s = *i;
-                      for (std::string::size_type prevpos = 0, endpos = 0;
-                           ;
-                           prevpos = endpos + 1)
+                      if (!history_print)
                         {
-                          if (!history_print)
-                            {
-                              os  << ">\n    <log>\n";
-                              history_print = true;
-                            }
-                          endpos = s.find('\n', prevpos);
-                          if (endpos == std::string::npos) break;
-                          static const char *prefix[] = { "", "      " };
-                          os << prefix[prev_ended]
-                             << esc(std::string(s, prevpos, endpos - prevpos))
-                             << "\n";
-                          prev_ended = s[endpos-1] == '>';
+                          os  << ">\n    <log>\n";
+                          history_print = true;
                         }
+                      os << "      <" << i->tag << '>'
+                         << esc(i->body)
+                         << "</" << i->tag << ">\n";
                     }
                   if (!s.termination.empty() || s.nonempty_dir)
                     {
@@ -392,29 +385,12 @@ namespace crpcut {
                       }
                     else
                       {
-                        std::ostringstream oss;
-                        if (t == comm::stdout)
-                          {
-                            CRPCUT_XML_TAG(stdout, oss)
-                              {
-                                stdout << std::string(buff, len);
-                              }
-                          }
-                        else if (t == comm::stderr)
-                          {
-                            CRPCUT_XML_TAG(stderr, oss)
-                              {
-                                stderr << std::string(buff, len);
-                              }
-                          }
-                        else
-                          {
-                            CRPCUT_XML_TAG(info, oss)
-                              {
-                                info << std::string(buff, len);
-                              }
-                          }
-                        s.history.push_back(oss.str());
+                        static const char *tag[] = { "stdout",
+                                                     "stderr",
+                                                     "info" };
+                        assert(size_t(t) < (sizeof(tag)/sizeof(tag[0])));
+                        event e = { tag[t], std::string(buff, len) };
+                        s.history.push_back(e);
                       }
                   }
               }
@@ -537,6 +513,7 @@ namespace crpcut {
           }
       }
   }
+
 
   void test_case_factory::start_test(implementation::test_case_registrator *i)
   {

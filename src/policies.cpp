@@ -80,7 +80,7 @@ namespace crpcut {
       {
         unsigned now = clocks::cputime::timestamp_ms_absolute();
         int diff = now - start_timestamp_ms;
-        if  (diff > duration_ms)
+        if  (diff > int(duration_ms))
           {
             stream::toastream<128> os;
             os << "CPU-time timeout " << duration_ms
@@ -105,7 +105,7 @@ namespace crpcut {
         unsigned now = clocks::monotonic::timestamp_ms_absolute();
         report(comm::cancel_timeout, 0, 0);
         int diff = now - start_timestamp_ms;
-        if (diff > duration_ms)
+        if (diff > int(duration_ms))
           {
             stream::toastream<128> os;
             os << "Realtime timeout " << duration_ms
