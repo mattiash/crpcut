@@ -9,7 +9,7 @@ nature, and in part because not all have, or desire to use, google-mock.
 google-mock support can be enabled with extra parameter(s) to cmake (see
 INSTALL for the basics.)
 
--DWITH_GOGGLE_MOCK=yes
+-DWITH_GOOGLE_MOCK=yes
 
 Cause cmake to search for a google-mock installation. It assumes that the
 header and library files are reachable through the compiler- and linker-
@@ -17,9 +17,9 @@ defaults.
 
 -DGOOGLE_MOCK_DIR=<path>
 
-Only useful together with -DGOOGLE_MOCK=yes. Explicitly points out the google-
-mock headers and libs to reside under <path> (the exact same path used with
---prefix=<path> to google-mock's ./configure.)
+Only useful together with -DWITH_GOOGLE_MOCK=yes. Explicitly points out the
+google-mock headers and libs to reside under <path> (the exact same path used
+with --prefix=<path> to google-mock's ./configure.)
 
 Using
 =====
