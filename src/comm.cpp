@@ -35,17 +35,14 @@ namespace crpcut {
     {
       if (!test_case_factory::tests_as_child_procs())
         {
-          // this is strange. If I use std::cout, output is lost, despite
-          // that it's set to unbuffered, and even if it's explicitly
-          // flushed.
-          ::write(1, msg, len);
+          std::cout.write(msg, len);
+          std::cout << std::flush;
           if (t == exit_fail)
             {
               ::abort();
             }
           return;
         }
-      std::cout << std::flush;
       write(t);
       write(len);
       const char *p = msg;

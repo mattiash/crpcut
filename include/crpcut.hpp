@@ -169,6 +169,28 @@ namespace crpcut {
   class none {};
 
   namespace datatypes {
+    class posix_error : public std::exception
+    {
+    public:
+      posix_error(int e, const char *msg)
+        : errno_(e), msg_(msg)
+      {
+      }
+      virtual const char *what() const throw ()
+      {
+        str_ = ::strerror(errno);
+        str_ += " from ";
+        str_ += msg_;
+        return str_.c_str();
+      }
+      virtual ~posix_error() throw () {}
+    private:
+      int errno_;
+      const char *msg_;
+      mutable std::string str_;
+    };
+
+
 
     template <typename T, std::size_t N>
     class array_v : private std::array<T, N>

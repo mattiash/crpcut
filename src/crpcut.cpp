@@ -195,21 +195,58 @@ namespace crpcut {
       const std::string &s;
     };
 
+
+    class pipe
+    {
+    public:
+      typedef enum { release_ownership, keep_ownership } purpose;
+      pipe(const char *purpose)
+      {
+        int rv = ::pipe(fds);
+        if (rv < 0) throw datatypes::posix_error(errno, purpose);
+      }
+      ~pipe()
+      {
+        close();
+      }
+      void close()
+      {
+        if (fds[0] >= 0) { ::close(fds[0]); fds[0] = -1; }
+        if (fds[1] >= 0) { ::close(fds[1]); fds[1] = -1; }
+      }
+      int for_reading(purpose p = keep_ownership)
+      {
+        ::close(fds[1]);
+        int n = fds[0];
+        if (p == release_ownership) fds[0] = -1;
+        return n;
+      }
+      int for_writing(purpose p = keep_ownership)
+      {
+        ::close(fds[0]);
+        int n = fds[1];
+        if (p == release_ownership) fds[1] = -1;
+        return n;
+      }
+    private:
+      pipe(const pipe&);
+      pipe& operator=(const pipe&);
+      int fds[2];
+    };
+
     int start_presenter_process(std::ostream &os, int verbose,
                                 int, const char *argv[])
     {
-      int fds[2];
-      int rv = ::pipe(fds);
-      assert(rv == 0);
-      (void)rv; // silence warning
+      pipe p("communication pipe for presenter process");
+
       pid_t pid = ::fork();
+      if (pid < 0) throw datatypes::posix_error(errno,
+                                                "forking presenter process");
       if (pid != 0)
         {
-          ::close(fds[0]);
-          return fds[1];;
+          return p.for_writing(pipe::release_ownership);
         }
-      int presenter_pipe = fds[0];
-      ::close(fds[1]);
+      int presenter_pipe = p.for_reading();
 
       char time_string[] = "2009-01-09T23:59:59Z";
       time_t now = std::time(0);
@@ -526,14 +563,10 @@ namespace crpcut {
         return;
       }
 
-    int c2p[2];
-    ::pipe(c2p);
-    int p2c[2];
-    ::pipe(p2c);
-    int stderr[2];
-    ::pipe(stderr);
-    int stdout[2];
-    ::pipe(stdout);
+    pipe c2p("communication pipe test-case to main process");
+    pipe p2c("communication pipe main process to test-case");
+    pipe stderr("communication pipe for test-case stderr");
+    pipe stdout("communication pipe for test-case stdout");
 
     int wd = first_free_working_dir;
     first_free_working_dir = working_dirs[wd];
@@ -543,21 +576,22 @@ namespace crpcut {
     for (;;)
       {
         pid = ::fork();
+        if (pid < 0) throw datatypes::posix_error(errno,
+                                                  "fork test-case process");
         if (pid >= 0) break;
         assert(errno == EINTR);
       }
     if (pid < 0) return;
     if (pid == 0) // child
       {
-        comm::report.set_fds(p2c[0], c2p[1]);
-        ::dup2(stdout[1], 1);
-        ::dup2(stderr[1], 2);
-        ::close(stdout[0]);
-        ::close(stderr[0]);
-        ::close(stdout[1]);
-        ::close(stderr[1]);
-        ::close(p2c[1]);
-        ::close(c2p[0]);
+        comm::report.set_fds(p2c.for_reading(pipe::release_ownership),
+                             c2p.for_writing(pipe::release_ownership));
+        ::dup2(stdout.for_writing(), 1);
+        ::dup2(stderr.for_writing(), 2);
+        stdout.close();
+        stderr.close();
+        p2c.close();
+        c2p.close();
         i->goto_wd();
         run_test_case(i);
         // never executed!
@@ -566,11 +600,11 @@ namespace crpcut {
 
     // parent
     ++pending_children;
-    i->setup(pid, c2p[0], p2c[1], stdout[0], stderr[0]);
-    ::close(c2p[1]);
-    ::close(p2c[0]);
-    ::close(stdout[1]);
-    ::close(stderr[1]);
+    i->setup(pid,
+             c2p.for_reading(pipe::release_ownership),
+             p2c.for_writing(pipe::release_ownership),
+             stdout.for_reading(pipe::release_ownership),
+             stderr.for_reading(pipe::release_ownership));
     manage_children(num_parallel);
   }
 
@@ -612,8 +646,8 @@ namespace crpcut {
               {
                 err_os <<
                   "num child processes must be a positive integer no greater than "
-                   << max_parallel
-                   << "\nA value of 0 means test cases are executed in the parent process"
+                       << max_parallel
+                       << "\nA value of 0 means test cases are executed in the parent process"
                   "\n";
                 return -1;
               }
@@ -673,137 +707,149 @@ namespace crpcut {
         ++p;
       }
 
-    if (tests_as_child_procs())
-      {
-        if (!working_dir && !::mkdtemp(dirbase))
-          {
-            err_os << argv[0] << ": failed to create working directory\n";
-            return 1;
-          }
-        if (::chdir(dirbase) != 0)
-          {
-            err_os << argv[0] << ": couldn't move to working directoryy\n";
-            ::rmdir(dirbase);
-            return 1;
-          }
-      }
-    if (tests_as_child_procs())
-      {
-        presenter_pipe = start_presenter_process(*output, verbose_mode,
-                                                 argc, argv);
-      }
-    const char **names = p;
-    for (;;)
-      {
-        bool progress = false;
-        implementation::test_case_registrator *i = reg.get_next();
-        unsigned count = 0;
-        while (i != &reg)
-          {
-            ++count;
-            if (*names)
-              {
-                bool found = false;
-                for (const char **name = names; *name; ++name)
-                  {
-                    if ((found = i->match_name(*name))) break;
-                  }
-                if (!found)
-                  {
-                    progress = true;
-                    i = i->unlink();
-                    continue;
-                  }
-              }
-            if (!nodeps && !i->can_run())
-              {
-                i = i->get_next();
-                continue;
-              }
-            start_test(i);
-            progress = true;
-            i = i->unlink();
-          }
-        if (!progress)
-          {
-            if (pending_children == 0)
-              {
-                break;
-              }
-            manage_children(1);
-          }
-        if (count > num_registered_tests)
-          {
-            num_registered_tests = count;
-          }
-      }
-    if (pending_children) manage_children(1);
-
-    if (tests_as_child_procs())
-      {
-        kill_presenter_process();
-        *output <<
-          "  <statistics>\n"
-          "    <registered_test_cases>"
+    try {
+      if (tests_as_child_procs())
+        {
+          if (!working_dir && !::mkdtemp(dirbase))
+            {
+              err_os << argv[0] << ": failed to create working directory\n";
+              return 1;
+            }
+          if (::chdir(dirbase) != 0)
+            {
+              err_os << argv[0] << ": couldn't move to working directoryy\n";
+              ::rmdir(dirbase);
+              return 1;
+            }
+          presenter_pipe = start_presenter_process(*output, verbose_mode,
+                                                   argc, argv);
+        }
+      const char **names = p;
+      for (;;)
+        {
+          bool progress = false;
+          implementation::test_case_registrator *i = reg.get_next();
+          unsigned count = 0;
+          while (i != &reg)
+            {
+              ++count;
+              if (*names)
+                {
+                  bool found = false;
+                  for (const char **name = names; *name; ++name)
+                    {
+                      if ((found = i->match_name(*name))) break;
+                    }
+                  if (!found)
+                    {
+                      progress = true;
+                      i = i->unlink();
+                      continue;
+                    }
+                }
+              if (!nodeps && !i->can_run())
+                {
+                  i = i->get_next();
+                  continue;
+                }
+              start_test(i);
+              progress = true;
+              i = i->unlink();
+            }
+          if (!progress)
+            {
+              if (pending_children == 0)
+                {
+                  break;
+                }
+              manage_children(1);
+            }
+          if (count > num_registered_tests)
+            {
+              num_registered_tests = count;
+            }
+        }
+      if (pending_children) manage_children(1);
+      if (tests_as_child_procs())
+        {
+          kill_presenter_process();
+          *output <<
+            "  <statistics>\n"
+            "    <registered_test_cases>"
                   << num_registered_tests
                   << "</registered_test_cases>\n"
-          "    <run_test_cases>" << num_tests_run << "</run_test_cases>\n"
-          "    <failed_test_cases>"
+            "    <run_test_cases>" << num_tests_run << "</run_test_cases>\n"
+            "    <failed_test_cases>"
                   << num_tests_run - num_successful_tests
                   << "</failed_test_cases>\n"
-          "  </statistics>\n";
-        if (output != &std::cout && !quiet)
-          {
-            std::cout << num_registered_tests << " registered, "
-                      << num_tests_run << " run, "
-                      << num_successful_tests << " OK, "
-                      << num_tests_run - num_successful_tests << " FAILED!\n";
-          }
-        for (unsigned n = 0; n < max_parallel; ++n)
-          {
-            char name[std::numeric_limits<unsigned>::digits/3+2];
-            int len = snprintf(name, sizeof(name), "%u", n);
-            assert(len > 0 && len < int(sizeof(name)));
-            (void)len; // silence warning
-            ::rmdir(name);
-          }
+            "  </statistics>\n";
+          if (output != &std::cout && !quiet)
+            {
+              std::cout << num_registered_tests << " registered, "
+                        << num_tests_run << " run, "
+                        << num_successful_tests << " OK, "
+                        << num_tests_run - num_successful_tests << " FAILED!\n";
+            }
+          for (unsigned n = 0; n < max_parallel; ++n)
+            {
+              char name[std::numeric_limits<unsigned>::digits/3+2];
+              int len = snprintf(name, sizeof(name), "%u", n);
+              assert(len > 0 && len < int(sizeof(name)));
+              (void)len; // silence warning
+              (void)::rmdir(name); // ignore, taken care of as error
+            }
 
-        if (!implementation::is_dir_empty("."))
-          {
-            *output << "  <remaining_files nonempty_dir=\""
-                    << dirbase
-                    << "\"/>\n";
-            if (output != &std::cout && !quiet)
-              {
-                std::cout << "Files remain in " << dirbase << '\n';
-              }
-          }
-        else if (working_dir == 0)
-          {
-            ::chdir("..");
-            ::rmdir(dirbase);
-          }
-      }
+          if (!implementation::is_dir_empty("."))
+            {
+              *output << "  <remaining_files nonempty_dir=\""
+                      << dirbase
+                      << "\"/>\n";
+              if (output != &std::cout && !quiet)
+                {
+                  std::cout << "Files remain in " << dirbase << '\n';
+                }
+            }
+          else if (working_dir == 0)
+            {
+              if (::chdir("..") < 0)
+                {
+                  throw datatypes::posix_error(errno,
+                                               "chdir back from testcase working dir");
+                }
+              (void)::rmdir(dirbase); // ignore, will be taken care of as error
+            }
+        }
 
-    if (reg.get_next() != &reg)
+      if (reg.get_next() != &reg)
+        {
+          *output << "  <blocked_tests>\n";
+          if (output != &std::cout && !quiet)
+            {
+              std::cout << "Blocked tests:\n";
+            }
+          for (implementation::test_case_registrator *i = reg.get_next();
+               i != &reg;
+               i = i->get_next())
+            {
+              *output << "    <test name=\"" << *i << "\"/>\n";
+              if (output != &std::cout && !quiet)
+                {
+                  std::cout << "  " << *i << '\n';
+                }
+            }
+          *output << "  </blocked_tests>\n";
+        }
+
+      *output << "</crpcut>\n";
+      return num_tests_run - num_successful_tests;
+    }
+    catch (datatypes::posix_error &e)
       {
-        *output << "  <blocked_tests>\n";
-        if (output != &std::cout && !quiet)
-          {
-            std::cout << "Blocked tests:\n";
-          }
-        for (implementation::test_case_registrator *i = reg.get_next();
-             i != &reg;
-             i = i->get_next())
-          {
-           *output << "    <test name=\"" << *i << "\"/>\n";
-           if (output != &std::cout && !quiet) std::cout << "  " << *i << '\n';
-          }
-        *output << "  </blocked_tests>\n";
+        err_os << "Fatal error:"
+               << e.what()
+               << "\nCan't continue\n";
       }
-
-    *output << "</crpcut>\n";
-    return num_tests_run - num_successful_tests;
+    return -1;
   }
 
 } // namespace crpcut
