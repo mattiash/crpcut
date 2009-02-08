@@ -24,6 +24,7 @@ Build
 1. 'cd' to the directory containing the unpacked crpcut files and type
    'cmake .', or if you want to control the installation directory,
    type 'cmake . -DCMAKE_INSTALL_PREFIX=<desired install directory>'.
+   See also README_GOOGLE_MOCK for additional parameters.
 
 2. Type 'make'
 
@@ -38,7 +39,8 @@ Out-of-tree Build
    this to be an empty directory.
 
 2. type 'cmake <crpcut source directory>", optionally together with the
-   -DCMAKE_INSTALL_PREFIX=<path> described above.
+   -DCMAKE_INSTALL_PREFIX=<path> described above. See also
+   README_GOOGLE_MOCK for additional parameters.
 
 3. type 'make'
 

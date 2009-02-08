@@ -45,8 +45,8 @@
 
 6. Q: OK, so what is the downside of crpcut?
    A: It requires a bleeding-edge C++ compiler (some of the features required
-      aren't even standardized yet,) a highly posix compliant OS, and there's
-      no integration with any mock framework.
+      aren't even standardized yet,) a highly posix compliant OS (currently
+      only Linux is known to work.)
 
 7. Q: make selftest complains about core files and ulimit, what gives?
    A: The self test includes a number of tests that are assumed to dump

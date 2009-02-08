@@ -106,8 +106,8 @@ by the 1998 standard and the 2003 corrigendum.)
 The C++ extensions are:
 <definitions notion="extension" meaning="where defined">
   <def notion="variadic macros">C99/c++0x</def>
-  <def notion="decltype">c++0x (crpcut uses typeof, which in current gcc has
-                         similar enough meaning.)</def>
+  <def notion="decltype">c++0x (typeof, which in current gcc is similar enough,
+                         is tried if decltype isn&apos;t availble)</def>
   <def notion="_Exit()">C99/c++0x</def>
 </definitions>
 All will become standardized for C++ soon, and are since some time supported
@@ -152,7 +152,7 @@ write()</code></def>
 </definitions>
 This should work for most Linux systems. It is also likely to work for
  <link url="http://www.apple.com/macosx/">OS-X</link>, but it has not yet
-been tested.
+been verified.
 </chapter>
 <chapter title="Build and Install">
   crpcut uses <link url="http://www.cmake.org">CMake</link> to manage builds and
@@ -234,29 +234,35 @@ In tests, assert correctness using unary and binary assertion macros.
 <p/>
 The unary assertions are:
 <definitions notion="assert" meaning="condition">
-  <def notion="ASSERT_TRUE(expr)">Succeeds iff <id>expr</id> evaluates to
-                                 <id>true</id></def>
-  <def notion="ASSERT_FALSE(expr)">Succeeds iff <id>expr</id> evaluates to
-                                   <id>false</id></def>
-  <def notion="ASSERT_NO_THROW(expr)">Succeeds iff <id>expr</id> completes
-                                      without throwing anything</def>
+  <def notion="ASSERT_TRUE(expr)">Fails iff <id>expr</id> evaluates to
+                                 <id>false</id></def>
+  <def notion="ASSERT_FALSE(expr)">Fails iff <id>expr</id> evaluates to
+                                   <id>true</id></def>
+  <def notion="ASSERT_NO_THROW(expr)">Fails iff <id>expr</id> throws
+                                      anything</def>
 </definitions>
 <p/>
 The binary assertions are:
 <definitions notion="assert" meaning="condition">
-  <def notion="ASSERT_EQ(a, b)">Succeeds iff the expression <id>(a == b)</id>
-                                evaluates to <id>true</id></def>
-  <def notion="ASSERT_NE(a, b)">Succeeds iff the expression <id>(a != b)</id>
-                                evaluates to <id>true</id></def>
-  <def notion="ASSERT_GT(a, b)">Succeeds iff the expression <id>(a &gt; b)</id>
-                                evaluates to <id>true</id></def>
-  <def notion="ASSERT_GE(a, b)">Succeeds iff the expression <id>(a &gt;= b)</id>
-                                evaluates to <id>true</id></def>
-  <def notion="ASSERT_LT(a, b)">Succeeds iff the expression <id>(a &lt; b)</id>
-                                evaluates to <id>true</id></def>
-  <def notion="ASSERT_LE(a, b)">Succeeds iff the expression <id>(a &lt;= b)</id>
-                                evaluates to <id>true</id></def>
-  <def notion="ASSERT_THROW(expr,&#xA0;exc_type)">Succeeds iff the expression <id>expr</id> throws an exception of type <id>exc_type</id>. Use <id>...</id> for <id>exc_type</id> if any exception is good.</def>
+  <def notion="ASSERT_EQ(a, b)">Fails iff the expression <id>(a == b)</id>
+                                evaluates to <id>false</id></def>
+  <def notion="ASSERT_NE(a, b)">Fails iff the expression <id>(a != b)</id>
+                                evaluates to <id>false</id></def>
+  <def notion="ASSERT_GT(a, b)">Fails iff the expression <id>(a &gt; b)</id>
+                                evaluates to <id>false</id></def>
+  <def notion="ASSERT_GE(a, b)">Fails iff the expression <id>(a &gt;= b)</id>
+                                evaluates to <id>false</id></def>
+  <def notion="ASSERT_LT(a, b)">Fails iff the expression <id>(a &lt; b)</id>
+                                evaluates to <id>false</id></def>
+  <def notion="ASSERT_LE(a, b)">Fails iff the expression <id>(a &lt;= b)</id>
+                                evaluates to <id>false</id></def>
+  <def notion="ASSERT_THROW(expr,&#xA0;exc_type)">Fails iff the expression
+                                                  <id>expr</id> does not throw
+                                                  an exception of type
+                                                  <id>exc_type</id>. Use
+                                                  <id>...</id> for
+                                                  <id>exc_type</id> if any
+                                                  exception is good.</def>
 </definitions>
 If an assertion fails, the value of the parameters is included in the failure
 log (provided that the values are output streamable.) All assert macros
@@ -264,7 +270,7 @@ evaluates each parameter value exactly once, so providing parameters with
 side effects is not a problem. The order of evaluation of the parameters is
 undefined, however.
 <p/>
-In addition to the assertions, two output streamers are available, which both
+In addition to the assertions, two output streamers are available. Both
 are used as normal <id>std::ostream</id> objects.
 <definitions notion="streamer" meaning="action">
 <def notion="FAIL">Immediately terminate the test case as a failure with the
@@ -391,8 +397,10 @@ flags followed by a set of test case or test suite names. The flags are:
 <def notion="-l">List, on stdout, all test cases matching the test case or test
                  suite names, then exit with code 0.
                  </def>
-<def notion="-d">Set working dir for test. Must exist prior to run. By default
-                 a directory is created under /tmp/crpcut??????</def>
+<def notion="-d&#xA0;name">Set working dir for test to named directory. The
+                           directory must exist prior to run, and should
+                           prefereably be empty. By default a directory is
+                           created under /tmp/crpcut??????</def>
 <def notion="-n">Ignore dependencies when running tests.</def>
 <def notion="-v">Include the result of successful tests, in addition to that
                  of the failed ones, in the test report.</def>
@@ -410,7 +418,7 @@ will also terminate the program, even if death is expected.
 <p/>
 To run the tests in test suite named &quot;asserts&quot;, 8 test cases in
 parallel, ignore all dependencies, and print also successful tests, start the
-test program using <id>-d&#xA0;-v&#xA;-c&#xA;8 asserts</id>.
+test program using <id>-n&#xA0;-v&#xA;-c&#xA;8 asserts</id>.
 <p/>
 The exact prototype for <id>run_test</id> is:
 <code>
@@ -426,14 +434,15 @@ The return value is the number of failed tests, or -1 if anything was printed
 on the stream. The output stream is where to print information if the
 parameters in the call don&apos;t make sense.
 <p/>
-The result from a test run is always printed on stdout, using the XML Schema
-provided in <id>crpcut.xsd</id>. It is fairly human-readable.
+The result from a test run is always printed on stdout, or the file named with
+the -o flag, using the XML Schema provided in <id>crpcut.xsd</id>. It is fairly
+human-readable.
 </chapter>
 
 <chapter title="Debugging">
 Debugging a test case is easy. Load the test program into your favourite
 debugger. Set a break point on <id>testcasename::test</id>. Run with
-<id>-d&#xA0;-c&#xA0;0&#xA0;testcasename</id>. Example:
+<id>-n&#xA0;-c&#xA0;0&#xA0;testcasename</id>. Example:
 <code>
 &gt; $ gdb ./testprog
 GNU gdb 6.7.1
@@ -446,13 +455,13 @@ This GDB was configured as &quot;x86_64-pc-linux-gnu&quot;...
 Using host libthread_db library &quot;/lib/libthread_db.so.1&quot;.
 (gdb) break asserts::should_succeed_assert_no_throw::test
 Breakpoint 1 at 0x804a71c: file unitt.cpp, line 105.
-(gdb) run -c 0 -d asserts::should_succeed_assert_no_throw
-Starting program: ./testprog -c 0 -d asserts::should_succeed_assert_no_throw
+(gdb) run -c 0 -n asserts::should_succeed_assert_no_throw
+Starting program: ./testprog -c 0 -n asserts::should_succeed_assert_no_throw
 [Thread debugging using libthread_db enabled]
 [New Thread 0xf7c9a8e0 (LWP 25339)]
 &lt;?xml version=&quot;1.0&quot;?&gt;
 
-&lt;crpcut xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:noNamespaceSchemaLocation=&quot;crpcut.xsd&quot; starttime=&quot;2009-01-14T19:35:41Z&quot; host=&quot;pteranodon&quot; name=&quot;./testprog&quot;&gt;
+&lt;crpcut xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:noNamespaceSchemaLocation=&quot;crpcut.xsd&quot; starttime=&quot;2009-01-14T19:35:41Z&quot; host=&quot;pteranodon&quot; command=&quot;./testprog -c 0 -n asserts::should_succeed_assert_no_throw&quot;&gt;
   &lt;test name=&quot;asserts::should_succeed_assert_no_throw[Switching to Thread 0xf7c9a8e0 (LWP 25339)]
 
 Breakpoint 1, asserts::should_succeed_assert_no_throw::test (this=0x807a688) at unitt.cpp:105
