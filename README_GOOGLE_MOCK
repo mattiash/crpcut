@@ -28,8 +28,8 @@ Using
 #include <crpcut.hpp>    // before crpcut.hpp. crpcut redefines some macros.
 
 There's an important difference when running google-mock under crpcut compared
-to running under google-test. crpcut is very heavy-handed. Violations are
-always greeted with immediate termination. See also the BUGS document.
+to running under google-test. Unlike google-test, crpcut always terminates the
+test case immediately when a violation is detected. See also the BUGS document.
 
 google-mock interacts very nicely with crpcut fixtures. Here's an example of
 letting several test cases use the same mocks, in different sequences.
