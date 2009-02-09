@@ -265,8 +265,8 @@ The binary assertions are:
                                                   exception is good.</def>
 </definitions>
 If an assertion fails, the value of the parameters is included in the failure
-log (provided that the values are output streamable.) All assert macros
-evaluates each parameter value exactly once, so providing parameters with
+log (as output streamed, if possible, or as hex-dump otherwise.) All assert
+macros evaluates each parameter value exactly once, so providing parameters with
 side effects is not a problem. The order of evaluation of the parameters is
 undefined, however.
 <p/>

@@ -201,6 +201,7 @@
 #include <sstream>
 #include <iostream>
 #include <ostream>
+#include <iomanip>
 #include <cerrno>
 #include <cassert>
 #include <tr1/type_traits>
@@ -1079,43 +1080,51 @@ namespace crpcut {
               bool b = stream_checker::is_output_streamable<T>::value>
     struct conditional_streamer
     {
-      static bool stream(std::ostream &os, const T& t)
+      static void stream(std::ostream &os, const T& t)
       {
         os << t;
-        return true;
       }
     };
 
     template <typename T>
     struct conditional_streamer<T, false>
     {
-      static bool stream(std::ostream &, const T&)
+      static void stream(std::ostream &os, const T& t)
       {
-        return false;
+        os << sizeof(T) << "-byte object <";
+        const char *p = static_cast<const char *>(static_cast<const void*>(&t));
+        char old_fill = os.fill();
+        std::ios_base::fmtflags old_flags = os.flags();
+        os   << std::setfill('0') ;
+        for (size_t n = 0; n < sizeof(T); ++n)
+          {
+            if (n > 0U && ((n & 1) == 0)) os << ' ';
+            os << std::hex << std::setw(2) << static_cast<int>(p[n]);
+          }
+        os.flags(old_flags);
+        os.fill(old_fill);
+        os  << '>';
       }
     };
   }
 
   template <typename T>
-  bool conditionally_stream(std::ostream &os, const T& t)
+  void conditionally_stream(std::ostream &os, const T& t)
   {
-    return implementation::conditional_streamer<T>::stream(os, t);
+    implementation::conditional_streamer<T>::stream(os, t);
   }
 
   template <typename T>
-  bool stream_param(std::ostream &os,
+  void stream_param(std::ostream &os,
                     const char *prefix,
                     const char *name, const T& t)
   {
     std::ostringstream tmp;
-    bool v = conditionally_stream(tmp, t);
-    if (v && tmp.str() != name)
+    conditionally_stream(tmp, t);
+    if (tmp.str() != name)
       {
-        static const char* oper[] = { " ", " = " };
-        os << prefix << name << oper[v] << tmp.str();
-        return true;
+        os << prefix << name << " = " << tmp.str();
       }
-    return false;
   }
 
   //// template and inline func implementations
@@ -1749,20 +1758,17 @@ namespace crpcut {
         CRPCUT_LOCAL_NAME(os) <<                                        \
           __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                      \
           "\nASSERT_" #name "(" #lh ", " #rh ")";                       \
-        static const char* CRPCUT_LOCAL_NAME(prefix)[] =                \
-          { "\n  where ", "\n        " };                               \
         bool CRPCUT_LOCAL_NAME(printed) = false;                        \
-        CRPCUT_LOCAL_NAME(printed) |=                                   \
-          crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                   \
-                               CRPCUT_LOCAL_NAME(prefix)[CRPCUT_LOCAL_NAME(printed)], \
-                               #lh,                                     \
-                               CRPCUT_LOCAL_NAME(rl));                  \
-        CRPCUT_LOCAL_NAME(printed) |=                                   \
-          crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                   \
-                               CRPCUT_LOCAL_NAME(prefix)[CRPCUT_LOCAL_NAME(printed)], \
+        crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
+                             "  where ",                                \
+                             #lh,                                       \
+                             CRPCUT_LOCAL_NAME(rl));                    \
+        crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
+                             "        ",                                \
                                #rh,                                     \
                                CRPCUT_LOCAL_NAME(rr));                  \
-        crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os)); \
+        crpcut::comm::report(crpcut::comm::exit_fail,                   \
+                             CRPCUT_LOCAL_NAME(os));                    \
       }                                                                 \
   } while(0)
 

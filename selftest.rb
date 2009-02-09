@@ -145,7 +145,7 @@ TESTS = {
   'asserts::should_fail_on_assert_gt_with_unstreamable_param_i' =>
   Test.new('FAILED').
   log('termination',
-      /#{A_H}ASSERT_GT\(i, num\)\s+where\s+num\s*=\s*3/me),
+      /#{A_H}ASSERT_GT\(i, num\)\s+where\s+i\s*=\s*\d+-byte object <[03 ]+>\s+num\s*=\s*3/me),
 
   'asserts::should_fail_on_assert_le_with_fixture' =>
   Test.new('FAILED').

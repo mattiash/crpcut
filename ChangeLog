@@ -1,3 +1,5 @@
+         * Output unstreamable expressions as hex dumps
+
 2009-02-08 0.2.0
 
          * Optional support for google-mock. See README_GOOGLE_MOCK for
