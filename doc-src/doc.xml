@@ -228,7 +228,9 @@ are explained below.
 If several tests are related, they can be grouped into a test suite using the
 <id>TESTSUITE()</id> macro. For a large range of tests, it may be a good idea
 to nest test suites. Test cases can be written in several files and linked to
-one main program. The <id>crpcut_</id> name prefix is reserved for crpcut.
+one main program. If several files define the same test-suite name, the tests
+will be joined it the same suite. The <id>crpcut_</id> name prefix is reserved
+for crpcut.
 <p/>
 In tests, assert correctness using unary and binary assertion macros.
 <p/>

@@ -208,7 +208,9 @@ file(GLOB TEST_SRCS
      test-src/asserts_and_depends.cpp
      test-src/output.cpp
      test-src/timeouts.cpp
-     test-src/deaths.cpp
+     test-src/death_by_exit.cpp
+     test-src/death_by_signal.cpp
+     test-src/death_by_exception.cpp
      test-src/parametrized.cpp
      test-src/unitt.cpp
      ${GMOCK_TEST_SRCS}

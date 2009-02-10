@@ -26,33 +26,12 @@
 
 
 #include <crpcut.hpp>
+
 extern "C" {
 #include <signal.h> // raise
 }
 TESTSUITE(death)
 {
-  TESTSUITE(by_exit)
-  {
-    TEST(should_fail_with_exit_code_3)
-    {
-      exit(3);
-    }
-
-    TEST(should_succeed_with_exit_code_3, EXPECT_EXIT(3))
-    {
-      exit(3);
-    }
-
-    TEST(should_fail_with_no_exit, EXPECT_EXIT(3))
-    {
-    }
-
-    TEST(should_fail_with_wrong_exit_code, EXPECT_EXIT(3))
-    {
-      exit(4);
-    }
-  }
-
   TESTSUITE(by_signal)
   {
     TEST(should_fail_with_left_behind_core_dump_due_to_death_on_signal_11)
@@ -78,43 +57,6 @@ TESTSUITE(death)
     }
 
     TEST(should_fail_with_normal_exit, EXPECT_SIGNAL_DEATH(11))
-    {
-    }
-  }
-
-  TESTSUITE(by_exception)
-  {
-    TEST(should_fail_due_to_unknown_exception)
-    {
-      throw 1;
-    }
-
-    TEST(should_fail_due_to_std_exception_with_string_apa)
-    {
-      throw std::range_error("apa");
-    }
-
-    TEST(should_succeed_with_range_error_thrown,
-         EXPECT_EXCEPTION(std::range_error))
-    {
-      throw std::range_error("apa");
-    }
-
-    TEST(should_fail_with_wrong_exception, EXPECT_EXCEPTION(std::range_error))
-    {
-      throw std::bad_alloc();
-    }
-
-    TEST(should_succed_with_any_exception, EXPECT_EXCEPTION(...))
-    {
-      throw "apa";
-    }
-
-    TEST(should_fail_any_exception, EXPECT_EXCEPTION(...))
-    {
-    }
-
-    TEST(should_fail_with_no_exception, EXPECT_EXCEPTION(std::exception))
     {
     }
   }
