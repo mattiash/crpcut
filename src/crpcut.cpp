@@ -240,8 +240,10 @@ namespace crpcut {
       pipe p("communication pipe for presenter process");
 
       pid_t pid = ::fork();
-      if (pid < 0) throw datatypes::posix_error(errno,
-                                                "forking presenter process");
+      if (pid < 0)
+        {
+          throw datatypes::posix_error(errno, "forking presenter process");
+        }
       if (pid != 0)
         {
           return p.for_writing(pipe::release_ownership);
@@ -556,10 +558,10 @@ namespace crpcut {
   {
     if (!tests_as_child_procs())
       {
-        std::cout << "  <test name=\"" << *i;
+        std::cout << *i << " ";
         run_test_case(i);
         ++num_tests_run;
-        std::cout << " result=\"OK\"/>\n";
+        std::cout << "OK\n";
         return;
       }
 

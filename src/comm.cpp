@@ -35,8 +35,10 @@ namespace crpcut {
     {
       if (!test_case_factory::tests_as_child_procs())
         {
-          std::cout.write(msg, len);
-          std::cout << std::flush;
+          if (len)
+            {
+              std::cout << "\n" << std::string(msg, len) << std::flush;
+            }
           if (t == exit_fail)
             {
               ::abort();
