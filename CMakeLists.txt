@@ -217,6 +217,7 @@ file(GLOB TEST_SRCS
      test-src/death_by_exception.cpp
      test-src/parametrized.cpp
      test-src/unitt.cpp
+     test-src/wrapped.cpp
      ${GMOCK_TEST_SRCS}
 )
 

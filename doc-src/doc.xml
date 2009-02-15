@@ -384,7 +384,6 @@ a candidate for running. It is not possible to state dependency on a disabled
 test.
 </section>
 </chapter>
-
 <chapter title="The main program">
 The normal <id>main()</id> is exactly the below:
 <code>
@@ -471,6 +470,94 @@ Breakpoint 1, asserts::should_succeed_assert_no_throw::test (this=0x807a688) at 
 (gdb)
 </code>
 From there, you can single step the test case.
+</chapter>
+<chapter title="Advanced techniques">
+crpcut accesses all functions it uses from <id>libc</id> and <id>librt</id>
+directly from the lib by means of <id>dlsym()</id>. It does this through wrapper
+functions in namespace <id>crpcut</id>. This means that you can define
+your own versions of those functions in global namespace, if you need it
+for your testing. Be aware, however, that the C++ standard library may
+use some of these functions. So, while creating your own
+<id>int&#xA0;write(int&#xA0;fd,&#xA0;const&#xA0;void&#xA0;*addr,&#xA0;size_t&#xA0;bytes)</id> will not harm
+crpcut, it will probably cause <id>std::ofstream</id> to misbehave.
+<p/>
+If you need to create wrappers of your own, you can easily do that
+through the macros and traits templates available in <id>crpcut.hpp</id>.
+<code>
+CRPCUT_WRAP_FUNC(libname, funcname, rettype, prototype_params, call_params)
+</code>
+<definitions notion="macro param" meaning="meaning">
+<def notion="libname">name of the library in which the function resides.
+                      Predefined names are <id>libc</id> and
+                      <id>librt</id></def>
+<def notion="funcname">The name of the function, without quotes.</def>
+<def notion="rettype">The return type of the function.</def>
+<def notion="prototype_params">Types and names for all parameters to the
+                               function, enclosed in parenthesis.</def>
+<def notion="call_params">The names from <id>prototype_params</id> without
+                          type information, comma separated and enclosed in
+                          parenthesis.</def>
+</definitions>
+For functions without return value, there's also a <id>CRPCUT_WRAP_V_FUNC()</id>
+macro. It has the exact same parameter list (including <id>rettype</id>, which typically is <id>void</id>, but may optionally include some attribute, like
+<id>__attribute__((noreturn))</id>.)
+<p/>
+This is easiest to explain through an example. Say you want to intercept
+all calls to <id>fopen()</id>. You want it to do what it normally does,
+but you want to validate its parameters. A way of doing that is as follows:
+<code>
+extern "C" {
+  #include &lt;stdio.h&gt;
+}
+#include &lt;crpcut.hpp&gt;
+CRPCUT_WRAP_FUNC(libc, fopen, FILE*, (const char *p, const char *m), (p, m))
+
+FILE* fopen(const char *p, const char *m)
+{
+  ASSERT_TRUE(p);
+  ASSERT_TRUE(m);
+  return crpcut::fopen(p, m);
+}
+</code>
+By default the libraries <id>libc</id> and <id>librt</id> are known by
+crpcut. If you want to access functions in other libraries, you add your
+own constants under the namespace <id>crpcut::libs</id>. These must be
+positive integers. You also provide your own specialization of the
+traits template
+<id>const char *crpcut::libwrapper::traits&lt;int&gt;::name</id>.
+A complete example for the function <id>asin()</id> in the <id>libm</id>
+library:
+<code>
+extern "C" {
+  #include &lt;math.h&gt;
+}
+#include &lt;crpcut.hpp&gt;
+
+namespace crpcut {
+  namespace libs {
+    static const int libm = 1;
+  }
+  namespace libwrapper {
+    template &lt;&gt;
+    const char *traits&lt;libs::libm&gt;::name = "libm.so";
+  }
+}
+CRPCUT_WRAP_FUNC(libm, asin, double, (double d), (d))
+</code>
+Now the function <id>crpcut::asin()</id> will call the original function
+in <id>libm</id>, and you can define your own <id>asin()</id> in
+global namespace for testing purposes.
+<code>
+extern "C"
+{
+  double asin(double d)
+  {
+    ASSERT_GE(d, -1.0);
+    ASSERT_LE(d, 1.0);
+    return crpcut::asin(d);
+  }
+}
+</code>
 </chapter>
 
 <chapter title="Further development">

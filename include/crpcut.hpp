@@ -310,8 +310,8 @@ namespace crpcut {
 
   namespace libs
   {
-    static const int libc = 1;
-    static const int librt = 2;
+    static const int libc = -1;
+    static const int librt = -2;
   }
 
   namespace libwrapper {
@@ -1876,11 +1876,11 @@ namespace crpcut {
           "\nASSERT_" #name "(" #lh ", " #rh ")";                       \
         bool CRPCUT_LOCAL_NAME(printed) = false;                        \
         crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
-                             "  where ",                                \
+                             "\n  where ",                              \
                              #lh,                                       \
                              CRPCUT_LOCAL_NAME(rl));                    \
         crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
-                             "        ",                                \
+                             "\n        ",                              \
                                #rh,                                     \
                                CRPCUT_LOCAL_NAME(rr));                  \
         crpcut::comm::report(crpcut::comm::exit_fail,                   \

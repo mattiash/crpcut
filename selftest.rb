@@ -387,7 +387,17 @@ TESTS = {
   Test.new('OK'),
 
   'very_slow_success' =>
-  Test.new('OK')
+  Test.new('OK'),
+
+  'wrapped::should_succeed_in_range' =>
+  Test.new('OK').
+  log('info',
+      /d=0.523\d+/),
+
+  'wrapped::should_fail_assert_lt' =>
+  Test.new('FAILED').
+  log('termination',
+      /wrapped\.cpp:\d+\s+ASSERT_LT\(d, 1\.\d*\)\s+where d = 1\.(1|0999).*/me)
  }
 
 GMOCK_TESTS = {
