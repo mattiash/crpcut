@@ -361,6 +361,7 @@ TESTS = {
 
   'timeouts::should_fail_slow_cputime_deadline' =>
   Test.new('FAILED').
+  log('info', /.*/me).
   log('termination',
       /CPU-time timeout 500ms exceeded.\s+#{A_T} (([6-9]\d\d)|(1\d\d\d))ms/me),
 

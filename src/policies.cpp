@@ -36,7 +36,7 @@ namespace crpcut {
     no_core_file::no_core_file()
     {
       rlimit r = { 0, 0};
-      ::setrlimit(RLIMIT_CORE, &r);
+      crpcut::setrlimit(RLIMIT_CORE, &r);
     }
 
     namespace deaths {
@@ -73,7 +73,7 @@ namespace crpcut {
           start_timestamp_ms(clocks::cputime::timestamp_ms_absolute())
       {
         rlimit r = { (duration_ms + 1500) / 1000, (duration_ms + 2500) / 1000 };
-        setrlimit(RLIMIT_CPU, &r);
+        crpcut::setrlimit(RLIMIT_CPU, &r);
       }
 
       cputime_enforcer::~cputime_enforcer()

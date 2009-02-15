@@ -29,7 +29,6 @@
 extern "C" {
 #include <sys/time.h> // gettimeofday
 }
-
 TESTSUITE(timeouts)
 {
   TEST(should_succeed_slow_realtime_deadline,
@@ -52,10 +51,10 @@ TESTSUITE(timeouts)
 
   TEST(should_fail_slow_cputime_deadline, DEADLINE_CPU_MS(500), NO_CORE_FILE)
   {
-    // Note! This test case will fail for the wrong reason if NTP makes an
-    // unfortunate time adjustment here, or in the unlikely event that
-    // gettimeofday() consumes lots and lots of real time and very little
-    // cpu time.
+    INFO << "Note! This test case will fail for the wrong reason if NTP makes\n"
+         << "an unfortunate time adjustment here, or in the unlikely event\n"
+         << "that gettimeofday() consumes lots and lots of real time and\n"
+         << "very little cpu time.";
 
     struct timeval deadline;
     gettimeofday(&deadline, 0);

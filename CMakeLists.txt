@@ -45,6 +45,7 @@ file(GLOB LIB_SRCS
      src/policies.cpp
      src/crpcut.cpp
      src/xml.cpp
+     src/posix_encapsulation.cpp
 )
 if (WITH_GOOGLE_MOCK)
    if (NOT GOOGLE_MOCK_DIR)
@@ -63,7 +64,6 @@ if (WITH_GOOGLE_MOCK)
 endif (WITH_GOOGLE_MOCK)
 
 include_directories(include)
-
 
 if (NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX /usr)
@@ -127,19 +127,22 @@ if(NOT HAVE_TR1)
 endif(NOT HAVE_TR1)
 # check for clock_gettime()
 
+set(EXTRA_LIBS "${EXTRA_LIBS} -ldl")
 check_function_exists("clock_gettime()" HAVE_CLOCK_GETTIME)
-if(NOT HAVE_CLOCK_GETTIME)
+if(HAVE_CLOCK_GETTIME)
+  add_definitions(-DHAVE_CLOCK_GETTIME=libc)
+else(HAVE_CLOCK_GETTIME)
   check_library_exists("rt" "clock_gettime" "" RT_HAS_CLOCK_GETTIME)
   if(RT_HAS_CLOCK_GETTIME)
-    set(EXTRA_LIBS ${EXTRA_LIBS} -lrt)
+    set(EXTRA_LIBS "${EXTRA_LIBS} -lrt")
     set(HAVE_CLOCK_GETTIME 1)
+    add_definitions(-DHAVE_CLOCK_GETTIME=librt)
   endif(RT_HAS_CLOCK_GETTIME)
-endif(NOT HAVE_CLOCK_GETTIME)
+endif(HAVE_CLOCK_GETTIME)
 if(HAVE_CLOCK_GETTIME)
   set(MAY_HAVE_MONO 1)
   set(MAY_HAVE_CPU 1)
   set(HAVE_CLOCK 1)
-  add_definitions(-DHAVE_CLOCK_GETTIME)
 endif(HAVE_CLOCK_GETTIME)
 
 # check for mach_absolute_time()
@@ -189,6 +192,7 @@ endif(HAVE_EPOLL)
 
 
 include_directories(include)
+
 add_library(crpcut SHARED ${LIB_SRCS})
 set_target_properties(crpcut PROPERTIES
  VERSION ${CRPCUT_LIB_VERSION}

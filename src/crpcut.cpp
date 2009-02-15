@@ -31,6 +31,7 @@
 
 extern "C" {
 #include <sys/wait.h>
+#include <fcntl.h>
 }
 #include <map>
 #include <list>
@@ -40,6 +41,12 @@ extern "C" {
 #include <queue>
 #include <fstream>
 namespace crpcut {
+#ifdef __GNUC__
+#define NORETURN __attribute__((noreturn))
+#else
+#define NORETURN
+#endif
+
 
   test_case_factory::test_case_factory()
     : pending_children(0),
@@ -51,7 +58,7 @@ namespace crpcut {
       num_successful_tests(0),
       first_free_working_dir(0)
   {
-    std::strcpy(dirbase, "/tmp/crpcutXXXXXX");
+    crpcut::strcpy(dirbase, "/tmp/crpcutXXXXXX");
     for (unsigned n = 0; n < max_parallel; ++n)
       {
         working_dirs[n] = n+1;
@@ -110,27 +117,27 @@ namespace crpcut {
     int pipe = presenter_pipe;
     for (;;)
       {
-        int rv = ::write(pipe, &pid, sizeof(pid));
+        int rv = crpcut::write(pipe, &pid, sizeof(pid));
         if (rv == sizeof(pid)) break;
         assert (rv == -1 && errno == EINTR);
       }
     const comm::type t = comm::begin_test;
     for (;;)
       {
-        int rv = ::write(pipe, &t, sizeof(t));
+        int rv = crpcut::write(pipe, &t, sizeof(t));
         if (rv == sizeof(t)) break;
         assert(rv == -1 && errno == EINTR);
       }
 
     for (;;)
       {
-        int rv = ::write(pipe, &len, sizeof(len));
+        int rv = crpcut::write(pipe, &len, sizeof(len));
         if (rv == sizeof(len)) break;
         assert(rv == -1 && errno == EINTR);
       }
     for (;;)
       {
-        int rv = ::write(pipe, name, len);
+        int rv = crpcut::write(pipe, name, len);
         if (size_t(rv) == len) break;
         assert(rv == -1 && errno == EINTR);
       }
@@ -142,15 +149,15 @@ namespace crpcut {
                                      const char *buff)
   {
     int pipe = presenter_pipe;
-    int rv = ::write(pipe, &pid, sizeof(pid));
+    int rv = crpcut::write(pipe, &pid, sizeof(pid));
     assert(rv == sizeof(pid));
-    rv = ::write(pipe, &t, sizeof(t));
+    rv = crpcut::write(pipe, &t, sizeof(t));
     assert(rv == sizeof(t));
-    rv = ::write(pipe, &len, sizeof(len));
+    rv = crpcut::write(pipe, &len, sizeof(len));
     assert(rv == sizeof(len));
     if (len)
       {
-        rv = ::write(pipe, buff, len);
+        rv = crpcut::write(pipe, buff, len);
         assert(size_t(rv) == len);
       }
   }
@@ -195,102 +202,108 @@ namespace crpcut {
       const std::string &s;
     };
 
-
-    class pipe
+    class pipe_pair
     {
     public:
       typedef enum { release_ownership, keep_ownership } purpose;
-      pipe(const char *purpose)
+      pipe_pair(const char *purpose)
       {
-        int rv = ::pipe(fds);
+        int rv = crpcut::pipe(fds);
         if (rv < 0) throw datatypes::posix_error(errno, purpose);
       }
-      ~pipe()
+      ~pipe_pair()
       {
         close();
       }
       void close()
       {
-        if (fds[0] >= 0) { ::close(fds[0]); fds[0] = -1; }
-        if (fds[1] >= 0) { ::close(fds[1]); fds[1] = -1; }
+        if (fds[0] >= 0) { crpcut::close(fds[0]); fds[0] = -1; }
+        if (fds[1] >= 0) { crpcut::close(fds[1]); fds[1] = -1; }
       }
       int for_reading(purpose p = keep_ownership)
       {
-        ::close(fds[1]);
+        crpcut::close(fds[1]);
         int n = fds[0];
         if (p == release_ownership) fds[0] = -1;
         return n;
       }
       int for_writing(purpose p = keep_ownership)
       {
-        ::close(fds[0]);
+        crpcut::close(fds[0]);
         int n = fds[1];
         if (p == release_ownership) fds[1] = -1;
         return n;
       }
     private:
-      pipe(const pipe&);
-      pipe& operator=(const pipe&);
+      pipe_pair(const pipe_pair&);
+      pipe_pair& operator=(const pipe_pair&);
       int fds[2];
     };
 
-    int start_presenter_process(std::ostream &os, int verbose,
+    int start_presenter_process(int ofd, int verbose,
                                 int, const char *argv[])
     {
-      pipe p("communication pipe for presenter process");
+      pipe_pair p("communication pipe for presenter process");
 
-      pid_t pid = ::fork();
+      pid_t pid = crpcut::fork();
       if (pid < 0)
         {
           throw datatypes::posix_error(errno, "forking presenter process");
         }
       if (pid != 0)
         {
-          return p.for_writing(pipe::release_ownership);
+          return p.for_writing(pipe_pair::release_ownership);
         }
       int presenter_pipe = p.for_reading();
 
       char time_string[] = "2009-01-09T23:59:59Z";
-      time_t now = std::time(0);
-      struct tm *tmdata = std::gmtime(&now);
-      std::sprintf(time_string, "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
-                   tmdata->tm_year + 1900,
-                   tmdata->tm_mon + 1,
-                   tmdata->tm_mday,
-                   tmdata->tm_hour,
-                   tmdata->tm_min,
-                   tmdata->tm_sec);
+      time_t now = crpcut::time(0);
+      struct tm *tmdata = crpcut::gmtime(&now);
+      snprintf(time_string, sizeof(time_string),
+               "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
+              tmdata->tm_year + 1900,
+              tmdata->tm_mon + 1,
+              tmdata->tm_mday,
+              tmdata->tm_hour,
+              tmdata->tm_min,
+              tmdata->tm_sec);
       char machine_string[PATH_MAX];
-      ::gethostname(machine_string, sizeof(machine_string));
-      os <<
-        "<?xml version=\"1.0\"?>\n\n"
-        "<crpcut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
-        " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
-        " starttime=\"" << time_string <<
-        "\" host=\"" << machine_string <<
-        "\" command=\"";
-      for (const char **p = argv; *p; ++p)
-        {
-          if (p != argv) os << " ";
-          os << *p;
-        }
-      os << "\">\n" << std::flush;
-
+      crpcut::gethostname(machine_string, sizeof(machine_string));
+      {
+        std::ostringstream os;
+        os <<
+          "<?xml version=\"1.0\"?>\n\n"
+          "<crpcut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+          " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
+          " starttime=\"" << time_string <<
+          "\" host=\"" << machine_string <<
+          "\" command=\"";
+        for (const char **p = argv; *p; ++p)
+          {
+            if (p != argv) os << " ";
+            os << *p;
+          }
+        os << "\">\n" << std::flush;
+        const std::string &s = os.str();
+        crpcut::write(ofd, s.c_str(), s.size());
+      }
       std::map<pid_t, test_case_result> messages;
       for (;;)
         {
           pid_t test_case_id;
-          int rv = ::read(presenter_pipe, &test_case_id, sizeof(test_case_id));
+          int rv = crpcut::read(presenter_pipe,
+                                &test_case_id,
+                                sizeof(test_case_id));
           if (rv == 0)
             {
               assert(messages.size() == 0);
-              exit(0);
+              crpcut::exit(0);
             }
           assert(rv == sizeof(test_case_id));
           test_case_result &s = messages[test_case_id];
 
           comm::type t;
-          rv = ::read(presenter_pipe, &t, sizeof(t));
+          rv = crpcut::read(presenter_pipe, &t, sizeof(t));
           assert(rv == sizeof(t));
 
           switch (t)
@@ -307,19 +320,19 @@ namespace crpcut {
                 size_t bytes_read = 0;
                 while (bytes_read < sizeof(len))
                   {
-                    rv = ::read(presenter_pipe,
-                                p + bytes_read,
-                                sizeof(len) - bytes_read);
+                    rv = crpcut::read(presenter_pipe,
+                                      p + bytes_read,
+                                      sizeof(len) - bytes_read);
                     assert(rv > 0);
                     bytes_read += rv;
                   }
-                char *buff = static_cast<char *>(::alloca(len));
+                char *buff = static_cast<char *>(alloca(len));
                 bytes_read = 0;
                 while (bytes_read < len)
                   {
-                    rv = ::read(presenter_pipe,
-                                buff + bytes_read,
-                                len - bytes_read);
+                    rv = crpcut::read(presenter_pipe,
+                                      buff + bytes_read,
+                                      len - bytes_read);
                     assert(rv >= 0);
                     bytes_read += rv;
                   }
@@ -331,70 +344,73 @@ namespace crpcut {
             case comm::end_test:
               {
                 size_t len;
-                rv = ::read(presenter_pipe, &len, sizeof(len));
+                rv = crpcut::read(presenter_pipe, &len, sizeof(len));
                 assert(rv == sizeof(len));
                 assert(len == 0);
-              }
-              if (!s.success || verbose)
-                {
-                  bool history_print = false;
-                  os << "  <test name=\"" << s.name
-                     << "\" result=\""
-                     << (s.success ? "OK" : "FAILED") << '"';
-                  for (std::list<event>::iterator i = s.history.begin();
-                       i != s.history.end();
-                       ++i)
-                    {
-                      if (!history_print)
-                        {
-                          os  << ">\n    <log>\n";
-                          history_print = true;
-                        }
-                      os << "      <" << i->tag << '>'
-                         << esc(i->body)
-                         << "</" << i->tag << ">\n";
-                    }
-                  if (!s.termination.empty() || s.nonempty_dir)
-                    {
-                      if (!history_print)
-                        {
-                          os << ">\n    <log>\n";
+                std::ostringstream os;
+                if (!s.success || verbose)
+                  {
+                    bool history_print = false;
+                    os << "  <test name=\"" << s.name
+                       << "\" result=\""
+                       << (s.success ? "OK" : "FAILED") << '"';
+                    for (std::list<event>::iterator i = s.history.begin();
+                         i != s.history.end();
+                         ++i)
+                      {
+                        if (!history_print)
+                          {
+                            os  << ">\n    <log>\n";
+                            history_print = true;
+                          }
+                        os << "      <" << i->tag << '>'
+                           << esc(i->body)
+                           << "</" << i->tag << ">\n";
                       }
-                      os << "      <termination";
-                      if (s.nonempty_dir)
-                        {
-                          os << " nonempty_dir=\""
-                             << test_case_factory::get_working_dir()
-                             << '/'
-                             << esc(s.name)
-                             << '"';
-                        }
-                      if (s.termination.empty())
-                        {
-                          os << "/>\n";
-                        }
-                      else
-                        {
-                          os << '>' << esc(s.termination)
-                             << "</termination>\n";
-                        }
-                      history_print = true;
-                    }
-                  if (history_print)
-                    {
-                      os << "    </log>\n  </test>\n";
-                    }
-                  else
-                    {
-                      os << "/>\n";
-                    }
-                }
+                    if (!s.termination.empty() || s.nonempty_dir)
+                      {
+                        if (!history_print)
+                          {
+                            os << ">\n    <log>\n";
+                          }
+                        os << "      <termination";
+                        if (s.nonempty_dir)
+                          {
+                            os << " nonempty_dir=\""
+                               << test_case_factory::get_working_dir()
+                               << '/'
+                               << esc(s.name)
+                               << '"';
+                          }
+                        if (s.termination.empty())
+                          {
+                            os << "/>\n";
+                          }
+                        else
+                          {
+                            os << '>' << esc(s.termination)
+                               << "</termination>\n";
+                          }
+                        history_print = true;
+                      }
+                    if (history_print)
+                      {
+                        os << "    </log>\n  </test>\n";
+                      }
+                    else
+                      {
+                        os << "/>\n";
+                      }
+                  }
+                const std::string s = os.str();
+                crpcut::write(ofd, s.c_str(), s.size());
+              }
               messages.erase(test_case_id);
               break;
             case comm::dir:
               {
                 size_t len;
-                rv = ::read(presenter_pipe, &len, sizeof(len));
+                rv = crpcut::read(presenter_pipe, &len, sizeof(len));
                 assert(rv == sizeof(len));
                 assert(len == 0);
                 (void)len; // silense warning
@@ -410,12 +426,12 @@ namespace crpcut {
             case comm::info:
               {
                 size_t len;
-                rv = ::read(presenter_pipe, &len, sizeof(len));
+                rv = crpcut::read(presenter_pipe, &len, sizeof(len));
                 assert(rv == sizeof(len));
                 if (len)
                   {
                     char *buff = static_cast<char *>(alloca(len));
-                    rv = ::read(presenter_pipe, buff, len);
+                    rv = crpcut::read(presenter_pipe, buff, len);
                     assert(size_t(rv) == len);
 
                     if (t == comm::exit_ok || t == comm::exit_fail)
@@ -444,11 +460,11 @@ namespace crpcut {
 
   void test_case_factory::kill_presenter_process()
   {
-    ::close(presenter_pipe);
+    crpcut::close(presenter_pipe);
     ::siginfo_t info;
     for (;;)
       {
-        int rv = ::waitid(P_ALL, 0, &info, WEXITED);
+        int rv = crpcut::waitid(P_ALL, 0, &info, WEXITED);
         if (rv == -1 && errno == EINTR) continue;
         assert(rv == 0);
         break;
@@ -489,12 +505,12 @@ namespace crpcut {
     }
     catch (std::exception &e)
       {
-        const size_t len = std::strlen(e.what());
+        const size_t len = crpcut::strlen(e.what());
 #define TEMPLATE_HEAD "Unexpectedly caught std::exception\n  what()="
         const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
         char *msg = static_cast<char *>(alloca(head_size + len + 1));
-        std::strcpy(msg, TEMPLATE_HEAD);
-        std::strcpy(msg + head_size, e.what());
+        crpcut::strcpy(msg, TEMPLATE_HEAD);
+        crpcut::strcpy(msg + head_size, e.what());
 #undef TEMPLATE_HEAD
         report(comm::exit_fail, head_size + len, msg);
       }
@@ -565,10 +581,10 @@ namespace crpcut {
         return;
       }
 
-    pipe c2p("communication pipe test-case to main process");
-    pipe p2c("communication pipe main process to test-case");
-    pipe stderr("communication pipe for test-case stderr");
-    pipe stdout("communication pipe for test-case stdout");
+    pipe_pair c2p("communication pipe test-case to main process");
+    pipe_pair p2c("communication pipe main process to test-case");
+    pipe_pair stderr("communication pipe for test-case stderr");
+    pipe_pair stdout("communication pipe for test-case stdout");
 
     int wd = first_free_working_dir;
     first_free_working_dir = working_dirs[wd];
@@ -577,7 +593,7 @@ namespace crpcut {
     ::pid_t pid;
     for (;;)
       {
-        pid = ::fork();
+        pid = crpcut::fork();
         if (pid < 0) throw datatypes::posix_error(errno,
                                                   "fork test-case process");
         if (pid >= 0) break;
@@ -586,10 +602,10 @@ namespace crpcut {
     if (pid < 0) return;
     if (pid == 0) // child
       {
-        comm::report.set_fds(p2c.for_reading(pipe::release_ownership),
-                             c2p.for_writing(pipe::release_ownership));
-        ::dup2(stdout.for_writing(), 1);
-        ::dup2(stderr.for_writing(), 2);
+        comm::report.set_fds(p2c.for_reading(pipe_pair::release_ownership),
+                             c2p.for_writing(pipe_pair::release_ownership));
+        crpcut::dup2(stdout.for_writing(), 1);
+        crpcut::dup2(stderr.for_writing(), 2);
         stdout.close();
         stderr.close();
         p2c.close();
@@ -603,10 +619,10 @@ namespace crpcut {
     // parent
     ++pending_children;
     i->setup(pid,
-             c2p.for_reading(pipe::release_ownership),
-             p2c.for_writing(pipe::release_ownership),
-             stdout.for_reading(pipe::release_ownership),
-             stderr.for_reading(pipe::release_ownership));
+             c2p.for_reading(pipe_pair::release_ownership),
+             p2c.for_writing(pipe_pair::release_ownership),
+             stdout.for_reading(pipe_pair::release_ownership),
+             stderr.for_reading(pipe_pair::release_ownership));
     manage_children(num_parallel);
   }
 
@@ -615,7 +631,7 @@ namespace crpcut {
   {
     const char *working_dir = 0;
     bool quiet = false;
-    std::ostream *output = &std::cout;
+    int output_fd = 1;
     const char **p = argv+1;
     while (const char *param = *p)
       {
@@ -627,13 +643,13 @@ namespace crpcut {
         case 'o':
           {
             ++p;
-            static std::ofstream of(*p);
-            if (!of)
+            int o = crpcut::open(*p, O_CREAT | O_WRONLY | O_TRUNC);
+            if (!o < 0)
               {
                 err_os << "Failed to open " << *p << " for writing\n";
                 return -1;
               }
-            output = &of;
+            output_fd = o;
           }
           break;
         case 'v':
@@ -685,7 +701,7 @@ namespace crpcut {
               err_os << "-d must be followed by a directory name\n";
               return -1;
             }
-          strcpy(dirbase, working_dir);
+          crpcut::strcpy(dirbase, working_dir);
           break;
         case 'n':
           nodeps = true;
@@ -712,18 +728,18 @@ namespace crpcut {
     try {
       if (tests_as_child_procs())
         {
-          if (!working_dir && !::mkdtemp(dirbase))
+          if (!working_dir && !crpcut::mkdtemp(dirbase))
             {
               err_os << argv[0] << ": failed to create working directory\n";
               return 1;
             }
-          if (::chdir(dirbase) != 0)
+          if (crpcut::chdir(dirbase) != 0)
             {
               err_os << argv[0] << ": couldn't move to working directoryy\n";
-              ::rmdir(dirbase);
+              crpcut::rmdir(dirbase);
               return 1;
             }
-          presenter_pipe = start_presenter_process(*output, verbose_mode,
+          presenter_pipe = start_presenter_process(output_fd, verbose_mode,
                                                    argc, argv);
         }
       const char **names = p;
@@ -775,7 +791,8 @@ namespace crpcut {
       if (tests_as_child_procs())
         {
           kill_presenter_process();
-          *output <<
+          std::ostringstream os;
+          os <<
             "  <statistics>\n"
             "    <registered_test_cases>"
                   << num_registered_tests
@@ -785,7 +802,7 @@ namespace crpcut {
                   << num_tests_run - num_successful_tests
                   << "</failed_test_cases>\n"
             "  </statistics>\n";
-          if (output != &std::cout && !quiet)
+          if (output_fd != 1 && !quiet)
             {
               std::cout << num_registered_tests << " registered, "
                         << num_tests_run << " run, "
@@ -795,37 +812,40 @@ namespace crpcut {
           for (unsigned n = 0; n < max_parallel; ++n)
             {
               char name[std::numeric_limits<unsigned>::digits/3+2];
-              int len = snprintf(name, sizeof(name), "%u", n);
+              int len = crpcut::snprintf(name, sizeof(name), "%u", n);
               assert(len > 0 && len < int(sizeof(name)));
               (void)len; // silence warning
-              (void)::rmdir(name); // ignore, taken care of as error
+              (void)crpcut::rmdir(name); // ignore, taken care of as error
             }
 
           if (!implementation::is_dir_empty("."))
             {
-              *output << "  <remaining_files nonempty_dir=\""
-                      << dirbase
-                      << "\"/>\n";
-              if (output != &std::cout && !quiet)
+              os << "  <remaining_files nonempty_dir=\""
+                 << dirbase
+                 << "\"/>\n";
+              if (output_fd != 1 && !quiet)
                 {
                   std::cout << "Files remain in " << dirbase << '\n';
                 }
             }
           else if (working_dir == 0)
             {
-              if (::chdir("..") < 0)
+              if (crpcut::chdir("..") < 0)
                 {
                   throw datatypes::posix_error(errno,
                                                "chdir back from testcase working dir");
                 }
-              (void)::rmdir(dirbase); // ignore, will be taken care of as error
+              (void)crpcut::rmdir(dirbase); // ignore, taken care of as error
             }
+          const std::string &s = os.str();
+          crpcut::write(output_fd, s.c_str(), s.length());
         }
 
       if (reg.get_next() != &reg)
         {
-          *output << "  <blocked_tests>\n";
-          if (output != &std::cout && !quiet)
+          std::ostringstream os;
+          os << "  <blocked_tests>\n";
+          if (output_fd != 1 && !quiet)
             {
               std::cout << "Blocked tests:\n";
             }
@@ -833,16 +853,20 @@ namespace crpcut {
                i != &reg;
                i = i->get_next())
             {
-              *output << "    <test name=\"" << *i << "\"/>\n";
-              if (output != &std::cout && !quiet)
+              os << "    <test name=\"" << *i << "\"/>\n";
+              if (output_fd != 1 && !quiet)
                 {
                   std::cout << "  " << *i << '\n';
                 }
             }
-          *output << "  </blocked_tests>\n";
+          os << "  </blocked_tests>\n";
+          const std::string s = os.str();
+          crpcut::write(output_fd, s.c_str(), s.length());
         }
 
-      *output << "</crpcut>\n";
+      const char endtag[] = "</crpcut>\n";
+      crpcut::write(output_fd, endtag, sizeof(endtag)-1);
+      crpcut::close(output_fd);
       return num_tests_run - num_successful_tests;
     }
     catch (datatypes::posix_error &e)

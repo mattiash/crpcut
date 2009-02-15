@@ -41,7 +41,7 @@ namespace crpcut {
             }
           if (t == exit_fail)
             {
-              ::abort();
+              crpcut::abort();
             }
           return;
         }
@@ -51,9 +51,9 @@ namespace crpcut {
       size_t bytes_written = 0;
       while (bytes_written < len)
         {
-          int rv = ::write(write_fd,
-                           p + bytes_written,
-                           len - bytes_written);
+          int rv = crpcut::write(write_fd,
+                                 p + bytes_written,
+                                 len - bytes_written);
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) throw "report failed";
           bytes_written += rv;
@@ -62,7 +62,7 @@ namespace crpcut {
       assert(len == bytes_written);
       bool terminal = (t == comm::exit_ok) || (t == comm::exit_fail);
       if (!terminal) return;
-      std::_Exit(0);
+      crpcut::_Exit(0);
     }
 
     reporter report;

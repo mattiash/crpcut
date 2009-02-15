@@ -30,10 +30,18 @@
 
 #include <cassert>
 
+namespace crpcut {
+  int close(int fd);
+}
 #ifdef HAVE_EPOLL
 extern "C"
 {
 #include <sys/epoll.h>
+}
+namespace crpcut {
+  int epoll_create(int s);
+  int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev);
+  int epoll_wait(int epfd, struct epoll_event *ev, int m, int t);
 }
 template <size_t N>
 struct polldata
@@ -115,13 +123,13 @@ inline bool poll<T, N>::descriptor::hup() const
 template <typename T, size_t N>
 inline poll<T, N>::poll()
 {
-  data.epoll_fd = epoll_create(N);
+  data.epoll_fd = crpcut::epoll_create(N);
   assert(data.epoll_fd != -1);
 }
 template <typename T, size_t N>
 inline poll<T, N>::~poll()
 {
-  ::close(data.epoll_fd);
+  crpcut::close(data.epoll_fd);
 }
 template <typename T, size_t N>
 inline void poll<T, N>::add_fd(int fd, T* data)
@@ -130,7 +138,7 @@ inline void poll<T, N>::add_fd(int fd, T* data)
   ev.events = EPOLLIN | EPOLLHUP;
   ev.data.u64 = 0; // Unnecessary, but silences valgrind msg about uninit mem
   ev.data.ptr = data;
-  int rv = epoll_ctl(this->data.epoll_fd, EPOLL_CTL_ADD, fd, &ev);
+  int rv = crpcut::epoll_ctl(this->data.epoll_fd, EPOLL_CTL_ADD, fd, &ev);
   assert(rv == 0);
   (void)rv; // silence warning
 }
@@ -138,7 +146,7 @@ inline void poll<T, N>::add_fd(int fd, T* data)
 template <typename T, size_t N>
 inline void poll<T, N>::del_fd(int fd)
 {
-  int rv = epoll_ctl(data.epoll_fd, EPOLL_CTL_DEL, fd, 0);
+  int rv = crpcut::epoll_ctl(data.epoll_fd, EPOLL_CTL_DEL, fd, 0);
   assert(rv == 0);
   (void)rv; // silence warning
 }
@@ -149,7 +157,7 @@ inline typename poll<T, N>::descriptor poll<T, N>::wait(int timeout_ms)
   epoll_event ev;
   for (;;)
     {
-      int rv = epoll_wait(data.epoll_fd, &ev, 1, timeout_ms);
+      int rv = crpcut::epoll_wait(data.epoll_fd, &ev, 1, timeout_ms);
       if (rv == 0)
         {
           return descriptor(0,0); // timeout
@@ -222,11 +230,11 @@ inline typename poll<T, N>::descriptor poll<T, N>::wait(int timeout_ms)
       struct timeval tv = { timeout_ms / 1000, (timeout_ms % 1000) * 1000 };
       for (;;)
         {
-          int rv = select(maxfd + 1,
-                          &data.rset,
-                          0,
-                          &data.xset,
-                          timeout_ms == -1 ? 0 : &tv);
+          int rv = crpcut::select(maxfd + 1,
+                                  &data.rset,
+                                  0,
+                                  &data.xset,
+                                  timeout_ms == -1 ? 0 : &tv);
           if (rv == -1 && errno == EINTR) continue;
           assert(rv != -1);
           if (rv == 0) return descriptor(0,0); // timeout

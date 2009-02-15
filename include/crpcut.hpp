@@ -212,6 +212,10 @@
 extern "C"
 {
 #include <limits.h>
+#include <dlfcn.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <dirent.h>
 }
 
 namespace std {
@@ -242,9 +246,121 @@ namespace std {
 #define DEADLINE_REALTIME_MS(time) \
   crpcut::policies::timeout_policy<crpcut::policies::timeout::realtime, time>
 
+#define CRPCUT_WRAP_FUNC(lib, name, rv, param_list, param)              \
+  namespace crpcut {                                                    \
+      extern "C" typedef rv (*f_ ## name ## _t) param_list;             \
+      rv name param_list                                                \
+      {                                                                 \
+        static f_ ## name ## _t f_ ## name                              \
+          = libwrapper::loader<libs::lib>::obj()                        \
+          .sym<f_ ## name ## _t>(#name);                                \
+        return f_ ## name param;                                        \
+      }                                                                 \
+  }
 
+#define CRPCUT_WRAP_V_FUNC(lib, name, rv, param_list, param)            \
+  namespace crpcut {                                                    \
+      extern "C" typedef rv (*f_ ## name ## _t) param_list;             \
+      rv name param_list                                                \
+      {                                                                 \
+        static f_ ## name ## _t f_ ## name                              \
+          = libwrapper::loader<libs::lib>::obj()                        \
+          .sym<f_ ## name ## _t>(#name);                                \
+        f_ ## name param;                                               \
+      }                                                                 \
+  }
+
+#ifdef __GNUC__
+#define CRPCUT_NORETURN __attribute__((noreturn))
+#else
+#define CRPCUT_NORETURN
+#endif
 
 namespace crpcut {
+  // namespace wrapped stdc and posix functions
+  DIR* opendir(const char *n);
+  CRPCUT_NORETURN void abort();
+  CRPCUT_NORETURN void _Exit(int c);
+  CRPCUT_NORETURN void exit(int c);
+  char * strcpy(char *l, const char *r);
+  char *mkdtemp(char *t);
+  int chdir(const char *n);
+  int close(int);
+  int closedir(DIR* p);
+  int dup2(int o, int n);
+  int fork(void);
+  int gethostname(char *n, size_t l);
+  int kill(pid_t p, int s);
+  int mkdir(const char *n, mode_t m);
+  int open(const char *, int);
+  int pipe(int p[2]);
+  int readdir_r(DIR* p, struct dirent* e, struct dirent** r);
+  int rename(const char *o, const char *n);
+  int rmdir(const char *n);
+  int setrlimit(int, const struct rlimit*);
+  int snprintf(char *s, size_t si, const char *f, ...);
+  int strcmp(const char *l, const char *r);
+  int waitid(idtype_t t, id_t i, siginfo_t *si, int o);
+  size_t strlen(const char *r);
+  ssize_t read(int fd, void* p, size_t s);
+  ssize_t write(int fd, const void* p, size_t s);
+  struct tm * gmtime(const time_t *t);
+  time_t time(time_t *t);
+
+
+  namespace libs
+  {
+    static const int libc = 1;
+    static const int librt = 2;
+  }
+
+  namespace libwrapper {
+    template <int> struct traits
+    {
+      static const char *name;
+    };
+
+
+    template <int lib>
+    class loader
+    {
+    public:
+      loader()
+      {
+        libp = ::dlopen(traits<lib>::name, RTLD_NOW | RTLD_NOLOAD);
+        if (!libp) *(int*)libp = 0; // can't rely on abort() here
+      }
+      ~loader()
+      {
+        (void)::dlclose(libp); // nothing much to do in case of error.
+      }
+      template <typename T>
+      T sym(const char *name)
+      {
+        void *addr = ::dlsym(libp, name);
+        if (!addr) *(int*)(addr) = 0; // can't rely on abort() here
+        return reinterpret_cast<T>(addr);
+      }
+      static loader& obj()
+      {
+        static loader o;
+        return o;
+      }
+    private:
+      void *libp;
+    };
+
+
+  }
+
+
+
+
+  ssize_t write(int fd, const void* p, size_t s);
+  ssize_t read(int fd, void* p, size_t s);
+  size_t strlen(const char *r);
+  char * strerror(int n);
+  int strcmp(const char *, const char *);
   class none {};
 
   namespace datatypes {
@@ -257,7 +373,7 @@ namespace crpcut {
       }
       virtual const char *what() const throw ()
       {
-        str_ = ::strerror(errno);
+        str_ = crpcut::strerror(errno);
         str_ += " from ";
         str_ += msg_;
         return str_.c_str();
@@ -735,7 +851,7 @@ namespace crpcut {
       }
       basic_iastream(const charT *begin)
         :
-        buf(begin, begin + std::strlen(begin))
+        buf(begin, begin + crpcut::strlen(begin))
       {
         init(&buf);
       }
@@ -934,7 +1050,7 @@ namespace crpcut {
       static char buff[1024];
       for (;;)
         {
-          int rv = ::read(fd, buff, sizeof(buff));
+          int rv = crpcut::read(fd, buff, sizeof(buff));
           if (rv == 0) return false;
           if (rv == -1)
             {
@@ -1397,7 +1513,7 @@ namespace crpcut {
     inline void
     reporter::operator()(type t, const char *msg) const
     {
-      operator()(t, std::strlen(msg), msg);
+      operator()(t, crpcut::strlen(msg), msg);
     }
 
     template <typename T>
@@ -1409,9 +1525,9 @@ namespace crpcut {
       const char *p = static_cast<const char*>(static_cast<const void*>(&t));
       while (bytes_written < len)
         {
-          int rv = ::write(write_fd,
-                           p + bytes_written,
-                           len - bytes_written);
+          int rv = crpcut::write(write_fd,
+                                 p + bytes_written,
+                                 len - bytes_written);
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) throw "write failed";
           bytes_written += rv;
@@ -1440,9 +1556,9 @@ namespace crpcut {
       char *p = static_cast<char*>(static_cast<void*>(&t));
       while (bytes_read < len)
         {
-          int rv = ::read(read_fd,
-                          p + bytes_read,
-                          len - bytes_read);
+          int rv = crpcut::read(read_fd,
+                                p + bytes_read,
+                                len - bytes_read);
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) {
             throw "read failed";
@@ -1714,7 +1830,7 @@ namespace crpcut {
                 {                                                           \
                   p = name_param;                                           \
                 }                                                           \
-              return !std::strcmp(p, #test_case_name);                      \
+              return !crpcut::strcmp(p, #test_case_name);                      \
             }                                                               \
             virtual std::ostream &print_name(std::ostream &os) const        \
             {                                                               \

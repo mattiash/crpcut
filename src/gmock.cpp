@@ -46,9 +46,9 @@ namespace testing
     const char * String::CloneCString(const char *p)
     {
       if (!p) return 0;
-      size_t len = std::strlen(p);
+      size_t len = crpcut::strlen(p);
       char *rv = new char[len + 1];
-      std::strcpy(rv, p);
+      crpcut::strcpy(rv, p);
       return rv;
     }
 
@@ -68,9 +68,9 @@ namespace testing
       va_list args;
       va_start(args, format);
       char dummy[1];
-      size_t len = std::vsnprintf(dummy, 0, format, args);
+      size_t len = crpcut::vsnprintf(dummy, 0, format, args);
       char *array = static_cast<char*>(::alloca(len + 1));
-      std::vsnprintf(array, len + 1, format, args);
+      crpcut::vsnprintf(array, len + 1, format, args);
       va_end(args);
       return String(array);
     }
