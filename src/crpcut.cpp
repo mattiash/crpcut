@@ -58,7 +58,7 @@ namespace crpcut {
       num_successful_tests(0),
       first_free_working_dir(0)
   {
-    crpcut::strcpy(dirbase, "/tmp/crpcutXXXXXX");
+    wrapped::strcpy(dirbase, "/tmp/crpcutXXXXXX");
     for (unsigned n = 0; n < max_parallel; ++n)
       {
         working_dirs[n] = n+1;
@@ -117,27 +117,27 @@ namespace crpcut {
     int pipe = presenter_pipe;
     for (;;)
       {
-        int rv = crpcut::write(pipe, &pid, sizeof(pid));
+        int rv = wrapped::write(pipe, &pid, sizeof(pid));
         if (rv == sizeof(pid)) break;
         assert (rv == -1 && errno == EINTR);
       }
     const comm::type t = comm::begin_test;
     for (;;)
       {
-        int rv = crpcut::write(pipe, &t, sizeof(t));
+        int rv = wrapped::write(pipe, &t, sizeof(t));
         if (rv == sizeof(t)) break;
         assert(rv == -1 && errno == EINTR);
       }
 
     for (;;)
       {
-        int rv = crpcut::write(pipe, &len, sizeof(len));
+        int rv = wrapped::write(pipe, &len, sizeof(len));
         if (rv == sizeof(len)) break;
         assert(rv == -1 && errno == EINTR);
       }
     for (;;)
       {
-        int rv = crpcut::write(pipe, name, len);
+        int rv = wrapped::write(pipe, name, len);
         if (size_t(rv) == len) break;
         assert(rv == -1 && errno == EINTR);
       }
@@ -149,15 +149,15 @@ namespace crpcut {
                                      const char *buff)
   {
     int pipe = presenter_pipe;
-    int rv = crpcut::write(pipe, &pid, sizeof(pid));
+    int rv = wrapped::write(pipe, &pid, sizeof(pid));
     assert(rv == sizeof(pid));
-    rv = crpcut::write(pipe, &t, sizeof(t));
+    rv = wrapped::write(pipe, &t, sizeof(t));
     assert(rv == sizeof(t));
-    rv = crpcut::write(pipe, &len, sizeof(len));
+    rv = wrapped::write(pipe, &len, sizeof(len));
     assert(rv == sizeof(len));
     if (len)
       {
-        rv = crpcut::write(pipe, buff, len);
+        rv = wrapped::write(pipe, buff, len);
         assert(size_t(rv) == len);
       }
   }
@@ -208,7 +208,7 @@ namespace crpcut {
       typedef enum { release_ownership, keep_ownership } purpose;
       pipe_pair(const char *purpose)
       {
-        int rv = crpcut::pipe(fds);
+        int rv = wrapped::pipe(fds);
         if (rv < 0) throw datatypes::posix_error(errno, purpose);
       }
       ~pipe_pair()
@@ -217,19 +217,19 @@ namespace crpcut {
       }
       void close()
       {
-        if (fds[0] >= 0) { crpcut::close(fds[0]); fds[0] = -1; }
-        if (fds[1] >= 0) { crpcut::close(fds[1]); fds[1] = -1; }
+        if (fds[0] >= 0) { wrapped::close(fds[0]); fds[0] = -1; }
+        if (fds[1] >= 0) { wrapped::close(fds[1]); fds[1] = -1; }
       }
       int for_reading(purpose p = keep_ownership)
       {
-        crpcut::close(fds[1]);
+        wrapped::close(fds[1]);
         int n = fds[0];
         if (p == release_ownership) fds[0] = -1;
         return n;
       }
       int for_writing(purpose p = keep_ownership)
       {
-        crpcut::close(fds[0]);
+        wrapped::close(fds[0]);
         int n = fds[1];
         if (p == release_ownership) fds[1] = -1;
         return n;
@@ -245,7 +245,7 @@ namespace crpcut {
     {
       pipe_pair p("communication pipe for presenter process");
 
-      pid_t pid = crpcut::fork();
+      pid_t pid = wrapped::fork();
       if (pid < 0)
         {
           throw datatypes::posix_error(errno, "forking presenter process");
@@ -257,18 +257,18 @@ namespace crpcut {
       int presenter_pipe = p.for_reading();
 
       char time_string[] = "2009-01-09T23:59:59Z";
-      time_t now = crpcut::time(0);
-      struct tm *tmdata = crpcut::gmtime(&now);
-      snprintf(time_string, sizeof(time_string),
-               "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
-              tmdata->tm_year + 1900,
-              tmdata->tm_mon + 1,
-              tmdata->tm_mday,
-              tmdata->tm_hour,
-              tmdata->tm_min,
-              tmdata->tm_sec);
+      time_t now = wrapped::time(0);
+      struct tm *tmdata = wrapped::gmtime(&now);
+      wrapped::snprintf(time_string, sizeof(time_string),
+                        "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
+                        tmdata->tm_year + 1900,
+                        tmdata->tm_mon + 1,
+                        tmdata->tm_mday,
+                        tmdata->tm_hour,
+                        tmdata->tm_min,
+                        tmdata->tm_sec);
       char machine_string[PATH_MAX];
-      crpcut::gethostname(machine_string, sizeof(machine_string));
+      wrapped::gethostname(machine_string, sizeof(machine_string));
       {
         std::ostringstream os;
         os <<
@@ -285,25 +285,25 @@ namespace crpcut {
           }
         os << "\">\n" << std::flush;
         const std::string &s = os.str();
-        crpcut::write(ofd, s.c_str(), s.size());
+        wrapped::write(ofd, s.c_str(), s.size());
       }
       std::map<pid_t, test_case_result> messages;
       for (;;)
         {
           pid_t test_case_id;
-          int rv = crpcut::read(presenter_pipe,
+          int rv = wrapped::read(presenter_pipe,
                                 &test_case_id,
                                 sizeof(test_case_id));
           if (rv == 0)
             {
               assert(messages.size() == 0);
-              crpcut::exit(0);
+              wrapped::exit(0);
             }
           assert(rv == sizeof(test_case_id));
           test_case_result &s = messages[test_case_id];
 
           comm::type t;
-          rv = crpcut::read(presenter_pipe, &t, sizeof(t));
+          rv = wrapped::read(presenter_pipe, &t, sizeof(t));
           assert(rv == sizeof(t));
 
           switch (t)
@@ -320,7 +320,7 @@ namespace crpcut {
                 size_t bytes_read = 0;
                 while (bytes_read < sizeof(len))
                   {
-                    rv = crpcut::read(presenter_pipe,
+                    rv = wrapped::read(presenter_pipe,
                                       p + bytes_read,
                                       sizeof(len) - bytes_read);
                     assert(rv > 0);
@@ -330,7 +330,7 @@ namespace crpcut {
                 bytes_read = 0;
                 while (bytes_read < len)
                   {
-                    rv = crpcut::read(presenter_pipe,
+                    rv = wrapped::read(presenter_pipe,
                                       buff + bytes_read,
                                       len - bytes_read);
                     assert(rv >= 0);
@@ -344,7 +344,7 @@ namespace crpcut {
             case comm::end_test:
               {
                 size_t len;
-                rv = crpcut::read(presenter_pipe, &len, sizeof(len));
+                rv = wrapped::read(presenter_pipe, &len, sizeof(len));
                 assert(rv == sizeof(len));
                 assert(len == 0);
                 std::ostringstream os;
@@ -403,14 +403,14 @@ namespace crpcut {
                       }
                   }
                 const std::string s = os.str();
-                crpcut::write(ofd, s.c_str(), s.size());
+                wrapped::write(ofd, s.c_str(), s.size());
               }
               messages.erase(test_case_id);
               break;
             case comm::dir:
               {
                 size_t len;
-                rv = crpcut::read(presenter_pipe, &len, sizeof(len));
+                rv = wrapped::read(presenter_pipe, &len, sizeof(len));
                 assert(rv == sizeof(len));
                 assert(len == 0);
                 (void)len; // silense warning
@@ -426,12 +426,12 @@ namespace crpcut {
             case comm::info:
               {
                 size_t len;
-                rv = crpcut::read(presenter_pipe, &len, sizeof(len));
+                rv = wrapped::read(presenter_pipe, &len, sizeof(len));
                 assert(rv == sizeof(len));
                 if (len)
                   {
                     char *buff = static_cast<char *>(alloca(len));
-                    rv = crpcut::read(presenter_pipe, buff, len);
+                    rv = wrapped::read(presenter_pipe, buff, len);
                     assert(size_t(rv) == len);
 
                     if (t == comm::exit_ok || t == comm::exit_fail)
@@ -460,11 +460,11 @@ namespace crpcut {
 
   void test_case_factory::kill_presenter_process()
   {
-    crpcut::close(presenter_pipe);
+    wrapped::close(presenter_pipe);
     ::siginfo_t info;
     for (;;)
       {
-        int rv = crpcut::waitid(P_ALL, 0, &info, WEXITED);
+        int rv = wrapped::waitid(P_ALL, 0, &info, WEXITED);
         if (rv == -1 && errno == EINTR) continue;
         assert(rv == 0);
         break;
@@ -505,12 +505,12 @@ namespace crpcut {
     }
     catch (std::exception &e)
       {
-        const size_t len = crpcut::strlen(e.what());
+        const size_t len = wrapped::strlen(e.what());
 #define TEMPLATE_HEAD "Unexpectedly caught std::exception\n  what()="
         const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
         char *msg = static_cast<char *>(alloca(head_size + len + 1));
-        crpcut::strcpy(msg, TEMPLATE_HEAD);
-        crpcut::strcpy(msg + head_size, e.what());
+        wrapped::strcpy(msg, TEMPLATE_HEAD);
+        wrapped::strcpy(msg + head_size, e.what());
 #undef TEMPLATE_HEAD
         report(comm::exit_fail, head_size + len, msg);
       }
@@ -593,7 +593,7 @@ namespace crpcut {
     ::pid_t pid;
     for (;;)
       {
-        pid = crpcut::fork();
+        pid = wrapped::fork();
         if (pid < 0) throw datatypes::posix_error(errno,
                                                   "fork test-case process");
         if (pid >= 0) break;
@@ -604,8 +604,8 @@ namespace crpcut {
       {
         comm::report.set_fds(p2c.for_reading(pipe_pair::release_ownership),
                              c2p.for_writing(pipe_pair::release_ownership));
-        crpcut::dup2(stdout.for_writing(), 1);
-        crpcut::dup2(stderr.for_writing(), 2);
+        wrapped::dup2(stdout.for_writing(), 1);
+        wrapped::dup2(stderr.for_writing(), 2);
         stdout.close();
         stderr.close();
         p2c.close();
@@ -643,8 +643,8 @@ namespace crpcut {
         case 'o':
           {
             ++p;
-            int o = crpcut::open(*p, O_CREAT | O_WRONLY | O_TRUNC, 0666);
-            if (!o < 0)
+            int o = wrapped::open(*p, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+            if (o < 0)
               {
                 err_os << "Failed to open " << *p << " for writing\n";
                 return -1;
@@ -701,7 +701,7 @@ namespace crpcut {
               err_os << "-d must be followed by a directory name\n";
               return -1;
             }
-          crpcut::strcpy(dirbase, working_dir);
+          wrapped::strcpy(dirbase, working_dir);
           break;
         case 'n':
           nodeps = true;
@@ -728,15 +728,15 @@ namespace crpcut {
     try {
       if (tests_as_child_procs())
         {
-          if (!working_dir && !crpcut::mkdtemp(dirbase))
+          if (!working_dir && !wrapped::mkdtemp(dirbase))
             {
               err_os << argv[0] << ": failed to create working directory\n";
               return 1;
             }
-          if (crpcut::chdir(dirbase) != 0)
+          if (wrapped::chdir(dirbase) != 0)
             {
               err_os << argv[0] << ": couldn't move to working directoryy\n";
-              crpcut::rmdir(dirbase);
+              wrapped::rmdir(dirbase);
               return 1;
             }
           presenter_pipe = start_presenter_process(output_fd, verbose_mode,
@@ -812,10 +812,10 @@ namespace crpcut {
           for (unsigned n = 0; n < max_parallel; ++n)
             {
               char name[std::numeric_limits<unsigned>::digits/3+2];
-              int len = crpcut::snprintf(name, sizeof(name), "%u", n);
+              int len = wrapped::snprintf(name, sizeof(name), "%u", n);
               assert(len > 0 && len < int(sizeof(name)));
               (void)len; // silence warning
-              (void)crpcut::rmdir(name); // ignore, taken care of as error
+              (void)wrapped::rmdir(name); // ignore, taken care of as error
             }
 
           if (!implementation::is_dir_empty("."))
@@ -830,15 +830,15 @@ namespace crpcut {
             }
           else if (working_dir == 0)
             {
-              if (crpcut::chdir("..") < 0)
+              if (wrapped::chdir("..") < 0)
                 {
                   throw datatypes::posix_error(errno,
                                                "chdir back from testcase working dir");
                 }
-              (void)crpcut::rmdir(dirbase); // ignore, taken care of as error
+              (void)wrapped::rmdir(dirbase); // ignore, taken care of as error
             }
           const std::string &s = os.str();
-          crpcut::write(output_fd, s.c_str(), s.length());
+          wrapped::write(output_fd, s.c_str(), s.length());
         }
 
       if (reg.get_next() != &reg)
@@ -861,12 +861,12 @@ namespace crpcut {
             }
           os << "  </blocked_tests>\n";
           const std::string s = os.str();
-          crpcut::write(output_fd, s.c_str(), s.length());
+          wrapped::write(output_fd, s.c_str(), s.length());
         }
 
       const char endtag[] = "</crpcut>\n";
-      crpcut::write(output_fd, endtag, sizeof(endtag)-1);
-      crpcut::close(output_fd);
+      wrapped::write(output_fd, endtag, sizeof(endtag)-1);
+      wrapped::close(output_fd);
       return num_tests_run - num_successful_tests;
     }
     catch (datatypes::posix_error &e)

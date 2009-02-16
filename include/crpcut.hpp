@@ -248,25 +248,29 @@ namespace std {
 
 #define CRPCUT_WRAP_FUNC(lib, name, rv, param_list, param)              \
   namespace crpcut {                                                    \
-      extern "C" typedef rv (*f_ ## name ## _t) param_list;             \
-      rv name param_list                                                \
-      {                                                                 \
-        static f_ ## name ## _t f_ ## name                              \
-          = libwrapper::loader<libs::lib>::obj()                        \
-          .sym<f_ ## name ## _t>(#name);                                \
-        return f_ ## name param;                                        \
+      namespace wrapped {                                               \
+          extern "C" typedef rv (*f_ ## name ## _t) param_list;         \
+          rv name param_list                                            \
+          {                                                             \
+            static f_ ## name ## _t f_ ## name                          \
+              = libwrapper::loader<libs::lib>::obj()                    \
+              .sym<f_ ## name ## _t>(#name);                            \
+            return f_ ## name param;                                    \
+          }                                                             \
       }                                                                 \
   }
 
 #define CRPCUT_WRAP_V_FUNC(lib, name, rv, param_list, param)            \
   namespace crpcut {                                                    \
-      extern "C" typedef rv (*f_ ## name ## _t) param_list;             \
-      rv name param_list                                                \
-      {                                                                 \
-        static f_ ## name ## _t f_ ## name                              \
-          = libwrapper::loader<libs::lib>::obj()                        \
-          .sym<f_ ## name ## _t>(#name);                                \
-        f_ ## name param;                                               \
+      namespace wrapped {                                               \
+          extern "C" typedef rv (*f_ ## name ## _t) param_list;         \
+          rv name param_list                                            \
+          {                                                             \
+            static f_ ## name ## _t f_ ## name                          \
+              = libwrapper::loader<libs::lib>::obj()                    \
+              .sym<f_ ## name ## _t>(#name);                            \
+            f_ ## name param;                                           \
+          }                                                             \
       }                                                                 \
   }
 
@@ -277,36 +281,39 @@ namespace std {
 #endif
 
 namespace crpcut {
-  // namespace wrapped stdc and posix functions
-  DIR* opendir(const char *n);
-  CRPCUT_NORETURN void abort();
-  CRPCUT_NORETURN void _Exit(int c);
-  CRPCUT_NORETURN void exit(int c);
-  char * strcpy(char *l, const char *r);
-  char *mkdtemp(char *t);
-  int chdir(const char *n);
-  int close(int);
-  int closedir(DIR* p);
-  int dup2(int o, int n);
-  int fork(void);
-  int gethostname(char *n, size_t l);
-  int kill(pid_t p, int s);
-  int mkdir(const char *n, mode_t m);
-  int open(const char *, int, mode_t);
-  int pipe(int p[2]);
-  int readdir_r(DIR* p, struct dirent* e, struct dirent** r);
-  int rename(const char *o, const char *n);
-  int rmdir(const char *n);
-  int setrlimit(int, const struct rlimit*);
-  int snprintf(char *s, size_t si, const char *f, ...);
-  int strcmp(const char *l, const char *r);
-  int waitid(idtype_t t, id_t i, siginfo_t *si, int o);
-  size_t strlen(const char *r);
-  ssize_t read(int fd, void* p, size_t s);
-  ssize_t write(int fd, const void* p, size_t s);
-  struct tm * gmtime(const time_t *t);
-  time_t time(time_t *t);
-
+  namespace wrapped { // stdc and posix functions
+    CRPCUT_NORETURN void _Exit(int c);
+    CRPCUT_NORETURN void abort();
+    int                  chdir(const char *n);
+    int                  close(int);
+    int                  closedir(DIR* p);
+    int                  dup2(int o, int n);
+    CRPCUT_NORETURN void exit(int c);
+    int                  fork(void);
+    int                  gethostname(char *n, size_t l);
+    struct tm *          gmtime(const time_t *t);
+    int                  kill(pid_t p, int s);
+    int                  mkdir(const char *n, mode_t m);
+    char *               mkdtemp(char *t);
+    DIR*                 opendir(const char *n);
+    char *               strcpy(char *l, const char *r);
+    int                  open(const char *, int, mode_t);
+    int                  pipe(int p[2]);
+    ssize_t              read(int fd, void* p, size_t s);
+    int                  readdir_r(DIR* p, struct dirent* e, struct dirent** r);
+    int                  rename(const char *o, const char *n);
+    int                  rmdir(const char *n);
+    int                  select(int, fd_set*, fd_set*, fd_set*, timeval *);
+    int                  setrlimit(int, const struct rlimit*);
+    int                  snprintf(char *s, size_t si, const char *f, ...);
+    int                  strcmp(const char *l, const char *r);
+    char *               strerror(int n);
+    size_t               strlen(const char *r);
+    time_t               time(time_t *t);
+    int                  vsnprintf(char *s, size_t si, const char *f, va_list);
+    int                  waitid(idtype_t t, id_t i, siginfo_t *si, int o);
+    ssize_t              write(int fd, const void* p, size_t s);
+  }
 
   namespace libs
   {
@@ -356,11 +363,6 @@ namespace crpcut {
 
 
 
-  ssize_t write(int fd, const void* p, size_t s);
-  ssize_t read(int fd, void* p, size_t s);
-  size_t strlen(const char *r);
-  char * strerror(int n);
-  int strcmp(const char *, const char *);
   class none {};
 
   namespace datatypes {
@@ -373,7 +375,7 @@ namespace crpcut {
       }
       virtual const char *what() const throw ()
       {
-        str_ = crpcut::strerror(errno);
+        str_ = wrapped::strerror(errno);
         str_ += " from ";
         str_ += msg_;
         return str_.c_str();
@@ -851,7 +853,7 @@ namespace crpcut {
       }
       basic_iastream(const charT *begin)
         :
-        buf(begin, begin + crpcut::strlen(begin))
+        buf(begin, begin + wrapped::strlen(begin))
       {
         init(&buf);
       }
@@ -1050,7 +1052,7 @@ namespace crpcut {
       static char buff[1024];
       for (;;)
         {
-          int rv = crpcut::read(fd, buff, sizeof(buff));
+          int rv = wrapped::read(fd, buff, sizeof(buff));
           if (rv == 0) return false;
           if (rv == -1)
             {
@@ -1513,7 +1515,7 @@ namespace crpcut {
     inline void
     reporter::operator()(type t, const char *msg) const
     {
-      operator()(t, crpcut::strlen(msg), msg);
+      operator()(t, wrapped::strlen(msg), msg);
     }
 
     template <typename T>
@@ -1525,9 +1527,9 @@ namespace crpcut {
       const char *p = static_cast<const char*>(static_cast<const void*>(&t));
       while (bytes_written < len)
         {
-          int rv = crpcut::write(write_fd,
-                                 p + bytes_written,
-                                 len - bytes_written);
+          int rv = wrapped::write(write_fd,
+                                  p + bytes_written,
+                                  len - bytes_written);
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) throw "write failed";
           bytes_written += rv;
@@ -1556,9 +1558,9 @@ namespace crpcut {
       char *p = static_cast<char*>(static_cast<void*>(&t));
       while (bytes_read < len)
         {
-          int rv = crpcut::read(read_fd,
-                                p + bytes_read,
-                                len - bytes_read);
+          int rv = wrapped::read(read_fd,
+                                 p + bytes_read,
+                                 len - bytes_read);
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) {
             throw "read failed";
@@ -1830,7 +1832,7 @@ namespace crpcut {
                 {                                                           \
                   p = name_param;                                           \
                 }                                                           \
-              return !crpcut::strcmp(p, #test_case_name);                      \
+              return !crpcut::wrapped::strcmp(p, #test_case_name);          \
             }                                                               \
             virtual std::ostream &print_name(std::ostream &os) const        \
             {                                                               \

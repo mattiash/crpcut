@@ -37,7 +37,6 @@
     <th width="10"></th>
     <th align="left"><xsl:value-of select="@meaning"/></th>
     <xsl:for-each select="def">
-      <xsl:sort select="@notion"/>
       <tr><td valign="top"><xsl:value-of select="@notion"/></td><td></td>
           <td valign="top"><xsl:apply-templates/></td></tr>
     </xsl:for-each>

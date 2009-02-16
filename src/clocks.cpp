@@ -49,7 +49,9 @@ extern "C"
 
 #if defined (HAVE_CLOCK_GETTIME)
 namespace crpcut {
-  int clock_gettime(int, struct timespec *);
+  namespace wrapped {
+    int clock_gettime(int, struct timespec *);
+  }
 }
 #endif
 
@@ -91,7 +93,7 @@ namespace {
   unsigned get_clock_gettime_monotonic_timestamp()
   {
     struct timespec ts;
-    int rv = crpcut::clock_gettime(CLOCK_MONOTONIC, &ts);
+    int rv = crpcut::wrapped::clock_gettime(CLOCK_MONOTONIC, &ts);
     assert(rv == 0);
     return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
   }
@@ -101,7 +103,7 @@ namespace clocks {
   inline monotonic::timestamp_func monotonic::try_clock_gettime_monotonic()
   {
     struct timespec ts;
-    int rv = crpcut::clock_gettime(CLOCK_MONOTONIC, &ts);
+    int rv = crpcut::wrapped::clock_gettime(CLOCK_MONOTONIC, &ts);
     return rv == 0 ? &get_clock_gettime_monotonic_timestamp : 0;
   }
 }
@@ -120,7 +122,7 @@ namespace {
   unsigned get_clock_gettime_cputime_timestamp()
   {
     struct timespec ts;
-    int rv = crpcut::clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
+    int rv = crpcut::wrapped::clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
     assert(rv == 0);
     return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
   }
@@ -130,7 +132,7 @@ namespace clocks {
   inline cputime::timestamp_func cputime::try_clock_gettime_cputime()
   {
     struct timespec ts;
-    int rv = crpcut::clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
+    int rv = crpcut::wrapped::clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
     return rv == 0 ? &get_clock_gettime_cputime_timestamp : 0;
   }
 }
@@ -145,25 +147,27 @@ namespace clocks {
 
 #if defined (HAVE_ITIMER) && defined(ITIMER_REAL)
 namespace crpcut {
-  int getitimer(int w, struct itimerval *v);
-  int setitimer(int w, const struct itimerval *iv, struct itimerval *ov);
-  int getpid(void);
+  namespace wrapped {
+    int getitimer(int w, struct itimerval *v);
+    int setitimer(int w, const struct itimerval *iv, struct itimerval *ov);
+    int getpid(void);
+  }
 
 }
 namespace {
   unsigned get_itimer_real_timestamp()
   {
     static pid_t initialized = 0;
-    pid_t pid = crpcut::getpid();
+    pid_t pid = crpcut::wrapped::getpid();
     if (initialized != pid)
       {
         struct itimerval v = { { 0, 0 }, { 99999, 0 } };
-        int rv = crpcut::setitimer(ITIMER_REAL, &v, 0);
+        int rv = crpcut::wrapped::setitimer(ITIMER_REAL, &v, 0);
         assert(rv == 0);
         initialized = pid;
       }
     struct itimerval v;
-    int rv = crpcut::getitimer(ITIMER_REAL, &v);
+    int rv = crpcut::wrapped::getitimer(ITIMER_REAL, &v);
     assert(rv == 0);
     return (99999 - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
   }
@@ -173,7 +177,7 @@ namespace clocks {
   inline monotonic::timestamp_func monotonic::try_getitimer_real()
   {
     struct itimerval v;
-    int rv = crpcut::getitimer(ITIMER_REAL, &v);
+    int rv = crpcut::wrapped::getitimer(ITIMER_REAL, &v);
     return rv == 0 ? &get_itimer_real_timestamp : 0;
   }
 }
@@ -195,12 +199,12 @@ namespace {
     if (!initialized)
       {
         struct itimerval v = { { 0, 0 }, { 99999, 0 } };
-        int rv = crpcut::setitimer(ITIMER_VIRTUAL, &v, 0);
+        int rv = crpcut::wrapped::setitimer(ITIMER_VIRTUAL, &v, 0);
         assert(rv == 0);
         initialized = true;
       }
     struct itimerval v;
-    int rv = crpcut::getitimer(ITIMER_VIRTUAL, &v);
+    int rv = crpcut::wrapped::getitimer(ITIMER_VIRTUAL, &v);
     assert(rv == 0);
     return (99999 - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
   }
@@ -210,7 +214,7 @@ namespace clocks {
   inline cputime::timestamp_func cputime::try_getitimer_virtual()
   {
     struct itimerval v;
-    int rv = crpcut::getitimer(ITIMER_VIRTUAL, &v);
+    int rv = crpcut::wrapped::getitimer(ITIMER_VIRTUAL, &v);
     return rv == 0 ? &get_itimer_virtual_timestamp : 0;
   }
 }
@@ -231,12 +235,12 @@ namespace {
     if (!initialized)
       {
         struct itimerval v = { { 0, 0 }, { 99999, 0 } };
-        int rv = crpcut::setitimer(ITIMER_PROF, &v, 0);
+        int rv = crpcut::wrapped::setitimer(ITIMER_PROF, &v, 0);
         assert(rv == 0);
         initialized = true;
       }
     struct itimerval v;
-    int rv = crpcut::getitimer(ITIMER_PROF, &v);
+    int rv = crpcut::wrapped::getitimer(ITIMER_PROF, &v);
     assert(rv == 0);
     return (99999 - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
   }
@@ -246,7 +250,7 @@ namespace clocks {
   inline cputime::timestamp_func cputime::try_getitimer_prof()
   {
     struct itimerval v;
-    int rv = crpcut::getitimer(ITIMER_PROF, &v);
+    int rv = crpcut::wrapped::getitimer(ITIMER_PROF, &v);
     return rv == 0 ? &get_itimer_prof_timestamp : 0;
   }
 }
@@ -263,13 +267,15 @@ namespace clocks {
 
 #if defined(HAVE_GETTIMEOFDAY)
 namespace crpcut {
-  int gettimeofday(struct timeval *tv, struct timezone *tz);
+  namespace wrapped {
+    int gettimeofday(struct timeval *tv, struct timezone *tz);
+  }
 }
 namespace {
   unsigned get_gettimeofday_timestamp()
   {
     struct timeval tv;
-    int rv = crpcut::gettimeofday(&tv, 0);
+    int rv = crpcut::wrapped::gettimeofday(&tv, 0);
     assert(rv == 0);
     return tv.tv_sec*1000 + tv.tv_usec/1000;
   }
@@ -279,7 +285,7 @@ namespace clocks {
   inline monotonic::timestamp_func monotonic::try_gettimeofday()
   {
     struct timeval tv;
-    int rv = crpcut::gettimeofday(&tv, 0);
+    int rv = crpcut::wrapped::gettimeofday(&tv, 0);
     return rv == 0 ? &get_gettimeofday_timestamp : 0;
   }
 }

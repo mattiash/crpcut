@@ -100,14 +100,16 @@ CRPCUT_WRAP_FUNC(libc, vsnprintf,
                  (char *d, size_t s, const char *f, va_list ap),
                  (d, s, f, ap))
 namespace crpcut {
-   int snprintf(char *s, size_t si, const char *f, ...)
-   {
-     va_list ap;
-     va_start(ap, f);
-     int r = vsnprintf(s, si, f, ap);
-     va_end(ap);
-     return r;
-   }
+  namespace wrapped {
+    int snprintf(char *s, size_t si, const char *f, ...)
+    {
+      va_list ap;
+      va_start(ap, f);
+      int r = vsnprintf(s, si, f, ap);
+      va_end(ap);
+      return r;
+    }
+  }
 }
 
 

@@ -124,18 +124,22 @@ chdir()
 close()
 closedir()
 dup2()
+++ epoll_create()
+++ epoll_ctl()
+++ epoll_wait()
 fork()
 gethostname()
 ** getitimer(ITIMER_REAL)
 ** getitimer(ITIMER_VIRTUAL)
 kill()
 mkdir()
+open()
 opendir()
 pipe()
 read()
 readdir_r()
 rmdir()
-select()
+++ select()
 ** setitimer(ITIMER_REAL)
 ** setitimer(ITIMER_VIRTUAL)
 setrlimit(RLIMIT_CORE)
@@ -147,6 +151,8 @@ write()</code></def>
 <definitions>
 <def notion="**"><id>clock_gettime()</id> will be used if available.
 <id>*itimer()</id> will be used as a fallback.</def>
+<def notion="++"><id>epoll_*</id> will be used if available. <id>select()</id>
+                 will be used as a fallback.</def>
 <def notion="">On OS-X <id>mach_absolute_time()</id> and
 <id>mach_timebase_info()</id> will be used for realtime measurements.</def>
 </definitions>
@@ -460,10 +466,8 @@ Breakpoint 1 at 0x804a71c: file unitt.cpp, line 105.
 Starting program: ./testprog -c 0 -n asserts::should_succeed_assert_no_throw
 [Thread debugging using libthread_db enabled]
 [New Thread 0xf7c9a8e0 (LWP 25339)]
-&lt;?xml version=&quot;1.0&quot;?&gt;
 
-&lt;crpcut xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:noNamespaceSchemaLocation=&quot;crpcut.xsd&quot; starttime=&quot;2009-01-14T19:35:41Z&quot; host=&quot;pteranodon&quot; command=&quot;./testprog -c 0 -n asserts::should_succeed_assert_no_throw&quot;&gt;
-  &lt;test name=&quot;asserts::should_succeed_assert_no_throw[Switching to Thread 0xf7c9a8e0 (LWP 25339)]
+asserts::should_succeed_assert_no_throw[Switching to Thread 0xf7c9a8e0 (LWP 25339)]
 
 Breakpoint 1, asserts::should_succeed_assert_no_throw::test (this=0x807a688) at unitt.cpp:105
 105         ASSERT_NO_THROW(i=1);
@@ -474,12 +478,13 @@ From there, you can single step the test case.
 <chapter title="Advanced techniques">
 crpcut accesses all functions it uses from <id>libc</id> and <id>librt</id>
 directly from the lib by means of <id>dlsym()</id>. It does this through wrapper
-functions in namespace <id>crpcut</id>. This means that you can define
+functions in namespace <id>crpcut::wrapped</id>. This means that you can define
 your own versions of those functions in global namespace, if you need it
 for your testing. Be aware, however, that the C++ standard library may
 use some of these functions. So, while creating your own
-<id>int&#xA0;write(int&#xA0;fd,&#xA0;const&#xA0;void&#xA0;*addr,&#xA0;size_t&#xA0;bytes)</id> will not harm
-crpcut, it will probably cause <id>std::ofstream</id> to misbehave.
+<id>int&#xA0;write(int&#xA0;fd,&#xA0;const&#xA0;void&#xA0;*addr,&#xA0;size_t&#xA0;bytes)</id>
+will not harm crpcut, it will probably cause <id>std::ofstream</id> to
+misbehave.
 <p/>
 If you need to create wrappers of your own, you can easily do that
 through the macros and traits templates available in <id>crpcut.hpp</id>.
@@ -499,7 +504,8 @@ CRPCUT_WRAP_FUNC(libname, funcname, rettype, prototype_params, call_params)
                           parenthesis.</def>
 </definitions>
 For functions without return value, there's also a <id>CRPCUT_WRAP_V_FUNC()</id>
-macro. It has the exact same parameter list (including <id>rettype</id>, which typically is <id>void</id>, but may optionally include some attribute, like
+macro. It has the exact same parameter list (including <id>rettype</id>, which
+typically is <id>void</id>, but may optionally include some attribute, like
 <id>__attribute__((noreturn))</id>.)
 <p/>
 This is easiest to explain through an example. Say you want to intercept
@@ -524,7 +530,7 @@ crpcut. If you want to access functions in other libraries, you add your
 own constants under the namespace <id>crpcut::libs</id>. These must be
 positive integers. You also provide your own specialization of the
 traits template
-<id>const char *crpcut::libwrapper::traits&lt;int&gt;::name</id>.
+<id>const&#xA0;char&#xA0;*crpcut::libwrapper::traits&lt;int&gt;::name</id>.
 A complete example for the function <id>asin()</id> in the <id>libm</id>
 library:
 <code>
@@ -544,8 +550,8 @@ namespace crpcut {
 }
 CRPCUT_WRAP_FUNC(libm, asin, double, (double d), (d))
 </code>
-Now the function <id>crpcut::asin()</id> will call the original function
-in <id>libm</id>, and you can define your own <id>asin()</id> in
+Now the function <id>crpcut::wrapped::asin()</id> will call the original
+function in <id>libm</id>, and you can define your own <id>asin()</id> in
 global namespace for testing purposes.
 <code>
 extern "C"
@@ -554,7 +560,7 @@ extern "C"
   {
     ASSERT_GE(d, -1.0);
     ASSERT_LE(d, 1.0);
-    return crpcut::asin(d);
+    return crpcut::wrapped::asin(d);
   }
 }
 </code>

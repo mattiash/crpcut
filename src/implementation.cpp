@@ -77,19 +77,19 @@ namespace crpcut {
 
     bool is_dir_empty(const char *name)
     {
-      DIR *d = crpcut::opendir(name);
+      DIR *d = wrapped::opendir(name);
       assert(d);
       char buff[sizeof(dirent) + PATH_MAX];
       dirent *ent = reinterpret_cast<dirent*>(buff),*result = ent;
       bool empty = true;
-      while (empty && result && (crpcut::readdir_r(d, ent, &result) == 0))
+      while (empty && result && (wrapped::readdir_r(d, ent, &result) == 0))
         {
-          if (crpcut::strcmp(ent->d_name, ".") == 0 ||
-              crpcut::strcmp(ent->d_name, "..") == 0)
+          if (wrapped::strcmp(ent->d_name, ".") == 0 ||
+              wrapped::strcmp(ent->d_name, "..") == 0)
             continue;
           empty = false;
         }
-      crpcut::closedir(d);
+      wrapped::closedir(d);
       return empty;
     }
 
@@ -118,7 +118,7 @@ namespace crpcut {
       comm::type t;
       int rv;
       do {
-        rv = crpcut::read(fd, &t, sizeof(t));
+        rv = wrapped::read(fd, &t, sizeof(t));
       } while (rv == -1 && errno == EINTR);
       if (rv == 0) return false; // eof
       assert(rv == sizeof(t));
@@ -128,7 +128,7 @@ namespace crpcut {
         }
       size_t len = 0;
       do {
-        rv = crpcut::read(fd, &len, sizeof(len));
+        rv = wrapped::read(fd, &len, sizeof(len));
       } while (rv == -1 && errno == EINTR);
       assert(rv == sizeof(len));
 
@@ -141,7 +141,7 @@ namespace crpcut {
           char *p = static_cast<char*>(static_cast<void*>(&ts));
           while (bytes_read < len)
             {
-              rv = crpcut::read(fd, p + bytes_read, len - bytes_read);
+              rv = wrapped::read(fd, p + bytes_read, len - bytes_read);
               if (rv == -1 && errno == EINTR) continue;
               assert(rv > 0);
               bytes_read += rv;
@@ -150,7 +150,7 @@ namespace crpcut {
           reg->absolute_deadline_ms = ts;
           reg->deadline_set = true;
           do {
-            rv = crpcut::write(response_fd, &len, sizeof(len));
+            rv = wrapped::write(response_fd, &len, sizeof(len));
           } while (rv == -1 && errno == EINTR);
           assert(reg->deadline_is_set());
           test_case_factory::set_deadline(reg);
@@ -161,21 +161,21 @@ namespace crpcut {
           assert(len == 0);
           reg->clear_deadline();
           do {
-            rv = crpcut::write(response_fd, &len, sizeof(len));
+            rv = wrapped::write(response_fd, &len, sizeof(len));
           } while (rv == -1 && errno == EINTR);
           return true;
         }
       char *buff = static_cast<char *>(::alloca(len));
       while (bytes_read < len)
         {
-          rv = crpcut::read(fd, buff + bytes_read, len - bytes_read);
+          rv = wrapped::read(fd, buff + bytes_read, len - bytes_read);
           if (rv == 0) break;
           if (rv == -1 && errno == EINTR) continue;
           assert(rv > 0);
           bytes_read += rv;
         }
       do {
-        rv = crpcut::write(response_fd, &len, sizeof(len));
+        rv = wrapped::write(response_fd, &len, sizeof(len));
       } while (rv == -1 && errno == EINTR);
       test_case_factory::present(reg->get_pid(), t, len, buff);
       if (t == comm::exit_ok || t == comm::exit_fail)
@@ -208,7 +208,7 @@ namespace crpcut {
 
     void test_case_registrator::kill()
     {
-      crpcut::kill(pid_, SIGKILL);
+      wrapped::kill(pid_, SIGKILL);
       death_note = true;
       deadline_set = false;
       static const char msg[] = "Timed out - killed";
@@ -249,7 +249,7 @@ namespace crpcut {
       dirnum = n;
       stream::toastream<std::numeric_limits<int>::digits/3+1> name;
       name << n << '\0';
-      if (crpcut::mkdir(name.begin(), 0700) != 0)
+      if (wrapped::mkdir(name.begin(), 0700) != 0)
         {
           assert(errno == EEXIST);
         }
@@ -259,7 +259,7 @@ namespace crpcut {
     {
       stream::toastream<std::numeric_limits<int>::digits/3+1> name;
       name << dirnum << '\0';
-      if (crpcut::chdir(name.begin()) != 0)
+      if (wrapped::chdir(name.begin()) != 0)
         {
           report(comm::exit_fail, "Couldn't chdir working dir");
           assert("unreachable code reached" == 0);
@@ -272,7 +272,7 @@ namespace crpcut {
       ::siginfo_t info;
       for (;;)
         {
-          int rv = crpcut::waitid(P_PID, pid_, &info, WEXITED);
+          int rv = wrapped::waitid(P_PID, pid_, &info, WEXITED);
           int n = errno;
           if (rv == -1 && n == EINTR) continue;
           assert(rv == 0);
@@ -292,7 +292,7 @@ namespace crpcut {
             stream::toastream<1024> tcname;
             tcname << *this << '\0';
             test_case_factory::present(pid_, comm::dir, 0, 0);
-            crpcut::rename(dirname.begin(), tcname.begin());
+            wrapped::rename(dirname.begin(), tcname.begin());
             t = comm::exit_fail;
             register_success(false);
           }

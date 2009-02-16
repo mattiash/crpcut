@@ -45,7 +45,7 @@ extern "C"
   {
     ASSERT_GE(d, -1.0);
     ASSERT_LT(d,  1.0);
-    return crpcut::asin(d);
+    return crpcut::wrapped::asin(d);
   }
 }
 
