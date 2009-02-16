@@ -144,3 +144,8 @@ namespace testing
   UnitTest::UnitTest() {}
   UnitTest::~UnitTest() { }
 }
+namespace crpcut {
+  you_must_link_with_libcrpcut_gmock::you_must_link_with_libcrpcut_gmock()
+  {
+  }
+}

@@ -444,6 +444,12 @@ parameters in the call don&apos;t make sense.
 The result from a test run is always printed on stdout, or the file named with
 the -o flag, using the XML Schema provided in <id>crpcut.xsd</id>. It is fairly
 human-readable.
+<p/>
+The test program must be linked with <id>libcrpcut.so</id>. If you use
+<link url="http://code.google.com/p/googlemock">google-mock</link>, you must
+also link with <id>libgmock.so</id> from the
+<link url="http://code.google.com/p/googlemock">google-mock</link> installation,
+and <id>libcrpcut_gmock.so</id>. Do NOT link with <id>libgtest.so</id>.
 </chapter>
 
 <chapter title="Debugging">

@@ -117,6 +117,15 @@
 #undef TYPED_TEST_CASE
 #undef TYPED_TEST_CASE_P
 #undef TYPED_TEST_P
+
+namespace crpcut {
+  class you_must_link_with_libcrpcut_gmock
+  {
+  public:
+    you_must_link_with_libcrpcut_gmock();
+  };
+  static you_must_link_with_libcrpcut_gmock libcrpcut_gmock_reminder;
+}
 #else
 #define GMOCK_INCLUDE_GMOCK_GMOCK_H_
 
