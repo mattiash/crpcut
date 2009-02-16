@@ -163,7 +163,7 @@ been verified.
 <chapter title="Build and Install">
   crpcut uses <link url="http://www.cmake.org">CMake</link> to manage builds and
   installs.<p/>
-First obtain the crpcut sources, either a release (current is 0.2.0) from the
+First obtain the crpcut sources, either a release (current is 0.3.0) from the
 sourceforge
 <link url="https://sourceforge.net:443/project/showfiles.php?group_id=251473">download</link>
 page, or a from the git repository <id>git://github.com/rollbear/crpcut</id>

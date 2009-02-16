@@ -1,4 +1,16 @@
-         * Output unstreamable expressions as hex dumps
+2009-02-16 0.3.0
+
+	 * No XML output when running tests with -c 0 for debugging.
+
+	 * Improved documentation and source-level enforcement on
+	   how to link when using google-mock.
+
+	 * Use libc/librt functions from dlopen()/dlsym(), and wrap
+	   them in namespace crpcut.
+
+	 * Added macros for creating own function wrappers.
+
+	 * Output unstreamable expressions as hex dumps.
 
 2009-02-08 0.2.0
 
@@ -27,7 +39,7 @@
 
            Use -n flag instead of -d for nodeps
 
-         * Fixed numerous problems with out-of-tree builds
+         * Fixed numerous problems with out-of-tree builds.
 
          * Improved selftest.
 
