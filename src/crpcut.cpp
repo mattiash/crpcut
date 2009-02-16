@@ -643,7 +643,7 @@ namespace crpcut {
         case 'o':
           {
             ++p;
-            int o = crpcut::open(*p, O_CREAT | O_WRONLY | O_TRUNC);
+            int o = crpcut::open(*p, O_CREAT | O_WRONLY | O_TRUNC, 0666);
             if (!o < 0)
               {
                 err_os << "Failed to open " << *p << " for writing\n";

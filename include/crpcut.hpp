@@ -292,7 +292,7 @@ namespace crpcut {
   int gethostname(char *n, size_t l);
   int kill(pid_t p, int s);
   int mkdir(const char *n, mode_t m);
-  int open(const char *, int);
+  int open(const char *, int, mode_t);
   int pipe(int p[2]);
   int readdir_r(DIR* p, struct dirent* e, struct dirent** r);
   int rename(const char *o, const char *n);
