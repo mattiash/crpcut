@@ -188,10 +188,10 @@ namespace crpcut {
           {
             switch (*i)
               {
-              case '<': os << "&lt;"; break;
-              case '>': os << "&gt;"; break;
-              case '&': os << "&amp;"; break;
-              case '"': os << "&quot;"; break;
+              case '<' : os << "&lt;"; break;
+              case '>' : os << "&gt;"; break;
+              case '&' : os << "&amp;"; break;
+              case '"' : os << "&quot;"; break;
               case '\'': os << "&apos;"; break;
               default: os << *i;
               }
@@ -865,7 +865,10 @@ namespace crpcut {
         }
 
       const char endtag[] = "</crpcut>\n";
-      wrapped::write(output_fd, endtag, sizeof(endtag)-1);
+      if (tests_as_child_procs())
+        {
+          wrapped::write(output_fd, endtag, sizeof(endtag)-1);
+        }
       wrapped::close(output_fd);
       return num_tests_run - num_successful_tests;
     }
