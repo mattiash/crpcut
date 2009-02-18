@@ -29,6 +29,8 @@
 extern "C" {
 #include <sys/resource.h>
 }
+#include "posix_encapsulation.hpp"
+
 namespace crpcut {
 
   namespace policies {

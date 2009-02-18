@@ -256,31 +256,22 @@ namespace std {
   crpcut::policies::timeout_policy<crpcut::policies::timeout::realtime, time>
 
 #define CRPCUT_WRAP_FUNC(lib, name, rv, param_list, param)              \
-  namespace crpcut {                                                    \
-      namespace wrapped {                                               \
-          extern "C" typedef rv (*f_ ## name ## _t) param_list;         \
-          rv name param_list                                            \
-          {                                                             \
-            static f_ ## name ## _t f_ ## name                          \
-              = libwrapper::loader<libs::lib>::obj()                    \
-              .sym<f_ ## name ## _t>(#name);                            \
-            return f_ ## name param;                                    \
-          }                                                             \
-      }                                                                 \
+  extern "C" typedef rv (*f_ ## name ## _t) param_list;                 \
+  rv name param_list                                                    \
+  {                                                                     \
+    static f_ ## name ## _t f_ ## name                                  \
+      = crpcut::libwrapper::loader<crpcut::libs::lib>::obj().sym<f_ ## name ## _t>(#name); \
+    return f_ ## name param;                                            \
   }
 
+
 #define CRPCUT_WRAP_V_FUNC(lib, name, rv, param_list, param)            \
-  namespace crpcut {                                                    \
-      namespace wrapped {                                               \
-          extern "C" typedef rv (*f_ ## name ## _t) param_list;         \
-          rv name param_list                                            \
-          {                                                             \
-            static f_ ## name ## _t f_ ## name                          \
-              = libwrapper::loader<libs::lib>::obj()                    \
-              .sym<f_ ## name ## _t>(#name);                            \
-            f_ ## name param;                                           \
-          }                                                             \
-      }                                                                 \
+  extern "C" typedef rv (*f_ ## name ## _t) param_list;                 \
+  rv name param_list                                                    \
+  {                                                                     \
+    static f_ ## name ## _t f_ ## name                                  \
+      = crpcut::libwrapper::loader<crpcut::libs::lib>::obj().sym<f_ ## name ## _t>(#name); \
+    f_ ## name param;                                                   \
   }
 
 #ifdef __GNUC__
@@ -291,38 +282,12 @@ namespace std {
 
 namespace crpcut {
   namespace wrapped { // stdc and posix functions
-    CRPCUT_NORETURN void _Exit(int c);
-    CRPCUT_NORETURN void abort();
-    int                  chdir(const char *n);
-    int                  close(int);
-    int                  closedir(DIR* p);
-    int                  dup2(int o, int n);
-    CRPCUT_NORETURN void exit(int c);
-    int                  fork(void);
-    int                  gethostname(char *n, size_t l);
-    struct tm *          gmtime(const time_t *t);
-    int                  kill(pid_t p, int s);
-    int                  mkdir(const char *n, mode_t m);
-    char *               mkdtemp(char *t);
-    DIR*                 opendir(const char *n);
-    char *               strcpy(char *l, const char *r);
-    int                  open(const char *, int, mode_t);
-    int                  pipe(int p[2]);
     ssize_t              read(int fd, void* p, size_t s);
-    int                  readdir_r(DIR* p, struct dirent* e, struct dirent** r);
-    int                  rename(const char *o, const char *n);
-    int                  rmdir(const char *n);
-    int                  select(int, fd_set*, fd_set*, fd_set*, timeval *);
-    int                  setrlimit(int, const struct rlimit*);
-    int                  snprintf(char *s, size_t si, const char *f, ...);
     int                  strcmp(const char *l, const char *r);
     char *               strerror(int n);
     size_t               strlen(const char *r);
-    time_t               time(time_t *t);
-    int                  vsnprintf(char *s, size_t si, const char *f, va_list);
-    int                  waitid(idtype_t t, id_t i, siginfo_t *si, int o);
     ssize_t              write(int fd, const void* p, size_t s);
-  }
+ }
 
   namespace libs
   {

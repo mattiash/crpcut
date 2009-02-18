@@ -42,6 +42,7 @@ extern "C" {
 #include <cassert>
 #include <limits>
 #include <cstdio>
+#include "posix_encapsulation.hpp"
 
 namespace crpcut {
 

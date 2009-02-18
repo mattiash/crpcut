@@ -26,6 +26,7 @@
 
 
 #include <crpcut.hpp>
+#include "posix_encapsulation.hpp"
 
 namespace crpcut {
 

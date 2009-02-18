@@ -37,7 +37,9 @@ namespace crpcut {
     const char *traits<libs::libm>::name = "libm.so";
   }
 }
-CRPCUT_WRAP_FUNC(libm, asin, double, (double d), (d))
+namespace testwrapped {
+  CRPCUT_WRAP_FUNC(libm, asin, double, (double d), (d))
+}
 
 extern "C"
 {
@@ -45,7 +47,7 @@ extern "C"
   {
     ASSERT_GE(d, -1.0);
     ASSERT_LT(d,  1.0);
-    return crpcut::wrapped::asin(d);
+    return testwrapped::asin(d);
   }
 }
 
@@ -60,5 +62,6 @@ TESTSUITE(wrapped)
   TEST(should_fail_assert_lt)
   {
     double d = asin(1.1);
+    INFO << "d=" << d;
   }
 }

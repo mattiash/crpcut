@@ -40,13 +40,8 @@ extern "C" {
 #include <ctime>
 #include <queue>
 #include <fstream>
+#include "posix_encapsulation.hpp"
 namespace crpcut {
-#ifdef __GNUC__
-#define NORETURN __attribute__((noreturn))
-#else
-#define NORETURN
-#endif
-
 
   test_case_factory::test_case_factory()
     : pending_children(0),
