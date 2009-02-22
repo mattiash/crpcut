@@ -183,7 +183,7 @@ namespace crpcut {
         o.begin_case(name, result);
       }
       ~printer() { o.end_case(); }
-      void terminate(const std::string &msg, const std::string &dirname = std::string())
+      void terminate(const std::string &msg, const char *dirname = 0)
       {
         o.terminate(msg, dirname);
       }
@@ -320,15 +320,24 @@ namespace crpcut {
                       }
                     if (!s.termination.empty() || s.nonempty_dir)
                       {
-                        std::string dirname;
                         if (s.nonempty_dir)
                           {
-                            dirname
-                              = test_case_factory::get_working_dir()
-                              + std::string("/")
-                              + s.name;
+                            const char *wd
+                              = test_case_factory::get_working_dir();
+                            const size_t dlen = wrapped::strlen(wd);
+                            size_t len = dlen;
+                            len+= 1;
+                            len+= s.name.size();
+                            char *dn = static_cast<char*>(alloca(len));
+                            wrapped::strcpy(dn, wd);
+                            dn[dlen]='/';
+                            wrapped::strcpy(dn + dlen + 1, s.name.c_str());
+                            out.terminate(s.termination, dn);
                           }
-                        out.terminate(s.termination, dirname);
+                        else
+                          {
+                            out.terminate(s.termination);
+                          }
                       }
                   }
               }

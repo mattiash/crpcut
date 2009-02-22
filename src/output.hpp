@@ -38,7 +38,7 @@ namespace crpcut
       virtual void begin_case(const std::string &name, bool result) = 0;
       virtual void end_case()  = 0;
       virtual void terminate(const std::string &msg,
-                             const std::string &dirname) = 0;
+                             const char *dirname = 0) = 0;
       virtual void print(const std::string &tag, const std::string &data) = 0;
       virtual void statistics(unsigned num_registered,
                               unsigned num_run,
@@ -72,7 +72,7 @@ namespace crpcut
       virtual void begin_case(const std::string &name, bool result);
       virtual void end_case();
       virtual void terminate(const std::string &msg,
-                             const std::string &dirname);
+                             const char *dirname = 0);
       virtual void print(const std::string &tag, const std::string &data);
       virtual void statistics(unsigned num_registered,
                               unsigned num_run,
@@ -98,7 +98,7 @@ namespace crpcut
       virtual void begin_case(const std::string &name, bool result);
       virtual void end_case();
       virtual void terminate(const std::string &msg,
-                             const std::string &dirname);
+                             const char *dirname = 0);
       virtual void print(const std::string &tag, const std::string &data);
       virtual void statistics(unsigned num_registered,
                               unsigned num_run,

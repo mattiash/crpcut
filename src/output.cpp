@@ -116,14 +116,14 @@ namespace crpcut
     }
 
     void xml_formatter::terminate(const std::string &msg,
-                                  const std::string &dirname)
+                                  const char *dirname)
     {
       make_closed();
       write("      <termination");
-      if (dirname.size())
+      if (dirname)
         {
           write(" nonempty_dir=\"");
-          write(dirname, escaped);
+          write(dirname, wrapped::strlen(dirname), escaped);
           write("\"");
         }
       if (msg.size() == 0)
@@ -283,12 +283,12 @@ namespace crpcut {
     }
 
     void text_formatter::terminate(const std::string &msg,
-                                   const std::string &dirname)
+                                   const char *dirname)
     {
       did_output = true;
-      if (dirname.size())
+      if (dirname)
         {
-          write(dirname);
+          write(dirname, wrapped::strlen(dirname));
           write(" is not empty!!\n");
         }
       if (!msg.empty())

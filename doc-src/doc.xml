@@ -495,7 +495,8 @@ for your testing. Be aware, however, that the C++ standard library may
 use some of these functions. So, while creating your own
 <id>int&#xA0;write(int&#xA0;fd,&#xA0;const&#xA0;void&#xA0;*addr,&#xA0;size_t&#xA0;bytes)</id>
 will not harm crpcut, it will probably cause <id>std::ofstream</id> to
-misbehave.
+misbehave. <link url="http://code.google.com/p/googlemock">Google-mock</link>
+also uses std C functions.
 <p/>
 If you need to create wrappers of your own, you can easily do that
 through the macros and traits templates available in <id>crpcut.hpp</id>.
