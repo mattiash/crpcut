@@ -1,8 +1,8 @@
-         * Default stdout to human readable output and file output
+         * Default stdout to human readable format and file output
            to XML. Added -x flag to invert.
 
-         * No longer expose the crpcut::wrapped functions - it was
-           a major mistake. crpcut itselt still wrapps all functions
+         * No longer exposes the crpcut::wrapped functions - it was
+           a major mistake. crpcut itself still wrapps all functions
            it needs in namespace crpcut::wrapped. For your test-
            cases, you wrap the functions you need in whatever
            namespace you please. Sorry for the inconvenience.
