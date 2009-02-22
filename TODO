@@ -1,6 +1,5 @@
 * Features:
   - ASSERT_ macros for almost-equal tests of floating point numbers
-  - Optional non-XML output
   - Regexp match rules for stdout and stderr
 
 * Bugs:

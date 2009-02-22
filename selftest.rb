@@ -54,8 +54,9 @@ class Test
     test.elements.each('log/*') do |entry|
       text = entry.text || ""
       name = entry.name
-      t = log[name].clone
+      t = log[name]
       return "#{name} unexpected" if !t
+      t = t.clone
       if name == 'termination' then
         dirname = entry.attributes['nonempty_dir']
         if dirname then
@@ -540,76 +541,76 @@ report = true
 end
 
 RUNS={
-  "            asserts" =>
+  " -x            asserts" =>
   [ /^asserts::/,         /FAILED/, 25, 14,  0, BLOCKED_TESTS ],
 
-  " -v         asserts" =>
+  " -x -v         asserts" =>
   [ /^asserts::/,         /.*/,     25, 14, 11, BLOCKED_TESTS ],
 
-  " -c 8       asserts" =>
+  " -x -c 8       asserts" =>
   [ /^asserts::/,         /FAILED/, 25, 14,  0, BLOCKED_TESTS ],
 
-  " -c 8 -v    asserts" =>
+  " -x -c 8 -v    asserts" =>
   [ /^asserts::/,         /.*/,     25, 14, 11, BLOCKED_TESTS ],
 
-  " -n         asserts" =>
+  " -x -n         asserts" =>
   [ /^asserts::/,         /FAILED/, 25, 14,  0, [] ],
 
-  " -n -v      asserts" =>
+  " -x -n -v      asserts" =>
   [ /^asserts::/,         /.*/,     25, 14, 11, [] ],
 
-  " -n -c 8    asserts" =>
+  " -x -n -c 8    asserts" =>
   [ /^asserts::/,         /FAILED/, 25, 14,  0, [] ],
 
-  " -n -c 8 -v asserts" =>
+  " -x -n -c 8 -v asserts" =>
   [ /^asserts::/,         /.*/,     25, 14, 11, [] ],
 
-  "            asserts death" =>
+  " -x            asserts death" =>
   [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, BLOCKED_TESTS ],
 
-  " -v         asserts death" =>
+  " -x -v         asserts death" =>
   [ /^(asserts|death)::/, /.*/,     41, 26, 15, BLOCKED_TESTS ],
 
-  " -c 8       asserts death" =>
+  " -x -c 8       asserts death" =>
   [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, BLOCKED_TESTS ],
 
-  " -c 8 -v    asserts death" =>
+  " -x -c 8 -v    asserts death" =>
   [ /^(asserts|death)::/, /.*/,     41, 26, 15, BLOCKED_TESTS ],
 
-  " -n         asserts death" =>
+  " -x -n         asserts death" =>
   [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, [] ],
 
-  " -n -v      asserts death" =>
+  " -x -n -v      asserts death" =>
   [ /^(asserts|death)::/, /.*/,     41, 26, 15, [] ],
 
-  " -n -c 8    asserts death" =>
+  " -x -n -c 8    asserts death" =>
   [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, [] ],
 
-  " -n -c 8 -v asserts death" =>
+  " -x -n -c 8 -v asserts death" =>
   [ /^(asserts|death)::/, /.*/,     41, 26, 15, [] ],
 
-  ""         =>
+  " -x"         =>
   [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ],
 
-  " -v"      =>
+  " -x -v"      =>
   [ /.*/,                 /.*/,     tests.size - BLOCKED_TESTS.size, fails, oks - BLOCKED_TESTS.size, BLOCKED_TESTS ],
 
-  " -c 8"    =>
+  " -x -c 8"    =>
   [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ],
 
-  " -c 8 -v" =>
+  " -x -c 8 -v" =>
   [ /.*/,                 /.*/,     tests.size - BLOCKED_TESTS.size, fails, oks - BLOCKED_TESTS.size, BLOCKED_TESTS ],
 
-  " -n"         =>
+  " -x -n"         =>
   [ /.*/,                 /FAILED/, tests.size, fails,  0,                       [] ],
 
-  " -n -v"      =>
+  " -x -n -v"      =>
   [ /.*/,                 /.*/,     tests.size, fails, oks, [] ],
 
-  " -n -c 8"    =>
+  " -x -n -c 8"    =>
   [ /.*/,                 /FAILED/, tests.size, fails,  0,                       [] ],
 
-  " -n -c 8 -v" =>
+  " -x -n -c 8 -v" =>
   [ /.*/,                 /.*/,     tests.size, fails, oks, [] ],
 
   " -c 8 -o /tmp/crpcutst$$ -q;v=$?;cat /tmp/crpcutst$$;rm /tmp/crpcutst$$;exit $v" =>

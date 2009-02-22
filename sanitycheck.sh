@@ -71,10 +71,10 @@ while [ $n -lt ${#tests[*]} ]
 do
     param="${tests[$n]}"
     expect="${tests[$(($n+1))]}"
-    printf "./test/testprog %-34s: " "$param"
+    printf "./test/testprog -x %-34s: " "$param"
     filename=/tmp/crpcut_sanity$$_$(($n/2+1)).xml
     reportfile=/tmp/crpcut_sanity_report$$_$(($n/2+1))
-    ./test/testprog $param > $filename
+    ./test/testprog -x $param > $filename
     rv=$?
     xmllint --noout --schema $DIR/crpcut.xsd $filename 2> /dev/null || {
         echo "$filename violates crpcut.xsd XML Schema"

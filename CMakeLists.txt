@@ -46,6 +46,7 @@ file(GLOB LIB_SRCS
      src/crpcut.cpp
      src/xml.cpp
      src/posix_encapsulation.cpp
+     src/output.cpp
 )
 if (WITH_GOOGLE_MOCK)
    if (NOT GOOGLE_MOCK_DIR)

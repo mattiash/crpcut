@@ -1,3 +1,10 @@
+         * Default stdout to human readable output and file output
+	   to XML. Added -x flag to invert.
+
+	 * Don't expose the crpcut::wrapped functions - it was
+	   a major mistake. A test-case author now wraps the
+	   functions in whatever namespace they please.
+
 2009-02-16 0.3.0
 
 	 * No XML output when running tests with -c 0 for debugging.

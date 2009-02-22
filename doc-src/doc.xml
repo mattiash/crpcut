@@ -417,6 +417,8 @@ flags followed by a set of test case or test suite names. The flags are:
 <def notion="-o&#xA0;file">Direct xml output to named file. Brief result
                            will be displayed on stdout.</def>
 <def notion="-q">Don't display the -o brief</def>
+<def notion="-x">Print XML-output on stdout or non-XML to named file
+                 (-o above)</def>
 </definitions>
 Note that running test cases in the parent process has severe implications and
 should really only be used when debugging a test case (below.) The whole test
@@ -441,9 +443,12 @@ The return value is the number of failed tests, or -1 if anything was printed
 on the stream. The output stream is where to print information if the
 parameters in the call don&apos;t make sense.
 <p/>
-The result from a test run is always printed on stdout, or the file named with
-the -o flag, using the XML Schema provided in <id>crpcut.xsd</id>. It is fairly
-human-readable.
+The result from a test run is printed on stdout, or the file named with
+the <id>-o</id> flag. By default, the result on stdout is a human readable
+format, while output to a named file (the <id>-o</id> flag) is formatted using
+the XML Schema provided in <id>crpcut.xsd</id>. The <id>-x</id> flag inverts
+the output formats so output on stdout becomes XML-formatted and named file
+output becomes human readable.
 <p/>
 The test program must be linked with <id>libcrpcut.so</id>. If you use
 <link url="http://code.google.com/p/googlemock">google-mock</link>, you must
@@ -579,7 +584,6 @@ order is:
 <li>Set regexp match rules for stdout and stderr</li>
 <li>ASSERT_*() macros for almost-equal tests of floating point numbers</li>
 <li>Better separation of fixture errors and test-case errors</li>
-<li>Optional non-XML output</li>
 <li>Handle <id>wchar_t</id> -&gt; UTF-8 conversion for google-mock</li>
 </list>
 </chapter>

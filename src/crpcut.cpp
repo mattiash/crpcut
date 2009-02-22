@@ -28,7 +28,7 @@
 #include <crpcut.hpp>
 #include "poll.hpp"
 #include "implementation.hpp"
-
+#include "output.hpp"
 extern "C" {
 #include <sys/wait.h>
 #include <fcntl.h>
@@ -173,28 +173,26 @@ namespace crpcut {
     };
 
 
-    class esc
+
+    class printer
     {
     public:
-      esc(const std::string &an_s) : s(an_s) {}
-      friend std::ostream &operator<<(std::ostream &os, const esc &e)
+      printer(output::formatter& o_, const std::string &name, bool result)
+        : o(o_)
       {
-        for (std::string::const_iterator i = e.s.begin(); i != e.s.end(); ++i)
-          {
-            switch (*i)
-              {
-              case '<' : os << "&lt;"; break;
-              case '>' : os << "&gt;"; break;
-              case '&' : os << "&amp;"; break;
-              case '"' : os << "&quot;"; break;
-              case '\'': os << "&apos;"; break;
-              default: os << *i;
-              }
-          }
-        return os;
+        o.begin_case(name, result);
+      }
+      ~printer() { o.end_case(); }
+      void terminate(const std::string &msg, const std::string &dirname = std::string())
+      {
+        o.terminate(msg, dirname);
+      }
+      void print(const char *tag, const std::string &data)
+      {
+        o.print(tag, data);
       }
     private:
-      const std::string &s;
+      output::formatter &o;
     };
 
     class pipe_pair
@@ -235,8 +233,7 @@ namespace crpcut {
       int fds[2];
     };
 
-    int start_presenter_process(int ofd, int verbose,
-                                int, const char *argv[])
+    int start_presenter_process(output::formatter& out, int verbose)
     {
       pipe_pair p("communication pipe for presenter process");
 
@@ -251,37 +248,6 @@ namespace crpcut {
         }
       int presenter_pipe = p.for_reading();
 
-      char time_string[] = "2009-01-09T23:59:59Z";
-      time_t now = wrapped::time(0);
-      struct tm *tmdata = wrapped::gmtime(&now);
-      wrapped::snprintf(time_string, sizeof(time_string),
-                        "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
-                        tmdata->tm_year + 1900,
-                        tmdata->tm_mon + 1,
-                        tmdata->tm_mday,
-                        tmdata->tm_hour,
-                        tmdata->tm_min,
-                        tmdata->tm_sec);
-      char machine_string[PATH_MAX];
-      wrapped::gethostname(machine_string, sizeof(machine_string));
-      {
-        std::ostringstream os;
-        os <<
-          "<?xml version=\"1.0\"?>\n\n"
-          "<crpcut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
-          " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
-          " starttime=\"" << time_string <<
-          "\" host=\"" << machine_string <<
-          "\" command=\"";
-        for (const char **p = argv; *p; ++p)
-          {
-            if (p != argv) os << " ";
-            os << *p;
-          }
-        os << "\">\n" << std::flush;
-        const std::string &s = os.str();
-        wrapped::write(ofd, s.c_str(), s.size());
-      }
       std::map<pid_t, test_case_result> messages;
       for (;;)
         {
@@ -292,7 +258,7 @@ namespace crpcut {
           if (rv == 0)
             {
               assert(messages.size() == 0);
-              wrapped::exit(0);
+              wrapped::_Exit(0);
             }
           assert(rv == sizeof(test_case_id));
           test_case_result &s = messages[test_case_id];
@@ -345,60 +311,26 @@ namespace crpcut {
                 std::ostringstream os;
                 if (!s.success || verbose)
                   {
-                    bool history_print = false;
-                    os << "  <test name=\"" << s.name
-                       << "\" result=\""
-                       << (s.success ? "OK" : "FAILED") << '"';
+                    printer print(out, s.name, s.success);
                     for (std::list<event>::iterator i = s.history.begin();
                          i != s.history.end();
                          ++i)
                       {
-                        if (!history_print)
-                          {
-                            os  << ">\n    <log>\n";
-                            history_print = true;
-                          }
-                        os << "      <" << i->tag << '>'
-                           << esc(i->body)
-                           << "</" << i->tag << ">\n";
+                        out.print(i->tag, i->body);
                       }
                     if (!s.termination.empty() || s.nonempty_dir)
                       {
-                        if (!history_print)
-                          {
-                            os << ">\n    <log>\n";
-                          }
-                        os << "      <termination";
+                        std::string dirname;
                         if (s.nonempty_dir)
                           {
-                            os << " nonempty_dir=\""
-                               << test_case_factory::get_working_dir()
-                               << '/'
-                               << esc(s.name)
-                               << '"';
+                            dirname
+                              = test_case_factory::get_working_dir()
+                              + std::string("/")
+                              + s.name;
                           }
-                        if (s.termination.empty())
-                          {
-                            os << "/>\n";
-                          }
-                        else
-                          {
-                            os << '>' << esc(s.termination)
-                               << "</termination>\n";
-                          }
-                        history_print = true;
-                      }
-                    if (history_print)
-                      {
-                        os << "    </log>\n  </test>\n";
-                      }
-                    else
-                      {
-                        os << "/>\n";
+                        out.terminate(s.termination, dirname);
                       }
                   }
-                const std::string s = os.str();
-                wrapped::write(ofd, s.c_str(), s.size());
               }
               messages.erase(test_case_id);
               break;
@@ -621,12 +553,29 @@ namespace crpcut {
     manage_children(num_parallel);
   }
 
+  namespace {
+
+    output::formatter &output_formatter(bool use_xml,
+                                        int fd,
+                                        int argc, const char *argv[])
+    {
+      if (use_xml)
+        {
+          static output::xml_formatter xo(fd, argc, argv);
+          return xo;
+        }
+      static output::text_formatter to(fd, argc, argv);
+      return to;
+    }
+  }
+
   unsigned test_case_factory::do_run(int argc, const char *argv[],
                                      std::ostream &err_os)
   {
     const char *working_dir = 0;
     bool quiet = false;
     int output_fd = 1;
+    bool xml = false;
     const char **p = argv+1;
     while (const char *param = *p)
       {
@@ -645,6 +594,7 @@ namespace crpcut {
                 return -1;
               }
             output_fd = o;
+            xml = !xml;
           }
           break;
         case 'v':
@@ -701,24 +651,29 @@ namespace crpcut {
         case 'n':
           nodeps = true;
           break;
+        case 'x':
+          xml = !xml;
+          break;
         default:
           err_os <<
             "Usage: " << argv[0] << " [flags] {testcases}\n"
             "  where flags can be:\n"
-            "    -l           - list test cases\n"
-            "    -n           - ignore dependencies\n"
-            "    -d dir       - specify workind directory (must exist)\n"
-            "    -v           - verbose mode\n"
-            "    -c number    - Control number of spawned test case processes\n"
-            "                   if 0 the tests are run in the parent process\n"
-            "    -o file      - Direct xml output to named file. Brief result\n"
-            "                   will be displayed on stdout\n"
-            "    -q           - Don't display the -o brief\n";
+            "   -l         - list test cases\n"
+            "   -n         - ignore dependencies\n"
+            "   -d dir     - specify workind directory (must exist)\n"
+            "   -v         - verbose mode\n"
+            "   -c number  - Control number of spawned test case processes\n"
+            "                if 0 the tests are run in the parent process\n"
+            "   -o file    - Direct xml output to named file. Brief result\n"
+            "                will be displayed on stdout\n"
+            "   -q         - Don't display the -o brief\n"
+            "   -x         - XML output on std-out or non-XML output on file\n";
 
           return -1;
         }
         ++p;
       }
+    output::formatter &out = output_formatter(xml, output_fd, argc, argv);
 
     try {
       if (tests_as_child_procs())
@@ -734,8 +689,7 @@ namespace crpcut {
               wrapped::rmdir(dirbase);
               return 1;
             }
-          presenter_pipe = start_presenter_process(output_fd, verbose_mode,
-                                                   argc, argv);
+          presenter_pipe = start_presenter_process(out, verbose_mode);
         }
       const char **names = p;
       for (;;)
@@ -787,16 +741,9 @@ namespace crpcut {
         {
           kill_presenter_process();
           std::ostringstream os;
-          os <<
-            "  <statistics>\n"
-            "    <registered_test_cases>"
-                  << num_registered_tests
-                  << "</registered_test_cases>\n"
-            "    <run_test_cases>" << num_tests_run << "</run_test_cases>\n"
-            "    <failed_test_cases>"
-                  << num_tests_run - num_successful_tests
-                  << "</failed_test_cases>\n"
-            "  </statistics>\n";
+          out.statistics(num_registered_tests,
+                         num_tests_run,
+                         num_tests_run - num_successful_tests);
           if (output_fd != 1 && !quiet)
             {
               std::cout << num_registered_tests << " registered, "
@@ -815,9 +762,7 @@ namespace crpcut {
 
           if (!implementation::is_dir_empty("."))
             {
-              os << "  <remaining_files nonempty_dir=\""
-                 << dirbase
-                 << "\"/>\n";
+              out.nonempty_dir(dirbase);
               if (output_fd != 1 && !quiet)
                 {
                   std::cout << "Files remain in " << dirbase << '\n';
@@ -838,8 +783,6 @@ namespace crpcut {
 
       if (reg.get_next() != &reg)
         {
-          std::ostringstream os;
-          os << "  <blocked_tests>\n";
           if (output_fd != 1 && !quiet)
             {
               std::cout << "Blocked tests:\n";
@@ -848,23 +791,13 @@ namespace crpcut {
                i != &reg;
                i = i->get_next())
             {
-              os << "    <test name=\"" << *i << "\"/>\n";
+              out.blocked_test(i);
               if (output_fd != 1 && !quiet)
                 {
                   std::cout << "  " << *i << '\n';
                 }
             }
-          os << "  </blocked_tests>\n";
-          const std::string s = os.str();
-          wrapped::write(output_fd, s.c_str(), s.length());
         }
-
-      const char endtag[] = "</crpcut>\n";
-      if (tests_as_child_procs())
-        {
-          wrapped::write(output_fd, endtag, sizeof(endtag)-1);
-        }
-      wrapped::close(output_fd);
       return num_tests_run - num_successful_tests;
     }
     catch (datatypes::posix_error &e)
