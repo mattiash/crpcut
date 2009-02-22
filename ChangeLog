@@ -1,4 +1,7 @@
-         * Default stdout to human readable format and file output
+         * Sourceforge now hosts the GIT repo as well.
+           git://crpcut.git.sourceforge.net/gitroot/crpcut
+
+	 * Default stdout to human readable format and file output
            to XML. Added -x flag to invert.
 
          * No longer exposes the crpcut::wrapped functions - it was
