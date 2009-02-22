@@ -1,46 +1,48 @@
          * Default stdout to human readable output and file output
-	   to XML. Added -x flag to invert.
+           to XML. Added -x flag to invert.
 
-	 * Don't expose the crpcut::wrapped functions - it was
-	   a major mistake. A test-case author now wraps the
-	   functions in whatever namespace they please.
+         * No longer expose the crpcut::wrapped functions - it was
+           a major mistake. crpcut itselt still wrapps all functions
+           it needs in namespace crpcut::wrapped. For your test-
+           cases, you wrap the functions you need in whatever
+           namespace you please. Sorry for the inconvenience.
 
 2009-02-16 0.3.0
 
-	 * No XML output when running tests with -c 0 for debugging.
+         * No XML output when running tests with -c 0 for debugging.
 
-	 * Improved documentation and source-level enforcement on
-	   how to link when using google-mock.
+         * Improved documentation and source-level enforcement on
+           how to link when using google-mock.
 
-	 * Use libc/librt functions from dlopen()/dlsym(), and wrap
-	   them in namespace crpcut.
+         * Use libc/librt functions from dlopen()/dlsym(), and wrap
+           them in namespace crpcut.
 
-	 * Added macros for creating own function wrappers.
+         * Added macros for creating own function wrappers.
 
-	 * Output unstreamable expressions as hex dumps.
+         * Output unstreamable expressions as hex dumps.
 
 2009-02-08 0.2.0
 
          * Optional support for google-mock. See README_GOOGLE_MOCK for
-	   details.
+           details.
 
          * Added INFO and FAIL output streamers from test cases.
 
            INFO << expr1 << expr2 << expr3
 
            Sends the streamed output to the result log, but does not
-	   change the state of the test.
+           change the state of the test.
 
            FAIL << exp1 << expr2 << expr3
 
            Immediately terminates the test case as failed, with the
-	   output streamed data as the error cause.
+           output streamed data as the error cause.
 
          * A number of new command line flags:
 
-	   -d flag for selecting named working directory
+           -d flag for selecting named working directory
 
-	   -o flag to direct XML output to a named file
+           -o flag to direct XML output to a named file
 
            -q flag for silencing summation print when -o is used
 

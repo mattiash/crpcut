@@ -26,6 +26,7 @@
 
 #include <gmock/gmock.h>
 #include <crpcut.hpp>
+#include "posix_encapsulation.hpp"
 #include <cstdio>
 
 extern "C"
