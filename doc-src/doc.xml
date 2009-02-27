@@ -166,7 +166,7 @@ been verified.
 First obtain the crpcut sources, either a release (current is 0.3.0) from the
 sourceforge
 <link url="https://sourceforge.net:443/project/showfiles.php?group_id=251473">download</link>
-page, or a from the git repository
+page, or from the git repository
 <id>git://crpcut.git.sourceforge.net/gitroot/crpcut</id>
 <p/>
 In a build directory (can be the same as the source directory)
