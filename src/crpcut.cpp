@@ -762,11 +762,10 @@ namespace crpcut {
             }
           for (unsigned n = 0; n < max_parallel; ++n)
             {
-              char name[std::numeric_limits<unsigned>::digits/3+2];
-              int len = wrapped::snprintf(name, sizeof(name), "%u", n);
-              assert(len > 0 && len < int(sizeof(name)));
-              (void)len; // silence warning
-              (void)wrapped::rmdir(name); // ignore, taken care of as error
+              stream::toastream<std::numeric_limits<unsigned>::digits/3+1> name;
+              name << n << '\0';
+              (void)wrapped::rmdir(name.begin());
+              // failure above is taken care of as error elsewhere
             }
 
           if (!implementation::is_dir_empty("."))
