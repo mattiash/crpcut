@@ -78,14 +78,13 @@ namespace crpcut
                               unsigned num_run,
                               unsigned num_failed);
       virtual void nonempty_dir(const std::string &s);
-      virtual void blocked_test(const implementation::test_case_registrator *i);
+      virtual void blocked_test(const implementation::test_case_registrator*);
     private:
-      void print_head();
       void make_closed();
 
-      bool              last_closed;
-      bool              head_printed;
-      bool              blocked_tests;
+      bool                      last_closed;
+      bool                      blocked_tests;
+      bool                      statistics_printed;
       int                       argc;
       const char *const * const argv;
     };

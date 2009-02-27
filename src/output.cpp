@@ -73,16 +73,50 @@ namespace crpcut
     xml_formatter::xml_formatter(int fd, int argc_, const char *argv_[])
       : formatter(fd),
         last_closed(false),
-        head_printed(false),
         blocked_tests(false),
+        statistics_printed(false),
         argc(argc_),
         argv(argv_)
     {
+      write("<?xml version=\"1.0\"?>\n\n"
+            "<crpcut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+            " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
+            " starttime=\"");
+
+      char time_string[] = "2009-01-09T23:59:59Z";
+      time_t now = wrapped::time(0);
+      struct tm *tmdata = wrapped::gmtime(&now);
+      wrapped::snprintf(time_string, sizeof(time_string),
+                        "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
+                        tmdata->tm_year + 1900,
+                        tmdata->tm_mon + 1,
+                        tmdata->tm_mday,
+                        tmdata->tm_hour,
+                        tmdata->tm_min,
+                        tmdata->tm_sec);
+      write(time_string);
+
+      char machine_string[PATH_MAX];
+      if (wrapped::gethostname(machine_string, sizeof(machine_string)))
+        {
+          machine_string[0] = 0;
+        }
+      write("\" host=\"");
+      write(machine_string, wrapped::strlen(machine_string), escaped);
+
+      write("\" command=\"");
+      for (int i = 0; i < argc; ++i)
+        {
+          if (i > 0) write(" ", 1);
+          write(argv[i], wrapped::strlen(argv[i]), escaped);
+        }
+      write("\">\n");
     }
+
 
     xml_formatter::~xml_formatter()
     {
-      if (head_printed)
+      if (statistics_printed)
         {
           if (blocked_tests)
             {
@@ -94,7 +128,6 @@ namespace crpcut
 
     void xml_formatter::begin_case(const std::string &name, bool result)
     {
-      print_head();
       write("  <test name=\"");
       write(name, escaped);
       write("\" result=");
@@ -180,12 +213,11 @@ namespace crpcut
       }
       write("</failed_test_cases>\n"
             "  </statistics>\n");
-      head_printed = true;
+      statistics_printed = true;
     }
 
     void xml_formatter::nonempty_dir(const std::string &s)
     {
-      head_printed = true;
       write("  <remaining_files nonempty_dir=\"");
       write(s);
       write("\"/>\n");
@@ -198,53 +230,12 @@ namespace crpcut
         {
           write("  <blocked_tests>\n");
           blocked_tests = true;
-          head_printed = true;
         }
       std::ostringstream os;
       write("    <test name=\"");
       os << *i;
       write(os.str(), escaped);
       write("\"/>\n");
-    }
-
-    void xml_formatter::print_head()
-    {
-      if (!head_printed) {
-        write("<?xml version=\"1.0\"?>\n\n"
-              "<crpcut xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
-              " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
-              " starttime=\"");
-
-        char time_string[] = "2009-01-09T23:59:59Z";
-        time_t now = wrapped::time(0);
-        struct tm *tmdata = wrapped::gmtime(&now);
-        wrapped::snprintf(time_string, sizeof(time_string),
-                          "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
-                          tmdata->tm_year + 1900,
-                          tmdata->tm_mon + 1,
-                          tmdata->tm_mday,
-                          tmdata->tm_hour,
-                          tmdata->tm_min,
-                          tmdata->tm_sec);
-        write(time_string);
-
-        char machine_string[PATH_MAX];
-        if (wrapped::gethostname(machine_string, sizeof(machine_string)))
-          {
-            machine_string[0] = 0;
-          }
-        write("\" host=\"");
-        write(machine_string, wrapped::strlen(machine_string), escaped);
-
-        write("\" command=\"");
-        for (int i = 0; i < argc; ++i)
-          {
-            if (i > 0) write(" ", 1);
-            write(argv[i], wrapped::strlen(argv[i]), escaped);
-          }
-        write("\">\n");
-        head_printed = true;
-      }
     }
 
     void xml_formatter::make_closed()
