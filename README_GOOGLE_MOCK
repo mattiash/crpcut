@@ -98,3 +98,15 @@ TEST(t3, fix_seq2)
 
   ... // do things with m1 and m2
 }
+
+Linking
+=======
+
+When tests use google-mock, the link order of the crpcut libs and the
+google-mock libs is very important, since crpcut overrides some of the
+functions defined by google-test and google-mock.
+
+The linking order *must* be with both crpcut libs before both google-libs.
+For example:
+
+g++ mytest.o -lcrpcut -lcrpcut_gmock -lgmock -lgtest -o mytest

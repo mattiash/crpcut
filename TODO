@@ -1,7 +1,3 @@
 * Features:
   - ASSERT_ macros for almost-equal tests of floating point numbers
   - Regexp match rules for stdout and stderr
-
-* Bugs:
-
-  - Handle wchar_t -> UTF-8 conversion for google-mock

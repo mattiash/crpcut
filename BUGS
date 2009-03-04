@@ -1,3 +1,2 @@
-* Google-mock supports Unicode (UTF-16?) strings using wchar_t. crpcut does
-  not make any attempt to convert these wchar_t strings to UTF-8 on output.
-  Instead they are simply masked, char by char, to 7-bits.
+Yes, probably
+

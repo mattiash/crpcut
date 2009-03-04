@@ -453,10 +453,13 @@ the output formats so output on stdout becomes XML-formatted and named file
 output becomes human readable.
 <p/>
 The test program must be linked with <id>libcrpcut.so</id>. If you use
-<link url="http://code.google.com/p/googlemock">google-mock</link>, you must
-also link with <id>libgmock.so</id> from the
-<link url="http://code.google.com/p/googlemock">google-mock</link> installation,
-and <id>libcrpcut_gmock.so</id>. Do NOT link with <id>libgtest.so</id>.
+<link url="http://code.google.com/p/googlemock">google-mock</link>, extra care
+must be taken with the linking. You must link with both <id>libcrpcut.so</id>
+and <id>libcrpcut_gmock.so</id> from crpcut, before <id>libgmock.so</id> and
+<id>libgtest.so</id> from the
+<link url="http://code.google.com/p/googlemock">google-mock</link> installation.
+Failing to follow this link order may produce a program that can run, but
+will behave eratically.
 </chapter>
 
 <chapter title="Debugging">
@@ -602,7 +605,6 @@ order is:
 <list>
 <li>Set regexp match rules for stdout and stderr</li>
 <li>ASSERT_*() macros for almost-equal tests of floating point numbers</li>
-<li>Handle <id>wchar_t</id> -&gt; UTF-8 conversion for google-mock</li>
 </list>
 </chapter>
 <chapter title="Contact">
