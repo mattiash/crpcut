@@ -12,17 +12,18 @@
     <xs:attribute name="nonempty_dir" type="xs:string" use="required"/>
   </xs:complexType>
 
-  <xs:complexType name="termination">
-     <xs:simpleContent>
-       <xs:extension base="xs:string">
-         <xs:attribute name="nonempty_dir" type="xs:string" use="optional"/>
-       </xs:extension>
-     </xs:simpleContent>
+  <xs:complexType name="violation">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="phase" type="xs:string" use="required"/>
+        <xs:attribute name="nonempty_dir" type="xs:string" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
   </xs:complexType>
 
   <xs:complexType name="log">
     <xs:sequence minOccurs="0" maxOccurs="unbounded">
-      <xs:element name="termination" type="termination" minOccurs="0"/>
+      <xs:element name="violation" type="violation" minOccurs="0"/>
       <xs:element name="stdout" type="xs:string" minOccurs="0"/>
       <xs:element name="stderr" type="xs:string" minOccurs="0"/>
       <xs:element name="info" type="xs:string" minOccurs="0"/>

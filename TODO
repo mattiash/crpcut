@@ -3,7 +3,5 @@
   - Regexp match rules for stdout and stderr
 
 * Bugs:
-  - Improve separation of test-case errors and errors during fixture-creation
-    and -destruction
 
   - Handle wchar_t -> UTF-8 conversion for google-mock

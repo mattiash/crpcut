@@ -178,7 +178,16 @@ namespace crpcut {
       do {
         rv = wrapped::write(response_fd, &len, sizeof(len));
       } while (rv == -1 && errno == EINTR);
-      test_case_factory::present(reg->get_pid(), t, len, buff);
+      switch (t)
+        {
+        case comm::begin_test:
+          reg->phase = running;
+          return true;
+        case comm::end_test:
+          reg->phase = destroying;
+          return true;
+        }
+      test_case_factory::present(reg->get_pid(), t, reg->phase, len, buff);
       if (t == comm::exit_ok || t == comm::exit_fail)
         {
           if (!reg->death_note && reg->deadline_is_set())
@@ -201,7 +210,8 @@ namespace crpcut {
         death_note(false),
         rep_reader(this),
         stdout_reader(this),
-        stderr_reader(this)
+        stderr_reader(this),
+        phase(creating)
     {
       test_case_factory::obj().reg.prev = this;
       prev->next = this;
@@ -214,7 +224,11 @@ namespace crpcut {
       deadline_set = false;
       static const char msg[] = "Timed out - killed";
       register_success(false);
-      test_case_factory::present(pid_, comm::exit_fail, sizeof(msg) - 1, msg);
+      test_case_factory::present(pid_,
+                                 comm::exit_fail,
+                                 phase,
+                                 sizeof(msg) - 1,
+                                 msg);
     }
 
     int test_case_registrator::ms_until_deadline() const
@@ -292,12 +306,13 @@ namespace crpcut {
           {
             stream::toastream<1024> tcname;
             tcname << *this << '\0';
-            test_case_factory::present(pid_, comm::dir, 0, 0);
+            test_case_factory::present(pid_, comm::dir, phase, 0, 0);
             wrapped::rename(dirname.begin(), tcname.begin());
             t = comm::exit_fail;
             register_success(false);
           }
       }
+
       if (!death_note)
         {
           stream::toastream<1024> out;
@@ -311,6 +326,7 @@ namespace crpcut {
                       {
                         if (!is_expected_exit(info.si_status))
                           {
+                            phase = post_mortem;
                             out << "Exited with code "
                                 << info.si_status << "\nExpected ";
                             expected_death(out);
@@ -325,6 +341,7 @@ namespace crpcut {
                       {
                         if (!is_expected_signal(info.si_status))
                           {
+                            phase = post_mortem;
                             out << "Died on signal "
                                 << info.si_status << "\nExpected ";
                             expected_death(out);
@@ -343,13 +360,11 @@ namespace crpcut {
                 }
             }
           death_note = true;
-            {
-              test_case_factory::present(pid_, t, out.size(), out.begin());
-            }
+          test_case_factory::present(pid_, t, phase, out.size(), out.begin());
         }
       register_success(t == comm::exit_ok);
       test_case_factory::return_dir(dirnum);
-      test_case_factory::present(pid_, comm::end_test, 0, 0);
+      test_case_factory::present(pid_, comm::end_test, phase, 0, 0);
       assert(succeeded() || failed());
       if (succeeded())
         {

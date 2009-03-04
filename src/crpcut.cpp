@@ -139,6 +139,13 @@ namespace crpcut {
         if (rv == sizeof(t)) break;
         assert(rv == -1 && errno == EINTR);
       }
+    const test_phase p = running;
+    for (;;)
+      {
+        int rv = wrapped::write(pipe, &p, sizeof(p));
+        if (rv == sizeof(p)) break;
+        assert(rv == -1 && errno == EINTR);
+      }
 
     for (;;)
       {
@@ -156,6 +163,7 @@ namespace crpcut {
 
   void test_case_factory::do_present(pid_t pid,
                                      comm::type t,
+                                     test_phase phase,
                                      size_t len,
                                      const char *buff)
   {
@@ -164,6 +172,8 @@ namespace crpcut {
     assert(rv == sizeof(pid));
     rv = wrapped::write(pipe, &t, sizeof(t));
     assert(rv == sizeof(t));
+    rv = wrapped::write(pipe, &phase, sizeof(phase));
+    assert(rv == sizeof(phase));
     rv = wrapped::write(pipe, &len, sizeof(len));
     assert(rv == sizeof(len));
     if (len)
@@ -199,9 +209,10 @@ namespace crpcut {
         o.begin_case(name, result);
       }
       ~printer() { o.end_case(); }
-      void terminate(const std::string &msg, const char *dirname = 0)
+      void terminate(test_phase phase,
+                     const std::string &msg, const char *dirname = 0)
       {
-        o.terminate(msg, dirname);
+        o.terminate(phase, msg, dirname);
       }
       void print(const char *tag, const std::string &data)
       {
@@ -283,6 +294,10 @@ namespace crpcut {
           rv = wrapped::read(presenter_pipe, &t, sizeof(t));
           assert(rv == sizeof(t));
 
+          test_phase phase;
+          rv = wrapped::read(presenter_pipe, &phase, sizeof(phase));
+          assert(rv == sizeof(phase));
+
           switch (t)
             {
             case comm::begin_test:
@@ -349,11 +364,11 @@ namespace crpcut {
                                                                 wd),
                                                     "/"),
                                         s.name.c_str());;
-                            out.terminate(s.termination, dn);
+                            out.terminate(phase, s.termination, dn);
                           }
                         else
                           {
-                            out.terminate(s.termination);
+                            out.terminate(phase, s.termination);
                           }
                       }
                   }
@@ -445,14 +460,16 @@ namespace crpcut {
     if (type)
       {
         std::ostringstream out;
-        out << "Fixture contructor threw " << type;
+        out << "Unexpected exception " << type;
         if (msg)
           {
             out << "\n  what()=" << msg;
           }
         report(comm::exit_fail, out);
       }
-    // report start of test
+
+    report(comm::begin_test, 0, 0);
+
     try {
       p->run();
     }
@@ -472,7 +489,9 @@ namespace crpcut {
         static const char msg[] = "Unexpectedly caught ...";
         report(comm::exit_fail, msg);
       }
-    // report end of test
+
+    report(comm::end_test, 0, 0);
+
     if (tests_as_child_procs())
       {
         p->~test_case_base(); // Ugly, but since report kills when parallel

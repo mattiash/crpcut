@@ -849,6 +849,8 @@ namespace crpcut {
 
   } // stream
 
+  typedef enum { creating, running,  destroying,  post_mortem } test_phase;
+
   namespace implementation {
 
     struct namespace_info
@@ -933,6 +935,7 @@ namespace crpcut {
       void set_wd(int n);
       void goto_wd() const;
       pid_t get_pid() const;
+      test_phase get_phase() const;
       bool has_active_readers() const;
       void deactivate_reader();
       void activate_reader();
@@ -954,6 +957,7 @@ namespace crpcut {
       report_reader          rep_reader;
       reader<comm::stdout>   stdout_reader;
       reader<comm::stderr>   stderr_reader;
+      test_phase             phase;
 
       friend class report_reader;
     };
@@ -968,7 +972,8 @@ namespace crpcut {
     static unsigned run_test(int argc, const char *argv[],
                              std::ostream &os = std::cerr);
     static void introduce_name(pid_t pid, const char *name, size_t len);
-    static void present(pid_t pid, comm::type t, size_t len, const char *buff);
+    static void present(pid_t pid, comm::type t, test_phase phase,
+                        size_t len, const char *buff);
     static bool tests_as_child_procs();
     static void set_deadline(implementation::test_case_registrator *i);
     static void clear_deadline(implementation::test_case_registrator *i);
@@ -985,7 +990,8 @@ namespace crpcut {
     void start_test(implementation::test_case_registrator *i);
 
     unsigned do_run(int argc, const char *argv[], std::ostream &os);
-    void do_present(pid_t pid, comm::type t, size_t len, const char *buff);
+    void do_present(pid_t pid, comm::type t, test_phase phase,
+                    size_t len, const char *buff);
     void do_introduce_name(pid_t pid, const char *name, size_t len);
     void do_set_deadline(implementation::test_case_registrator *i);
     void do_clear_deadline(implementation::test_case_registrator *i);
@@ -1038,10 +1044,9 @@ namespace crpcut {
               (void)n; // silence warning
             }
 
-          test_case_factory::present(reg->get_pid(),
-                                     t,
-                                     rv,
-                                     buff);
+          test_case_factory::present(reg->get_pid(), t,
+                                     reg->get_phase(),
+                                     rv, buff);
           return true;
         }
     }
@@ -1656,6 +1661,12 @@ namespace crpcut {
       return pid_;
     }
 
+    inline test_phase
+    test_case_registrator::get_phase() const
+    {
+      return phase;
+    }
+
     inline bool
     test_case_registrator::has_active_readers() const
     {
@@ -1703,10 +1714,10 @@ namespace crpcut {
   }
 
   inline void
-  test_case_factory::present(pid_t pid, comm::type t,
+  test_case_factory::present(pid_t pid, comm::type t, test_phase phase,
                              size_t len, const char *buff)
   {
-    obj().do_present(pid, t, len, buff);
+    obj().do_present(pid, t, phase, len, buff);
   }
 
   inline bool

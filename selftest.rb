@@ -57,7 +57,7 @@ class Test
       t = log[name]
       return "#{name} unexpected" if !t
       t = t.clone
-      if name == 'termination' then
+      if name == 'violation' then
         dirname = entry.attributes['nonempty_dir']
         if dirname then
           begin
@@ -100,72 +100,72 @@ R_E='std::range_error'
 TESTS = {
   'asserts::should_fail_assert_exception_with_wrong_exception' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Unexpectedly caught std::exception\s+what\(\)=/me),
 
   'asserts::should_fail_assert_no_throw_with_std_exception_string_apa' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_NO_THROW\(throw #{R_E}\("apa"\)\)\s+caught #{S_E}=apa/me),
 
   'asserts::should_fail_assert_no_throw_with_unknown_exception' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_NO_THROW\(\s*throw\s+1\s*\)\s+caught\s+\.\.\./me),
 
   'asserts::should_fail_assert_throw_any_with_no_exception' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_THROW\(i=1, \.\.\.\)\s*Did not throw/me),
 
   'asserts::should_fail_assert_throw_with_no_exception' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_THROW\(i=1, std::exception\)\s+Did not throw/me),
 
   'asserts::should_fail_on_assert_eq_with_fixture' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_EQ\(num, 3\)\s+where\s+num\s*=\s*4/me),
 
   'asserts::should_fail_on_assert_false_with_fixture' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_FALSE\(num\)\s+where\s+num\s*=\s*3/me),
 
   'asserts::should_fail_on_assert_ge_with_fixture' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_GE\(num, 3\)\s+where\s+num\s*=\s*2/me),
 
   'asserts::should_fail_on_assert_gt_with_fixture' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_GT\(num, 3\)\s+where\s+num\s*=\s+3/me),
 
   'asserts::should_fail_on_assert_gt_with_unstreamable_param_i' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_GT\(i, num\)\s+where\s+i\s*=\s*\d+-byte object <[03 ]+>\s+num\s*=\s*3/me),
 
   'asserts::should_fail_on_assert_le_with_fixture' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_LE\(num, 3\)\s+where\s+num\s*=\s*4/me),
 
   'asserts::should_fail_on_assert_lt_with_fixture' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_LT\(num, 3\)\s+where\s+num\s*=\s*3/me),
 
   'asserts::should_fail_on_assert_ne_with_fixture' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_NE\(num, 3\)\s+where\s+num\s*=\s*3/me),
 
   'asserts::should_fail_on_assert_true_with_fixture' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{A_H}ASSERT_TRUE\(num\)\s+where\s+num\s*=\s*0/me),
 
   'asserts::should_succeed_assert_no_throw' =>
@@ -203,27 +203,27 @@ TESTS = {
 
   'death::by_exception::should_fail_any_exception' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Unexpectedly did not throw/),
 
   'death::by_exception::should_fail_due_to_std_exception_with_string_apa' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Unexpectedly caught #{S_E}=apa/me),
 
   'death::by_exception::should_fail_due_to_unknown_exception' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Unexpectedly caught \.\.\./),
 
   'death::by_exception::should_fail_with_no_exception' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Unexpectedly did not throw/),
 
   'death::by_exception::should_fail_with_wrong_exception' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Unexpectedly caught \.\.\./),
 
   'death::by_exception::should_succed_with_any_exception' =>
@@ -234,17 +234,17 @@ TESTS = {
 
   'death::by_exit::should_fail_with_exit_code_3' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Exited with code 3\s+Expected normal exit/me),
 
   'death::by_exit::should_fail_with_no_exit' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Unexpectedly survived\s+Expected exit with code 3/me),
 
   'death::by_exit::should_fail_with_wrong_exit_code' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Exited with code 4\s+Expected exit with code 3/me),
 
   'death::by_exit::should_succeed_with_exit_code_3' =>
@@ -252,23 +252,23 @@ TESTS = {
 
   'death::by_signal::should_fail_with_left_behind_core_dump_due_to_death_on_signal_11' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Died with core dump/).
   file('core'),
 
   'death::by_signal::should_fail_with_normal_exit' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Unexpectedly survived\s+Expected signal 11/me),
 
   'death::by_signal::should_fail_with_wrong_signal' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Died on signal 6\s+Expected signal 11/me),
 
   'death::by_signal::should_fail_without_core_dump_with_death_on_signal_11' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Died on signal 11\s+Expected normal exit/me),
 
   'death::by_signal::should_succeed_with_death_on_signal_11' =>
@@ -285,17 +285,17 @@ TESTS = {
 
   'parametrized::should_fail_assert_lt_char_array_string' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{P_H}ASSERT_LT\(p1, p2\)\s+where p1 = orm\s+p2 = katt/me),
 
   'parametrized::should_fail_assert_lt_int_char' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{P_H}ASSERT_LT\(p1, p2\)\s+where p1 = 800\s+p2 = A/me),
 
   'parametrized::should_fail_assert_lt_int_double' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /#{P_H}ASSERT_LT\(p1, p2\)\s+where p1 = 4\s+p2 = 3.14[12]\d*/me),
 
   'parametrized::should_succeed_assert_lt_char_array_string' =>
@@ -309,12 +309,12 @@ TESTS = {
 
   'should_fail_after_delay' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Exited with code 1\s+Expected normal exit/me),
 
   'should_fail_due_to_left_behind_files' =>
   Test.new('FAILED').
-  log('termination', /$/e).
+  log('violation', /$/e).
   file("apa"),
 
   'should_succeed_reading_file_in_start_dir' =>
@@ -326,7 +326,7 @@ TESTS = {
 
   'output::should_fail_with_terminate' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /output.cpp:\d+\n\s*apa=(0[Xx])?1[fF]/),
 
   'output::should_succeed_with_info' =>
@@ -338,14 +338,14 @@ TESTS = {
   Test.new('FAILED').
   log('info',
       /apa=3/).
-  log('termination',
+  log('violation',
       /Exited with code 1\s+Expected normal exit/me),
 
   'output::should_fail_with_death_and_left_behind_core_dump' =>
   Test.new('FAILED').
   log('stderr',
       /output\.cpp:\d+.*[Aa]ssert/me).
-  log('termination',
+  log('violation',
       /Died with core dump/).
   file('core'),
 
@@ -353,7 +353,7 @@ TESTS = {
   Test.new('FAILED').
   log('stderr',
       /output\.cpp:\d+.*[Aa]ssert/me).
-  log('termination',
+  log('violation',
       /Died on signal \d+\s+Expected normal exit/me),
 
   'output::should_succeed_with_stderr' =>
@@ -367,22 +367,22 @@ TESTS = {
   'timeouts::should_fail_slow_cputime_deadline' =>
   Test.new('FAILED').
   log('info', /.*/me).
-  log('termination',
+  log('violation',
       /CPU-time timeout 500ms exceeded.\s+#{A_T} (([6-9]\d\d)|(1\d\d\d))ms/me),
 
   'timeouts::should_fail_slow_cputime_deadline_by_death' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Died on signal \d+\s+Expected normal exit/me),
 
   'timeouts::should_fail_slow_realtime_deadline' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Realtime timeout 100ms exceeded\.\s+#{A_T} [2-9]\d\dms/me),
 
   'timeouts::should_fail_slow_realtime_deadline_by_death' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Timed out - killed/),
 
   'timeouts::should_succeed_slow_cputime_deadline' =>
@@ -401,7 +401,7 @@ TESTS = {
 
   'wrapped::should_fail_assert_lt' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /wrapped\.cpp:\d+\s+ASSERT_LT\(d, 1\.\d*\)\s+where d = 1\.(1|0999).*/me)
  }
 
@@ -411,17 +411,17 @@ GMOCK_TESTS = {
 
   'google_mock::should_fail_by_calling_with_wrong_value' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /mock function call.*call: func\(4\).*equal to 3\s+Actual: 4/me),
 
   'google_mock::should_fail_by_calling_too_often' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /more times than expected.*func\(3\)/me),
 
   'google_mock::should_fail_by_not_calling' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /call count doesn't match this expectation.*Actual: never called/me),
 
   'google_mock::sequence_success_1' =>
@@ -432,17 +432,17 @@ GMOCK_TESTS = {
 
   'google_mock::sequence_should_fail_incomplete' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /call count doesn't match this expectation.*Actual: never called/me),
 
   'google_mock::sequence_should_fail_one_too_many' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /called more times than expected.*Actual: called twice/me),
 
   'google_mock::sequence_should_fail_one_wrong_value' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Unexpected mock function call.*call: func\(4\).*none matched:/me),
 
   'google_mock::success_with_unstreamable_type' =>
@@ -450,7 +450,7 @@ GMOCK_TESTS = {
 
   'google_mock::should_fail_with_unstreamable_type_wrong_value' =>
   Test.new('FAILED').
-  log('termination',
+  log('violation',
       /Unexpected mock.*Expected.*object <[03 ]*>.*Actual.*object <[04 ]*>/me)
 }
 tests=TESTS;

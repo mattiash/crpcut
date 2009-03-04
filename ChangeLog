@@ -1,3 +1,15 @@
+         * Added a get_start_dir() function to test_case_factory,
+           which can be used to query the working dir the test-program
+           was started in. Since each test case runs in its own
+           working dir, this information is otherwise lost once
+	   the test case creation has begun.
+
+         * Changed the termination tag to violation, and added
+           the attribute "phase" which may have either of the
+           values "creation", "running", "destroying" and
+           "post_mortem" which should make error pinpointing
+           a bit easier.
+
          * Sourceforge now hosts the GIT repo as well.
            git://crpcut.git.sourceforge.net/gitroot/crpcut
 

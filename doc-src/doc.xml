@@ -602,7 +602,6 @@ order is:
 <list>
 <li>Set regexp match rules for stdout and stderr</li>
 <li>ASSERT_*() macros for almost-equal tests of floating point numbers</li>
-<li>Better separation of fixture errors and test-case errors</li>
 <li>Handle <id>wchar_t</id> -&gt; UTF-8 conversion for google-mock</li>
 </list>
 </chapter>

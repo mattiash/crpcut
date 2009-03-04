@@ -27,6 +27,27 @@
 #include <crpcut.hpp>
 #include "output.hpp"
 #include "posix_encapsulation.hpp"
+
+#define STR(s) { "\"" #s "\"", sizeof(#s) + 1 }
+
+namespace {
+  struct phase_tag
+  {
+    const char *str;
+    size_t      len;
+  };
+
+  phase_tag phase_str[] = {
+    STR(creating),
+    STR(running),
+    STR(destroying),
+    STR(post_mortem)
+  };
+}
+
+
+
+
 namespace crpcut
 {
   namespace output
@@ -150,11 +171,13 @@ namespace crpcut
         }
     }
 
-    void xml_formatter::terminate(const std::string &msg,
+    void xml_formatter::terminate(test_phase phase,
+                                  const std::string &msg,
                                   const char *dirname)
     {
       make_closed();
-      write("      <termination");
+      write("      <violation phase=");
+      write(phase_str[phase].str, phase_str[phase].len);
       if (dirname)
         {
           write(" nonempty_dir=\"");
@@ -168,7 +191,7 @@ namespace crpcut
         }
       write(">");
       write(msg, escaped);
-      write("</termination>\n");
+      write("</violation>\n");
     }
 
     void xml_formatter::print(const std::string &tag, const std::string &data)
@@ -275,8 +298,9 @@ namespace crpcut {
       write(barrier);
     }
 
-    void text_formatter::terminate(const std::string &msg,
-                                   const char *dirname)
+    void text_formatter::terminate(test_phase         phase,
+                                   const std::string &msg,
+                                   const char        *dirname)
     {
       did_output = true;
       if (dirname)
@@ -286,7 +310,11 @@ namespace crpcut {
         }
       if (!msg.empty())
         {
-          write(delim);
+          write("phase=");
+          write(phase_str[phase].str, phase_str[phase].len);
+          write("  ");
+          write(delim + 8 + phase_str[phase].len,
+                sizeof(delim) - 8 - phase_str[phase].len);
           write(msg);
           write("\n");
           write(delim);
