@@ -235,6 +235,18 @@ TEST(should_fail_due_to_left_behind_files)
   std::ofstream of("apa");
   of << "katt";
 }
+
+TEST(should_succeed_reading_file_in_start_dir)
+{
+  std::string s(crpcut::test_case_factory::get_start_dir());
+  s+= "/apafil";
+  std::ifstream in(s.c_str());
+  std::string content;
+  in >> content;
+  INFO << "in.rdstate()=" << std::hex << in.rdstate();
+  ASSERT_EQ(content, "apa");
+}
+
 TEST(should_not_run_due_to_failed_left_behind_files_success_otherwise,
      DEPENDS_ON(should_fail_due_to_left_behind_files))
 {

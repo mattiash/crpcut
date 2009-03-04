@@ -975,6 +975,7 @@ namespace crpcut {
     static void return_dir(int num);
     static const char *get_working_dir();
     static void test_succeeded(implementation::test_case_registrator*);
+    static const char *get_start_dir();
   private:
     static test_case_factory& obj();
     test_case_factory();
@@ -990,6 +991,7 @@ namespace crpcut {
     void do_clear_deadline(implementation::test_case_registrator *i);
     void do_return_dir(int num);
     const char *do_get_working_dir() const;
+    const char *do_get_start_dir() const;
     friend class implementation::test_case_registrator;
 
     class registrator_list : public implementation::test_case_registrator
@@ -1016,6 +1018,7 @@ namespace crpcut {
     int              working_dirs[max_parallel];
     int              first_free_working_dir;
     char             dirbase[PATH_MAX];
+    char             homedir[PATH_MAX];
   };
 
   namespace implementation {
@@ -1736,6 +1739,12 @@ namespace crpcut {
     return obj().do_get_working_dir();
   }
 
+  inline const char *
+  test_case_factory::get_start_dir()
+  {
+    return obj().do_get_start_dir();
+  }
+
   inline void
   test_case_factory::test_succeeded(implementation::test_case_registrator*)
   {
@@ -1753,6 +1762,12 @@ namespace crpcut {
   test_case_factory::do_get_working_dir() const
   {
     return dirbase;
+  }
+
+  inline const char *
+  test_case_factory::do_get_start_dir() const
+  {
+    return homedir;
   }
 } // namespace crpcut
 

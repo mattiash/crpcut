@@ -40,6 +40,7 @@ namespace crpcut {
     int                  dup2(int o, int n);
     CRPCUT_NORETURN void exit(int c);
     int                  fork(void);
+    char *               getcwd(char *buf, size_t size);
     int                  gethostname(char *n, size_t l);
     struct tm *          gmtime(const time_t *t);
     int                  kill(pid_t p, int s);

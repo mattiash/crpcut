@@ -70,6 +70,7 @@ namespace crpcut {
     CRPCUT_WRAP_FUNC(libc, closedir, int, (DIR *d), (d))
     CRPCUT_WRAP_FUNC(libc, dup2, int, (int f1, int f2), (f1, f2))
     CRPCUT_WRAP_FUNC(libc, fork, int, (void), ())
+    CRPCUT_WRAP_FUNC(libc, getcwd, char*, (char *buf, size_t size), (buf, size))
     CRPCUT_WRAP_FUNC(libc, gethostname, int, (char *n, size_t s), (n, s))
     CRPCUT_WRAP_FUNC(libc, getitimer, int, (int i, struct itimerval *v), (i, v))
     CRPCUT_WRAP_FUNC(libc, getpid, int, (void), ())

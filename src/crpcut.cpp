@@ -43,6 +43,22 @@ extern "C" {
 #include "posix_encapsulation.hpp"
 namespace crpcut {
 
+  namespace lib {
+    // works like std::strcpy, except the return value is the pointer to
+    // the nul terminator in the destination, making concatenations easy
+    // and cheap
+    template <typename T, typename U>
+    inline T strcpy(T d, U s)
+    {
+      while ((*d = *s))
+        {
+          ++d;
+          ++s;
+        }
+      return d;
+    }
+  }
+
   test_case_factory::test_case_factory()
     : pending_children(0),
       verbose_mode(false),
@@ -53,7 +69,7 @@ namespace crpcut {
       num_successful_tests(0),
       first_free_working_dir(0)
   {
-    wrapped::strcpy(dirbase, "/tmp/crpcutXXXXXX");
+    lib::strcpy(dirbase, "/tmp/crpcutXXXXXX");
     for (unsigned n = 0; n < max_parallel; ++n)
       {
         working_dirs[n] = n+1;
@@ -329,9 +345,10 @@ namespace crpcut {
                             len+= 1;
                             len+= s.name.size();
                             char *dn = static_cast<char*>(alloca(len));
-                            wrapped::strcpy(dn, wd);
-                            dn[dlen]='/';
-                            wrapped::strcpy(dn + dlen + 1, s.name.c_str());
+                            lib::strcpy(lib::strcpy(lib::strcpy(dn,
+                                                                wd),
+                                                    "/"),
+                                        s.name.c_str());;
                             out.terminate(s.termination, dn);
                           }
                         else
@@ -445,8 +462,8 @@ namespace crpcut {
 #define TEMPLATE_HEAD "Unexpectedly caught std::exception\n  what()="
         const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
         char *msg = static_cast<char *>(alloca(head_size + len + 1));
-        wrapped::strcpy(msg, TEMPLATE_HEAD);
-        wrapped::strcpy(msg + head_size, e.what());
+        lib::strcpy(lib::strcpy(msg, TEMPLATE_HEAD), e.what());
+        //        wrapped::strcpy(msg + head_size, e.what());
 #undef TEMPLATE_HEAD
         report(comm::exit_fail, head_size + len, msg);
       }
@@ -655,7 +672,7 @@ namespace crpcut {
               err_os << "-d must be followed by a directory name\n";
               return -1;
             }
-          wrapped::strcpy(dirbase, working_dir);
+          lib::strcpy(dirbase, working_dir);
           break;
         case 'n':
           nodeps = true;
@@ -683,7 +700,7 @@ namespace crpcut {
         ++p;
       }
     output::formatter &out = output_formatter(xml, output_fd, argc, argv);
-
+    wrapped::getcwd(homedir, sizeof(homedir));
     try {
       if (tests_as_child_procs())
         {

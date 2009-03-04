@@ -86,14 +86,16 @@ namespace crpcut
       char time_string[] = "2009-01-09T23:59:59Z";
       time_t now = wrapped::time(0);
       struct tm *tmdata = wrapped::gmtime(&now);
-      wrapped::snprintf(time_string, sizeof(time_string),
-                        "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
-                        tmdata->tm_year + 1900,
-                        tmdata->tm_mon + 1,
-                        tmdata->tm_mday,
-                        tmdata->tm_hour,
-                        tmdata->tm_min,
-                        tmdata->tm_sec);
+      int len = wrapped::snprintf(time_string, sizeof(time_string),
+                                  "%4.4d-%2.2d-%2.2dT%2.2d:%2.2d:%2.2dZ",
+                                  tmdata->tm_year + 1900,
+                                  tmdata->tm_mon + 1,
+                                  tmdata->tm_mday,
+                                  tmdata->tm_hour,
+                                  tmdata->tm_min,
+                                  tmdata->tm_sec);
+      assert(len < sizeof(time_string));
+      assert(time_string[len] == 0);
       write(time_string);
 
       char machine_string[PATH_MAX];

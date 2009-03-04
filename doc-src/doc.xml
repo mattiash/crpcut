@@ -128,6 +128,7 @@ dup2()
 ++ epoll_ctl()
 ++ epoll_wait()
 fork()
+getcwd()
 gethostname()
 ** getitimer(ITIMER_REAL)
 ** getitimer(ITIMER_VIRTUAL)
@@ -488,16 +489,27 @@ Breakpoint 1, asserts::should_succeed_assert_no_throw::test (this=0x807a688) at 
 From there, you can single step the test case.
 </chapter>
 <chapter title="Advanced techniques">
+<section title="File system access">
+Since all test cases run in their own working directory, the path to the
+working directory when starting the test suite is lost. If you need that
+path, for example to populate test vectors from a file, you can get the
+path name through the static member function:
+<code>
+const char *crpcut::test_case_factory::get_start_dir();
+</code>
+</section>
+<section title="Wrapping library functions">
 crpcut accesses all functions it uses from <id>libc</id> and <id>librt</id>
 directly from the lib by means of <id>dlsym()</id>. It does this through wrapper
 functions in namespace <id>crpcut::wrapped</id>. This means that you can define
 your own versions of those functions in global namespace, if you need it
 for your testing. Be aware, however, that the C++ standard library may
-use some of these functions. So, while creating your own
+use some of these functions, and so may
+<link url="http://code.google.com/p/googlemock">google-mock</link>. So,
+while creating your own
 <id>int&#xA0;write(int&#xA0;fd,&#xA0;const&#xA0;void&#xA0;*addr,&#xA0;size_t&#xA0;bytes)</id>
 will not harm crpcut, it will probably cause <id>std::ofstream</id> to
-misbehave. <link url="http://code.google.com/p/googlemock">Google-mock</link>
-also uses std C functions.
+misbehave.
 <p/>
 If you need to create wrappers of your own, you can easily do that
 through the macros and traits templates available in <id>crpcut.hpp</id>.
@@ -529,6 +541,7 @@ extern "C" {
   #include &lt;stdio.h&gt;
 }
 #include &lt;crpcut.hpp&gt;
+
 CRPCUT_WRAP_FUNC(libc, fopen, FILE*, (const char *p, const char *m), (p, m))
 
 FILE* fopen(const char *p, const char *m)
@@ -577,6 +590,7 @@ extern "C"
   }
 }
 </code>
+</section>
 </chapter>
 
 <chapter title="Further development">

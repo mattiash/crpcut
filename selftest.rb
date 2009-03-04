@@ -317,6 +317,10 @@ TESTS = {
   log('termination', /$/e).
   file("apa"),
 
+  'should_succeed_reading_file_in_start_dir' =>
+  Test.new('OK').
+  log('info', /in.rdstate\(\)=(0x)?0+/),
+
  'should_not_run_due_to_failed_left_behind_files_success_otherwise' =>
   Test.new('OK'),
 
@@ -541,6 +545,9 @@ report = true
 end
 
 RUNS={
+  " -x            default_success" =>
+  [ /default_success/,    /OK/,      1,  0,  0, BLOCKED_TESTS ],
+
   " -x            asserts" =>
   [ /^asserts::/,         /FAILED/, 25, 14,  0, BLOCKED_TESTS ],
 
@@ -617,6 +624,7 @@ RUNS={
   [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ]
 }
 
+File.open("apafil", 'w') { |f| f.write("apa\n") }
 ulimit = open("|bash -c \"ulimit -c\"").read.to_i
 if ulimit == 0 then
   puts "You must allow core dumps for the selt test to succeed."
@@ -663,3 +671,4 @@ rescue
   is_error = true
 end
 puts "OK" if !is_error
+#File.unlink "./apafil"

@@ -26,15 +26,16 @@
 AWK=$1
 DIR=$2
 
-R=67
-RN=69
+R=68
+RN=70
 F=40
 [ "$3" == "gmock" ] && {
-  R=78
-  RN=80
+  R=79
+  RN=81
   F=47
 }
 tests=(
+    "           default_success" "run=1 failed=0"
     "           asserts"       "run=25 failed=14"
     "-v         asserts"       "run=25 failed=14 verbose=1"
     "-c 8       asserts"       "run=25 failed=14"
@@ -67,6 +68,7 @@ tests=(
     )
 echo "sanity check takes about 30 seconds to complete"
 n=0
+echo apa > apafil
 while [ $n -lt ${#tests[*]} ]
 do
     param="${tests[$n]}"
@@ -95,3 +97,4 @@ do
     rm $reportfile
     n=$(($n+2))
 done
+rm apafil
