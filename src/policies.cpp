@@ -99,13 +99,19 @@ namespace crpcut {
 
         // calculated deadline + 1 sec should give plenty of slack
         unsigned deadline = duration_ms + 1000;
-        report(comm::set_timeout, deadline);
+        if (test_case_factory::tests_as_child_procs())
+          {
+            report(comm::set_timeout, deadline);
+          }
       }
 
       monotonic_enforcer::~monotonic_enforcer()
       {
         unsigned now = clocks::monotonic::timestamp_ms_absolute();
-        report(comm::cancel_timeout, 0, 0);
+        if (test_case_factory::tests_as_child_procs())
+          {
+            report(comm::cancel_timeout, 0, 0);
+          }
         int diff = now - start_timestamp_ms;
         if (diff > int(duration_ms))
           {
@@ -113,7 +119,15 @@ namespace crpcut {
             os << "Realtime timeout " << duration_ms
                << "ms exceeded.\n  Actual time to completion was " << diff
                << "ms";
-            report(comm::exit_fail, os.size(), os.begin());
+            if (test_case_factory::tests_as_child_procs())
+              {
+                report(comm::exit_fail, os.size(), os.begin());
+              }
+            else
+              {
+                wrapped::write(1, os.begin(), os.size());
+                wrapped::write(1, "\n", 1);
+              }
           }
       }
 
