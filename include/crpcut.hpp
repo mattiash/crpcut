@@ -1891,7 +1891,6 @@ namespace crpcut {
         CRPCUT_LOCAL_NAME(os) <<                                        \
           __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                      \
           "\nASSERT_" #name "(" #lh ", " #rh ")";                       \
-        bool CRPCUT_LOCAL_NAME(printed) = false;                        \
         crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
                              "\n  where ",                              \
                              #lh,                                       \
