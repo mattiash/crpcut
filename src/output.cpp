@@ -314,7 +314,7 @@ namespace crpcut {
           write(phase_str[phase].str, phase_str[phase].len);
           write("  ");
           write(delim + 8 + phase_str[phase].len,
-                sizeof(delim) - 8 - phase_str[phase].len);
+                sizeof(delim) - 8 - phase_str[phase].len - 1);
           write(msg);
           write("\n");
           write(delim);

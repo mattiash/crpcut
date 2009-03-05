@@ -287,7 +287,7 @@ namespace crpcut {
     char *               strerror(int n);
     size_t               strlen(const char *r);
     ssize_t              write(int fd, const void* p, size_t s);
- }
+  }
 
   namespace libs
   {
@@ -298,7 +298,7 @@ namespace crpcut {
   namespace libwrapper {
     template <int> struct traits
     {
-      static const char *name;
+      static const char *name[];
     };
 
 
@@ -308,7 +308,11 @@ namespace crpcut {
     public:
       loader()
       {
-        libp = ::dlopen(traits<lib>::name, RTLD_NOW | RTLD_NOLOAD);
+        for (const char **name = traits<lib>::name; *name; ++name)
+          {
+            libp = ::dlopen(*name, RTLD_NOW | RTLD_NOLOAD);
+            if (libp) break;
+          }
         if (!libp) *(int*)libp = 0; // can't rely on abort() here
       }
       ~loader()
@@ -516,16 +520,22 @@ namespace crpcut {
     }
 
     namespace timeout {
-      class none { };
+      typedef enum { realtime, cputime } type;
+
+      template <type t, unsigned ms>
+      class enforcer;
     }
 
     class default_policy
     {
     protected:
-      typedef void               crpcut_run_wrapper;
-      typedef deaths::none       crpcut_expected_death_cause;
+      typedef void crpcut_run_wrapper;
+
+      typedef deaths::none crpcut_expected_death_cause;
+
       typedef dependencies::none crpcut_dependency;
-      typedef timeout::none      crpcut_timeout_enforcer;
+
+      typedef timeout::enforcer<timeout::realtime,2000> crpcut_timeout_enforcer;
     };
 
     namespace deaths {
@@ -650,8 +660,6 @@ namespace crpcut {
     };
 
     namespace timeout {
-
-      typedef enum { realtime, cputime } type;
 
       template <type t, unsigned timeout_ms>
       class enforcer;
@@ -969,6 +977,8 @@ namespace crpcut {
   public:
     static const unsigned max_parallel = 8;
 
+    static unsigned run_test(int argc, char *argv[],
+                             std::ostream &os = std::cerr);
     static unsigned run_test(int argc, const char *argv[],
                              std::ostream &os = std::cerr);
     static void introduce_name(pid_t pid, const char *name, size_t len);
@@ -1701,8 +1711,13 @@ namespace crpcut {
   } // implementation
 
   inline unsigned
-  test_case_factory::run_test(int argc, const char *argv[],
-                                              std::ostream &os)
+  test_case_factory::run_test(int argc, char *argv[], std::ostream &os)
+  {
+    return obj().do_run(argc, const_cast<const char**>(argv), os);
+  }
+
+  inline unsigned
+  test_case_factory::run_test(int argc, const char *argv[], std::ostream &os)
   {
     return obj().do_run(argc, argv, os);
   }

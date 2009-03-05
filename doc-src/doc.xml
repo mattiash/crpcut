@@ -503,9 +503,8 @@ const char *crpcut::test_case_factory::get_start_dir();
 </section>
 <section title="Wrapping library functions">
 crpcut accesses all functions it uses from <id>libc</id> and <id>librt</id>
-directly from the lib by means of <id>dlsym()</id>. It does this through wrapper
-functions in namespace <id>crpcut::wrapped</id>. This means that you can define
-your own versions of those functions in global namespace, if you need it
+directly from the lib by means of <id>dlsym()</id>. This means that you can
+define your own versions of those functions in global namespace, if you need it
 for your testing. Be aware, however, that the C++ standard library may
 use some of these functions, and so may
 <link url="http://code.google.com/p/googlemock">google-mock</link>. So,
@@ -560,7 +559,11 @@ crpcut. If you want to access functions in other libraries, you add your
 own constants under the namespace <id>crpcut::libs</id>. These must be
 positive integers. You also provide your own specialization of the
 traits template
-<id>const&#xA0;char&#xA0;*crpcut::libwrapper::traits&lt;int&gt;::name</id>.
+<id>const&#xA0;char&#xA0;*crpcut::libwrapper::traits&lt;int&gt;::name[]</id>.
+The last element in the <id>name</id> array must be 0. crpcut tries the
+library names in the order they appear in the <id>name</id> array, until it
+succeeds. If no library can be found, crpcut will segfault.
+<p/>
 A complete example for the function <id>asin()</id> in the <id>libm</id>
 library:
 <code>
@@ -575,7 +578,11 @@ namespace crpcut {
   }
   namespace libwrapper {
     template &lt;&gt;
-    const char *traits&lt;libs::libm&gt;::name = "libm.so";
+    const char *traits&lt;libs::libm&gt;::name[] = {
+      "libm.so",
+      "libm.so.6",
+      0
+    };
   }
 }
 namespace mymath {

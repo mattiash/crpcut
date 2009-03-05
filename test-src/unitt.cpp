@@ -27,7 +27,7 @@
 
 #include <crpcut.hpp>
 
-int main(int argc, const char *argv[])
+int main(int argc, char *argv[])
 {
   return crpcut::test_case_factory::run_test(argc, argv);
 }

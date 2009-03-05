@@ -34,7 +34,11 @@ namespace crpcut {
   }
   namespace libwrapper {
     template <>
-    const char *traits<libs::libm>::name = "libm.so";
+    const char *traits<libs::libm>::name[] = {
+      "libm.so",
+      "libm.so.6",
+      0
+    };
   }
 }
 namespace testwrapped {
