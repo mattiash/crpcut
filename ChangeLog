@@ -1,16 +1,17 @@
          * Test cases now have a default real-time timeout of
            2000ms. This gives them a 3000ms run-time before they
-           are killed.
+           are killed. Change it upwards or downwards per test-
+           case as required.
 
          * Updated the documentation on how to link when using
            crpcut with google-mock. The earlier described method
            no longer works.
 
-	 * Added a get_start_dir() function to test_case_factory,
+         * Added a get_start_dir() function to test_case_factory,
            which can be used to query the working dir the test-program
            was started in. Since each test case runs in its own
            working dir, this information is otherwise lost once
-	   the test case creation has begun.
+           the test case creation has begun.
 
          * Changed the termination tag to violation, and added
            the attribute "phase" which may have either of the
@@ -18,11 +19,11 @@
            "post_mortem" which should make error pinpointing
            a bit easier.
 
-	 * Default stdout to human readable format and file output
+         * Default stdout to human readable format and file output
            to XML. Added -x flag to invert.
 
          * A number of lib names are now chained when looking
-	   for a symbol to wrap. Please see the documentation for
+           for a symbol to wrap. Please see the documentation for
            details.
 
          * No longer exposes the crpcut::wrapped functions - it was
