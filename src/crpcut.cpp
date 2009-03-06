@@ -630,38 +630,41 @@ namespace crpcut {
           quiet = true;
           break;
         case 'o':
-          {
-            ++p;
-            int o = wrapped::open(*p, O_CREAT | O_WRONLY | O_TRUNC, 0666);
-            if (o < 0)
-              {
-                err_os << "Failed to open " << *p << " for writing\n";
-                return -1;
-              }
-            output_fd = o;
-            xml = !xml;
-          }
+          ++p;
+          if (!*p)
+            {
+              err_os << "-o must be followed by a filename\n";
+              return -1;
+            }
+          output_fd = wrapped::open(*p, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+          if (output_fd < 0)
+            {
+              err_os << "Failed to open " << *p << " for writing\n";
+              return -1;
+            }
+          xml = !xml;
           break;
         case 'v':
           verbose_mode = true;
           break;
         case 'c':
           ++p;
-          {
-            stream::iastream i(*p);
-            unsigned l;
-            if (!(i >> l) || l > max_parallel)
-              {
-                err_os <<
-                  "num child processes must be a positive integer no greater than "
-                       << max_parallel
-                       << "\nA value of 0 means test cases are executed in the parent process"
-                  "\n";
-                return -1;
-              }
-            num_parallel = l;
-          }
-          break;
+          if (*p)
+            {
+              stream::iastream i(*p);
+              unsigned l;
+              if ((i >> l) && l <= max_parallel)
+                {
+                  num_parallel = l;
+                  break;
+                }
+            }
+          err_os <<
+            "num child processes must be a positive integer no greater than "
+                 << max_parallel
+                 << "\nA value of 0 means test cases are executed in the parent process"
+            "\n";
+          return -1;
         case 'l':
           {
             const char **names = ++p;
