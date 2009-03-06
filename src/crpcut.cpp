@@ -614,9 +614,32 @@ namespace crpcut {
     }
   }
 
-  unsigned test_case_factory::do_run(int argc, const char *argv[],
+  const char *test_case_factory::do_get_parameter(const char *name) const
+  {
+    for (const char** p = argv; *p; ++p)
+      {
+        if ((*p)[0] == '-' && (*p)[1] == 'p')
+          {
+            const char *v = *++p;
+            const char *n = name;
+            while (*n && *v == *n)
+              {
+                ++v;
+                ++n;
+              }
+            if (*v++ == '=')
+              {
+                return v;
+              }
+          }
+      }
+    return 0;
+  }
+
+  unsigned test_case_factory::do_run(int argc, const char *argv_[],
                                      std::ostream &err_os)
   {
+    argv = argv_;
     const char *working_dir = 0;
     bool quiet = false;
     int output_fd = 1;
@@ -702,6 +725,21 @@ namespace crpcut {
         case 'x':
           xml = !xml;
           break;
+        case 'p':
+          // just make a syntax check here. What follows must be a name=value.
+          {
+            const char *n = *++p;
+            while (*n && *n != '=')
+              {
+                ++n;
+              }
+            if (*n == 0)
+              {
+                err_os << "-p must be followed by a name and =\n";
+                return -1;
+              }
+            break;
+          }
         default:
           err_os <<
             "Usage: " << argv[0] << " [flags] {testcases}\n"

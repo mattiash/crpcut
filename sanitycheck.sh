@@ -26,13 +26,13 @@
 AWK=$1
 DIR=$2
 
-R=68
-RN=70
-F=40
+R=73
+RN=75
+F=42
 [ "$3" == "gmock" ] && {
-  R=79
-  RN=81
-  F=47
+  R=84
+  RN=86
+  F=49
 }
 tests=(
     "           default_success" "run=1 failed=0"
@@ -73,10 +73,10 @@ while [ $n -lt ${#tests[*]} ]
 do
     param="${tests[$n]}"
     expect="${tests[$(($n+1))]}"
-    printf "./test/testprog -x %-34s: " "$param"
+    printf "./test/testprog -x -p apa=katt %-34s: " "$param"
     filename=/tmp/crpcut_sanity$$_$(($n/2+1)).xml
     reportfile=/tmp/crpcut_sanity_report$$_$(($n/2+1))
-    ./test/testprog -x $param > $filename
+    ./test/testprog -x -p apa=katt $param > $filename
     rv=$?
     xmllint --noout --schema $DIR/crpcut.xsd $filename 2> /dev/null || {
         echo "$filename violates crpcut.xsd XML Schema"

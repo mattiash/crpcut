@@ -418,6 +418,8 @@ flags followed by a set of test case or test suite names. The flags are:
                           test cases are run in the parent process.</def>
 <def notion="-o&#xA0;file">Direct xml output to named file. Brief result
                            will be displayed on stdout.</def>
+<def notion="-p&#xA0;name=value">Create a named command line parameter to be
+                                 accessed from test cases.</def>
 <def notion="-q">Don't display the -o brief</def>
 <def notion="-x">Print XML-output on stdout or non-XML to named file
                  (-o above)</def>
@@ -500,6 +502,26 @@ path name through the static member function:
 <code>
 const char *crpcut::test_case_factory::get_start_dir();
 </code>
+</section>
+<section title="Named command line parameters">
+Named command line parameters, added to the test run with the <id>-p</id>
+switch, can be accessed from within the test cases using:
+<code>
+  class test_case_factory
+  {
+  public:
+    static const char *get_parameter(const char *name);
+
+    template &lt;typename T&gt;
+    static void get_parameter(const char *name, T&amp; t);
+
+    template &lt;typename T&gt;
+    static T get_parameter(const char *name);
+  };
+</code>
+The first returns the raw value of the parameter, or 0 if none was found.
+The other two fails the test case if the value is not found, or cannot be
+interpreted as the desired type by means of input streaming.
 </section>
 <section title="Wrapping library functions">
 crpcut accesses all functions it uses from <id>libc</id> and <id>librt</id>

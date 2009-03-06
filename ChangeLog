@@ -1,3 +1,7 @@
+         * Added a mechanism to send parameters to the test cases
+           through the -p command line switch, and the get_parameter()
+           family of static functions in test_case_factory.
+
          * Fixed bug in command line parsing.
 
 2009-03-05 0.4.0

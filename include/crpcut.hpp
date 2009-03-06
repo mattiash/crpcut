@@ -991,6 +991,39 @@ namespace crpcut {
     static const char *get_working_dir();
     static void test_succeeded(implementation::test_case_registrator*);
     static const char *get_start_dir();
+    static const char *get_parameter(const char *name);
+    template <typename T>
+    static void get_parameter(const char *name, T& t)
+    {
+      const char *v = get_parameter(name);
+      if (v)
+        {
+          stream::iastream is(v);
+          if (is >> t)
+            {
+              return;
+            }
+        }
+      std::ostringstream msg;
+      msg << "Parameter " << name << " with ";
+      if (v)
+        {
+          msg << "value \"" << v << "\"";
+        }
+      else
+        {
+          msg << "no value";
+        }
+      msg << " cannot be interpreted as desired type";
+      comm::report(comm::exit_fail, msg);
+    }
+    template <typename T>
+    static T get_parameter(const char *name)
+    {
+      T rv;
+      get_parameter<T>(name, rv);
+      return rv;
+    }
   private:
     static test_case_factory& obj();
     test_case_factory();
@@ -1008,6 +1041,7 @@ namespace crpcut {
     void do_return_dir(int num);
     const char *do_get_working_dir() const;
     const char *do_get_start_dir() const;
+    const char *do_get_parameter(const char *name) const;
     friend class implementation::test_case_registrator;
 
     class registrator_list : public implementation::test_case_registrator
@@ -1035,6 +1069,7 @@ namespace crpcut {
     int              first_free_working_dir;
     char             dirbase[PATH_MAX];
     char             homedir[PATH_MAX];
+    const char **    argv;
   };
 
   namespace implementation {
@@ -1769,6 +1804,12 @@ namespace crpcut {
   test_case_factory::get_start_dir()
   {
     return obj().do_get_start_dir();
+  }
+
+  inline const char *
+  test_case_factory::get_parameter(const char *name)
+  {
+    return obj().do_get_parameter(name);
   }
 
   inline void

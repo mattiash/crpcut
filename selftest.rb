@@ -283,6 +283,27 @@ TESTS = {
   'depends::should_succeed_after_success_dependencies' =>
   Test.new('OK'),
 
+  'ext_parameters::should_succeed_expected_value' =>
+  Test.new('OK').
+  log('info',
+      /katt/),
+
+  'ext_parameters::should_succeed_no_value' =>
+  Test.new('OK'),
+
+  'ext_parameters::should_succeed_value_interpret' =>
+  Test.new('OK'),
+
+  'ext_parameters::should_fail_value_interpret' =>
+  Test.new('FAILED').
+  log('violation',
+      /Parameter apa with value "katt" cannot be interpreted/),
+
+  'ext_parameters::should_fail_no_value_interpret' =>
+  Test.new('FAILED').
+  log('violation',
+      /Parameter orm with no value cannot be interpreted/),
+
   'parametrized::should_fail_assert_lt_char_array_string' =>
   Test.new('FAILED').
   log('violation',
@@ -545,82 +566,82 @@ report = true
 end
 
 RUNS={
-  " -x            default_success" =>
+  "            default_success" =>
   [ /default_success/,    /OK/,      1,  0,  0, BLOCKED_TESTS ],
 
-  " -x            asserts" =>
+  "            asserts" =>
   [ /^asserts::/,         /FAILED/, 25, 14,  0, BLOCKED_TESTS ],
 
-  " -x -v         asserts" =>
+  " -v         asserts" =>
   [ /^asserts::/,         /.*/,     25, 14, 11, BLOCKED_TESTS ],
 
-  " -x -c 8       asserts" =>
+  " -c 8       asserts" =>
   [ /^asserts::/,         /FAILED/, 25, 14,  0, BLOCKED_TESTS ],
 
-  " -x -c 8 -v    asserts" =>
+  " -c 8 -v    asserts" =>
   [ /^asserts::/,         /.*/,     25, 14, 11, BLOCKED_TESTS ],
 
-  " -x -n         asserts" =>
+  " -n         asserts" =>
   [ /^asserts::/,         /FAILED/, 25, 14,  0, [] ],
 
-  " -x -n -v      asserts" =>
+  " -n -v      asserts" =>
   [ /^asserts::/,         /.*/,     25, 14, 11, [] ],
 
-  " -x -n -c 8    asserts" =>
+  " -n -c 8    asserts" =>
   [ /^asserts::/,         /FAILED/, 25, 14,  0, [] ],
 
-  " -x -n -c 8 -v asserts" =>
+  " -n -c 8 -v asserts" =>
   [ /^asserts::/,         /.*/,     25, 14, 11, [] ],
 
-  " -x            asserts death" =>
+  "            asserts death" =>
   [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, BLOCKED_TESTS ],
 
-  " -x -v         asserts death" =>
+  " -v         asserts death" =>
   [ /^(asserts|death)::/, /.*/,     41, 26, 15, BLOCKED_TESTS ],
 
-  " -x -c 8       asserts death" =>
+  " -c 8       asserts death" =>
   [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, BLOCKED_TESTS ],
 
-  " -x -c 8 -v    asserts death" =>
+  " -c 8 -v    asserts death" =>
   [ /^(asserts|death)::/, /.*/,     41, 26, 15, BLOCKED_TESTS ],
 
-  " -x -n         asserts death" =>
+  " -n         asserts death" =>
   [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, [] ],
 
-  " -x -n -v      asserts death" =>
+  " -n -v      asserts death" =>
   [ /^(asserts|death)::/, /.*/,     41, 26, 15, [] ],
 
-  " -x -n -c 8    asserts death" =>
+  " -n -c 8    asserts death" =>
   [ /^(asserts|death)::/, /FAILED/, 41, 26,  0, [] ],
 
-  " -x -n -c 8 -v asserts death" =>
+  " -n -c 8 -v asserts death" =>
   [ /^(asserts|death)::/, /.*/,     41, 26, 15, [] ],
 
-  " -x"         =>
+  ""         =>
   [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ],
 
-  " -x -v"      =>
+  " -v"      =>
   [ /.*/,                 /.*/,     tests.size - BLOCKED_TESTS.size, fails, oks - BLOCKED_TESTS.size, BLOCKED_TESTS ],
 
-  " -x -c 8"    =>
+  " -c 8"    =>
   [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ],
 
-  " -x -c 8 -v" =>
+  " -c 8 -v" =>
   [ /.*/,                 /.*/,     tests.size - BLOCKED_TESTS.size, fails, oks - BLOCKED_TESTS.size, BLOCKED_TESTS ],
 
-  " -x -n"         =>
+  " -n"         =>
   [ /.*/,                 /FAILED/, tests.size, fails,  0,                       [] ],
 
-  " -x -n -v"      =>
+  " -n -v"      =>
   [ /.*/,                 /.*/,     tests.size, fails, oks, [] ],
 
-  " -x -n -c 8"    =>
+  " -n -c 8"    =>
   [ /.*/,                 /FAILED/, tests.size, fails,  0,                       [] ],
 
-  " -x -n -c 8 -v" =>
+  " -n -c 8 -v" =>
   [ /.*/,                 /.*/,     tests.size, fails, oks, [] ],
 
-  " -c 8 -o /tmp/crpcutst$$ -q;v=$?;cat /tmp/crpcutst$$;rm /tmp/crpcutst$$;exit $v" =>
+  " -x -c 8 -o /tmp/crpcutst$$ -q;v=$?;cat /tmp/crpcutst$$;rm /tmp/crpcutst$$;exit $v" =>
   [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ]
 }
 
@@ -634,9 +655,9 @@ if ulimit == 0 then
 end
 puts "Self test takes approximately 30 seconds to complete"
 RUNS.each do | params, expects |
-  print "%-70s: " % "./test/testprog#{params}"
+  print "%-70s: " % "./test/testprog -x -p apa=katt#{params}"
   STDOUT.flush
-  exit 1 if !check_file("./test/testprog#{params}", tests, *expects)
+  exit 1 if !check_file("./test/testprog -x -p apa=katt#{params}", tests, *expects)
 end
 dirname = "/tmp/crpcut_selftest_dir_#{$$}"
 Dir.mkdir(dirname)

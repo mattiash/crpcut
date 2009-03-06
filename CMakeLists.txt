@@ -219,6 +219,7 @@ file(GLOB TEST_SRCS
      test-src/parametrized.cpp
      test-src/unitt.cpp
      test-src/wrapped.cpp
+     test-src/ext_parameters.cpp
      ${GMOCK_TEST_SRCS}
 )
 
