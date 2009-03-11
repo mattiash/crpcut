@@ -291,6 +291,9 @@ TESTS = {
   'ext_parameters::should_succeed_no_value' =>
   Test.new('OK'),
 
+  'ext_parameters::should_succeed_no_value_with_too_long_name' =>
+  Test.new('OK'),
+
   'ext_parameters::should_succeed_value_interpret' =>
   Test.new('OK'),
 

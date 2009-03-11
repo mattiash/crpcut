@@ -627,7 +627,7 @@ namespace crpcut {
                 ++v;
                 ++n;
               }
-            if (*v++ == '=')
+            if (*n == 0 && *v++ == '=')
               {
                 return v;
               }
