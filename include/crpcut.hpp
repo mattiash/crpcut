@@ -339,11 +339,59 @@ namespace crpcut {
   }
 
 
+  namespace stream_checker
+  {
+    template <typename T>
+    class is_output_streamable
+    {
+      static std::ostream &os;
+      static T& t;
+      template <typename V, typename U>
+      friend char operator<<(V&, const U&);
+
+      static char check(char);
+      static std::pair<char, char> check(std::ostream&);
+    public:
+      static const bool value = sizeof(check(os << t)) != sizeof(char);
+    };
+
+
+    template <typename T>
+    struct is_output_streamable<const T>
+    {
+      static const bool value = is_output_streamable<T>::value;
+    };
+
+    template <typename T>
+    struct is_output_streamable<volatile T>
+    {
+      static const bool value = is_output_streamable<T>::value;
+    };
+
+    template <typename T>
+    struct is_output_streamable<T&>
+    {
+      static const bool value = is_output_streamable<T>::value;
+    };
+
+    template <size_t N>
+    struct is_output_streamable<char[N]>
+    {
+      static const bool value = true;
+    };
+
+    template <size_t N>
+    struct is_output_streamable<const char[N]>
+    {
+      static const bool value = true;
+    };
+  } // namespace stream_checker
 
 
   class none {};
 
   namespace datatypes {
+
     class posix_error : public std::exception
     {
     public:
@@ -407,7 +455,335 @@ namespace crpcut {
       size_t num_elements;
     };
 
-    class none;
+    class none {};
+
+    template <int N, typename T>
+    class holder
+    {
+    protected:
+      holder(const T& v) : val(v) {}
+      const T& getval() const { return val; }
+      void print_to(std::ostream &os) const
+      {
+        os << "  param" << N << " = " << val << "\n";
+      }
+    private:
+      const T &val;
+    };
+
+    template <int N>
+    class holder<N, none> : private none
+    {
+    protected:
+      holder(const none&) {}
+      void print_to(std::ostream&) const {};
+      const none& getval() const { return *this; }
+    };
+
+    template <typename T1, typename T2 = none, typename T3 = none,
+              typename T4 = none, typename T5 = none, typename T6 = none,
+              typename T7 = none, typename T8 = none, typename T9 = none>
+    class param_holder  : holder<1, T1>, holder<2, T2>, holder<3, T3>,
+                          holder<4, T4>, holder<5, T5>, holder<6, T6>,
+                          holder<7, T7>, holder<8, T8>, holder<9, T9>
+    {
+    public:
+      param_holder(const T1 &v1, const T2 &v2 = T2(), const T3 &v3 = T3(),
+                   const T4 &v4 = T4(), const T5 &v5 = T5(), const T6 &v6 = T6(),
+                   const T7 &v7 = T7(), const T8 &v8 = T8(), const T9 &v9 = T9())
+        : holder<1, T1>(v1),
+          holder<2, T2>(v2),
+          holder<3, T3>(v3),
+          holder<4, T4>(v4),
+          holder<5, T5>(v5),
+          holder<6, T6>(v6),
+          holder<7, T7>(v7),
+          holder<8, T8>(v8),
+          holder<9, T9>(v9)
+      {}
+      template <typename P>
+      bool apply(P pred) const;
+      void print_to(std::ostream &os) const
+      {
+        holder<1, T1>::print_to(os);
+        holder<2, T2>::print_to(os);
+        holder<3, T3>::print_to(os);
+        holder<4, T4>::print_to(os);
+        holder<5, T5>::print_to(os);
+        holder<6, T6>::print_to(os);
+        holder<7, T7>::print_to(os);
+        holder<8, T8>::print_to(os);
+        holder<9, T9>::print_to(os);
+      }
+    };
+
+    template <typename T1, typename T2, typename T3,
+              typename T4, typename T5, typename T6,
+              typename T7, typename T8, typename T9>
+    struct call_traits
+    {
+      template <typename P>
+      static bool call(P p,
+                       const T1 &t1, const T2 &t2, const T3 &t3,
+                       const T4 &t4, const T5 &t5, const T6 &t6,
+                       const T7 &t7, const T8 &t8, const T9 &t9)
+      {
+        return p(t1, t2, t3, t4, t5, t6, t7, t8, t9);
+      }
+    };
+
+    template <typename T1, typename T2, typename T3,
+              typename T4, typename T5, typename T6,
+              typename T7, typename T8>
+    struct call_traits<T1, T2, T3, T4, T5, T6, T7, T8, none>
+    {
+      template <typename P>
+      static bool call(P p,
+                       const T1 &t1, const T2 &t2, const T3 &t3,
+                       const T4 &t4, const T5 &t5, const T6 &t6,
+                       const T7 &t7, const T8 &t8, const none&)
+      {
+        return p(t1, t2, t3, t4, t5, t6, t7, t8);
+      }
+    };
+
+    template <typename T1, typename T2, typename T3,
+              typename T4, typename T5, typename T6,
+              typename T7>
+    struct call_traits<T1, T2, T3, T4, T5, T6, T7, none, none>
+    {
+      template <typename P>
+      static bool call(P p,
+                       const T1 &t1, const T2 &t2, const T3 &t3,
+                       const T4 &t4, const T5 &t5, const T6 &t6,
+                       const T7 &t7, const none&, const none&)
+      {
+        return p(t1, t2, t3, t4, t5, t6, t7);
+      }
+    };
+
+    template <typename T1, typename T2, typename T3,
+              typename T4, typename T5, typename T6>
+    struct call_traits<T1, T2, T3, T4, T5, T6, none, none, none>
+    {
+      template <typename P>
+      static bool call(P p,
+                       const T1 &t1, const T2 &t2, const T3 &t3,
+                       const T4 &t4, const T5 &t5, const T6 &t6,
+                       const none&, const none&, const none&)
+      {
+        return p(t1, t2, t3, t4, t5, t6);
+      }
+    };
+
+    template <typename T1, typename T2, typename T3,
+              typename T4, typename T5>
+    struct call_traits<T1, T2, T3, T4, T5, none, none, none, none>
+    {
+      template <typename P>
+      static bool call(P p, const T1& t1, const T2 &t2, const T3 &t3,
+                       const T4 &t4, const T5 &t5, const none&,
+                       const none&, const none&, const none&)
+      {
+        return p(t1, t2, t3, t4, t5);
+      }
+    };
+
+    template <typename T1, typename T2, typename T3,
+              typename T4>
+    struct call_traits<T1, T2, T3, T4, none, none, none, none, none>
+    {
+      template <typename P>
+      static bool call(P p, const T1& t1, const T2 &t2, const T3 &t3,
+                       const T4 &t4, const none&, const none&,
+                       const none&, const none&, const none&)
+      {
+        return p(t1, t2, t3, t4);
+      }
+    };
+
+    template <typename T1, typename T2, typename T3>
+    struct call_traits<T1, T2, T3, none, none, none, none, none, none>
+    {
+      template <typename P>
+      static bool call(P p, const T1& t1, const T2 &t2, const T3 &t3,
+                       const none&, const none&, const none&,
+                       const none&, const none&, const none&)
+      {
+        return p(t1, t2, t3);
+      }
+    };
+
+    template <typename T1, typename T2>
+    struct call_traits<T1, T2, none, none, none, none, none, none, none>
+    {
+      template <typename P>
+      static bool call(P p, const T1& t1, const T2 &t2, const none&,
+                       const none&, const none&, const none&,
+                       const none&, const none&, const none&)
+      {
+        return p(t1, t2);
+      }
+    };
+
+    template <typename T1>
+    struct call_traits<T1, none, none, none, none, none, none, none, none>
+    {
+      template <typename P>
+      static bool call(P p, const T1& t1, const none&, const none&,
+                       const none&, const none&, const none&,
+                       const none&, const none&, const none&)
+      {
+        return p(t1);
+      }
+    };
+
+    template <typename T1, typename T2, typename T3,
+              typename T4, typename T5, typename T6,
+              typename T7, typename T8, typename T9>
+    template <typename P>
+    inline
+    bool
+    param_holder<T1, T2, T3, T4, T5, T6, T7, T8, T9>::apply(P pred) const
+    {
+      typedef call_traits<T1, T2, T3, T4, T5, T6, T7, T8, T9> traits;
+      return traits::call(pred,
+                          holder<1, T1>::getval(),
+                          holder<2, T2>::getval(),
+                          holder<3, T3>::getval(),
+                          holder<4, T4>::getval(),
+                          holder<5, T5>::getval(),
+                          holder<6, T6>::getval(),
+                          holder<7, T7>::getval(),
+                          holder<8, T8>::getval(),
+                          holder<9, T9>::getval());
+
+    }
+
+    template <typename T1>
+    inline
+    param_holder<T1>
+    params(const T1& t1)
+    {
+      typedef param_holder<T1> R;
+      return R(t1);
+    }
+
+    template <typename T1, typename T2>
+    inline
+    param_holder<T1, T2>
+    params(const T1& t1, const T2 &t2)
+    {
+      typedef param_holder<T1, T2> R;
+      return R(t1, t2);
+    }
+
+    template <typename T1, typename T2, typename T3>
+    inline
+    param_holder<T1, T2, T3>
+    params(const T1& t1, const T2 &t2, const T3 &t3)
+    {
+      typedef param_holder<T1, T2, T3> R;
+      return R(t1, t2, t3);
+    }
+
+    template <typename T1, typename T2, typename T3, typename T4>
+    inline
+    param_holder<T1, T2, T3, T4>
+    params(const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4)
+    {
+      typedef param_holder<T1, T2, T3, T4> R;
+      return R(t1, t2, t3, t4);
+    }
+
+    template <typename T1, typename T2, typename T3, typename T4, typename T5>
+    inline
+    param_holder<T1, T2, T3, T4, T5>
+    params(const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4, const T5 &t5)
+    {
+      typedef param_holder<T1, T2, T3, T4, T5> R;
+      return R(t1, t2, t3, t4, t5);
+    }
+
+    template <typename T1, typename T2, typename T3,
+              typename T4, typename T5, typename T6>
+    inline
+    param_holder<T1, T2, T3, T4, T5, T6>
+    params(const T1& t1, const T2 &t2, const T3 &t3,
+           const T4 &t4, const T5 &t5, const T6 &t6)
+    {
+      typedef param_holder<T1, T2, T3, T4, T5, T6> R;
+      return R(t1, t2, t3, t4, t5, t6);
+    }
+
+    template <typename T1, typename T2, typename T3,
+              typename T4, typename T5, typename T6,
+              typename T7>
+    inline
+    param_holder<T1, T2, T3, T4, T5, T6, T7>
+    params(const T1& t1, const T2 &t2, const T3 &t3,
+           const T4 &t4, const T5 &t5, const T6 &t6,
+           const T7 &t7)
+    {
+      typedef param_holder<T1, T2, T3, T4, T5, T6, T7> R;
+      return R(t1, t2, t3, t4, t5, t6, t7);
+    }
+
+    template <typename T1, typename T2, typename T3,
+              typename T4, typename T5, typename T6,
+              typename T7, typename T8>
+    inline
+    param_holder<T1, T2, T3, T4, T5, T6, T7, T8>
+    params(const T1& t1, const T2 &t2, const T3 &t3,
+           const T4 &t4, const T5 &t5, const T6 &t6,
+           const T7 &t7, const T8 &t8)
+    {
+      typedef param_holder<T1, T2, T3, T4, T5, T6, T7, T8> R;
+      return R(t1, t2, t3, t4, t5, t6, t7, t8);
+    }
+
+    template <typename T1, typename T2, typename T3,
+              typename T4, typename T5, typename T6,
+              typename T7, typename T8, typename T9>
+    inline
+    param_holder<T1, T2, T3, T4, T5, T6, T7, T8, T9>
+    params(const T1& t1, const T2 &t2, const T3 &t3,
+           const T4 &t4, const T5 &t5, const T6 &t6,
+           const T7 &t7, const T8 &t8, const T9 &t9)
+    {
+      typedef param_holder<T1, T2, T3, T4, T5, T6, T7, T8, T9> R;
+      return R(t1, t2, t3, t4, t5, t6, t7, t8, t9);
+    }
+
+    template <typename P,
+              bool streamable = stream_checker::is_output_streamable<P>::value>
+    struct predicate_streamer
+    {
+      predicate_streamer(const char *name, const P& pred) : n(name), p(pred) {}
+      std::ostream &stream_to(std::ostream & os) const
+      {
+        return os << "  " << n << " : " << p << '\n'; }
+    private:
+      const char *n;
+      const P& p;
+    };
+
+    template <typename P>
+    struct predicate_streamer<P, false>
+    {
+      predicate_streamer(const char *,const P&) {}
+      std::ostream &stream_to(std::ostream &os) const { return os; }
+    private:
+    };
+
+    template <typename P, bool unstreamable>
+    std::ostream &operator<<(std::ostream &os,
+                             const predicate_streamer<P, unstreamable>& s)
+    {
+      return s.stream_to(os);
+    }
+
+
 
     template <typename T1 = none, typename T2 = none>
     class tlist : public T1,
@@ -1172,53 +1548,6 @@ namespace crpcut {
 
   } // namespace implementation
 
-  namespace stream_checker
-  {
-    template <typename T>
-    class is_output_streamable
-    {
-      static std::ostream &os;
-      static T& t;
-      template <typename V, typename U>
-      friend char operator<<(V&, const U&);
-
-      static char check(char);
-      static std::pair<char, char> check(std::ostream&);
-    public:
-      static const bool value = sizeof(check(os << t)) != sizeof(char);
-    };
-
-
-    template <typename T>
-    struct is_output_streamable<const T>
-    {
-      static const bool value = is_output_streamable<T>::value;
-    };
-
-    template <typename T>
-    struct is_output_streamable<volatile T>
-    {
-      static const bool value = is_output_streamable<T>::value;
-    };
-
-    template <typename T>
-    struct is_output_streamable<T&>
-    {
-      static const bool value = is_output_streamable<T>::value;
-    };
-
-    template <size_t N>
-    struct is_output_streamable<char[N]>
-    {
-      static const bool value = true;
-    };
-
-    template <size_t N>
-    struct is_output_streamable<const char[N]>
-    {
-      static const bool value = true;
-    };
-  }
 
   namespace implementation {
     template <typename T,
@@ -1275,6 +1604,7 @@ namespace crpcut {
   //// template and inline func implementations
 
   namespace datatypes {
+
     template <typename T, std::size_t N>
     inline array_v<T, N>::array_v()
       : num_elements(0)
@@ -1745,6 +2075,27 @@ namespace crpcut {
 
   } // implementation
 
+  template <typename P>
+  inline
+  datatypes::predicate_streamer<P> stream_predicate(const char *n, const P& p)
+  {
+    return datatypes::predicate_streamer<P>(n, p);
+  }
+
+
+  template <typename Pred, typename Params>
+  inline bool match_pred(std::string &msg, Pred p, const Params &params)
+  {
+    bool b = params.apply(p);
+    if (!b)
+    {
+      std::ostringstream out;
+      params.print_to(out);
+      msg = out.str();
+    }
+    return b;
+  }
+
   inline unsigned
   test_case_factory::run_test(int argc, char *argv[], std::ostream &os)
   {
@@ -1860,7 +2211,7 @@ namespace crpcut {
     class registrator                                                       \
       : public crpcut::implementation::test_case_registrator,               \
         public virtual crpcut::policies::dependencies::base,                \
-        public virtual test_case_name::crpcut_expected_death_cause,        \
+        public virtual test_case_name::crpcut_expected_death_cause,         \
         private virtual test_case_name::crpcut_dependency                   \
           {                                                                 \
             typedef crpcut::implementation::test_case_registrator           \
@@ -2008,7 +2359,7 @@ namespace crpcut {
     try {                                                               \
       expr;                                                             \
       FAIL <<                                                           \
-        "ASSERT_THROW(" #expr ", " #exc ")\n"                         \
+        "ASSERT_THROW(" #expr ", " #exc ")\n"                           \
         "  Did not throw";                                              \
     }                                                                   \
     catch (exc) {                                                       \
@@ -2022,16 +2373,28 @@ namespace crpcut {
     }                                                                   \
     catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
       FAIL <<                                                           \
-        "ASSERT_NO_THROW(" #expr ")\n"                                \
+        "ASSERT_NO_THROW(" #expr ")\n"                                  \
         "  caught std::exception\n"                                     \
         "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
     }                                                                   \
     catch (...) {                                                       \
       FAIL <<                                                           \
-        "ASSERT_NO_THROW(" #expr ")\n"                                \
+        "ASSERT_NO_THROW(" #expr ")\n"                                  \
         "  caught ...";                                                 \
     }                                                                   \
   } while (0)
+
+
+
+#define ASSERT_PRED(pred, ...)                                          \
+  do {                                                                  \
+    std::string m;                                                      \
+    if (!crpcut::match_pred(m, pred, crpcut::datatypes::params(__VA_ARGS__)))\
+      FAIL << "ASSERT_PRED(" #pred ", " #__VA_ARGS__ ")\n"              \
+           << crpcut::stream_predicate(#pred, pred)          \
+           << m;                                                        \
+  } while (0)
+
 
 extern crpcut::implementation::namespace_info current_namespace;
 

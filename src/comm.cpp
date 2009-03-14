@@ -61,9 +61,12 @@ namespace crpcut {
         }
       read(bytes_written);
       assert(len == bytes_written);
-      bool terminal = (t == comm::exit_ok) || (t == comm::exit_fail);
-      if (!terminal) return;
-      wrapped::_Exit(0);
+      switch (t)
+        {
+        case comm::exit_fail:
+        case comm::exit_ok:
+          wrapped::_Exit(0);
+        }
     }
 
     reporter report;

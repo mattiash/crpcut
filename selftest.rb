@@ -94,6 +94,7 @@ end
 
 A_H='asserts_and_depends\.cpp:\d+\s+'
 P_H='parametrized\.cpp:\d+\s+'
+PR_H='predicates\.cpp:\d+\s+'
 A_T='Actual time to completion was'
 S_E='std::exception\s+what\(\)'
 R_E='std::range_error'
@@ -331,6 +332,38 @@ TESTS = {
   'parametrized::should_succeed_assert_lt_int_double' =>
   Test.new('OK'),
 
+  'predicates::should_succeed_simple_func' =>
+  Test.new('OK'),
+
+  'predicates::should_fail_simple_func' =>
+  Test.new('FAILED').
+  log('violation',
+       /#{PR_H}ASSERT_PRED\(is_positive, v\)\s+param1 = -1/me),
+
+  'predicates::should_succeed_simple_func_with_param_side_effect' =>
+  Test.new('OK'),
+
+  'predicates::should_fail_simple_func_with_param_side_effect' =>
+  Test.new('FAILED').
+  log('violation',
+       /#{PR_H}ASSERT_PRED\(is_positive, --v\)\s+param1 = -1/me),
+
+  'predicates::should_succeed_func_wrap_class' =>
+  Test.new('OK'),
+
+  'predicates::should_fail_func_wrap_class' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{PR_H}ASSERT_PRED\(bifuncwrap.*less.*strcmp.*katt.*apa\"\)\s+param1 = katt\s+param2 = apa/me),
+
+  'predicates::should_succeed_streamable_pred' =>
+  Test.new('OK'),
+
+  'predicates::should_fail_streamable_pred' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{PR_H}ASSERT_PRED\(string_equal\(.*"katt"\)\s+string_equal.*\) : compare.*equal to "apa"\s+param1 = katt/me),
+
   'should_fail_after_delay' =>
   Test.new('FAILED').
   log('violation',
@@ -427,7 +460,7 @@ TESTS = {
   Test.new('FAILED').
   log('violation',
       /wrapped\.cpp:\d+\s+ASSERT_LT\(d, 1\.\d*\)\s+where d = 1\.(1|0999).*/me)
- }
+}
 
 GMOCK_TESTS = {
   'google_mock::basic_success' =>

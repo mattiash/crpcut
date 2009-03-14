@@ -240,7 +240,7 @@ one main program. If several files define the same test-suite name, the tests
 will be joined it the same suite. The <id>crpcut_</id> name prefix is reserved
 for crpcut.
 <p/>
-In tests, assert correctness using unary and binary assertion macros.
+In tests, assert correctness using the assertion macros.
 <p/>
 The unary assertions are:
 <definitions notion="assert" meaning="condition">
@@ -274,11 +274,49 @@ The binary assertions are:
                                                   <id>exc_type</id> if any
                                                   exception is good.</def>
 </definitions>
+<p/>
+There is also an N-ary assert macro:
+<definitions notion="assert" meaning="condition">
+  <def notion="ASSERT_PRED(predicate,&#xA0;...)">Fails iff the expression
+                                            <id>predicate(...)</id> evaluetes
+                                            to false. <id>predicate</id> may
+                                            be anything that can act as a
+                                            function accepting the rest of
+                                            the parameters, and returns a value
+                                            comparable to false.</def>
+</definitions>
 If an assertion fails, the value of the parameters is included in the failure
 log (as output streamed, if possible, or as hex-dump otherwise.) All assert
 macros evaluates each parameter value exactly once, so providing parameters with
 side effects is not a problem. The order of evaluation of the parameters is
 undefined, however.
+<p/>
+<id>ASSERT_PRED</id> has the advantage that it gives you all parameter values.
+For example, the two tests below are logically equal:
+<code>
+const char *p = afunc();
+ASSERT_TRUE(std::equal_to&lt;std::string&gt;()("expected", p));
+</code>
+and
+<code>
+const char *p = afunc();
+ASSERT_PRED(std::equal_to&lt;std::string&gt;(), "expected", p);
+</code>
+However, of the two above, the latter will give much better violation
+information, should the test fail. Compare:
+<code>
+ASSERT_TRUE(std::equal_to&lt;std::string&gt;()("expected", p))
+  where std::equal_to&lt;std::string&gt;()("expected", p) = false
+</code>
+and
+<code>
+ASSERT_PRED(std::equal_to&lt;std::string&gt;()("expected", p))
+  param1 = expected
+  param2 = otherval
+</code>
+If you define your own predicates (see the <link section="Predicates"/>
+section below) you can define an output stream operator for it, to make it
+express the nature of the test even better.
 <p/>
 In addition to the assertions, two output streamers are available. Both
 are used as normal <id>std::ostream</id> objects.
@@ -522,6 +560,76 @@ switch, can be accessed from within the test cases using:
 The first returns the raw value of the parameter, or 0 if none was found.
 The other two fails the test case if the value is not found, or cannot be
 interpreted as the desired type by means of input streaming.
+</section>
+<section title="Predicates">
+A predicate is anything that looks like a function and returns a type that can
+be evaluated as a boolean expression. A predicate can be a free function
+pointer, a static member function, or an object with <id>operator()</id>.
+<p/>
+The <link url="http://www.boost.org">BOOST</link> C++ library plays especially
+well with predicates, particularly <id>boost::bind</id> and
+<id>boost::lambda</id>. Take for example:
+<code>
+const char *p = afunc();
+ASSERT_PRED(boost::bind(std::strcmp, _1, _2) == 0, "expected", p);
+</code>
+You can also make a thin wrapper using your own templates:
+<code>
+  template &lt;typename R, typename P1, typename P2&gt;
+  struct binder&lt;R (*)(P1, P2)&gt;
+  {
+    typedef R (*proto)(P1, P2);
+    typedef decltype boost::bind(proto(0), _1, _2) type;
+    static type bind(proto f) { return boost::bind(f, _1, _2); }
+  };
+
+  template &lt;typename F&gt;
+  typename binder&lt;F&gt;::type return_of(F f)
+  {
+    return binder&lt;F&gt;::bind(f);
+  }
+</code>
+The above thin wrapper can be used as:
+<code>
+  const char *p = afunc();
+  ASSERT_PRED(return_of(std::strcmp) == 0, "expected", p);
+</code>
+Should the above fail, the violation message will be:
+<code>
+  ASSERT_PRED(return_of(std::strcmp) ==0, "expected", p)
+    param1 = expected
+    param2 = otherval
+</code>
+<p/>
+If a predicate has an output stream operator, it will be used to add
+further information to violation messages.
+An alternative to the wrapper above may be:
+<code>
+  class equal
+  {
+  public:
+    equal(const char *ref) : r(ref) {}
+    bool operator()(const char *v) const { return strcasecmp(v, r) == 0; }
+    friend std::ostream&amp; operator&lt;&lt;(std::ostream &amp;os, const equal &amp;e)
+    {
+      return os &lt;&lt; "case insensitive string equal to \"" &lt;&lt; e.r &lt;&lt; "\"";
+    }
+  private:
+    const char *r;
+  };
+</code>
+Its use can be:
+<code>
+  const char *p = afunc();
+  ASSERT_PRED(equal("expected"), p);
+</code>
+A violation message would be:
+<code>
+  ASSERT_PRED(equal("expected", p))
+    equal("expected") : case insensitive string equal to "expected"
+    param1 = otherval
+</code>
+<p/>
 </section>
 <section title="Wrapping library functions">
 crpcut accesses all functions it uses from <id>libc</id> and <id>librt</id>
