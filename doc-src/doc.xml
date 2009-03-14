@@ -10,18 +10,18 @@ manage.<p/>
 <p/>
 A complete example:<p/>
 <code>
-#include &lt;crpcut.hpp&gt;
-#include &lt;cassert&gt;
-TEST(catch_assert, NO_CORE_FILE, EXPECT_SIGNAL_DEATH(SIGABRT))
-{
-  int i = 3;
-  assert(i==8);
-}
+  #include &lt;crpcut.hpp&gt;
+  #include &lt;cassert&gt;
+  TEST(catch_assert, NO_CORE_FILE, EXPECT_SIGNAL_DEATH(SIGABRT))
+  {
+    int i = 3;
+    assert(i==8);
+  }
 
-int main(int argc, char *argv[])
-{
-  return crpcut::test_case_factory::run_test(argc, argv);
-}
+  int main(int argc, char *argv[])
+  {
+    return crpcut::test_case_factory::run_test(argc, argv);
+  }
 </code>
 This test will fail if compiled without support for assertions, because it is
 expected to die on <id>SIGABRT</id>. When it succeeds, it will catch the output
@@ -68,6 +68,16 @@ you.
 </list>
 </chapter>
 
+<chapter title="crpcut links">
+The current version of crpcut is 0.4.0
+<p/>
+<li>Latest version of <link url="http://crpcut.sourceforge.net">this document</link></li>
+<li>Sourceforge <link url="http://www.sourceforge.net/projects/crpcut">project page</link></li>
+<li>Sourceforge <link url="https://sourceforge.net:443/project/showfiles.php?group_id=251473">download page</link></li>
+<li>GIT repo at <id>git://crpcut.git.sourceforge.net/gitroot/crpcut</id></li>
+<li>Support <link url="http://lists.sourceforge.net/mailman/listinfo/crpcut-users">mailing list</link></li>
+<li><link url="http://sourceforge.net/tracker/?group_id=251473">bug-tracker</link></li>
+</chapter>
 <chapter title="License">
 <code>
 /*
@@ -224,10 +234,10 @@ of all installed files.
 <chapter title="Writing tests">
 Test cases are defined using the <id>TEST()</id> macro as:<p/>
 <code>
-TEST(name_of_testcase (,(fixture|modifier))*)
-{
-  ... code
-}
+  TEST(name_of_testcase (,(fixture|modifier))*)
+  {
+    ... code
+  }
 </code>
 Both <link section="Fixtures">fixtures</link> and
 <link section="Modifiers">modifiers</link>
@@ -294,25 +304,25 @@ undefined, however.
 <id>ASSERT_PRED</id> has the advantage that it gives you all parameter values.
 For example, the two tests below are logically equal:
 <code>
-const char *p = afunc();
-ASSERT_TRUE(std::equal_to&lt;std::string&gt;()("expected", p));
+  const char *p = afunc();
+  ASSERT_TRUE(std::equal_to&lt;std::string&gt;()("expected", p));
 </code>
 and
 <code>
-const char *p = afunc();
-ASSERT_PRED(std::equal_to&lt;std::string&gt;(), "expected", p);
+  const char *p = afunc();
+  ASSERT_PRED(std::equal_to&lt;std::string&gt;(), "expected", p);
 </code>
 However, of the two above, the latter will give much better violation
 information, should the test fail. Compare:
 <code>
-ASSERT_TRUE(std::equal_to&lt;std::string&gt;()("expected", p))
-  where std::equal_to&lt;std::string&gt;()("expected", p) = false
+  ASSERT_TRUE(std::equal_to&lt;std::string&gt;()("expected", p))
+    where std::equal_to&lt;std::string&gt;()("expected", p) = false
 </code>
 and
 <code>
-ASSERT_PRED(std::equal_to&lt;std::string&gt;()("expected", p))
-  param1 = expected
-  param2 = otherval
+  ASSERT_PRED(std::equal_to&lt;std::string&gt;()("expected", p))
+    param1 = expected
+    param2 = otherval
 </code>
 If you define your own predicates (see the <link section="Predicates"/>
 section below) you can define an output stream operator for it, to make it
@@ -329,12 +339,12 @@ are used as normal <id>std::ostream</id> objects.
 <p/>
 An example:
 <code>
-TEST(fail_immediately)
-{
-  int n = random();
-  INFO &lt;&lt; "random value is " &lt;&lt; n;
-  FAIL &lt;&lt; "Goodbye cruel world";
-}
+  TEST(fail_immediately)
+  {
+    int n = random();
+    INFO &lt;&lt; "random value is " &lt;&lt; n;
+    FAIL &lt;&lt; "Goodbye cruel world";
+  }
 </code>
 <section title="Fixtures">
 If several test cases share the same test setup, test fixtures can be written.
@@ -345,29 +355,30 @@ be combined. The fixtures are inherited by the test case.
 <p/>
 Small example:
 <code>
-TESTSUITE(string_length)
-{
-  class fixture1
+  TESTSUITE(string_length)
   {
-  protected:
-    fixture1() : i(3) {}
-    int i;
-  };
-  struct fixture2
-  {
-    std::string msg;
-    fixture2() : msg("cat");
-  };
+    class fixture1
+    {
+    protected:
+      fixture1() : i(3) {}
+      int i;
+    };
+    struct fixture2
+    {
+      std::string msg;
+      fixture2() : msg("cat");
+    };
 
-  TEST(check_length, fixture1, fixture2)
-  {
-    ASSERT_EQ(msg.length(), i);
+    TEST(check_length, fixture1, fixture2)
+    {
+      ASSERT_EQ(msg.length(), i);
+    }
+
+    TEST(check_c_length, fixture1, fixture2)
+    {
+      ASSERT_EQ(std::strlen(msg.c_str()), i);
+    }
   }
-  TEST(check_c_length, fixture1, fixture2)
-  {
-    ASSERT_EQ(std::strlen(msg.c_str()), i);
-  }
-}
 </code>
 </section>
 <section title="Modifiers">
@@ -433,10 +444,10 @@ test.
 <chapter title="The main program">
 The normal <id>main()</id> is exactly the below:
 <code>
-int main(int argc, char *argv[])
-{
-  return crpcut::test_case_factory::run_test(argc, argv);
-}
+  int main(int argc, char *argv[])
+  {
+    return crpcut::test_case_factory::run_test(argc, argv);
+  }
 </code>
 <id>crpcut::test_case_factory::run_test()</id> expects parameters as a set of
 flags followed by a set of test case or test suite names. The flags are:
@@ -473,13 +484,13 @@ test program using <id>-n&#xA0;-v&#xA;-c&#xA;8 asserts</id>.
 <p/>
 The exact prototype for <id>run_test</id> is:
 <code>
-namespace crpcut {
-  class test_case_factory
-  {
-  public:
-    static int run_test(int argc, const char *argv[], std::ostream &amp; = std::cerr);
-  };
-}
+  namespace crpcut {
+    class test_case_factory
+    {
+    public:
+      static int run_test(int argc, const char *argv[], std::ostream &amp; = std::cerr);
+    };
+  }
 </code>
 The return value is the number of failed tests, or -1 if anything was printed
 on the stream. The output stream is where to print information if the
@@ -538,7 +549,7 @@ working directory when starting the test suite is lost. If you need that
 path, for example to populate test vectors from a file, you can get the
 path name through the static member function:
 <code>
-const char *crpcut::test_case_factory::get_start_dir();
+  const char *crpcut::test_case_factory::get_start_dir();
 </code>
 </section>
 <section title="Named command line parameters">
@@ -570,8 +581,8 @@ The <link url="http://www.boost.org">BOOST</link> C++ library plays especially
 well with predicates, particularly <id>boost::bind</id> and
 <id>boost::lambda</id>. Take for example:
 <code>
-const char *p = afunc();
-ASSERT_PRED(boost::bind(std::strcmp, _1, _2) == 0, "expected", p);
+  const char *p = afunc();
+  ASSERT_PRED(boost::bind(std::strcmp, _1, _2) == 0, "expected", p);
 </code>
 You can also make a thin wrapper using your own templates:
 <code>
@@ -596,7 +607,7 @@ The above thin wrapper can be used as:
 </code>
 Should the above fail, the violation message will be:
 <code>
-  ASSERT_PRED(return_of(std::strcmp) ==0, "expected", p)
+  ASSERT_PRED(return_of(std::strcmp) == 0, "expected", p)
     param1 = expected
     param2 = otherval
 </code>
@@ -646,7 +657,7 @@ misbehave.
 If you need to create wrappers of your own, you can easily do that
 through the macros and traits templates available in <id>crpcut.hpp</id>.
 <code>
-CRPCUT_WRAP_FUNC(libname, funcname, rettype, prototype_params, call_params)
+  CRPCUT_WRAP_FUNC(libname, funcname, rettype, prototype_params, call_params)
 </code>
 <definitions notion="macro param" meaning="meaning">
 <def notion="libname">name of the library in which the function resides.
@@ -670,19 +681,19 @@ This is easiest to explain through an example. Say you want to intercept
 all calls to <id>fopen()</id>. You want it to do what it normally does,
 but you want to validate its parameters. A way of doing that is as follows:
 <code>
-extern "C" {
-  #include &lt;stdio.h&gt;
-}
-#include &lt;crpcut.hpp&gt;
-namespace mywraps {
-  CRPCUT_WRAP_FUNC(libc, fopen, FILE*, (const char *p, const char *m), (p, m))
-}
-FILE* fopen(const char *p, const char *m)
-{
-  ASSERT_TRUE(p);
-  ASSERT_TRUE(m);
-  return mywraps::fopen(p, m);
-}
+  extern "C" {
+    #include &lt;stdio.h&gt;
+  }
+  #include &lt;crpcut.hpp&gt;
+  namespace mywraps {
+    CRPCUT_WRAP_FUNC(libc, fopen, FILE*, (const char *p, const char *m), (p, m))
+  }
+  FILE* fopen(const char *p, const char *m)
+  {
+    ASSERT_TRUE(p);
+    ASSERT_TRUE(m);
+    return mywraps::fopen(p, m);
+  }
 </code>
 By default the libraries <id>libc</id> and <id>librt</id> are known by
 crpcut. If you want to access functions in other libraries, you add your
@@ -697,41 +708,41 @@ succeeds. If no library can be found, crpcut will segfault.
 A complete example for the function <id>asin()</id> in the <id>libm</id>
 library:
 <code>
-extern "C" {
-  #include &lt;math.h&gt;
-}
-#include &lt;crpcut.hpp&gt;
+  extern "C" {
+    #include &lt;math.h&gt;
+  }
+  #include &lt;crpcut.hpp&gt;
 
-namespace crpcut {
-  namespace libs {
-    static const int libm = 1;
+  namespace crpcut {
+    namespace libs {
+      static const int libm = 1;
+    }
+    namespace libwrapper {
+      template &lt;&gt;
+      const char *traits&lt;libs::libm&gt;::name[] = {
+        "libm.so",
+        "libm.so.6",
+        0
+      };
+    }
   }
-  namespace libwrapper {
-    template &lt;&gt;
-    const char *traits&lt;libs::libm&gt;::name[] = {
-      "libm.so",
-      "libm.so.6",
-      0
-    };
+  namespace mymath {
+    CRPCUT_WRAP_FUNC(libm, asin, double, (double d), (d))
   }
-}
-namespace mymath {
-  CRPCUT_WRAP_FUNC(libm, asin, double, (double d), (d))
-}
 </code>
 Now the function <id>mymath::asin()</id> will call the original
 function in <id>libm</id>, and you can define your own <id>asin()</id> in
 global namespace for testing purposes.
 <code>
-extern "C"
-{
-  double asin(double d)
+  extern "C"
   {
-    ASSERT_GE(d, -1.0);
-    ASSERT_LE(d, 1.0);
-    return mymath::asin(d);
+    double asin(double d)
+    {
+      ASSERT_GE(d, -1.0);
+      ASSERT_LE(d, 1.0);
+      return mymath::asin(d);
+    }
   }
-}
 </code>
 </section>
 </chapter>
@@ -743,16 +754,6 @@ order is:
 <li>Set regexp match rules for stdout and stderr</li>
 <li>ASSERT_*() macros for almost-equal tests of floating point numbers</li>
 </list>
-</chapter>
-<chapter title="Contact">
-Discussions on how to use crpcut is best managed on the crpcut-users
-mailinglist. Visit the
-<link url="http://lists.sourceforge.net/mailman/listinfo/crpcut-users">source-forge</link>
-page for subscription.
-<p/>
-For bug reports, visit the
-<link url="http://sourceforge.net/tracker/?group_id=251473&amp;atid=1126597">bug-tracker</link>
-page on sourceforge. Make sure you really have a new bug before reporting.
 </chapter>
 </doc>
 
