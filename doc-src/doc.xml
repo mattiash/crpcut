@@ -69,7 +69,7 @@ you.
 </chapter>
 
 <chapter title="crpcut links">
-The current version of crpcut is 0.4.0
+The current version of crpcut is 0.5.0
 <p/>
 <li>Latest version of <link url="http://crpcut.sourceforge.net">this document</link></li>
 <li>Sourceforge <link url="http://www.sourceforge.net/projects/crpcut">project page</link></li>
@@ -174,7 +174,7 @@ been verified.
 <chapter title="Build and Install">
   crpcut uses <link url="http://www.cmake.org">CMake</link> to manage builds and
   installs.<p/>
-First obtain the crpcut sources, either a release (current is 0.4.0) from the
+First obtain the crpcut sources, either a release from the
 sourceforge
 <link url="https://sourceforge.net:443/project/showfiles.php?group_id=251473">download</link>
 page, or from the git repository

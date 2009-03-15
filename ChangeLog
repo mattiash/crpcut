@@ -1,3 +1,11 @@
+2009-03-15 0.5.0
+
+         * Added ASSERT_PRED macro, which accepts as predicate
+	   anything that looks like a function returning a value
+	   usable as a boolean expression. Predicates can
+	   optionally define an output stream operator, which
+	   will be used in violation logs, if available.
+
          * Added a mechanism to send parameters to the test cases
            through the -p command line switch, and the get_parameter()
            family of static functions in test_case_factory.
