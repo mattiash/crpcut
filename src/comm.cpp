@@ -64,7 +64,6 @@ namespace crpcut {
       switch (t)
         {
         case comm::exit_fail:
-        case comm::exit_ok:
           wrapped::_Exit(0);
         }
     }

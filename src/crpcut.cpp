@@ -480,7 +480,6 @@ namespace crpcut {
         const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
         char *msg = static_cast<char *>(alloca(head_size + len + 1));
         lib::strcpy(lib::strcpy(msg, TEMPLATE_HEAD), e.what());
-        //        wrapped::strcpy(msg + head_size, e.what());
 #undef TEMPLATE_HEAD
         report(comm::exit_fail, head_size + len, msg);
       }
@@ -490,17 +489,16 @@ namespace crpcut {
         report(comm::exit_fail, msg);
       }
 
-    report(comm::end_test, 0, 0);
 
     if (tests_as_child_procs())
-      {
-        p->~test_case_base(); // Ugly, but since report kills when parallel
-      }                       // it takes care of a memory leak.
-    else
+       {
+         p->test_finished(); // tell destructor to report success
+         wrapped::exit(0);
+       }
+     else
       {
         i->register_success();
       }
-    report(comm::exit_ok, 0, 0);
   }
 
   void test_case_factory::manage_children(unsigned max_pending_children)

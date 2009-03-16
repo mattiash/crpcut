@@ -1092,11 +1092,16 @@ namespace crpcut {
 
   class test_case_base : protected virtual policies::default_policy
   {
+  protected:
+    test_case_base();
   public:
     virtual ~test_case_base();
     void run();
+    void test_finished();
   private:
     virtual void run_test() = 0;
+
+    bool finished;
   };
 
   class test_case_factory;
@@ -1700,6 +1705,7 @@ namespace crpcut {
     }
   } // namespace datatypes
 
+
   namespace policies {
 
     namespace deaths{
@@ -1836,8 +1842,23 @@ namespace crpcut {
   } // namespace policies
 
   inline
+  test_case_base::test_case_base() : finished(false) {}
+
+  inline
+  void
+  test_case_base::test_finished()
+  {
+    finished = true;
+    report(comm::end_test, 0, 0);
+  }
+
+  inline
   test_case_base::~test_case_base()
   {
+    if (finished)
+      {
+        report(comm::exit_ok, 0, 0);
+      }
   }
 
   inline void
@@ -2188,6 +2209,10 @@ namespace crpcut {
     return homedir;
   }
 } // namespace crpcut
+
+// Note, the order of inheritance below is important. test_case_base
+// destructor signals ending of test case, so it must be listed as the
+// first base class so that its instance is destroyed last
 
 #define CRPCUT_TEST_CASE_DEF(test_case_name, ...)                           \
   class test_case_name                                                      \
