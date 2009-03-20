@@ -32,7 +32,7 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <signal.h>
-#include <wait.h>
+#include <sys/wait.h>
 }
 
 #define POLL_USE_EPOLL

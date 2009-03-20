@@ -61,6 +61,9 @@ extern "C"
 }
 
 namespace crpcut {
+  namespace wrapped {
+    int select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
+  }
   template <size_t N>
   struct polldata
 
