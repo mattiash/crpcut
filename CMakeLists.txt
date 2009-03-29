@@ -209,6 +209,7 @@ if(GMOCK_LIBS)
   file(GLOB GMOCK_TEST_SRCS   test-src/gmock.cpp)
 endif(GMOCK_LIBS)
 
+
 file(GLOB TEST_SRCS
      test-src/asserts_and_depends.cpp
      test-src/output.cpp
@@ -227,9 +228,8 @@ file(GLOB TEST_SRCS
      ${GMOCK_TEST_SRCS}
 )
 
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEATURE_SELECTION}")
-add_executable(testprog ${TEST_SRCS})
+add_executable(testprog EXCLUDE_FROM_ALL ${TEST_SRCS})
 target_link_libraries(testprog crpcut)
 if (GMOCK_LIBS)
   target_link_libraries(testprog crpcut_gmock "${GMOCK_LIBS}")
@@ -253,7 +253,7 @@ endif(XSLTPROC)
 
 find_program(RUBY "ruby")
 if(RUBY)
-  add_custom_target(selftest ${RUBY} ${CMAKE_SOURCE_DIR}/selftest.rb ${SELFTEST_PARAM} VERBATIM)
+  add_custom_target(selftest ${RUBY} ${CMAKE_SOURCE_DIR}/selftest.rb ${SELFTEST_PARAM} DEPENDS testprog VERBATIM)
 else(RUBY)
   message("ruby is not found - selftest target not available")
 endif(RUBY)
@@ -261,7 +261,7 @@ find_program(AWK "awk")
 find_program(BASH "bash")
 find_program(XMLLINT "xmllint")
 if (AWK AND BASH AND XMLLINT)
-   add_custom_target(sanitycheck ${BASH} ${CMAKE_SOURCE_DIR}/sanitycheck.sh ${AWK} ${CMAKE_SOURCE_DIR} ${SELFTEST_PARAM} VERBATIM)
+   add_custom_target(sanitycheck ${BASH} ${CMAKE_SOURCE_DIR}/sanitycheck.sh ${AWK} ${CMAKE_SOURCE_DIR} ${SELFTEST_PARAM} DEPENDS testprog VERBATIM)
 endif (AWK AND BASH AND XMLLINT)
 set(LIBRARY_OUTPUT_PATH lib)
 set(EXECUTABLE_OUTPUT_PATH test)

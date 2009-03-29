@@ -222,7 +222,11 @@ by typing:
 </code>
 <p/>
 Once built, you may want to check that it works correctly. Do that by
-running:
+running first builting the example code as a test program:
+<code>
+  &gt; make testprog
+</code>
+Then run the selftest itself:
 <code>
   &gt; make selftest
 </code>

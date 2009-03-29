@@ -29,7 +29,8 @@ Build
 2. Type 'make'
 
 3. If you have Ruby, and you want to check that crpcut works, type
-   'make selftest'. The self test takes about 30 seconds to complete.
+   'make selftest'. After building the test program, the self test run
+   takes about 30 seconds to complete.
 
 
 Out-of-tree Build
@@ -45,7 +46,8 @@ Out-of-tree Build
 3. type 'make'
 
 4. If you have Ruby, and you want to check that crpcut works, type
-   'make selftest'. The self test takes about 30 seconds to complete.
+   'make selftest'. After building the test program, the self test run
+   takes about 30 seconds to complete.
 
 Install
 =======

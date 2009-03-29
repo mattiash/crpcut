@@ -1,5 +1,8 @@
          * Improved exception catching in the ASSERT_* macros
 
+         * Changed the make system such that the test program is not
+           built by default
+
          * Added string comparisons
            - regex for matching regular expressions
            - collate for locale dependent sort order
