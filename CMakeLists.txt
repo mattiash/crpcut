@@ -223,6 +223,7 @@ file(GLOB TEST_SRCS
      test-src/predicates.cpp
      test-src/regex.cpp
      test-src/fp.cpp
+     test-src/collate.cpp
      ${GMOCK_TEST_SRCS}
 )
 

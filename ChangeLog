@@ -1,5 +1,6 @@
          * Added string comparisons
            - regex for matching regular expressions
+           - collate for locale dependent sort order
 
          * Added floating point comparisons
            - abs_diff for values near 0

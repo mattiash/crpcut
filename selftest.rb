@@ -439,6 +439,25 @@ TESTS = {
   log('violation',
       /#{PR_H}ASSERT_PRED\(string_equal\(.*"katt"\)\s+string_equal.*\) : compare.*equal to "apa"\s+param1 = katt/me),
 
+  'collate::should_succeed_collation_string' =>
+  Test.new('OK'),
+
+  'collate::should_succeed_collation_char_array' =>
+  Test.new('OK'),
+
+  'collate::should_fail_collation_string' =>
+  Test.new('FAILED').
+  log('violation',
+      /right hand value = \"apa\"/me),
+
+  'collate::should_fail_collation_char_array' =>
+  Test.new('FAILED').
+  log('violation',
+      /right hand value = \"APA\"/me),
+
+  'collate::should_succeed_equal_upcase' =>
+  Test.new('OK'),
+
   'regex::should_succeed_simple_re' =>
   Test.new('OK'),
 

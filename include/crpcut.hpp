@@ -1761,6 +1761,8 @@ namespace crpcut {
       assert(num_elements);
       --num_elements;
     }
+
+
   } // namespace datatypes
 
 
@@ -2538,6 +2540,219 @@ namespace crpcut {
   };
 
 
+  typedef enum { verbatim, uppercase, lowercase } case_convert_type;
+
+  template <case_convert_type converter>
+  struct convert_traits
+  {
+    static const char *do_convert(char *lo, const char *, const std::locale &)
+    {
+      return lo;
+    }
+  };
+
+  template <>
+  struct convert_traits<uppercase>
+  {
+    static const char *do_convert(char *lo, const char *hi, const std::locale &l)
+    {
+      return std::use_facet<std::ctype<char> >(l).toupper(lo, hi);
+    }
+  };
+
+  template <>
+  struct convert_traits<lowercase>
+  {
+    static const char *do_convert(char *lo, const char *hi, const std::locale &l)
+    {
+      return std::use_facet<std::ctype<char> >(l).tolower(lo, hi);
+    }
+  };
+
+  template <case_convert_type>
+  class collate_t;
+
+  class collate_result
+  {
+    class comparator;
+    const char *r;
+    std::locale locale;
+    const char *side;
+
+    collate_result(const char *refstr, const std::locale& l)
+      : r(refstr),
+        locale(l),
+        side("right") {}
+  public:
+    collate_result(const collate_result& o)
+      : r(o.r),
+        locale(o.locale),
+        side(o.side)
+    {}
+    const comparator* operator()() const
+    {
+      return reinterpret_cast<const comparator*>(r ? 0 : this);
+    }
+    collate_result& set_lh() { side = "left"; return *this;}
+    friend std::ostream &operator<<(std::ostream& os, const collate_result &r)
+    {
+      os << "Failed in locale \"" << r.locale.name() << "\" with " << r.side
+         << " hand value = \"" << r.r << "\"";
+      return os;
+    }
+    template <case_convert_type>
+    friend class collate_t;
+  };
+
+  template <case_convert_type converter>
+  class collate_t
+  {
+  public:
+    collate_t(const std::string &reference,
+              const std::locale &loc = std::locale())
+      : ref(reference),
+        locale(loc)
+    {
+      char *p = &*ref.begin();
+      convert_traits<converter>::do_convert(p, p + ref.length(), loc);
+    }
+    collate_t(const char *reference, const std::locale& loc = std::locale())
+      : ref(reference),
+        locale(loc)
+    {
+      char *p = &*ref.begin();
+      convert_traits<converter>::do_convert(p, p + ref.length(), loc);
+    }
+
+    collate_result operator<(const std::string &s) const
+    {
+      return collate_result(compare(s) < 0 ? 0 : s.c_str(), locale);
+    }
+    collate_result operator<(const char *r) const
+    {
+      return collate_result(compare(r) < 0 ? 0 : r, locale);
+    }
+
+    collate_result operator<=(const std::string &s) const
+    {
+      return collate_result(compare(s) <= 0 ? 0 : s.c_str(), locale);
+    }
+    collate_result operator<=(const char *r) const
+    {
+      return collate_result(compare(r) <= 0 ? 0 : r, locale);
+    }
+
+    collate_result operator>(const std::string &s) const
+    {
+      return collate_result(compare(s) > 0 ? 0 : s.c_str(), locale);
+    }
+    collate_result operator>(const char *r) const
+    {
+      return collate_result(compare(r) > 0 ? 0 : r, locale);
+    }
+
+    collate_result operator>=(const std::string &s) const
+    {
+      return collate_result(compare(s) >= 0 ? 0 : s.c_str(), locale);
+    }
+    collate_result operator>=(const char *r) const
+    {
+      return collate_result(compare(r) >= 0 ? 0 : r, locale);
+    }
+
+    collate_result operator==(const std::string &s) const
+    {
+      return collate_result(compare(s) == 0 ? 0 : s.c_str(), locale);
+    }
+    collate_result operator==(const char *r) const
+    {
+      return collate_result(compare(r) == 0 ? 0 : r, locale);
+    }
+
+    collate_result operator!=(const std::string &s) const
+    {
+      return collate_result(compare(s) != 0 ? 0 : s.c_str(), locale);
+    }
+    collate_result operator!=(const char *r) const
+    {
+      return collate_result(compare(r) != 0 ? 0 : r, locale);
+    }
+  private:
+    int compare(std::string s) const
+    {
+      char *p = &*s.begin();
+      convert_traits<converter>::do_convert(p, p + s.length(), locale);
+      typedef std::collate<char> coll;
+      const coll &fac = std::use_facet<coll>(locale);
+      return fac.compare(ref.c_str(), ref.c_str() + ref.length(),
+                         p, p + s.length());
+    }
+    int compare(const char *p) const
+    {
+      return compare(std::string(p));
+    }
+    int compare(const char *p, size_t len) const
+    {
+      return compare(std::string(p, len));
+    }
+    std::string locale_name() const { return locale.name(); }
+    const char *reference_string() const { return ref.c_str(); }
+  private:
+    std::string ref;
+    std::locale locale;
+  };
+
+  template <typename T, case_convert_type type>
+  inline collate_result operator==(T r, const collate_t<type> &c)
+  {
+    return (c == r).set_lh();
+  }
+
+  template <typename T, case_convert_type type>
+  inline collate_result operator!=(T r, const collate_t<type> &c)
+  {
+    return (c != r).set_lh();
+  }
+
+  template <typename T, case_convert_type type>
+  inline collate_result operator<(T r, const collate_t<type> &c)
+  {
+    return (c > r).set_lh();
+  }
+
+  template <typename T, case_convert_type type>
+  inline collate_result operator<=(T r, const collate_t<type> &c)
+  {
+    return (c >= r).set_lh();
+  }
+
+  template <typename T, case_convert_type type>
+  inline collate_result operator>(T r, const collate_t<type> &c)
+  {
+    return (c < r).set_lh();
+  }
+
+  template <typename T, case_convert_type type>
+  inline collate_result operator>=(T r, const collate_t<type> &c)
+  {
+    return (c <= r).set_lh();
+  }
+
+  inline
+  collate_t<verbatim>
+  collate(const std::string &s, const std::locale& l = std::locale())
+  {
+    return collate_t<verbatim>(s, l);
+  }
+
+  template <case_convert_type type>
+  inline
+  collate_t<type>
+  collate(const std::string &s, const std::locale &l = std::locale())
+  {
+    return collate_t<type>(s, l);
+  }
+
 } // namespace crpcut
 
 
@@ -2746,7 +2961,10 @@ namespace crpcut {
 #define ASSERT_PRED(pred, ...)                                          \
   do {                                                                  \
     std::string m;                                                      \
-    if (!crpcut::match_pred(m, #pred, pred, crpcut::datatypes::params(__VA_ARGS__))) \
+    if (!crpcut::match_pred(m,                                          \
+                            #pred,                                      \
+                            pred,                                       \
+                            crpcut::datatypes::params(__VA_ARGS__)))    \
       {                                                                 \
         static const char CRPCUT_LOCAL_NAME(sep)[][3] = { ", ", "" };   \
         FAIL << "ASSERT_PRED(" #pred                                    \

@@ -513,7 +513,59 @@ Failing to follow this link order may produce a program that can run, but
 will behave eratically.
 </chapter>
 
-<chapter title="Regular expression string matching">
+<chapter title="Comparing strings">
+crpcut currently provides two ways of comparing strings:
+<section title="collation">
+Collation is comparing strings sort order in a locale. It is possible to mix
+both <id>std::string</id> and C strings in collations. It is also possible to
+collate <id>wchar_t</id> strings, providing the locale supports it.
+<p/>
+The basic syntax is:
+<code>
+  ASSERT_TRUE(crpcut::collate("aaa") op "aaaa")
+</code>
+where op is one of <id>&lt;</id>, <id>&lt;=</id>, <id>==</id>, <id>!=</id>,
+<id>&gt;</id> and <id>&gt;=</id>.
+<p/>
+Note that <id>==</id> and <id>!=</id> are some of a misnomer. Collation is
+about sort order in a locale, so <id>==</id> means the strings are considered
+unordered compared to one another, but that doesn't necessarily mean that
+they are equal. In some locales, for example, an umlaut is a decoration
+(in terms of collation) whereas in other locales the exact same umlaut
+makes a letter with a different place in the alphabet.
+<p/>
+To select which locale to work in, add the locale as the second parameter.
+<code>
+  ASSERT_TRUE(crpcut::collate("aaa", std::locale("sv_SE")) op s);
+</code>
+If the locale cannot be constructed, the assertion fails.
+<p/>
+Example:
+<code>
+  TEST(de_sv_collation)
+  {
+    static const char s1[] = "&#246;z";
+    static const char s2[] = "z&#246;";
+    ASSERT_TRUE(crpcut::collate(s1, std::locale("de_DE")) &lt; s2);
+    ASSERT_TRUE(crpcut::collate(s1, std::locale("sv_SE")) &gt; s2);
+  }
+</code>
+You can also convert the strings to uppercase or lowercase before testing the
+collation order. This is done using the templated variant of <id>collate</id>.
+
+<definitions notion="template" meaning="meaning">
+<def notion="crpcut::collate&lt;crpcut::uppercase&gt;()">
+            translate reference string and compared string to upper case, in the
+            locale, before comparing collation order.</def>
+<def notion="crpcut::collate&lt;crpcut::lowercase&gt;()">
+            translate reference string and compared string to lower case,
+            in the locale, before comparing collation order.</def>
+<def notion="crpcut::collate&lt;crpcut::verbatim&gt;()">
+            synonymous with the non-templated version</def>
+
+</definitions>
+</section>
+<section title="regular expression">
 Strings can be matched against regular expressions using <id>ASSERT_PRED</id>
 with the <id>match</id> function template instantiated using <id>regex</id>:
 <code>
@@ -550,6 +602,7 @@ Example:
     ASSERT_PRED(match&lt;regex&gt;(pattern, regex::e), ipaddr);
   }
 </code>
+</section>
 </chapter>
 <chapter title="Comparing floating point values">
 Comparing floating point values for equality is tricky. Due to rounding errors,
