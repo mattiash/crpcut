@@ -2389,7 +2389,8 @@ namespace crpcut {
       template <typename U>
       bool operator()(U lh, U rh, T* = static_cast<U*>(0))
       {
-        diff = std::abs(lh-rh);
+        diff = lh-rh;
+        if (diff < U()) diff = -diff;
         return diff <= t;
       }
       friend std::ostream& operator<<(std::ostream &os, const type<T>& t)
@@ -2429,7 +2430,11 @@ namespace crpcut {
       template <typename U>
       bool operator()(U lh, U rh, T* = static_cast<U*>(0))
       {
-        this->diff = 2*std::abs(lh-rh)/std::abs(lh+rh);
+        U ldiff = lh - rh;
+        if (ldiff < U()) ldiff = -ldiff;
+        U lsum = lh + rh;
+        if (lsum < U()) lsum = -lsum;
+        diff = 2 * ldiff / lsum;
         return diff <= t;
       }
       friend std::ostream& operator<<(std::ostream &os, const type<T>& t)
@@ -2468,7 +2473,7 @@ namespace crpcut {
       {
         int i = wrapped::regcomp(&r,
                                  datatypes::string_traits<T>::get_c_str(t),
-                                 flags);
+                                 flags | REG_NOSUB);
         if (i != 0)
           {
             size_t n = wrapped::regerror(i, &r, 0, 0);
@@ -2589,6 +2594,10 @@ namespace crpcut {
         locale(o.locale),
         side(o.side)
     {}
+    operator const comparator*() const
+    {
+      return operator()();
+    }
     const comparator* operator()() const
     {
       return reinterpret_cast<const comparator*>(r ? 0 : this);
@@ -2847,64 +2856,105 @@ namespace crpcut {
 
 #define CRPCUT_BINARY_ASSERT(name, oper, lh, rh)                        \
   do {                                                                  \
-    CRPCUT_REFTYPE(lh) CRPCUT_LOCAL_NAME(rl) = lh;                      \
-    CRPCUT_REFTYPE(rh) CRPCUT_LOCAL_NAME(rr) = rh;                      \
-    if (!(CRPCUT_LOCAL_NAME(rl) oper CRPCUT_LOCAL_NAME(rr)))            \
-      {                                                                 \
-        std::ostringstream CRPCUT_LOCAL_NAME(os);                       \
-        CRPCUT_LOCAL_NAME(os) <<                                        \
-          __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                      \
-          "\nASSERT_" #name "(" #lh ", " #rh ")";                       \
-        crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
-                             "\n  where ",                              \
-                             #lh,                                       \
-                             CRPCUT_LOCAL_NAME(rl));                    \
-        crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
-                             "\n        ",                              \
+    try {                                                               \
+      CRPCUT_REFTYPE(lh) CRPCUT_LOCAL_NAME(rl) = lh;                    \
+      CRPCUT_REFTYPE(rh) CRPCUT_LOCAL_NAME(rr) = rh;                    \
+      if (!(CRPCUT_LOCAL_NAME(rl) oper CRPCUT_LOCAL_NAME(rr)))          \
+        {                                                               \
+          std::ostringstream CRPCUT_LOCAL_NAME(os);                     \
+          CRPCUT_LOCAL_NAME(os) <<                                      \
+            __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                    \
+            "\nASSERT_" #name "(" #lh ", " #rh ")";                     \
+          crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                   \
+                               "\n  where ",                            \
+                               #lh,                                     \
+                               CRPCUT_LOCAL_NAME(rl));                  \
+          crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                   \
+                               "\n        ",                            \
                                #rh,                                     \
                                CRPCUT_LOCAL_NAME(rr));                  \
-        crpcut::comm::report(crpcut::comm::exit_fail,                   \
-                             CRPCUT_LOCAL_NAME(os));                    \
-      }                                                                 \
+          crpcut::comm::report(crpcut::comm::exit_fail,                 \
+                               CRPCUT_LOCAL_NAME(os));                  \
+        }                                                               \
+    }                                                                   \
+    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
+      FAIL <<                                                           \
+        "ASSERT_" #name "(" #lh ", " #rh ")\n"                          \
+        "  caught std::exception\n"                                     \
+        "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
+    }                                                                   \
+    catch (...) {                                                       \
+      FAIL <<                                                           \
+        "ASSERT_" #name "(" #lh ", " #rh ")\n"                          \
+        "  caught ...";                                                 \
+    }                                                                   \
   } while(0)
 
 #define ASSERT_TRUE(a)                                                  \
   do {                                                                  \
-    CRPCUT_REFTYPE(a) CRPCUT_LOCAL_NAME(ra) = a;                        \
-    if (CRPCUT_LOCAL_NAME(ra))                                          \
-      {                                                                 \
-      }                                                                 \
-    else                                                                \
-      {                                                                 \
-        std::ostringstream CRPCUT_LOCAL_NAME(os);                       \
-        CRPCUT_LOCAL_NAME(os) <<                                        \
-          __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                      \
-          "\nASSERT_TRUE(" #a ")\n";                                    \
-        crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
-                             "  where ",                                \
-                             #a,                                        \
-                             CRPCUT_LOCAL_NAME(ra));                    \
-        crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os)); \
-      }                                                                 \
+    try {                                                               \
+      CRPCUT_REFTYPE(a) CRPCUT_LOCAL_NAME(ra) = a;                      \
+      if (CRPCUT_LOCAL_NAME(ra))                                        \
+        {                                                               \
+        }                                                               \
+      else                                                              \
+        {                                                               \
+          std::ostringstream CRPCUT_LOCAL_NAME(os);                     \
+          CRPCUT_LOCAL_NAME(os) <<                                      \
+            __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                    \
+            "\nASSERT_TRUE(" #a ")\n";                                  \
+          crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                   \
+                               "  where ",                              \
+                               #a,                                      \
+                               CRPCUT_LOCAL_NAME(ra));                  \
+          crpcut::comm::report(crpcut::comm::exit_fail,                 \
+                               CRPCUT_LOCAL_NAME(os));                  \
+        }                                                               \
+    }                                                                   \
+    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
+      FAIL <<                                                           \
+        "ASSERT_TRUE(" #a ")\n"                                         \
+        "  caught std::exception\n"                                      \
+        "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
+    }                                                                   \
+    catch (...) {                                                       \
+      FAIL <<                                                           \
+        "ASSERT_TRUE(" #a ")\n"                                         \
+        "  caught ...";                                                 \
+    }                                                                   \
   } while(0)
 
 
 
 #define ASSERT_FALSE(a)                                                 \
   do {                                                                  \
-    CRPCUT_REFTYPE(a) CRPCUT_LOCAL_NAME(ra) = a;                        \
-    if (CRPCUT_LOCAL_NAME(ra))                                          \
-      {                                                                 \
-        std::ostringstream CRPCUT_LOCAL_NAME(os);                       \
-        CRPCUT_LOCAL_NAME(os) <<                                        \
-          __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                      \
-          "\nASSERT_FALSE(" #a ")\n";                                   \
-        crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                     \
-                             "  where ",                                \
-                             #a,                                        \
-                             CRPCUT_LOCAL_NAME(ra));                    \
-        crpcut::comm::report(crpcut::comm::exit_fail, CRPCUT_LOCAL_NAME(os)); \
-      }                                                                 \
+    try {                                                               \
+      CRPCUT_REFTYPE(a) CRPCUT_LOCAL_NAME(ra) = a;                      \
+      if (CRPCUT_LOCAL_NAME(ra))                                        \
+        {                                                               \
+          std::ostringstream CRPCUT_LOCAL_NAME(os);                     \
+          CRPCUT_LOCAL_NAME(os) <<                                      \
+            __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                    \
+            "\nASSERT_FALSE(" #a ")\n";                                 \
+          crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                   \
+                               "  where ",                              \
+                               #a,                                      \
+                               CRPCUT_LOCAL_NAME(ra));                  \
+          crpcut::comm::report(crpcut::comm::exit_fail,                 \
+                               CRPCUT_LOCAL_NAME(os));                  \
+        }                                                               \
+    }                                                                   \
+    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
+      FAIL <<                                                           \
+        "ASSERT_FALSE(" #a ")\n"                                        \
+        "  caught std::exception\n"                                      \
+        "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
+    }                                                                   \
+    catch (...) {                                                       \
+      FAIL <<                                                           \
+        "ASSERT_FALSE(" #a ")\n"                                        \
+        "  caught ...";                                                 \
+    }                                                                   \
   } while(0)
 
 #define ASSERT_EQ(lh, rh) \
@@ -2929,12 +2979,26 @@ namespace crpcut {
 #define ASSERT_THROW(expr, exc)                                         \
   do {                                                                  \
     try {                                                               \
-      expr;                                                             \
+      try {                                                             \
+        expr;                                                           \
+        FAIL <<                                                         \
+          "ASSERT_THROW(" #expr ", " #exc ")\n"                         \
+          "  Did not throw";                                            \
+      }                                                                 \
+      catch (exc) {                                                     \
+        break;                                                          \
+      }                                                                 \
+    }                                                                   \
+    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
       FAIL <<                                                           \
         "ASSERT_THROW(" #expr ", " #exc ")\n"                           \
-        "  Did not throw";                                              \
+        "  caught std::exception\n"                                     \
+        "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
     }                                                                   \
-    catch (exc) {                                                       \
+    catch (...) {                                                       \
+      FAIL <<                                                           \
+        "ASSERT_THROW(" #expr ", " #exc ")\n"                           \
+        "  caught ...";                                                 \
     }                                                                   \
   } while (0)
 
@@ -2960,18 +3024,33 @@ namespace crpcut {
 
 #define ASSERT_PRED(pred, ...)                                          \
   do {                                                                  \
-    std::string m;                                                      \
-    if (!crpcut::match_pred(m,                                          \
-                            #pred,                                      \
-                            pred,                                       \
-                            crpcut::datatypes::params(__VA_ARGS__)))    \
-      {                                                                 \
-        static const char CRPCUT_LOCAL_NAME(sep)[][3] = { ", ", "" };   \
-        FAIL << "ASSERT_PRED(" #pred                                    \
-             << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                  \
-             << #__VA_ARGS__ ")\n"                                      \
-             << m;                                                      \
+    static const char CRPCUT_LOCAL_NAME(sep)[][3] = { ", ", "" };       \
+    try {                                                               \
+      std::string m;                                                    \
+      if (!crpcut::match_pred(m,                                        \
+                              #pred,                                    \
+                              pred,                                     \
+                              crpcut::datatypes::params(__VA_ARGS__)))  \
+        {                                                               \
+          FAIL << "ASSERT_PRED(" #pred                                  \
+               << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                \
+               << #__VA_ARGS__ ")\n"                                    \
+               << m;                                                    \
         }                                                               \
+    }                                                                   \
+    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
+          FAIL << "ASSERT_PRED(" #pred                                  \
+               << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                \
+               << #__VA_ARGS__ ")\n"                                    \
+               << "  caught std::exception\n"                           \
+               << "  what()=" << CRPCUT_LOCAL_NAME(e).what();           \
+    }                                                                   \
+    catch (...) {                                                       \
+          FAIL << "ASSERT_PRED(" #pred                                  \
+               << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                \
+               << #__VA_ARGS__ ")\n"                                    \
+               << "  caught ...";                                       \
+    }                                                                   \
   } while (0)
 
 

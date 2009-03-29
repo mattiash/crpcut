@@ -458,6 +458,11 @@ TESTS = {
   'collate::should_succeed_equal_upcase' =>
   Test.new('OK'),
 
+  'collate::should_fail_with_nonexisting_locale' =>
+  Test.new('FAILED').
+  log('violation',
+      /ASSERT_.*caught std::exception/me),
+
   'regex::should_succeed_simple_re' =>
   Test.new('OK'),
 

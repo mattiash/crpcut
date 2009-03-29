@@ -57,4 +57,13 @@ TESTSUITE(collate)
   {
     ASSERT_PRED(crpcut::collate<crpcut::uppercase>("aA") == "Aa");
   }
+  TEST(should_fail_with_nonexisting_locale)
+  {
+    try {
+      ASSERT_TRUE(crpcut::collate("apa", std::locale("ieaieai")) == "aa");
+    }
+    catch (...)
+      {
+      }
+  }
 }

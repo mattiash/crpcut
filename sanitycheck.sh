@@ -26,13 +26,17 @@
 AWK=$1
 DIR=$2
 
-R=118
-RN=120
-F=63
+BLOCKED=2
+R=119
+RN=$(($R+$BLOCKED))
+F=64
 [ "$3" == "gmock" ] && {
-  R=129
-  RN=131
-  F=70
+  GR=11
+  GF=7
+  GB=0
+  R=$(($R+$GR))
+  RN=$(($RN+$GR+$GB))
+  F=$(($F+$GF))
 }
 tests=(
     "           default_success" "run=1 failed=0"

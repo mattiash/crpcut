@@ -1,3 +1,5 @@
+         * Improved exception catching in the ASSERT_* macros
+
          * Added string comparisons
            - regex for matching regular expressions
            - collate for locale dependent sort order
