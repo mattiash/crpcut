@@ -30,9 +30,9 @@ R=95
 RN=97
 F=52
 [ "$3" == "gmock" ] && {
-  R=106
-  RN=108
-  F=59
+  R=124
+  RN=126
+  F=68
 }
 tests=(
     "           default_success" "run=1 failed=0"

@@ -217,7 +217,7 @@ namespace crpcut {
 #include <tr1/array>
 #include <cstring>
 #include <cstdlib>
-
+#include <cmath>
 extern "C"
 {
 #include <limits.h>
@@ -2374,6 +2374,85 @@ namespace crpcut {
     using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8, T9> traits;
     return typename traits::type(t1, t2, t3, t4, t5, t6, t7, t8, t9);
+  }
+
+  class abs_diff
+  {
+  public:
+    template <typename T>
+    class type
+    {
+    public:
+      type(T v) : t(v) {}
+      template <typename U>
+      bool operator()(U lh, U rh, T* = static_cast<U*>(0))
+      {
+        diff = std::abs(lh-rh);
+        return diff <= t;
+      }
+      friend std::ostream& operator<<(std::ostream &os, const type<T>& t)
+      {
+        os << "\n    Max allowed difference is "
+           << std::setprecision(std::numeric_limits<T>::digits10)
+           << t.t
+           << "\n    Actual difference is "
+           << std::setprecision(std::numeric_limits<T>::digits10)
+           << t.diff;
+      }
+    private:
+      T t;
+      T diff;
+    };
+  };
+
+  namespace datatypes {
+    template <typename T>
+    struct match_traits<abs_diff,
+                        T,    none, none,
+                        none, none, none,
+                        none, none, none>
+    {
+      typedef typename abs_diff::template type<T> type;
+    };
+  }
+
+  class relative_diff
+  {
+  public:
+    template <typename T>
+    class type
+    {
+    public:
+      type(T v) : t(v) {}
+      template <typename U>
+      bool operator()(U lh, U rh, T* = static_cast<U*>(0))
+      {
+        this->diff = 2*std::abs(lh-rh)/std::abs(lh+rh);
+        return diff <= t;
+      }
+      friend std::ostream& operator<<(std::ostream &os, const type<T>& t)
+      {
+        os << "\n    Max allowed relative difference is "
+           << std::setprecision(std::numeric_limits<T>::digits10)
+           << t.t
+           << "\n    Actual relative difference is "
+           << t.diff;
+      }
+    private:
+      T t;
+      T diff;
+    };
+  };
+
+  namespace datatypes {
+    template <typename T>
+    struct match_traits<relative_diff,
+                        T,    none, none,
+                        none, none, none,
+                        none, none, none>
+    {
+      typedef typename relative_diff::template type<T> type;
+    };
   }
 
   class regex

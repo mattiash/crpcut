@@ -551,6 +551,40 @@ Example:
   }
 </code>
 </chapter>
+<chapter title="Comparing floating point values">
+Comparing floating point values for equality is tricky. Due to rounding errors,
+you do normally not want to check that a computed value is exactly equal to
+an expected value, but rather that the computed value is close to the
+expected, with some chosen precision.
+<p/>
+crpcut currently provides two ways of expressing that precision, both with their
+advantages and disadvantages.
+<definitions>
+<def notion="relative_diff(diff)(a,&#xA0;b)">Check that 2*|a-b|/|a+b|&lt;=diff.
+                                        E.g. if diff=0.01, the values a and b
+                                        must not differ by more than 1%. The
+                                        main disadvantage of
+                                        <id>relative_diff</id> is when the
+                                        expected values are close to 0.</def>
+<def notion="abs_diff(diff)(a,&#xA0;b)">Check that |a-b|&lt;=diff. This works
+                                       well for numbers near 0, but for large
+                                       numbers it quickly becomes
+                                       uninteresting.</def>
+</definitions>
+Floating point comparisons are made using <id>ASSERT_PRED</id> with the
+<id>match</id> function template like this:
+<code>
+  ASSERT_PRED(crpcut::match&lt;crpcut::abs_diff&gt;(0.0001), a, b);
+</code>
+The precision, and the two values must all have exactly the same floating point
+type.
+<p/>
+It is worth pointing out that arithmetics with <id>long double</id> might
+work poorly when run under <link url="http://www.valgrind.org">valgrind</link>,
+since it (at least in version 3.4.1 and older) never makes floating point
+calculations with greater precision than
+64 bits (<id>double</id>.)
+</chapter>
 <chapter title="Debugging">
 Debugging a test case is easy. Load the test program into your favourite
 debugger. Set a break point on <id>testcasename::test</id>. Run with

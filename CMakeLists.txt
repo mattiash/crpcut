@@ -222,6 +222,7 @@ file(GLOB TEST_SRCS
      test-src/ext_parameters.cpp
      test-src/predicates.cpp
      test-src/regex.cpp
+     test-src/fp.cpp
      ${GMOCK_TEST_SRCS}
 )
 

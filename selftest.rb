@@ -96,6 +96,7 @@ A_H='asserts_and_depends\.cpp:\d+\s+'
 P_H='parametrized\.cpp:\d+\s+'
 PR_H='predicates\.cpp:\d+\s+'
 RE_H='regex\.cpp:\d+\s+'
+FP_H='fp\.cpp:\d+\s+'
 A_T='Actual time to completion was'
 S_E='std::exception\s+what\(\)'
 R_E='std::range_error'
@@ -308,6 +309,79 @@ TESTS = {
   Test.new('FAILED').
   log('violation',
       /Parameter orm with no value cannot be interpreted/),
+
+  'fp::abs::should_succeed_add_epsilon_float' =>
+  Test.new('OK'),
+
+  'fp::abs::should_succeed_sub_epsilon_float' =>
+  Test.new('OK'),
+
+  'fp::abs::should_fail_add_2epsilon_float' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*param1 = \d+\.\d+/me),
+
+  'fp::abs::should_fail_sub_2epsilon_float' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*param1 = \d+\.\d+/me),
+
+  'fp::abs::should_succeed_add_epsilon_double' =>
+  Test.new('OK'),
+
+  'fp::abs::should_succeed_sub_epsilon_double' =>
+  Test.new('OK'),
+
+  'fp::abs::should_fail_add_2epsilon_double' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*param1 = \d+\.\d+/me),
+
+  'fp::abs::should_fail_sub_2epsilon_double' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*param1 = \d+\.\d+/me),
+
+
+  'fp::abs::should_succeed_add_epsilon_long_double' =>
+  Test.new('OK'),
+
+  'fp::abs::should_succeed_sub_epsilon_long_double' =>
+  Test.new('OK'),
+
+  'fp::abs::should_fail_add_2epsilon_long_double' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*param1 = \d+\.\d+/me),
+
+  'fp::abs::should_fail_sub_2epsilon_long_double' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*(\s+param[12] = \d+\.\d+){2}/me),
+
+  'fp::relative::should_fail_relative_epsilon_float' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{FP_H}ASSERT_PRED\(.*relative_diff.*Max allowed relative difference is.*Actual relative difference is.*(\s+param[12] = \d+\.\d+){2}/me),
+
+  'fp::relative::should_succeed_relative_epsilon_float' =>
+  Test.new('OK'),
+
+  'fp::relative::should_fail_relative_epsilon_double' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{FP_H}ASSERT_PRED\(.*relative_diff.*Max allowed relative difference is.*Actual relative difference is.*(\s+param[12] = \d+\.\d+){2}/me),
+
+  'fp::relative::should_succeed_relative_epsilon_double' =>
+  Test.new('OK'),
+
+  'fp::relative::should_fail_relative_epsilon_long_double' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{FP_H}ASSERT_PRED\(.*relative_diff.*Max allowed relative difference is.*Actual relative difference is.*(\s+param[12] = \d+\.\d+){2}/me),
+
+  'fp::relative::should_succeed_relative_epsilon_long_double' =>
+  Test.new('OK'),
 
   'parametrized::should_fail_assert_lt_char_array_string' =>
   Test.new('FAILED').
