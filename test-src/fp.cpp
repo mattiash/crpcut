@@ -47,18 +47,21 @@ TESTSUITE(fp)
       float p2 = 0.5 + eps;
       ASSERT_PRED(crpcut::match<crpcut::abs_diff>(eps), p1, p2);
     }
+
     TEST(should_succeed_sub_epsilon_float, epsilon<float>)
     {
       float p1 = 0.5;
       float p2 = 0.5 - eps;
       ASSERT_PRED(crpcut::match<crpcut::abs_diff>(eps), p1, p2);
     }
+
     TEST(should_fail_add_2epsilon_float, epsilon<float>)
     {
       float p1 = 0.5;
       float p2 = 0.5 + 2*eps;
       ASSERT_PRED(crpcut::match<crpcut::abs_diff>(eps), p1, p2);
     }
+
     TEST(should_fail_sub_2epsilon_float, epsilon<float>)
     {
       float p1 = 0.5;
@@ -72,18 +75,21 @@ TESTSUITE(fp)
       double p2 = 0.5 + eps;
       ASSERT_PRED(crpcut::match<crpcut::abs_diff>(eps), p1, p2);
     }
+
     TEST(should_succeed_sub_epsilon_double, epsilon<double>)
     {
       double p1 = 0.5;
       double p2 = 0.5 - eps;
       ASSERT_PRED(crpcut::match<crpcut::abs_diff>(eps), p1, p2);
     }
+
     TEST(should_fail_add_2epsilon_double, epsilon<double>)
     {
       double p1 = 0.5;
       double p2 = 0.5 + 2*eps;
       ASSERT_PRED(crpcut::match<crpcut::abs_diff>(eps), p1, p2);
     }
+
     TEST(should_fail_sub_2epsilon_double, epsilon<double>)
     {
       double p1 = 0.5;
@@ -98,18 +104,21 @@ TESTSUITE(fp)
       long double p2 = 0.5 + eps;
       ASSERT_PRED(crpcut::match<crpcut::abs_diff>(eps), p1, p2);
     }
+
     TEST(should_succeed_sub_epsilon_long_double, epsilon<long double>)
     {
       long double p1 = 0.5;
       long double p2 = 0.5 - eps;
       ASSERT_PRED(crpcut::match<crpcut::abs_diff>(eps), p1, p2);
     }
+
     TEST(should_fail_add_2epsilon_long_double, epsilon<long double>)
     {
       long double p1 = 0.5;
       long double p2 = 0.5 + 2*eps;
       ASSERT_PRED(crpcut::match<crpcut::abs_diff>(eps), p1, p2);
     }
+
     TEST(should_fail_sub_2epsilon_long_double, epsilon<long double>)
     {
       long double p1 = 0.5;
@@ -126,6 +135,7 @@ TESTSUITE(fp)
       float p2 = 0.5 + eps;
       ASSERT_PRED(crpcut::match<crpcut::relative_diff>(eps), p1, p2);
     }
+
     TEST(should_succeed_relative_epsilon_float, epsilon<float>)
     {
       float p1 = 1.0;
@@ -139,6 +149,7 @@ TESTSUITE(fp)
       double p2 = 0.5 + eps;
       ASSERT_PRED(crpcut::match<crpcut::relative_diff>(eps), p1, p2);
     }
+
     TEST(should_succeed_relative_epsilon_double, epsilon<double>)
     {
       double p1 = 1.0;
@@ -152,6 +163,7 @@ TESTSUITE(fp)
       long double p2 = 0.5 + eps;
       ASSERT_PRED(crpcut::match<crpcut::relative_diff>(eps), p1, p2);
     }
+
     TEST(should_succeed_relative_epsilon_long_double, epsilon<long double>)
     {
       long double p1 = 1.0;

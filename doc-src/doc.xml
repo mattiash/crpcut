@@ -125,45 +125,51 @@ by gcc. The lowest version tested with is 4.1.2.
 <p/>
 The required Posix functions are:
 <definitions notion="Standard" meaning="Requirement">
-  <def notion="POSIX.1"><code>EEXIST
-EINTR</code></def>
-  <def notion="POSIX.1-2001"><code>alloca()
-chdir()
+  <def notion="POSIX.1"><code>   EEXIST
+   EINTR</code></def>
+  <def notion="POSIX.1-2001"><code>   alloca()
+   chdir()
 ** clock_gettime(CLOCK_MONOTONIC)
 ** clock_gettime(CLOCK_PROCESS_CPUTIME_ID)
-close()
-closedir()
-dup2()
+   close()
+   closedir()
+   dup2()
 ++ epoll_create()
 ++ epoll_ctl()
 ++ epoll_wait()
-fork()
-getcwd()
-gethostname()
+   fork()
+   getcwd()
+   gethostname()
 ** getitimer(ITIMER_REAL)
 ** getitimer(ITIMER_VIRTUAL)
-kill()
-mkdir()
-open()
-opendir()
-pipe()
-read()
-readdir_r()
-rmdir()
+   kill()
+   mkdir()
+   open()
+   opendir()
+   pipe()
+   read()
+   readdir_r()
+-- regcomp()
+-- regexec()
+-- regerror()
+-- regfree()
+   rmdir()
 ++ select()
 ** setitimer(ITIMER_REAL)
 ** setitimer(ITIMER_VIRTUAL)
-setrlimit(RLIMIT_CORE)
-setrlimit(RLIMIT_CPU)
-waitid()
-write()</code></def>
-  <def notion="POSIX.1-2008"><code>mkdtemp()</code></def>
+   setrlimit(RLIMIT_CORE)
+   setrlimit(RLIMIT_CPU)
+   waitid()
+   write()</code></def>
+  <def notion="POSIX.1-2008"><code>   mkdtemp()</code></def>
 </definitions>
 <definitions>
 <def notion="**"><id>clock_gettime()</id> will be used if available.
 <id>*itimer()</id> will be used as a fallback.</def>
 <def notion="++"><id>epoll_*</id> will be used if available. <id>select()</id>
                  will be used as a fallback.</def>
+<def notion="--"><id>reg*</id> will be used only when matching strings with
+                 regular expressions.</def>
 <def notion="">On OS-X <id>mach_absolute_time()</id> and
 <id>mach_timebase_info()</id> will be used for realtime measurements.</def>
 </definitions>
@@ -182,20 +188,20 @@ page, or from the git repository
 <p/>
 In a build directory (can be the same as the source directory)
 <code>
-&gt; cmake path
+  &gt; cmake path
 </code>
 Where <id>path</id> is the path to the crpcut source directory.
 <p/>
 Should you want to use a different install directory than the
 <link url="http://www.cmake.org">CMake</link> default, type instead
 <code>
-&gt; cmake path -DCMAKE_INSTALL_PREFIX=&lt;desired_install_directory&gt;
+  &gt; cmake path -DCMAKE_INSTALL_PREFIX=&lt;desired_install_directory&gt;
 </code>
 <p/>
 If you want to enable support for
 <link url="http://code.google.com/p/googlemock">google-mock</link> add also
 <code>
--DWITH_GOOGLE_MOCK=yes
+  -DWITH_GOOGLE_MOCK=yes
 </code>
 to the <link url="http://www.cmake.org">cmake</link> line. If
 <link url="http://code.google.com/p/googlemock">google-mock</link> is not
@@ -204,7 +210,7 @@ linker, without additional flags, provide
 <link url="http://www.cmake.org">CMake</link> with the directory of
 <link url="http://code.google.com/p/googlemock">google-mock</link> using:
 <code>
--DGOOGLE_MOCK_DIR=path
+  -DGOOGLE_MOCK_DIR=path
 </code>
 where path is the exact same as used in the <id>--prefix=path</id> option for
 <id>configure</id>.
@@ -212,13 +218,13 @@ where path is the exact same as used in the <id>--prefix=path</id> option for
 Once <link url="http://www.cmake.org">CMake</link> has completed, build crpcut
 by typing:
 <code>
-&gt; make
+  &gt; make
 </code>
 <p/>
 Once built, you may want to check that it works correctly. Do that by
 running:
 <code>
-&gt; make selftest
+  &gt; make selftest
 </code>
 It takes about 30 seconds to run through all tests. It verifies that the test
 cases under <id>test-src</id> completes with the expected result for a large set
@@ -226,7 +232,7 @@ of command-line switches.
 <p/>
 You can now install crpcut by typing:
 <code>
-&gt; make install
+  &gt; make install
 </code>
 The file <id>install_manifest.txt</id> is created and includes the full path
 of all installed files.
@@ -288,7 +294,7 @@ The binary assertions are:
 There is also an N-ary assert macro:
 <definitions notion="assert" meaning="condition">
   <def notion="ASSERT_PRED(predicate,&#xA0;...)">Fails iff the expression
-                                            <id>predicate(...)</id> evaluetes
+                                            <id>predicate(...)</id> evaluates
                                             to false. <id>predicate</id> may
                                             be anything that can act as a
                                             function accepting the rest of
@@ -457,7 +463,7 @@ flags followed by a set of test case or test suite names. The flags are:
                  </def>
 <def notion="-d&#xA0;name">Set working dir for test to named directory. The
                            directory must exist prior to run, and should
-                           prefereably be empty. By default a directory is
+                           preferably be empty. By default a directory is
                            created under /tmp/crpcut??????</def>
 <def notion="-n">Ignore dependencies when running tests.</def>
 <def notion="-v">Include the result of successful tests, in addition to that
@@ -510,7 +516,7 @@ and <id>libcrpcut_gmock.so</id> from crpcut, before <id>libgmock.so</id> and
 <id>libgtest.so</id> from the
 <link url="http://code.google.com/p/googlemock">google-mock</link> installation.
 Failing to follow this link order may produce a program that can run, but
-will behave eratically.
+will behave erratically.
 </chapter>
 
 <chapter title="Comparing strings">

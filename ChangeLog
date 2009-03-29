@@ -8,6 +8,8 @@
            - abs_diff for values near 0
            - relative_diff for large values
 
+         * Code and documentation cleaning
+
 2009-03-18 0.5.1
 
          * Fixed test case termination bug which caused gcov to
