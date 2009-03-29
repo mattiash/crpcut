@@ -1,3 +1,5 @@
+         * Fixed broken wrapping of select()
+
          * Improved exception catching in the ASSERT_* macros
 
          * Changed the make system such that the test program is not
