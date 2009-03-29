@@ -95,6 +95,7 @@ end
 A_H='asserts_and_depends\.cpp:\d+\s+'
 P_H='parametrized\.cpp:\d+\s+'
 PR_H='predicates\.cpp:\d+\s+'
+RE_H='regex\.cpp:\d+\s+'
 A_T='Actual time to completion was'
 S_E='std::exception\s+what\(\)'
 R_E='std::range_error'
@@ -102,7 +103,7 @@ TESTS = {
   'asserts::should_fail_assert_exception_with_wrong_exception' =>
   Test.new('FAILED').
   log('violation',
-      /Unexpectedly caught std::exception\s+what\(\)=/me),
+      /caught std::exception\s+what\(\)=/me),
 
   'asserts::should_fail_assert_no_throw_with_std_exception_string_apa' =>
   Test.new('FAILED').
@@ -363,6 +364,57 @@ TESTS = {
   Test.new('FAILED').
   log('violation',
       /#{PR_H}ASSERT_PRED\(string_equal\(.*"katt"\)\s+string_equal.*\) : compare.*equal to "apa"\s+param1 = katt/me),
+
+  'regex::should_succeed_simple_re' =>
+  Test.new('OK'),
+
+  'regex::should_fail_illegal_re' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{RE_H}ASSERT_PRED.*regex.*\) : .*\n\s+param1 = apa/me),
+
+  'regex::should_fail_no_match' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{RE_H}ASSERT_PRED.*regex.*\) : did not match\n\s+param1 = katt/me),
+
+  'regex::should_fail_case_mismatch' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{RE_H}ASSERT_PRED.*regex.*\) : did not match\n\s+param1 = APA/me),
+
+  'regex::should_succeed_case_mismatch' =>
+  Test.new('OK'),
+
+  'regex::should_fail_ere_paren_on_non_e_re' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{RE_H}ASSERT_PRED.*\)\n.*\) : did not match\n\s+param1 = apakattkattkatttupp/me),
+
+  'regex::should_succeed_ere_paren_on_e_re' =>
+  Test.new('OK'),
+
+  'regex::should_succeed_non_ere_paren_on_non_e_re' =>
+  Test.new('OK'),
+
+  'regex::should_fail_non_ere_paren_on_e_re' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{RE_H}ASSERT_PRED.*regex::e\) : did not match\n\s+param1 = apakattkattkatttupp/me),
+
+  'regex::should_succeed_paren_litteral_e_re' =>
+  Test.new('OK'),
+
+  'regex::should_succeed_paren_litteral_non_e_re' =>
+  Test.new('OK'),
+
+  'regex::should_fail_ere_on_non_e_re' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{RE_H}ASSERT_PRED.*\"apa\+\"\) : did not match\n\s+param1 = apaaa/me),
+
+  'regex::should_succeed_ere_on_e_re' =>
+  Test.new('OK'),
 
   'should_fail_after_delay' =>
   Test.new('FAILED').

@@ -100,6 +100,19 @@ namespace crpcut {
                      int,
                      (DIR *d, struct dirent *e, struct dirent **r),
                      (d, e, r))
+    CRPCUT_WRAP_FUNC(libc, regcomp, int, (regex_t* r, const char *e, int f), (r, e, f))
+    CRPCUT_WRAP_FUNC(libc, regexec,
+                     int,
+                     (const regex_t *r, const char *m, size_t nm, regmatch_t p[], int f),
+                     (r, m, nm, p, f))
+    CRPCUT_WRAP_FUNC(libc, regerror,
+                     size_t,
+                     (int e, const regex_t *r, char *b, size_t s),
+                     (e, r, b, s))
+    CRPCUT_WRAP_V_FUNC(libc, regfree,
+                       void,
+                       (regex_t *r),
+                       (r))
     CRPCUT_WRAP_FUNC(libc, rename, int, (const char *o, const char *n), (o, n))
     CRPCUT_WRAP_FUNC(libc, rmdir, int, (const char *n), (n))
     CRPCUT_WRAP_FUNC(libc, select,

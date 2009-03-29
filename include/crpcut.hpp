@@ -225,6 +225,7 @@ extern "C"
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <dirent.h>
+#include <regex.h>
 }
 
 namespace std {
@@ -283,6 +284,10 @@ namespace std {
 namespace crpcut {
   namespace wrapped { // stdc and posix functions
     ssize_t              read(int fd, void* p, size_t s);
+    int                  regcomp(regex_t*, const char*, int);
+    size_t               regerror(int, const regex_t*, char*, size_t);
+    int                  regexec(const regex_t*, const char*, size_t, regmatch_t[], int);
+    void                 regfree(regex_t*);
     int                  strcmp(const char *l, const char *r);
     char *               strerror(int n);
     size_t               strlen(const char *r);
@@ -502,7 +507,7 @@ namespace crpcut {
           holder<9, T9>(v9)
       {}
       template <typename P>
-      bool apply(P pred) const;
+      bool apply(P &pred) const;
       void print_to(std::ostream &os) const
       {
         holder<1, T1>::print_to(os);
@@ -523,7 +528,7 @@ namespace crpcut {
     struct call_traits
     {
       template <typename P>
-      static bool call(P p,
+      static bool call(P &p,
                        const T1 &t1, const T2 &t2, const T3 &t3,
                        const T4 &t4, const T5 &t5, const T6 &t6,
                        const T7 &t7, const T8 &t8, const T9 &t9)
@@ -538,7 +543,7 @@ namespace crpcut {
     struct call_traits<T1, T2, T3, T4, T5, T6, T7, T8, none>
     {
       template <typename P>
-      static bool call(P p,
+      static bool call(P &p,
                        const T1 &t1, const T2 &t2, const T3 &t3,
                        const T4 &t4, const T5 &t5, const T6 &t6,
                        const T7 &t7, const T8 &t8, const none&)
@@ -553,7 +558,7 @@ namespace crpcut {
     struct call_traits<T1, T2, T3, T4, T5, T6, T7, none, none>
     {
       template <typename P>
-      static bool call(P p,
+      static bool call(P &p,
                        const T1 &t1, const T2 &t2, const T3 &t3,
                        const T4 &t4, const T5 &t5, const T6 &t6,
                        const T7 &t7, const none&, const none&)
@@ -567,7 +572,7 @@ namespace crpcut {
     struct call_traits<T1, T2, T3, T4, T5, T6, none, none, none>
     {
       template <typename P>
-      static bool call(P p,
+      static bool call(P &p,
                        const T1 &t1, const T2 &t2, const T3 &t3,
                        const T4 &t4, const T5 &t5, const T6 &t6,
                        const none&, const none&, const none&)
@@ -581,7 +586,7 @@ namespace crpcut {
     struct call_traits<T1, T2, T3, T4, T5, none, none, none, none>
     {
       template <typename P>
-      static bool call(P p, const T1& t1, const T2 &t2, const T3 &t3,
+      static bool call(P &p, const T1& t1, const T2 &t2, const T3 &t3,
                        const T4 &t4, const T5 &t5, const none&,
                        const none&, const none&, const none&)
       {
@@ -594,7 +599,7 @@ namespace crpcut {
     struct call_traits<T1, T2, T3, T4, none, none, none, none, none>
     {
       template <typename P>
-      static bool call(P p, const T1& t1, const T2 &t2, const T3 &t3,
+      static bool call(P &p, const T1& t1, const T2 &t2, const T3 &t3,
                        const T4 &t4, const none&, const none&,
                        const none&, const none&, const none&)
       {
@@ -606,7 +611,7 @@ namespace crpcut {
     struct call_traits<T1, T2, T3, none, none, none, none, none, none>
     {
       template <typename P>
-      static bool call(P p, const T1& t1, const T2 &t2, const T3 &t3,
+      static bool call(P &p, const T1& t1, const T2 &t2, const T3 &t3,
                        const none&, const none&, const none&,
                        const none&, const none&, const none&)
       {
@@ -618,7 +623,7 @@ namespace crpcut {
     struct call_traits<T1, T2, none, none, none, none, none, none, none>
     {
       template <typename P>
-      static bool call(P p, const T1& t1, const T2 &t2, const none&,
+      static bool call(P &p, const T1& t1, const T2 &t2, const none&,
                        const none&, const none&, const none&,
                        const none&, const none&, const none&)
       {
@@ -630,7 +635,7 @@ namespace crpcut {
     struct call_traits<T1, none, none, none, none, none, none, none, none>
     {
       template <typename P>
-      static bool call(P p, const T1& t1, const none&, const none&,
+      static bool call(P &p, const T1& t1, const none&, const none&,
                        const none&, const none&, const none&,
                        const none&, const none&, const none&)
       {
@@ -638,13 +643,26 @@ namespace crpcut {
       }
     };
 
+    template <>
+    struct call_traits<none, none, none, none, none, none, none, none, none>
+    {
+      template <typename P>
+      static bool call(P &p, const none&, const none&, const none&,
+                       const none&, const none&, const none&,
+                       const none&, const none&, const none&)
+      {
+        return p();
+      }
+    };
+
+
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6,
               typename T7, typename T8, typename T9>
     template <typename P>
     inline
     bool
-    param_holder<T1, T2, T3, T4, T5, T6, T7, T8, T9>::apply(P pred) const
+    param_holder<T1, T2, T3, T4, T5, T6, T7, T8, T9>::apply(P &pred) const
     {
       typedef call_traits<T1, T2, T3, T4, T5, T6, T7, T8, T9> traits;
       return traits::call(pred,
@@ -753,6 +771,13 @@ namespace crpcut {
     {
       typedef param_holder<T1, T2, T3, T4, T5, T6, T7, T8, T9> R;
       return R(t1, t2, t3, t4, t5, t6, t7, t8, t9);
+    }
+
+    inline
+    param_holder<none>
+    params()
+    {
+      return param_holder<none>(none());
     }
 
     template <typename P,
@@ -884,7 +909,40 @@ namespace crpcut {
     const typename std::remove_cv<typename std::remove_reference<T>::type>::type&
     gettype();
 
+
+    template <typename D,
+              typename T1,        typename T2 = none, typename T3 = none,
+              typename T4 = none, typename T5 = none, typename T6 = none,
+              typename T7 = none, typename T8 = none, typename T9 = none>
+    struct match_traits
+    {
+      typedef D type;
+    };
+
+    template <typename T>
+    struct string_traits;
+
+    template <>
+    struct string_traits<std::string>
+    {
+      static const char *get_c_str(const std::string &s) { return s.c_str(); }
+    };
+
+    template <>
+    struct string_traits<const char*>
+    {
+      static const char *get_c_str(const char *s) { return s; }
+    };
+
+    template <>
+    struct string_traits<char*>
+    {
+      static const char *get_c_str(const char *s) { return s; }
+    };
+
   } // namespace datatypes
+
+
 
   namespace policies {
     namespace deaths {
@@ -2094,7 +2152,8 @@ namespace crpcut {
     {
     }
 
-  } // implementation
+  } // namespace implementation
+
 
   template <typename P>
   inline
@@ -2105,12 +2164,13 @@ namespace crpcut {
 
 
   template <typename Pred, typename Params>
-  inline bool match_pred(std::string &msg, Pred p, const Params &params)
+  inline bool match_pred(std::string &msg, const char *sp, Pred p, const Params &params)
   {
     bool b = params.apply(p);
     if (!b)
     {
       std::ostringstream out;
+      out << stream_predicate(sp, p);
       params.print_to(out);
       msg = out.str();
     }
@@ -2208,7 +2268,199 @@ namespace crpcut {
   {
     return homedir;
   }
+
+
+  template <typename D, typename T>
+  inline
+  typename datatypes::match_traits<D, T>::type
+  match(T t)
+  {
+    using datatypes::match_traits;
+    typedef match_traits<D, T> traits;
+    return typename traits::type(t);
+  }
+
+  template <typename D, typename T1, typename T2>
+  inline
+  typename datatypes::match_traits<D, T1, T2>::type
+  match(T1 t1, T2 t2)
+  {
+    using datatypes::match_traits;
+    typedef match_traits<D, T1> traits;
+    return typename traits::type(t1, t2);
+  }
+
+  template <typename D,
+            typename T1, typename T2, typename T3>
+  inline
+  typename datatypes::match_traits<D, T1, T2, T3>::type
+  match(T1 t1, T2 t2, T3 t3)
+  {
+    using datatypes::match_traits;
+    typedef match_traits<D, T1, T2, T3> traits;
+    return typename traits::type(t1, t2, t3);
+  }
+
+  template <typename D,
+            typename T1, typename T2, typename T3,
+            typename T4>
+  inline
+  typename datatypes::match_traits<D, T1, T2, T3, T4>::type
+  match(T1 t1, T2 t2, T3 t3, T4 t4)
+  {
+    using datatypes::match_traits;
+    typedef match_traits<D, T1, T2, T3, T4> traits;
+    return typename traits::type(t1, t2, t3, t4);
+  }
+
+  template <typename D,
+            typename T1, typename T2, typename T3,
+            typename T4, typename T5>
+  inline
+  typename datatypes::match_traits<D, T1, T2, T3, T4, T5>::type
+  match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
+  {
+    using datatypes::match_traits;
+    typedef match_traits<D, T1, T2, T3, T4, T5> traits;
+    return typename traits::type(t1, t2, t3, t4, t5);
+  }
+
+  template <typename D,
+            typename T1, typename T2, typename T3,
+            typename T4, typename T5, typename T6>
+  inline
+  typename datatypes::match_traits<D, T1, T2, T3, T4, T5, T6>::type
+  match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
+  {
+    using datatypes::match_traits;
+    typedef match_traits<D, T1, T2, T3, T4, T5, T6> traits;
+    return typename traits::type(t1, t2, t3, t4, t5, t6);
+  }
+
+  template <typename D,
+            typename T1, typename T2, typename T3,
+            typename T4, typename T5, typename T6,
+            typename T7>
+  inline
+  typename datatypes::match_traits<D, T1, T2, T3, T4, T5, T6, T7>::type
+  match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
+  {
+    using datatypes::match_traits;
+    typedef match_traits<D, T1, T2, T3, T4, T5, T6, T7> traits;
+    return typename traits::type(t1, t2, t3, t4, t5, t6, t7);
+  }
+
+  template <typename D,
+            typename T1, typename T2, typename T3,
+            typename T4, typename T5, typename T6,
+            typename T7, typename T8>
+  inline
+  typename datatypes::match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8>::type
+  match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
+  {
+    using datatypes::match_traits;
+    typedef match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8> traits;
+    return typename traits::type(t1, t2, t3, t4, t5, t6, t7, t8);
+  }
+
+  template <typename D,
+            typename T1, typename T2, typename T3,
+            typename T4, typename T5, typename T6,
+            typename T7, typename T8, typename T9>
+  inline
+  typename datatypes::match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8, T9>::type
+  match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, T9 t9)
+  {
+    using datatypes::match_traits;
+    typedef match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8, T9> traits;
+    return typename traits::type(t1, t2, t3, t4, t5, t6, t7, t8, t9);
+  }
+
+  class regex
+  {
+    class type
+    {
+    public:
+      template <typename T>
+      type(T t, int flags)
+        : errmsg(0)
+      {
+        int i = wrapped::regcomp(&r,
+                                 datatypes::string_traits<T>::get_c_str(t),
+                                 flags);
+        if (i != 0)
+          {
+            size_t n = wrapped::regerror(i, &r, 0, 0);
+            errmsg = new char[n];
+            wrapped::regerror(i, &r, errmsg, n);
+          }
+      }
+      template <typename U>
+      bool operator()(U t)
+      {
+        if (errmsg) return false;
+        int i = wrapped::regexec(&r,
+                                 datatypes::string_traits<U>::get_c_str(t),
+                                 0,
+                                 0,
+                                 0);
+        if (i != 0 && i != REG_NOMATCH)
+          {
+            size_t n = wrapped::regerror(i, &r, 0, 0);
+            errmsg = new char[n];
+            wrapped::regerror(i, &r, errmsg, n);
+          }
+        return !i;
+      }
+      friend std::ostream& operator<<(std::ostream &os, const type &r)
+      {
+        if (r.errmsg)
+          return os << r.errmsg;
+        return os << "did not match";
+      }
+      ~type()
+      {
+        regfree(&r);
+        delete[] errmsg;
+      }
+    private:
+      regex_t r;
+      char *errmsg;
+    };
+  public:
+    typedef enum {
+      e = REG_EXTENDED,
+      i = REG_ICASE,
+      m = REG_NEWLINE
+    } regflag;
+    template <typename T>
+    regex(T t,
+          regflag f1 = regflag(),
+          regflag f2 = regflag(),
+          regflag f3 = regflag())
+      : p(new type(t, f1 | f2 | f3))
+    {
+    }
+    regex(const regex& r)
+      : p(r.p)
+    {
+    }
+    template <typename T>
+    bool operator()(T t)
+    {
+      return (*p)(t);
+    }
+    friend std::ostream& operator<<(std::ostream &os, const regex &r)
+    {
+      return os << *r.p;
+    }
+  private:
+    mutable std::auto_ptr<type> p; // Yeach! Ugly
+  };
+
+
 } // namespace crpcut
+
 
 // Note, the order of inheritance below is important. test_case_base
 // destructor signals ending of test case, so it must be listed as the
@@ -2274,6 +2526,7 @@ namespace crpcut {
           };                                                                \
     static registrator crpcut_reg;                                          \
   };                                                                        \
+
 
 #define TEST_DEF(test_case_name, ...)                                   \
   CRPCUT_TEST_CASE_DEF(test_case_name, __VA_ARGS__)                     \
@@ -2414,10 +2667,14 @@ namespace crpcut {
 #define ASSERT_PRED(pred, ...)                                          \
   do {                                                                  \
     std::string m;                                                      \
-    if (!crpcut::match_pred(m, pred, crpcut::datatypes::params(__VA_ARGS__)))\
-      FAIL << "ASSERT_PRED(" #pred ", " #__VA_ARGS__ ")\n"              \
-           << crpcut::stream_predicate(#pred, pred)          \
-           << m;                                                        \
+    if (!crpcut::match_pred(m, #pred, pred, crpcut::datatypes::params(__VA_ARGS__))) \
+      {                                                                 \
+        static const char CRPCUT_LOCAL_NAME(sep)[][3] = { ", ", "" };   \
+        FAIL << "ASSERT_PRED(" #pred                                    \
+             << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                  \
+             << #__VA_ARGS__ ")\n"                                      \
+             << m;                                                      \
+        }                                                               \
   } while (0)
 
 

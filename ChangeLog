@@ -1,3 +1,10 @@
+         * Added string comparisons
+           - regex for matching regular expressions
+
+         * Added floating point comparisons
+           - abs_diff for values near 0
+           - relative_diff for large values
+
 2009-03-18 0.5.1
 
          * Fixed test case termination bug which caused gcov to

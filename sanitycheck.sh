@@ -26,13 +26,13 @@
 AWK=$1
 DIR=$2
 
-R=82
-RN=84
-F=46
+R=95
+RN=97
+F=52
 [ "$3" == "gmock" ] && {
-  R=93
-  RN=95
-  F=53
+  R=106
+  RN=108
+  F=59
 }
 tests=(
     "           default_success" "run=1 failed=0"

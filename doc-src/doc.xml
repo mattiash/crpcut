@@ -513,6 +513,44 @@ Failing to follow this link order may produce a program that can run, but
 will behave eratically.
 </chapter>
 
+<chapter title="Regular expression string matching">
+Strings can be matched against regular expressions using <id>ASSERT_PRED</id>
+with the <id>match</id> function template instantiated using <id>regex</id>:
+<code>
+  ASSERT_PRED(crpcut::match&lt;crpcut::regex&gt;(pattern, flags...), string);
+</code>
+The pattern and the string can be either of <id>std::string</id> or C string.
+<p/>
+There are three flags available:
+<definitions notion="flag" meaning="meaning">
+<def notion="crpcut::regex::i">Ignore case when matching. Equal to
+                               <id>REG_ICASE</id> in <id>regcomp()</id>. Note
+                               that this does not take any locale into
+                               consideration.</def>
+<def notion="crpcut::regex::e">Use extended regular expressions. Equal to
+                               <id>REG_EXTENDED</id> in <id>regcomp()</id></def>
+<def notion="crpcut::regex::m">Pattern is multi line. Equal to
+                               <id>REG_NEWLINE</id> in <id>regcomp()</id></def>
+</definitions>
+The flags defaults to not set. You can set one, two or all three, as separate
+trailing parameters.
+<p/>
+Be careful with the C/C++ rules for escapes when a regular expression
+requires \.
+<p/>
+Example:
+<code>
+  TEST(looks_like_ipaddr)
+  {
+    using crpcut::match;
+    using crpcut::regex;
+
+    const char *ipaddr = afunc();
+    static const char pattern[] = "^([[:digit:]]{1,3}\\.){3}[[:digit:]]{1,3}$";
+    ASSERT_PRED(match&lt;regex&gt;(pattern, regex::e), ipaddr);
+  }
+</code>
+</chapter>
 <chapter title="Debugging">
 Debugging a test case is easy. Load the test program into your favourite
 debugger. Set a break point on <id>testcasename::test</id>. Run with
