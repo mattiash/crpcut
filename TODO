@@ -1,3 +1,7 @@
+* Compatibility
+  - OS/X would be nice
+
 * Features:
-  - ASSERT_ macros for almost-equal tests of floating point numbers
-  - Regexp match rules for stdout and stderr
+  - Regexp match rules for stdout and stderr (probably won't happen
+    before 1.0)
+  - ULPS difference comparison for ieee754 floating point values.

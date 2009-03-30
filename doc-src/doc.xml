@@ -886,8 +886,9 @@ global namespace for testing purposes.
 The todo list, without any regard to importance or desired implementation
 order is:
 <list>
-<li>Set regexp match rules for stdout and stderr</li>
-<li>ASSERT_*() macros for almost-equal tests of floating point numbers</li>
+<li>Set regexp match rules for stdout and stderr (probably won't happen before 1.0)</li>
+<li>ULPS difference comparison for ieee754 floating point values</li>
+<li>OS/X compatibility would be nice</li>
 </list>
 </chapter>
 </doc>
