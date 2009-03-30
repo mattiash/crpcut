@@ -787,7 +787,8 @@ namespace crpcut {
       predicate_streamer(const char *name, const P& pred) : n(name), p(pred) {}
       std::ostream &stream_to(std::ostream & os) const
       {
-        return os << "  " << n << " : " << p << '\n'; }
+        return os << "  " << n << " : " << p << '\n';
+      }
     private:
       const char *n;
       const P& p;
@@ -2419,10 +2420,7 @@ namespace crpcut {
 
   namespace datatypes {
     template <typename T>
-    struct match_traits<abs_diff,
-                        T,    none, none,
-                        none, none, none,
-                        none, none, none>
+    struct match_traits<abs_diff, T>
     {
       typedef typename abs_diff::template type<T> type;
     };
@@ -2462,10 +2460,7 @@ namespace crpcut {
 
   namespace datatypes {
     template <typename T>
-    struct match_traits<relative_diff,
-                        T,    none, none,
-                        none, none, none,
-                        none, none, none>
+    struct match_traits<relative_diff, T>
     {
       typedef typename relative_diff::template type<T> type;
     };
