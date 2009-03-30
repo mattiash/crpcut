@@ -2279,7 +2279,8 @@ namespace crpcut {
   {
     using datatypes::match_traits;
     typedef match_traits<D, T> traits;
-    return typename traits::type(t);
+    typename traits::type rv(t);
+    return rv;
   }
 
   template <typename D, typename T1, typename T2>
@@ -2289,7 +2290,8 @@ namespace crpcut {
   {
     using datatypes::match_traits;
     typedef match_traits<D, T1> traits;
-    return typename traits::type(t1, t2);
+    typename traits::type rv(t1, t2);
+    return rv;
   }
 
   template <typename D,
@@ -2300,7 +2302,8 @@ namespace crpcut {
   {
     using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3> traits;
-    return typename traits::type(t1, t2, t3);
+    typename traits::type rv(t1, t2, t3);
+    return rv;
   }
 
   template <typename D,
@@ -2312,7 +2315,8 @@ namespace crpcut {
   {
     using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4> traits;
-    return typename traits::type(t1, t2, t3, t4);
+    typename traits::type rv(t1, t2, t3, t4);
+    return rv;
   }
 
   template <typename D,
@@ -2324,7 +2328,8 @@ namespace crpcut {
   {
     using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5> traits;
-    return typename traits::type(t1, t2, t3, t4, t5);
+    typename traits::type rv(t1, t2, t3, t4, t5);
+    return rv;
   }
 
   template <typename D,
@@ -2336,7 +2341,8 @@ namespace crpcut {
   {
     using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5, T6> traits;
-    return typename traits::type(t1, t2, t3, t4, t5, t6);
+    typename traits::type rv(t1, t2, t3, t4, t5, t6);
+    return rv;
   }
 
   template <typename D,
@@ -2349,7 +2355,8 @@ namespace crpcut {
   {
     using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5, T6, T7> traits;
-    return typename traits::type(t1, t2, t3, t4, t5, t6, t7);
+    typename traits::type rv(t1, t2, t3, t4, t5, t6, t7);
+    return rv;
   }
 
   template <typename D,
@@ -2362,7 +2369,8 @@ namespace crpcut {
   {
     using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8> traits;
-    return typename traits::type(t1, t2, t3, t4, t5, t6, t7, t8);
+    typename traits::type rv(t1, t2, t3, t4, t5, t6, t7, t8);
+    return rv;
   }
 
   template <typename D,
@@ -2375,7 +2383,8 @@ namespace crpcut {
   {
     using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8, T9> traits;
-    return typename traits::type(t1, t2, t3, t4, t5, t6, t7, t8, t9);
+    typename traits::type rv(t1, t2, t3, t4, t5, t6, t7, t8, t9);
+    return rv;
   }
 
   class abs_diff
