@@ -11,7 +11,20 @@
       test case that did something wrong, not some other test case that messed
       up the premises.
 
-3. Q: Why no support for parametrized tests?
+3. Q: Why can't I instantiate a fixture once for several test cases?
+   A: You can, but you have to work a little for it, and it has drawbacks.
+      The key is that the constructor of the fixtures are run in the forked
+      process of the test case. However, when forking, the state of the
+      parent process is copied. So, if you call a setup function from
+      within main(), or create your shared fixture state in global objects,
+      it works. However, the changes made to the state by a test case
+      will not propagate back to the parent, and thus not to other test
+      cases. Be careful if the shared state is visible outside the
+      process context, for example files. Also keep in mind that this setup
+      will work very poorly when test cases (plural) are run in the main
+      process instead of as child processes.
+
+4. Q: Why no support for parametrized tests?
    A: It's extremely easy to construct with inheritance. Here's an example.
 
       class parameter_base
@@ -33,22 +46,46 @@
         my_test(3.141592, 3);
      }
 
-4. Q: Why isn't <my-favourite-os> supported?
+5. Q: Why isn't <my-favourite-os> supported?
    A: Because I don't have it. If you want support you can contribute your own
       solution. If it fits nicely I'll accept it. If I don't accept it, you
       still have your solution, and you're of course free to fork the project.
       An alternative way is of course to donate the necessary system to me,
       and encourage me to spend the time on it. ;-)
 
-5. Q: I like google-mock, can I use it with crpcut
+6. Q: I like google-mock, can I use it with crpcut
    A: Most probably, yes. Read README_GOOGLE_MOCK for details
 
-6. Q: OK, so what is the downside of crpcut?
+7. Q: Yeach, that function kidnapping is ugly. Why doesn't crpcut use the
+      google-mock compatibility mode of reporting errors through exceptions?
+   A: Yup, it's ugly, but unlike exceptions, it works. If the code you want
+      to test looks like the below, things will fail when errors are reported
+      through exceptions:
+
+        class myclass
+        {
+        public:
+          myclass(amock *obj) : o(obj) {}
+          void poke() {
+            try {
+              o->function(); // which triggers error
+            }
+           catch (...) {
+           }
+        private:
+          amock *o;
+        };
+
+      So, the code is poorly written, it triggers an error, and it's so
+      poorly written it silently swallows the error report. The crpcut
+      function kidnapping is ugly, but it will catch the error.
+
+8. Q: OK, so what is the downside of crpcut?
    A: It requires a bleeding-edge C++ compiler (some of the features required
       aren't even standardized yet,) a highly posix compliant OS (currently
       only Linux is known to work.)
 
-7. Q: make selftest complains about core files and ulimit, what gives?
+9. Q: make selftest complains about core files and ulimit, what gives?
    A: The self test includes a number of tests that are assumed to dump
       core. The recommended way to run crpcut tests is to enable core dumps
       in the current working directory. That way the core dumps will be
