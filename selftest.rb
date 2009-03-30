@@ -319,12 +319,12 @@ TESTS = {
   'fp::abs::should_fail_add_2epsilon_float' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*param1 = \d+\.\d+/me),
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*param1 = \d+\.\d+.*Max allowed difference is.*Actual difference is.*/me),
 
   'fp::abs::should_fail_sub_2epsilon_float' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*param1 = \d+\.\d+/me),
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*param1 = \d+\.\d+.*Max allowed difference is.*Actual difference is.*/me),
 
   'fp::abs::should_succeed_add_epsilon_double' =>
   Test.new('OK'),
@@ -335,12 +335,12 @@ TESTS = {
   'fp::abs::should_fail_add_2epsilon_double' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*param1 = \d+\.\d+/me),
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*param1 = \d+\.\d+.*Max allowed difference is.*Actual difference is.*/me),
 
   'fp::abs::should_fail_sub_2epsilon_double' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*param1 = \d+\.\d+/me),
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*param1 = \d+\.\d+.*Max allowed difference is.*Actual difference is.*/me),
 
 
   'fp::abs::should_succeed_add_epsilon_long_double' =>
@@ -352,17 +352,17 @@ TESTS = {
   'fp::abs::should_fail_add_2epsilon_long_double' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*param1 = \d+\.\d+/me),
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*param1 = \d+\.\d+.*Max allowed difference is.*Actual difference is/me),
 
   'fp::abs::should_fail_sub_2epsilon_long_double' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(.*abs_diff.*Max allowed difference is.*Actual difference is.*(\s+param[12] = \d+\.\d+){2}/me),
+      /#{FP_H}ASSERT_PRED\(.*abs_diff.*(\s+param[12] = \d+\.\d+){2}.*Max allowed difference is.*Actual difference is/me),
 
   'fp::relative::should_fail_relative_epsilon_float' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(.*relative_diff.*Max allowed relative difference is.*Actual relative difference is.*(\s+param[12] = \d+\.\d+){2}/me),
+      /#{FP_H}ASSERT_PRED\(.*relative_diff.*(\s+param[12] = \d+\.\d+){2}.*Max allowed relative difference is.*Actual relative difference is/me),
 
   'fp::relative::should_succeed_relative_epsilon_float' =>
   Test.new('OK'),
@@ -370,7 +370,7 @@ TESTS = {
   'fp::relative::should_fail_relative_epsilon_double' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(.*relative_diff.*Max allowed relative difference is.*Actual relative difference is.*(\s+param[12] = \d+\.\d+){2}/me),
+      /#{FP_H}ASSERT_PRED\(.*relative_diff.*(\s+param[12] = \d+\.\d+){2}.*Max allowed relative difference is.*Actual relative difference is/me),
 
   'fp::relative::should_succeed_relative_epsilon_double' =>
   Test.new('OK'),
@@ -378,7 +378,7 @@ TESTS = {
   'fp::relative::should_fail_relative_epsilon_long_double' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(.*relative_diff.*Max allowed relative difference is.*Actual relative difference is.*(\s+param[12] = \d+\.\d+){2}/me),
+      /#{FP_H}ASSERT_PRED\(.*relative_diff.*(\s+param[12] = \d+\.\d+){2}.*Max allowed relative difference is.*Actual relative difference is/me),
 
   'fp::relative::should_succeed_relative_epsilon_long_double' =>
   Test.new('OK'),
@@ -437,7 +437,7 @@ TESTS = {
   'predicates::should_fail_streamable_pred' =>
   Test.new('FAILED').
   log('violation',
-      /#{PR_H}ASSERT_PRED\(string_equal\(.*"katt"\)\s+string_equal.*\) : compare.*equal to "apa"\s+param1 = katt/me),
+      /#{PR_H}ASSERT_PRED\(string_equal\(.*"katt"\)\s+param1 = katt\s+string_equal.*\) :\ncompare.*equal to "apa"/me),
 
   'predicates::should_succeed_ptr_deref_eq' =>
   Test.new('OK'),
@@ -477,17 +477,17 @@ TESTS = {
   'regex::should_fail_illegal_re' =>
   Test.new('FAILED').
   log('violation',
-      /#{RE_H}ASSERT_PRED.*regex.*\) : .*\n\s+param1 = apa/me),
+      /#{RE_H}ASSERT_PRED.*regex.*\)\s+param1 = apa.*\"\[a\"\) :\n.*\n/me),
 
   'regex::should_fail_no_match' =>
   Test.new('FAILED').
   log('violation',
-      /#{RE_H}ASSERT_PRED.*regex.*\) : did not match\n\s+param1 = katt/me),
+      /#{RE_H}ASSERT_PRED.*regex.*\)\n\s+param1 = katt.*\) :\ndid not match/me),
 
   'regex::should_fail_case_mismatch' =>
   Test.new('FAILED').
   log('violation',
-      /#{RE_H}ASSERT_PRED.*regex.*\) : did not match\n\s+param1 = APA/me),
+      /#{RE_H}ASSERT_PRED.*regex.*\)\n\s+param1 = APA.*\) :\ndid not match/me),
 
   'regex::should_succeed_case_mismatch' =>
   Test.new('OK'),
@@ -495,7 +495,7 @@ TESTS = {
   'regex::should_fail_ere_paren_on_non_e_re' =>
   Test.new('FAILED').
   log('violation',
-      /#{RE_H}ASSERT_PRED.*\)\n.*\) : did not match\n\s+param1 = apakattkattkatttupp/me),
+      /#{RE_H}ASSERT_PRED.*\).*\)\s+param1 = apakattkattkatttupp.*did not match/me),
 
   'regex::should_succeed_ere_paren_on_e_re' =>
   Test.new('OK'),
@@ -506,7 +506,7 @@ TESTS = {
   'regex::should_fail_non_ere_paren_on_e_re' =>
   Test.new('FAILED').
   log('violation',
-      /#{RE_H}ASSERT_PRED.*regex::e\) : did not match\n\s+param1 = apakattkattkatttupp/me),
+      /#{RE_H}ASSERT_PRED.*regex::e\), \".*\"\)\s+param1 = apakattkattkatttupp.*did not match/me),
 
   'regex::should_succeed_paren_litteral_e_re' =>
   Test.new('OK'),
@@ -517,7 +517,7 @@ TESTS = {
   'regex::should_fail_ere_on_non_e_re' =>
   Test.new('FAILED').
   log('violation',
-      /#{RE_H}ASSERT_PRED.*\"apa\+\"\) : did not match\n\s+param1 = apaaa/me),
+      /#{RE_H}ASSERT_PRED.*\"apa\+\"\), \"apaaa\"\)\n\s+param1 = apaaa.*did not match\n/me),
 
   'regex::should_succeed_ere_on_e_re' =>
   Test.new('OK'),

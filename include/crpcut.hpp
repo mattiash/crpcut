@@ -787,7 +787,7 @@ namespace crpcut {
       predicate_streamer(const char *name, const P& pred) : n(name), p(pred) {}
       std::ostream &stream_to(std::ostream & os) const
       {
-        return os << "  " << n << " : " << p << '\n';
+        return os << n << " :\n" << p << '\n';
       }
     private:
       const char *n;
@@ -2173,8 +2173,8 @@ namespace crpcut {
     if (!b)
     {
       std::ostringstream out;
-      out << stream_predicate(sp, p);
       params.print_to(out);
+      out << stream_predicate(sp, p);
       msg = out.str();
     }
     return b;
