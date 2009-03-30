@@ -439,6 +439,14 @@ TESTS = {
   log('violation',
       /#{PR_H}ASSERT_PRED\(string_equal\(.*"katt"\)\s+string_equal.*\) : compare.*equal to "apa"\s+param1 = katt/me),
 
+  'predicates::should_succeed_ptr_deref_eq' =>
+  Test.new('OK'),
+
+  'predicates::should_fail_ptr_deref_eq' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{PR_H}ASSERT_PRED.*pointing to:\s+4.*pointing to:\s+3/me),
+
   'collate::should_succeed_collation_string' =>
   Test.new('OK'),
 

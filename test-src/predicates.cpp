@@ -26,6 +26,43 @@
 
 #include <crpcut.hpp>
 #include <cstring>
+
+class ptr_deref_eq
+{
+public:
+  template <typename T>
+  class type
+  {
+  public:
+    type(T* refp) : rp(refp) {}
+    type(const type<T>& t) : rp(t.rp), cp(t.cp) {}
+    bool operator()(T* compp)
+    {
+      cp = compp; // store values for use by output stream operator
+      return *rp == *cp;
+    }
+    friend std::ostream& operator<<(std::ostream &os, const type<T>& t)
+    {
+      os << "reference ptr=" << t.rp << " pointing to: " << *t.rp
+         << "\ncompared ptr=" << t.cp << " pointing to: " << *t.cp;
+      return os;
+    }
+  private:
+    T* rp;
+    T* cp;
+  };
+};
+
+namespace crpcut {
+  namespace datatypes {
+    template <typename T>
+    struct match_traits<ptr_deref_eq, T*>
+    {
+      typedef typename ptr_deref_eq::template type<T> type;
+    };
+  } // namespace datatypes
+} // namespace crpcut
+
 TESTSUITE(predicates)
 {
   bool is_positive(int n)
@@ -107,5 +144,21 @@ TESTSUITE(predicates)
   TEST(should_fail_streamable_pred)
   {
     ASSERT_PRED(string_equal("apa"), "katt");
+  }
+
+  TEST(should_succeed_ptr_deref_eq)
+  {
+    int n = 3;
+    int m = 3;
+    int *p = &m;
+    ASSERT_PRED(crpcut::match<ptr_deref_eq>(&n), p);
+  }
+
+  TEST(should_fail_ptr_deref_eq)
+  {
+    int n = 4;
+    int m = 3;
+    int *p = &m;
+    ASSERT_PRED(crpcut::match<ptr_deref_eq>(&n), p);
   }
 }

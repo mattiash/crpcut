@@ -777,6 +777,80 @@ A violation message would be:
 </code>
 <p/>
 </section>
+<section title="Writing your own matchers">
+  A matcher is a value testing class that is instantiated via the
+  <id>match&lt;&gt;</id> function template. A matcher instance can be
+  used as a predicate (see above) or tested directly as a boolean value.
+  <p/>
+  By default <id>match&lt;T&gt;(...)</id> returns an instance of T(...).
+  <id>match&lt;&gt;()</id> is overridden for 0 up to 9 templated parameter
+  values.
+  <p/>
+  To be used as a predicate, the matcher must implement
+  <id>bool&#xA0;operator()</id> with a suitable number of parameters.
+  <p/>
+  Beware that since the <id>match&lt;T&gt;()</id> function template will
+  return a T by value, the matcher <id>T</id> must be copy constructible
+  (or more accurately, it must be move constructible.)
+  <p/>
+  It is advisable to define an output streaming operator for a matcher.
+  The output stream operator will only be called when the predicate
+  has failed, and here extra information can be added that makes it
+  easier to understand the reason for the failure.
+  <p/>
+  Should instantiating <id>T</id> directly not be suitable, the return value
+  from the instantiation of <id>match&lt;T&gt;(...)</id> can be controlled
+  by specializing the <id>crpcut::datatypes::match_traits&lt;T,...&gt;</id>
+  template (where ... is the parameters to the <id>match&lt;T&gt;(...)</id>
+  call. This way the type returned can be controlled also by the types of the
+  parameters to <id>match&lt;&gt;()</id>.
+  <p/>
+  A complete, if somewhat contrived example, testing that two pointers
+  point to the same value.
+  <code>
+  class ptr_deref_eq
+  {
+  public:
+    template &lt;typename T&gt;
+    class type
+    {
+    public:
+      type(T* refp) : rp(refp) {}
+      type(const type&lt;T&gt;&amp; t) : rp(t.rp), cp(t.cp) {}
+      bool operator()(T* compp)
+      {
+        cp = compp; // store values for use by output stream operator
+        return *rp == *cp;
+      }
+      friend std::ostream&amp; operator&lt;&lt;(std::ostream &amp;os, const type&lt;T&gt;&amp; t)
+      {
+        os &lt;&lt; "reference ptr=" &lt;&lt; t.rp &lt;&lt; " pointing to:" &lt;&lt; *t.rp
+           &lt;&lt; "\ncompared ptr=" &lt;&lt; t.cp &lt;&lt; " pointing to: " &lt;&lt; *t.cp;
+        return os;
+      }
+    private:
+      T* rp;
+      T* cp;
+    };
+  };
+
+  namespace crpcut {
+    namespace datatypes {
+      template &lt;typename T&gt;
+      struct match_traits&lt;ptr_deref_eq, T*&gt;
+      {
+        typedef typename ptr_deref_eq::template type&lt;T&gt; type;
+      };
+    } // namespace datatypes
+  } // namespace crpcut
+  </code>
+  It's use can be:
+  <code>
+    int *p1 = afunc();
+    int n = 3;
+    ASSERT_PRED(crpcut::match&lt;ptr_deref_eq&gt;(&amp;n), p1);
+  </code>
+</section>
 <section title="Wrapping library functions">
 crpcut accesses all functions it uses from <id>libc</id> and <id>librt</id>
 directly from the lib by means of <id>dlsym()</id>. This means that you can
