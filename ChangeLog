@@ -1,3 +1,7 @@
+2009-03-31 0.6.1
+
+         * Added missing includes to crpcut.hpp
+
 2009-03-31 0.6.0
 
          * Fixed broken wrapping of select()

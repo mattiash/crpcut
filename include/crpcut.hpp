@@ -217,7 +217,8 @@ namespace crpcut {
 #include <tr1/array>
 #include <cstring>
 #include <cstdlib>
-#include <cmath>
+#include <limits>
+#include <memory>
 extern "C"
 {
 #include <limits.h>
