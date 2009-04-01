@@ -43,21 +43,6 @@ extern "C" {
 #include "posix_encapsulation.hpp"
 namespace crpcut {
 
-  namespace lib {
-    // works like std::strcpy, except the return value is the pointer to
-    // the nul terminator in the destination, making concatenations easy
-    // and cheap
-    template <typename T, typename U>
-    inline T strcpy(T d, U s)
-    {
-      while ((*d = *s))
-        {
-          ++d;
-          ++s;
-        }
-      return d;
-    }
-  }
 
   test_case_factory::test_case_factory()
     : pending_children(0),
@@ -439,68 +424,6 @@ namespace crpcut {
       }
   }
 
-  void test_case_factory
-  ::run_test_case(implementation::test_case_registrator *i) const
-  {
-    test_case_base *p = 0;
-    const char *msg = 0;
-    const char *type = 0;
-    try {
-      p = (i->instantiate_obj());
-    }
-    catch (std::exception &e)
-      {
-        type = "std::exception";
-        msg = e.what();
-      }
-    catch (...)
-      {
-        type = "...";
-      }
-    if (type)
-      {
-        std::ostringstream out;
-        out << "Unexpected exception " << type;
-        if (msg)
-          {
-            out << "\n  what()=" << msg;
-          }
-        report(comm::exit_fail, out);
-      }
-
-    report(comm::begin_test, 0, 0);
-
-    try {
-      p->run();
-    }
-    catch (std::exception &e)
-      {
-        const size_t len = wrapped::strlen(e.what());
-#define TEMPLATE_HEAD "Unexpectedly caught std::exception\n  what()="
-        const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
-        char *msg = static_cast<char *>(alloca(head_size + len + 1));
-        lib::strcpy(lib::strcpy(msg, TEMPLATE_HEAD), e.what());
-#undef TEMPLATE_HEAD
-        report(comm::exit_fail, head_size + len, msg);
-      }
-    catch (...)
-      {
-        static const char msg[] = "Unexpectedly caught ...";
-        report(comm::exit_fail, msg);
-      }
-
-
-    if (tests_as_child_procs())
-       {
-         p->test_finished(); // tell destructor to report success
-         wrapped::exit(0);
-       }
-     else
-      {
-        i->register_success();
-      }
-  }
-
   void test_case_factory::manage_children(unsigned max_pending_children)
   {
     while (pending_children >= max_pending_children)
@@ -539,13 +462,12 @@ namespace crpcut {
       }
   }
 
-
   void test_case_factory::start_test(implementation::test_case_registrator *i)
   {
     if (!tests_as_child_procs())
       {
         std::cout << *i << " ";
-        run_test_case(i);
+        i->crpcut_run_test_case();
         ++num_tests_run;
         std::cout << "OK\n";
         return;
@@ -581,9 +503,8 @@ namespace crpcut {
         p2c.close();
         c2p.close();
         i->goto_wd();
-        run_test_case(i);
-        // never executed!
-        assert("unreachable code reached" == 0);
+        i->crpcut_run_test_case();
+        wrapped::exit(0);
       }
 
     // parent
@@ -855,8 +776,9 @@ namespace crpcut {
             {
               if (wrapped::chdir("..") < 0)
                 {
-                  throw datatypes::posix_error(errno,
-                                               "chdir back from testcase working dir");
+                  using datatypes::posix_error;
+                  throw posix_error(errno,
+                                    "chdir back from testcase working dir");
                 }
               (void)wrapped::rmdir(dirbase); // ignore, taken care of as error
             }

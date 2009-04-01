@@ -233,48 +233,6 @@ namespace std {
   using namespace std::tr1;
 }
 
-#define NO_CORE_FILE \
-  protected virtual crpcut::policies::no_core_file
-
-#define EXPECT_EXIT(num) \
-  protected virtual crpcut::policies::exit_death<num>
-
-#define EXPECT_SIGNAL_DEATH(num) \
-  protected virtual crpcut::policies::signal_death<num>
-
-#define EXPECT_EXCEPTION(type) \
-  protected virtual crpcut::policies::exception_specifier<void (type)>
-
-#define DEPENDS_ON(...) \
-  protected virtual crpcut::policies::dependency_policy<crpcut::datatypes::tlist_maker<__VA_ARGS__>::type >
-
-#define ANY_CODE -1
-
-
-#define DEADLINE_CPU_MS(time) \
-  crpcut::policies::timeout_policy<crpcut::policies::timeout::cputime, time>
-
-#define DEADLINE_REALTIME_MS(time) \
-  crpcut::policies::timeout_policy<crpcut::policies::timeout::realtime, time>
-
-#define CRPCUT_WRAP_FUNC(lib, name, rv, param_list, param)              \
-  extern "C" typedef rv (*f_ ## name ## _t) param_list;                 \
-  rv name param_list                                                    \
-  {                                                                     \
-    static f_ ## name ## _t f_ ## name                                  \
-      = crpcut::libwrapper::loader<crpcut::libs::lib>::obj().sym<f_ ## name ## _t>(#name); \
-    return f_ ## name param;                                            \
-  }
-
-
-#define CRPCUT_WRAP_V_FUNC(lib, name, rv, param_list, param)            \
-  extern "C" typedef rv (*f_ ## name ## _t) param_list;                 \
-  rv name param_list                                                    \
-  {                                                                     \
-    static f_ ## name ## _t f_ ## name                                  \
-      = crpcut::libwrapper::loader<crpcut::libs::lib>::obj().sym<f_ ## name ## _t>(#name); \
-    f_ ## name param;                                                   \
-  }
 
 #ifdef __GNUC__
 #define CRPCUT_NORETURN __attribute__((noreturn))
@@ -282,12 +240,15 @@ namespace std {
 #define CRPCUT_NORETURN
 #endif
 
+#define ANY_CODE -1
+
 namespace crpcut {
   namespace wrapped { // stdc and posix functions
     ssize_t              read(int fd, void* p, size_t s);
     int                  regcomp(regex_t*, const char*, int);
     size_t               regerror(int, const regex_t*, char*, size_t);
-    int                  regexec(const regex_t*, const char*, size_t, regmatch_t[], int);
+    int                  regexec(const regex_t*, const char*,
+                                 size_t, regmatch_t[], int);
     void                 regfree(regex_t*);
     int                  strcmp(const char *l, const char *r);
     char *               strerror(int n);
@@ -295,9 +256,26 @@ namespace crpcut {
     ssize_t              write(int fd, const void* p, size_t s);
   }
 
+  namespace lib {
+    // works like std::strcpy, except the return value is the pointer to
+    // the nul terminator in the destination, making concatenations easy
+    // and cheap
+    template <typename T, typename U>
+    inline T strcpy(T d, U s)
+    {
+      while ((*d = *s))
+        {
+          ++d;
+          ++s;
+        }
+      return d;
+    }
+  }
+
+
   namespace libs
   {
-    static const int libc = -1;
+    static const int libc  = -1;
     static const int librt = -2;
   }
 
@@ -1157,9 +1135,9 @@ namespace crpcut {
   public:
     virtual ~test_case_base();
     void run();
-    void test_finished();
+    void crpcut_test_finished();
   private:
-    virtual void run_test() = 0;
+    virtual void crpcut_run_test() = 0;
 
     bool finished;
   };
@@ -1358,15 +1336,13 @@ namespace crpcut {
                                   public virtual policies::dependencies::base
     {
     public:
-      typedef test_case_base &(*test_case_creator)();
-      test_case_registrator(const char *name, test_case_creator func);
+      test_case_registrator(const char *name, const namespace_info &ns);
       friend std::ostream &operator<<(std::ostream &os,
                                       const test_case_registrator &t)
       {
         return t.print_name(os);
       }
-      virtual bool match_name(const char *name) const = 0;
-      test_case_base *instantiate_obj() const;
+      bool match_name(const char *name) const;
       void setup(pid_t pid,
                  int in_fd, int out_fd,
                  int stdout_fd,
@@ -1388,15 +1364,19 @@ namespace crpcut {
       bool has_active_readers() const;
       void deactivate_reader();
       void activate_reader();
+      virtual void crpcut_run_test_case() = 0;
     protected:
-      const char *name_;
+      template <typename T>
+      void crpcut_run_test_case();
       test_case_registrator();
     private:
-      virtual std::ostream &print_name(std::ostream &) const = 0;
+      void manage_test_case_execution(test_case_base*);
+      std::ostream &print_name(std::ostream &) const ;
 
+      const char            *name_;
+      const namespace_info  *ns_info;
       test_case_registrator *next;
       test_case_registrator *prev;
-      test_case_creator      func_;
       unsigned               active_readers;
       bool                   death_note;
       bool                   deadline_set;
@@ -1407,7 +1387,6 @@ namespace crpcut {
       reader<comm::stdout>   stdout_reader;
       reader<comm::stderr>   stderr_reader;
       test_phase             phase;
-
       friend class report_reader;
     };
 
@@ -1470,7 +1449,6 @@ namespace crpcut {
     test_case_factory();
     void kill_presenter_process();
     void manage_children(unsigned max_pending_children);
-    void run_test_case(implementation::test_case_registrator *i) const;
     void start_test(implementation::test_case_registrator *i);
 
     unsigned do_run(int argc, const char *argv[], std::ostream &os);
@@ -1489,6 +1467,7 @@ namespace crpcut {
     {
       virtual bool match_name(const char *) const { return false; }
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
+      virtual void crpcut_run_test_case() {}
     };
 
     typedef datatypes::array_v<implementation::test_case_registrator*,
@@ -1908,7 +1887,7 @@ namespace crpcut {
 
   inline
   void
-  test_case_base::test_finished()
+  test_case_base::crpcut_test_finished()
   {
     finished = true;
     report(comm::end_test, 0, 0);
@@ -1926,7 +1905,7 @@ namespace crpcut {
   inline void
   test_case_base::run()
   {
-    run_test();
+    crpcut_run_test();
   }
 
   namespace comm {
@@ -2076,10 +2055,35 @@ namespace crpcut {
       response_fd = out_fd;
     }
 
-    inline test_case_base *
-    test_case_registrator::instantiate_obj() const
+    template <typename T>
+    inline
+    void test_case_registrator::crpcut_run_test_case()
     {
-      return &func_();
+      const char *msg = 0;
+      const char *type = 0;
+      try {
+        T obj;
+        manage_test_case_execution(&obj);
+      }
+      catch (std::exception &e)
+        {
+          type = "std::exception";
+          msg = e.what();
+        }
+      catch (...)
+        {
+          type = "...";
+        }
+      if (type)
+        {
+          std::ostringstream out;
+          out << "Unexpected exception " << type;
+          if (msg)
+            {
+              out << "\n  what()=" << msg;
+            }
+          crpcut::comm::report(crpcut::comm::exit_fail, out);
+        }
     }
 
     inline test_case_registrator *
@@ -2564,7 +2568,8 @@ namespace crpcut {
   template <>
   struct convert_traits<uppercase>
   {
-    static const char *do_convert(char *lo, const char *hi, const std::locale &l)
+    static const char *do_convert(char *lo, const char *hi,
+                                  const std::locale &l)
     {
       return std::use_facet<std::ctype<char> >(l).toupper(lo, hi);
     }
@@ -2573,7 +2578,8 @@ namespace crpcut {
   template <>
   struct convert_traits<lowercase>
   {
-    static const char *do_convert(char *lo, const char *hi, const std::locale &l)
+    static const char *do_convert(char *lo, const char *hi,
+                                  const std::locale &l)
     {
       return std::use_facet<std::ctype<char> >(l).tolower(lo, hi);
     }
@@ -2769,76 +2775,54 @@ namespace crpcut {
 
 } // namespace crpcut
 
+extern crpcut::implementation::namespace_info current_namespace;
+
 
 // Note, the order of inheritance below is important. test_case_base
 // destructor signals ending of test case, so it must be listed as the
 // first base class so that its instance is destroyed last
 
-#define CRPCUT_TEST_CASE_DEF(test_case_name, ...)                           \
-  class test_case_name                                                      \
-    : crpcut::test_case_base, __VA_ARGS__                                   \
-  {                                                                         \
-    friend class crpcut::implementation::test_wrapper<crpcut_run_wrapper, test_case_name>; \
-    friend class crpcut::policies::dependencies::enforcer<test_case_name>;  \
-  virtual void run_test()                                                   \
-  {                                                                         \
-      crpcut_timeout_enforcer obj;                                          \
-      (void)obj; /* silence warning */                                      \
-      using crpcut::implementation::test_wrapper;                           \
-      test_wrapper<crpcut_run_wrapper, test_case_name>::run(this);          \
-    }                                                                       \
-    void test();                                                            \
-    static crpcut::test_case_base& creator()                                \
-    {                                                                       \
-      static test_case_name obj;                                            \
-      return obj;                                                           \
-    }                                                                       \
-    class registrator                                                       \
-      : public crpcut::implementation::test_case_registrator,               \
-        public virtual crpcut::policies::dependencies::base,                \
-        public virtual test_case_name::crpcut_expected_death_cause,         \
-        private virtual test_case_name::crpcut_dependency                   \
-          {                                                                 \
-            typedef crpcut::implementation::test_case_registrator           \
-              registrator_base;                                             \
-          public:                                                           \
-            registrator()                                                   \
-              : registrator_base(#test_case_name,                           \
-                                 &test_case_name::creator)                  \
-              {                                                             \
-              }                                                             \
-          private:                                                          \
-            virtual bool match_name(const char *name_param) const           \
-            {                                                               \
-              const char *p = current_namespace.match_name(name_param);     \
-              if (p)                                                        \
-                {                                                           \
-                  if (p != name_param || *p == ':')                         \
-                    {                                                       \
-                      if (!*p) return true; /* match for whole suites*/     \
-                      if (!*p++ == ':') return false;                       \
-                      if (!*p++ == ':') return false;                       \
-                    }                                                       \
-                }                                                           \
-              else                                                          \
-                {                                                           \
-                  p = name_param;                                           \
-                }                                                           \
-              return !crpcut::wrapped::strcmp(p, #test_case_name);          \
-            }                                                               \
-            virtual std::ostream &print_name(std::ostream &os) const        \
-            {                                                               \
-              os << current_namespace;                                      \
-              return os << #test_case_name;                                 \
-            }                                                               \
-          };                                                                \
-    static registrator crpcut_reg;                                          \
-  };                                                                        \
+#define CRPCUT_TEST_CASE_DEF(test_case_name, ...)                       \
+  class test_case_name                                                  \
+    : crpcut::test_case_base, __VA_ARGS__                               \
+  {                                                                     \
+    friend class crpcut::implementation::test_wrapper<crpcut_run_wrapper, \
+      test_case_name>;                                                  \
+    friend class crpcut::policies::dependencies::enforcer<test_case_name>; \
+    friend class crpcut::implementation::test_case_registrator;         \
+    virtual void crpcut_run_test()                                      \
+    {                                                                   \
+      crpcut_timeout_enforcer obj;                                      \
+      (void)obj; /* silence warning */                                  \
+      using crpcut::implementation::test_wrapper;                       \
+      test_wrapper<crpcut_run_wrapper, test_case_name>::run(this);      \
+    }                                                                   \
+    void test();                                                        \
+    class crpcut_registrator                                            \
+      : public crpcut::implementation::test_case_registrator,           \
+        public virtual crpcut::policies::dependencies::base,            \
+        public virtual test_case_name::crpcut_expected_death_cause,     \
+        private virtual test_case_name::crpcut_dependency               \
+    {                                                                   \
+       typedef crpcut::implementation::test_case_registrator            \
+         crpcut_registrator_base;                                       \
+    public:                                                             \
+       crpcut_registrator()                                             \
+         : crpcut_registrator_base(#test_case_name, current_namespace)  \
+         {                                                              \
+         }                                                              \
+       virtual void crpcut_run_test_case()                              \
+       {                                                                \
+         crpcut_registrator_base::crpcut_run_test_case<test_case_name>(); \
+       }                                                                \
+    };                                                                  \
+    static crpcut_registrator crpcut_reg;                               \
+  };                                                                    \
 
 
 #define TEST_DEF(test_case_name, ...)                                   \
   CRPCUT_TEST_CASE_DEF(test_case_name, __VA_ARGS__)                     \
-  test_case_name :: registrator test_case_name::crpcut_reg;             \
+  test_case_name :: crpcut_registrator test_case_name::crpcut_reg;      \
   void test_case_name::test()
 
 #define DISABLED_TEST_DEF(test_case_name, ...)                          \
@@ -2857,6 +2841,49 @@ namespace crpcut {
 
 #define CRPCUT_REFTYPE(expr) \
   decltype(crpcut::datatypes::gettype<decltype(expr)>())
+
+
+#define NO_CORE_FILE \
+  protected virtual crpcut::policies::no_core_file
+
+#define EXPECT_EXIT(num) \
+  protected virtual crpcut::policies::exit_death<num>
+
+#define EXPECT_SIGNAL_DEATH(num) \
+  protected virtual crpcut::policies::signal_death<num>
+
+#define EXPECT_EXCEPTION(type) \
+  protected virtual crpcut::policies::exception_specifier<void (type)>
+
+#define DEPENDS_ON(...) \
+  protected virtual crpcut::policies::dependency_policy<crpcut::datatypes::tlist_maker<__VA_ARGS__>::type >
+
+
+
+#define DEADLINE_CPU_MS(time) \
+  crpcut::policies::timeout_policy<crpcut::policies::timeout::cputime, time>
+
+#define DEADLINE_REALTIME_MS(time) \
+  crpcut::policies::timeout_policy<crpcut::policies::timeout::realtime, time>
+
+#define CRPCUT_WRAP_FUNC(lib, name, rv, param_list, param)              \
+  extern "C" typedef rv (*f_ ## name ## _t) param_list;                 \
+  rv name param_list                                                    \
+  {                                                                     \
+    static f_ ## name ## _t f_ ## name                                  \
+      = crpcut::libwrapper::loader<crpcut::libs::lib>::obj().sym<f_ ## name ## _t>(#name); \
+    return f_ ## name param;                                            \
+  }
+
+
+#define CRPCUT_WRAP_V_FUNC(lib, name, rv, param_list, param)            \
+  extern "C" typedef rv (*f_ ## name ## _t) param_list;                 \
+  rv name param_list                                                    \
+  {                                                                     \
+    static f_ ## name ## _t f_ ## name                                  \
+      = crpcut::libwrapper::loader<crpcut::libs::lib>::obj().sym<f_ ## name ## _t>(#name); \
+    f_ ## name param;                                                   \
+  }
 
 
 #define CRPCUT_BINARY_ASSERT(name, oper, lh, rh)                        \
@@ -2919,7 +2946,7 @@ namespace crpcut {
     catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
       FAIL <<                                                           \
         "ASSERT_TRUE(" #a ")\n"                                         \
-        "  caught std::exception\n"                                      \
+        "  caught std::exception\n"                                     \
         "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
     }                                                                   \
     catch (...) {                                                       \
@@ -2952,7 +2979,7 @@ namespace crpcut {
     catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
       FAIL <<                                                           \
         "ASSERT_FALSE(" #a ")\n"                                        \
-        "  caught std::exception\n"                                      \
+        "  caught std::exception\n"                                     \
         "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
     }                                                                   \
     catch (...) {                                                       \
@@ -2962,23 +2989,17 @@ namespace crpcut {
     }                                                                   \
   } while(0)
 
-#define ASSERT_EQ(lh, rh) \
-  CRPCUT_BINARY_ASSERT(EQ, ==, lh, rh)
+#define ASSERT_EQ(lh, rh)  CRPCUT_BINARY_ASSERT(EQ, ==, lh, rh)
 
-#define ASSERT_NE(lh, rh) \
-  CRPCUT_BINARY_ASSERT(NE, !=, lh, rh)
+#define ASSERT_NE(lh, rh)  CRPCUT_BINARY_ASSERT(NE, !=, lh, rh)
 
-#define ASSERT_GE(lh, rh) \
-  CRPCUT_BINARY_ASSERT(GE, >=, lh, rh)
+#define ASSERT_GE(lh, rh)  CRPCUT_BINARY_ASSERT(GE, >=, lh, rh)
 
-#define ASSERT_GT(lh, rh) \
-  CRPCUT_BINARY_ASSERT(GT, >, lh, rh)
+#define ASSERT_GT(lh, rh)  CRPCUT_BINARY_ASSERT(GT, >, lh, rh)
 
-#define ASSERT_LT(lh, rh) \
-  CRPCUT_BINARY_ASSERT(LT, <, lh, rh)
+#define ASSERT_LT(lh, rh)  CRPCUT_BINARY_ASSERT(LT, <, lh, rh)
 
-#define ASSERT_LE(lh, rh) \
-  CRPCUT_BINARY_ASSERT(LE, <=, lh, rh)
+#define ASSERT_LE(lh, rh)  CRPCUT_BINARY_ASSERT(LE, <=, lh, rh)
 
 
 #define ASSERT_THROW(expr, exc)                                         \
@@ -3059,7 +3080,6 @@ namespace crpcut {
   } while (0)
 
 
-extern crpcut::implementation::namespace_info current_namespace;
 
 #define TEST(...) TEST_DEF(__VA_ARGS__, crpcut::none)
 #define DISABLED_TEST(...) DISABLED_TEST_DEF(__VA_ARGS__, crpcut::none)

@@ -202,11 +202,11 @@ namespace crpcut {
 
     test_case_registrator
     ::test_case_registrator(const char *name,
-                            test_case_base & (*func)())
+                            const namespace_info &ns)
       : name_(name),
+        ns_info(&ns),
         next(&test_case_factory::obj().reg),
         prev(test_case_factory::obj().reg.prev),
-        func_(func),
         death_note(false),
         rep_reader(this),
         stdout_reader(this),
@@ -215,6 +215,65 @@ namespace crpcut {
     {
       test_case_factory::obj().reg.prev = this;
       prev->next = this;
+    }
+
+    bool test_case_registrator::match_name(const char *name_param) const
+    {
+      const char *p = ns_info->match_name(name_param);
+      if (p)
+        {
+          if (p != name_param || *p == ':')
+            {
+              if (!*p) return true; // match for whole suites
+              if (!*p++ == ':') return false;
+              if (!*p++ == ':') return false;
+            }
+        }
+      else
+        {
+          p = name_param;
+        }
+      return crpcut::wrapped::strcmp(p, name_) == 0;
+    }
+
+    std::ostream &test_case_registrator::print_name(std::ostream &os) const
+    {
+      os << *ns_info;
+      return os << name_;
+    }
+
+    void test_case_registrator::manage_test_case_execution(test_case_base* p)
+    {
+      report(comm::begin_test, 0, 0);
+
+      try {
+        p->run();
+      }
+      catch (std::exception &e)
+        {
+          const size_t len = wrapped::strlen(e.what());
+#define TEMPLATE_HEAD "Unexpectedly caught std::exception\n  what()="
+          const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
+          char *msg = static_cast<char *>(alloca(head_size + len + 1));
+          lib::strcpy(lib::strcpy(msg, TEMPLATE_HEAD), e.what());
+#undef TEMPLATE_HEAD
+          report(comm::exit_fail, head_size + len, msg);
+        }
+      catch (...)
+        {
+          static const char msg[] = "Unexpectedly caught ...";
+          report(comm::exit_fail, msg);
+        }
+
+
+      if (test_case_factory::tests_as_child_procs())
+        {
+          p->crpcut_test_finished(); // tell destructor to report success
+        }
+      else
+        {
+          register_success();
+        }
     }
 
     void test_case_registrator::kill()
