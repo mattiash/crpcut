@@ -1,3 +1,8 @@
+         * Added -DCMAKE_BUILD_TYPE={release,debug,maint}
+
+         * Much improved CMakeLists.txt making use of --std=c++0x
+           if available
+
          * Moved match_traits<> out of namespace crpcut::datatypes
            to namespace crpcut. Sorry for the inconvenience.
 
