@@ -48,6 +48,7 @@ file(GLOB LIB_SRCS
      src/posix_encapsulation.cpp
      src/output.cpp
 )
+include_directories(include)
 if (WITH_GOOGLE_MOCK)
    if (NOT GOOGLE_MOCK_DIR)
       find_library(GOOGLE_MOCK_LIB "gmock")
@@ -57,14 +58,13 @@ if (WITH_GOOGLE_MOCK)
       endif (NOT GOOGLE_MOCK_LIB)
       set(GMOCK_LIBS "-lgmock -lgtest")
    else (NOT GOOGLE_MOCK_DIR)
-      include_directories(${GOOGLE_MOCK_DIR}/include)
+      include_directories(AFTER ${GOOGLE_MOCK_DIR}/include)
       set(GMOCK_LIBS "-Wl,-rpath,${GOOGLE_MOCK_DIR}/lib -L${GOOGLE_MOCK_DIR}/lib -lgmock -lgtest")
    endif (NOT GOOGLE_MOCK_DIR)
    file(GLOB GMOCK_LIB_SRCS src/gmock.cpp)
    set(SELFTEST_PARAM ${SELFTEST_PARAM} gmock)
 endif (WITH_GOOGLE_MOCK)
 
-include_directories(include)
 
 if (NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX /usr)
