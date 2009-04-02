@@ -29,7 +29,9 @@
 #define POSIX_ENCAPSULATION_HPP
 
 #include <crpcut.hpp>
-
+extern "C" {
+#include <stdarg.h>
+}
 namespace crpcut {
   namespace wrapped {
     CRPCUT_NORETURN void _Exit(int c);

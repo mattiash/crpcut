@@ -2416,6 +2416,7 @@ namespace crpcut {
            << "\n    Actual difference is "
            << std::setprecision(std::numeric_limits<T>::digits10)
            << t.diff;
+        return os;
       }
     private:
       T t;
@@ -2456,6 +2457,7 @@ namespace crpcut {
            << t.t
            << "\n    Actual relative difference is "
            << t.diff;
+        return os;
       }
     private:
       T t;
@@ -2889,8 +2891,8 @@ extern crpcut::implementation::namespace_info current_namespace;
 #define CRPCUT_BINARY_ASSERT(name, oper, lh, rh)                        \
   do {                                                                  \
     try {                                                               \
-      CRPCUT_REFTYPE(lh) CRPCUT_LOCAL_NAME(rl) = lh;                    \
-      CRPCUT_REFTYPE(rh) CRPCUT_LOCAL_NAME(rr) = rh;                    \
+      CRPCUT_REFTYPE((lh)) CRPCUT_LOCAL_NAME(rl) = lh;                  \
+      CRPCUT_REFTYPE((rh)) CRPCUT_LOCAL_NAME(rr) = rh;                  \
       if (!(CRPCUT_LOCAL_NAME(rl) oper CRPCUT_LOCAL_NAME(rr)))          \
         {                                                               \
           std::ostringstream CRPCUT_LOCAL_NAME(os);                     \
@@ -2925,7 +2927,7 @@ extern crpcut::implementation::namespace_info current_namespace;
 #define ASSERT_TRUE(a)                                                  \
   do {                                                                  \
     try {                                                               \
-      CRPCUT_REFTYPE(a) CRPCUT_LOCAL_NAME(ra) = a;                      \
+      CRPCUT_REFTYPE((a)) CRPCUT_LOCAL_NAME(ra) = a;                    \
       if (CRPCUT_LOCAL_NAME(ra))                                        \
         {                                                               \
         }                                                               \
@@ -2961,7 +2963,7 @@ extern crpcut::implementation::namespace_info current_namespace;
 #define ASSERT_FALSE(a)                                                 \
   do {                                                                  \
     try {                                                               \
-      CRPCUT_REFTYPE(a) CRPCUT_LOCAL_NAME(ra) = a;                      \
+      CRPCUT_REFTYPE((a)) CRPCUT_LOCAL_NAME(ra) = a;                    \
       if (CRPCUT_LOCAL_NAME(ra))                                        \
         {                                                               \
           std::ostringstream CRPCUT_LOCAL_NAME(os);                     \
@@ -3065,11 +3067,11 @@ extern crpcut::implementation::namespace_info current_namespace;
         }                                                               \
     }                                                                   \
     catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
-          FAIL << "ASSERT_PRED(" #pred                                  \
-               << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                \
-               << #__VA_ARGS__ ")\n"                                    \
-               << "  caught std::exception\n"                           \
-               << "  what()=" << CRPCUT_LOCAL_NAME(e).what();           \
+      FAIL << "ASSERT_PRED(" #pred                                      \
+           << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                    \
+           << #__VA_ARGS__ ")\n"                                        \
+           << "  caught std::exception\n"                               \
+        "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
     }                                                                   \
     catch (...) {                                                       \
           FAIL << "ASSERT_PRED(" #pred                                  \

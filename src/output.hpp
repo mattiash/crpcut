@@ -56,7 +56,7 @@ namespace crpcut
       template <size_t N>
       size_t write(const char (&str)[N], type t = verbatim) const
       {
-        write(&str[0], N - 1, t);
+        return write(&str[0], N - 1, t);
       }
       size_t write(const char *str, size_t len, type t = verbatim) const;
     private:

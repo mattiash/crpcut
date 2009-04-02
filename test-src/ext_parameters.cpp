@@ -38,13 +38,13 @@ TESTSUITE(ext_parameters)
   TEST(should_succeed_no_value)
   {
     const char *p = crpcut::test_case_factory::get_parameter("orm");
-    ASSERT_EQ(p, 0);
+    ASSERT_FALSE(p);
   }
 
   TEST(should_succeed_no_value_with_too_long_name)
   {
     const char *p = crpcut::test_case_factory::get_parameter("apan");
-    ASSERT_EQ(p, 0);
+    ASSERT_FALSE(p);
   }
 
   TEST(should_succeed_value_interpret)
@@ -55,7 +55,7 @@ TESTSUITE(ext_parameters)
 
   TEST(should_fail_value_interpret)
   {
-    int i = crpcut::test_case_factory::get_parameter<int>("apa");
+    crpcut::test_case_factory::get_parameter<int>("apa");
   }
 
   TEST(should_fail_no_value_interpret)

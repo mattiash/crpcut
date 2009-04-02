@@ -83,12 +83,14 @@ namespace crpcut
 
     size_t formatter::do_write(const char *p, size_t len) const
     {
-      for (size_t bytes_written = 0; bytes_written < len;)
+      size_t bytes_written = 0;
+      while (bytes_written < len)
         {
           int rv = wrapped::write(fd, p, len);
           assert(rv >= 0);
           bytes_written += rv;
         }
+      return bytes_written;
     }
 
     xml_formatter::xml_formatter(int fd, int argc_, const char *argv_[])
@@ -115,7 +117,7 @@ namespace crpcut
                                   tmdata->tm_hour,
                                   tmdata->tm_min,
                                   tmdata->tm_sec);
-      assert(len < sizeof(time_string));
+      assert(len < int(sizeof(time_string)));
       assert(time_string[len] == 0);
       write(time_string);
 

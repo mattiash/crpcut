@@ -186,6 +186,8 @@ namespace crpcut {
         case comm::end_test:
           reg->phase = destroying;
           return true;
+        default:
+          ; // silence warning
         }
       test_case_factory::present(reg->get_pid(), t, reg->phase, len, buff);
       if (t == comm::exit_ok || t == comm::exit_fail)

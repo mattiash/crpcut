@@ -47,7 +47,7 @@ namespace testwrapped {
 
 extern "C"
 {
-  double asin(double d)
+  double asin(double d) throw ()
   {
     ASSERT_GE(d, -1.0);
     ASSERT_LT(d,  1.0);

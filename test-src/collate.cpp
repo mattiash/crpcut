@@ -31,36 +31,36 @@ TESTSUITE(collate)
   TEST(should_succeed_collation_string)
   {
     std::string s = "apa";
-    ASSERT_PRED(crpcut::collate("app") > s);
+    ASSERT_TRUE(crpcut::collate("app") > s);
   }
 
   TEST(should_succeed_collation_char_array)
   {
     const char s[] = "apa";
-    ASSERT_PRED(crpcut::collate("app") > s);
+    ASSERT_TRUE(crpcut::collate("app") > s);
   }
 
   TEST(should_fail_collation_string)
   {
     std::string s = "apa";
     crpcut::collate_t<crpcut::verbatim> app("app");
-    ASSERT_PRED(app < s);
+    ASSERT_TRUE(app < s);
   }
 
   TEST(should_fail_collation_char_array)
   {
     const char s[] = "APA";
-    ASSERT_PRED(crpcut::collate<crpcut::uppercase>("app") < s);
+    ASSERT_TRUE(crpcut::collate<crpcut::uppercase>("app") < s);
   }
 
   TEST(should_succeed_equal_upcase)
   {
-    ASSERT_PRED(crpcut::collate<crpcut::uppercase>("aA") == "Aa");
+    ASSERT_TRUE(crpcut::collate<crpcut::uppercase>("aA") == "Aa");
   }
   TEST(should_fail_with_nonexisting_locale)
   {
     try {
-      ASSERT_TRUE(crpcut::collate("apa", std::locale("ieaieai")) == "aa");
+      ASSERT_TRUE(crpcut::collate("apa", std::locale("ieaioie")) == "aa");
     }
     catch (...)
       {

@@ -61,9 +61,8 @@ namespace crpcut {
         }
       read(bytes_written);
       assert(len == bytes_written);
-      switch (t)
+      if (t == comm::exit_fail)
         {
-        case comm::exit_fail:
           wrapped::_Exit(0);
         }
     }
