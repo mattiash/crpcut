@@ -91,29 +91,35 @@ endif(NOT HAVE__EXIT)
 
 # Check for decltype
 
-file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp
-  "template <typename T> T* func(T);\n"
-  "typedef decltype(func(3.14)) apa;\n"
-  "int main() {}\n")
-
-try_compile(HAVE_DECLTYPE ${CMAKE_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp)
-if(NOT HAVE_DECLTYPE)
-  file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(--std=c++0x HAVE_CXX0X)
+if (HAVE_CXX0X)
+  add_definitions(--std=c++0x)
+else (HAVE_CXX0X)
+  file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp
     "template <typename T> T* func(T);\n"
-    "typedef typeof(func(3.14)) apa;\n"
+    "typedef decltype(func(3.14)) apa;\n"
     "int main() {}\n")
+
   try_compile(HAVE_DECLTYPE ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp)
+    ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp)
   if(NOT HAVE_DECLTYPE)
-    message(
-      FATAL_ERROR
-      "${CMAKE_CXX_COMPILER} doesn't support decltype or typeof")
-  else(NOT HAVE_DECLTYPE)
-    set(USING_TYPEOF 1)
-    add_definitions(-Ddecltype=typeof)
+    file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp
+      "template <typename T> T* func(T);\n"
+      "typedef typeof(func(3.14)) apa;\n"
+      "int main() {}\n")
+    try_compile(HAVE_DECLTYPE ${CMAKE_BINARY_DIR}
+      ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp)
+    if(NOT HAVE_DECLTYPE)
+      message(
+        FATAL_ERROR
+        "${CMAKE_CXX_COMPILER} doesn't support decltype or typeof")
+    else(NOT HAVE_DECLTYPE)
+      set(USING_TYPEOF 1)
+      add_definitions(-Ddecltype=typeof)
+    endif(NOT HAVE_DECLTYPE)
   endif(NOT HAVE_DECLTYPE)
-endif(NOT HAVE_DECLTYPE)
+endif(HAVE_CXX0X)
 
 # check for TR1
 
@@ -266,6 +272,9 @@ endif (AWK AND BASH AND XMLLINT)
 set(LIBRARY_OUTPUT_PATH lib)
 set(EXECUTABLE_OUTPUT_PATH test)
 
+if(HAVE_CXX0X)
+  message("*** IMPORTANT *** Compile your tests using --std=c++0x")
+endif(HAVE_CXX0X)
 if(USING_TYPEOF)
   message("*** IMPORTANT *** Compile your tests using -Ddecltype=typeof")
 endif(USING_TYPEOF)
