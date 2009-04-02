@@ -800,7 +800,7 @@ A violation message would be:
   <p/>
   Should instantiating <id>T</id> directly not be suitable, the return value
   from the instantiation of <id>match&lt;T&gt;(...)</id> can be controlled
-  by specializing the <id>crpcut::datatypes::match_traits&lt;T,...&gt;</id>
+  by specializing the <id>crpcut::match_traits&lt;T,...&gt;</id>
   template (where ... is the parameters to the <id>match&lt;T&gt;(...)</id>
   call. This way the type returned can be controlled also by the types of the
   parameters to <id>match&lt;&gt;()</id>.
@@ -835,13 +835,11 @@ A violation message would be:
   };
 
   namespace crpcut {
-    namespace datatypes {
-      template &lt;typename T&gt;
-      struct match_traits&lt;ptr_deref_eq, T*&gt;
-      {
-        typedef typename ptr_deref_eq::template type&lt;T&gt; type;
-      };
-    } // namespace datatypes
+    template &lt;typename T&gt;
+    struct match_traits&lt;ptr_deref_eq, T*&gt;
+    {
+      typedef typename ptr_deref_eq::template type&lt;T&gt; type;
+    };
   } // namespace crpcut
   </code>
   It's use can be:

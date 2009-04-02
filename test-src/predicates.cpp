@@ -54,13 +54,11 @@ public:
 };
 
 namespace crpcut {
-  namespace datatypes {
-    template <typename T>
-    struct match_traits<ptr_deref_eq, T*>
-    {
-      typedef typename ptr_deref_eq::template type<T> type;
-    };
-  } // namespace datatypes
+  template <typename T>
+  struct match_traits<ptr_deref_eq, T*>
+  {
+    typedef typename ptr_deref_eq::template type<T> type;
+  };
 } // namespace crpcut
 
 TESTSUITE(predicates)

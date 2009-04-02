@@ -1,3 +1,6 @@
+         * Moved match_traits<> out of namespace crpcut::datatypes
+           to namespace crpcut. Sorry for the inconvenience.
+
 2009-03-31 0.6.1
 
          * Added missing includes to crpcut.hpp

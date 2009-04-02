@@ -890,14 +890,6 @@ namespace crpcut {
     gettype();
 
 
-    template <typename D,
-              typename T1,        typename T2 = none, typename T3 = none,
-              typename T4 = none, typename T5 = none, typename T6 = none,
-              typename T7 = none, typename T8 = none, typename T9 = none>
-    struct match_traits
-    {
-      typedef D type;
-    };
 
     template <typename T>
     struct string_traits;
@@ -923,6 +915,14 @@ namespace crpcut {
   } // namespace datatypes
 
 
+  template <typename D,
+            typename T1,        typename T2 = none, typename T3 = none,
+            typename T4 = none, typename T5 = none, typename T6 = none,
+            typename T7 = none, typename T8 = none, typename T9 = none>
+  struct match_traits
+  {
+    typedef D type;
+  };
 
   namespace policies {
     namespace deaths {
@@ -2280,10 +2280,9 @@ namespace crpcut {
 
   template <typename D, typename T>
   inline
-  typename datatypes::match_traits<D, T>::type
+  typename match_traits<D, T>::type
   match(T t)
   {
-    using datatypes::match_traits;
     typedef match_traits<D, T> traits;
     typename traits::type rv(t);
     return rv;
@@ -2291,10 +2290,9 @@ namespace crpcut {
 
   template <typename D, typename T1, typename T2>
   inline
-  typename datatypes::match_traits<D, T1, T2>::type
+  typename match_traits<D, T1, T2>::type
   match(T1 t1, T2 t2)
   {
-    using datatypes::match_traits;
     typedef match_traits<D, T1> traits;
     typename traits::type rv(t1, t2);
     return rv;
@@ -2303,10 +2301,9 @@ namespace crpcut {
   template <typename D,
             typename T1, typename T2, typename T3>
   inline
-  typename datatypes::match_traits<D, T1, T2, T3>::type
+  typename match_traits<D, T1, T2, T3>::type
   match(T1 t1, T2 t2, T3 t3)
   {
-    using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3> traits;
     typename traits::type rv(t1, t2, t3);
     return rv;
@@ -2316,10 +2313,9 @@ namespace crpcut {
             typename T1, typename T2, typename T3,
             typename T4>
   inline
-  typename datatypes::match_traits<D, T1, T2, T3, T4>::type
+  typename match_traits<D, T1, T2, T3, T4>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4)
   {
-    using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4> traits;
     typename traits::type rv(t1, t2, t3, t4);
     return rv;
@@ -2329,10 +2325,9 @@ namespace crpcut {
             typename T1, typename T2, typename T3,
             typename T4, typename T5>
   inline
-  typename datatypes::match_traits<D, T1, T2, T3, T4, T5>::type
+  typename match_traits<D, T1, T2, T3, T4, T5>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
   {
-    using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5> traits;
     typename traits::type rv(t1, t2, t3, t4, t5);
     return rv;
@@ -2342,10 +2337,9 @@ namespace crpcut {
             typename T1, typename T2, typename T3,
             typename T4, typename T5, typename T6>
   inline
-  typename datatypes::match_traits<D, T1, T2, T3, T4, T5, T6>::type
+  typename match_traits<D, T1, T2, T3, T4, T5, T6>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
   {
-    using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5, T6> traits;
     typename traits::type rv(t1, t2, t3, t4, t5, t6);
     return rv;
@@ -2356,10 +2350,9 @@ namespace crpcut {
             typename T4, typename T5, typename T6,
             typename T7>
   inline
-  typename datatypes::match_traits<D, T1, T2, T3, T4, T5, T6, T7>::type
+  typename match_traits<D, T1, T2, T3, T4, T5, T6, T7>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
   {
-    using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5, T6, T7> traits;
     typename traits::type rv(t1, t2, t3, t4, t5, t6, t7);
     return rv;
@@ -2370,10 +2363,9 @@ namespace crpcut {
             typename T4, typename T5, typename T6,
             typename T7, typename T8>
   inline
-  typename datatypes::match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8>::type
+  typename match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
   {
-    using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8> traits;
     typename traits::type rv(t1, t2, t3, t4, t5, t6, t7, t8);
     return rv;
@@ -2384,10 +2376,9 @@ namespace crpcut {
             typename T4, typename T5, typename T6,
             typename T7, typename T8, typename T9>
   inline
-  typename datatypes::match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8, T9>::type
+  typename match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8, T9>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, T9 t9)
   {
-    using datatypes::match_traits;
     typedef match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8, T9> traits;
     typename traits::type rv(t1, t2, t3, t4, t5, t6, t7, t8, t9);
     return rv;
@@ -2424,13 +2415,11 @@ namespace crpcut {
     };
   };
 
-  namespace datatypes {
-    template <typename T>
-    struct match_traits<abs_diff, T>
-    {
-      typedef typename abs_diff::template type<T> type;
-    };
-  }
+  template <typename T>
+  struct match_traits<abs_diff, T>
+  {
+    typedef typename abs_diff::template type<T> type;
+  };
 
   class relative_diff
   {
@@ -2465,13 +2454,11 @@ namespace crpcut {
     };
   };
 
-  namespace datatypes {
-    template <typename T>
-    struct match_traits<relative_diff, T>
-    {
-      typedef typename relative_diff::template type<T> type;
-    };
-  }
+  template <typename T>
+  struct match_traits<relative_diff, T>
+  {
+    typedef typename relative_diff::template type<T> type;
+  };
 
   class regex
   {
