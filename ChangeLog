@@ -1,3 +1,7 @@
+         * Fixed numerous warnings (some were real bugs)
+
+         * Fixed include path bug
+
          * Added -DCMAKE_BUILD_TYPE={release,debug,maint}
 
          * Much improved CMakeLists.txt making use of --std=c++0x
