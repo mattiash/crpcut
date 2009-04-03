@@ -236,8 +236,20 @@ namespace std {
 
 #ifdef __GNUC__
 #define CRPCUT_NORETURN __attribute__((noreturn))
+#ifndef __EXCEPTIONS
+#define CRPCUT_NO_EXCEPTION_SUPPORT
+#endif
 #else
 #define CRPCUT_NORETURN
+#endif
+
+#ifdef CRPCUT_NO_EXCEPTION_SUPPORT
+#ifndef try
+#define try if (true)
+#endif
+#define CATCH_BLOCK(specifier, code)
+#else
+#define CATCH_BLOCK(specifier, code) catch (specifier) code
 #endif
 
 #define ANY_CODE -1
@@ -2069,15 +2081,8 @@ namespace crpcut {
         T obj;
         manage_test_case_execution(&obj);
       }
-      catch (std::exception &e)
-        {
-          type = "std::exception";
-          msg = e.what();
-        }
-      catch (...)
-        {
-          type = "...";
-        }
+      CATCH_BLOCK(std::exception &e,{ type = "std::exception"; msg = e.what();})
+      CATCH_BLOCK(..., { type = "..."; } )
       if (type)
         {
           std::ostringstream out;
@@ -2845,8 +2850,10 @@ extern crpcut::implementation::namespace_info current_namespace;
 #define EXPECT_SIGNAL_DEATH(num) \
   protected virtual crpcut::policies::signal_death<num>
 
+#ifndef CRPCUT_NO_EXCEPTION_SUPPORT
 #define EXPECT_EXCEPTION(type) \
   protected virtual crpcut::policies::exception_specifier<void (type)>
+#endif
 
 #define DEPENDS_ON(...) \
   protected virtual crpcut::policies::dependency_policy<crpcut::datatypes::tlist_maker<__VA_ARGS__>::type >
@@ -2902,17 +2909,17 @@ extern crpcut::implementation::namespace_info current_namespace;
                                CRPCUT_LOCAL_NAME(os));                  \
         }                                                               \
     }                                                                   \
-    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
-      FAIL <<                                                           \
-        "ASSERT_" #name "(" #lh ", " #rh ")\n"                          \
-        "  caught std::exception\n"                                     \
-        "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
-    }                                                                   \
-    catch (...) {                                                       \
-      FAIL <<                                                           \
-        "ASSERT_" #name "(" #lh ", " #rh ")\n"                          \
-        "  caught ...";                                                 \
-    }                                                                   \
+    CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e), {                 \
+        FAIL <<                                                         \
+          "ASSERT_" #name "(" #lh ", " #rh ")\n"                        \
+          "  caught std::exception\n"                                   \
+          "  what()=" << CRPCUT_LOCAL_NAME(e).what();                   \
+      })                                                                \
+      CATCH_BLOCK(..., {                                                \
+          FAIL <<                                                       \
+            "ASSERT_" #name "(" #lh ", " #rh ")\n"                      \
+            "  caught ...";                                             \
+        })                                                              \
   } while(0)
 
 #define ASSERT_TRUE(a)                                                  \
@@ -2936,17 +2943,18 @@ extern crpcut::implementation::namespace_info current_namespace;
                                CRPCUT_LOCAL_NAME(os));                  \
         }                                                               \
     }                                                                   \
-    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
-      FAIL <<                                                           \
-        "ASSERT_TRUE(" #a ")\n"                                         \
-        "  caught std::exception\n"                                     \
-        "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
-    }                                                                   \
-    catch (...) {                                                       \
-      FAIL <<                                                           \
-        "ASSERT_TRUE(" #a ")\n"                                         \
-        "  caught ...";                                                 \
-    }                                                                   \
+    CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
+                {                                                       \
+                  FAIL <<                                               \
+                    "ASSERT_TRUE(" #a ")\n"                             \
+                    "  caught std::exception\n"                         \
+                    "  what()=" << CRPCUT_LOCAL_NAME(e).what();         \
+                })                                                      \
+    CATCH_BLOCK(..., {                                                  \
+        FAIL <<                                                         \
+          "ASSERT_TRUE(" #a ")\n"                                       \
+          "  caught ...";                                               \
+      })                                                                \
   } while(0)
 
 
@@ -2969,17 +2977,19 @@ extern crpcut::implementation::namespace_info current_namespace;
                                CRPCUT_LOCAL_NAME(os));                  \
         }                                                               \
     }                                                                   \
-    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
-      FAIL <<                                                           \
-        "ASSERT_FALSE(" #a ")\n"                                        \
-        "  caught std::exception\n"                                     \
-        "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
-    }                                                                   \
-    catch (...) {                                                       \
-      FAIL <<                                                           \
-        "ASSERT_FALSE(" #a ")\n"                                        \
-        "  caught ...";                                                 \
-    }                                                                   \
+    CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
+                {                                                       \
+                  FAIL <<                                               \
+                    "ASSERT_FALSE(" #a ")\n"                            \
+                    "  caught std::exception\n"                         \
+                    "  what()=" << CRPCUT_LOCAL_NAME(e).what();         \
+                })                                                      \
+      CATCH_BLOCK(...,                                                  \
+                  {                                                     \
+                    FAIL <<                                             \
+                      "ASSERT_FALSE(" #a ")\n"                          \
+                      "  caught ...";                                   \
+                  })                                                    \
   } while(0)
 
 #define ASSERT_EQ(lh, rh)  CRPCUT_BINARY_ASSERT(EQ, ==, lh, rh)
@@ -2994,7 +3004,7 @@ extern crpcut::implementation::namespace_info current_namespace;
 
 #define ASSERT_LE(lh, rh)  CRPCUT_BINARY_ASSERT(LE, <=, lh, rh)
 
-
+#ifndef CRPCUT_NO_EXCEPTION_SUPPORT
 #define ASSERT_THROW(expr, exc)                                         \
   do {                                                                  \
     try {                                                               \
@@ -3020,13 +3030,15 @@ extern crpcut::implementation::namespace_info current_namespace;
         "  caught ...";                                                 \
     }                                                                   \
   } while (0)
+#endif
 
+#ifndef CRPCUT_NO_EXCEPTION_SUPPORT
 #define ASSERT_NO_THROW(expr)                                           \
   do {                                                                  \
     try {                                                               \
       expr;                                                             \
     }                                                                   \
-    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
+    catch(std::exception &CRPCUT_LOCAL_NAME(e)) {                       \
       FAIL <<                                                           \
         "ASSERT_NO_THROW(" #expr ")\n"                                  \
         "  caught std::exception\n"                                     \
@@ -3038,7 +3050,7 @@ extern crpcut::implementation::namespace_info current_namespace;
         "  caught ...";                                                 \
     }                                                                   \
   } while (0)
-
+#endif
 
 
 #define ASSERT_PRED(pred, ...)                                          \
@@ -3057,19 +3069,21 @@ extern crpcut::implementation::namespace_info current_namespace;
                << CRPCUT_LOCAL_NAME(m);                                 \
         }                                                               \
     }                                                                   \
-    catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
-      FAIL << "ASSERT_PRED(" #pred                                      \
-           << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                    \
-           << #__VA_ARGS__ ")\n"                                        \
-           << "  caught std::exception\n"                               \
-        "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
-    }                                                                   \
-    catch (...) {                                                       \
-          FAIL << "ASSERT_PRED(" #pred                                  \
-               << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                \
-               << #__VA_ARGS__ ")\n"                                    \
-               << "  caught ...";                                       \
-    }                                                                   \
+    CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
+                {                                                       \
+                  FAIL << "ASSERT_PRED(" #pred                          \
+                       << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]        \
+                       << #__VA_ARGS__ ")\n"                            \
+                       << "  caught std::exception\n"                   \
+                    "  what()=" << CRPCUT_LOCAL_NAME(e).what();         \
+                }                                                       \
+                )                                                       \
+    CATCH_BLOCK(..., {                                                  \
+        FAIL << "ASSERT_PRED(" #pred                                    \
+             << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                  \
+             << #__VA_ARGS__ ")\n"                                      \
+             << "  caught ...";                                         \
+      })                                                                \
   } while (0)
 
 

@@ -1,3 +1,7 @@
+         * Fixed 2728096 - Support test programs compiled with
+           -fno-exceptions with gcc. No-exception support with other
+           compilers is still lacking.
+
          * Fixed numerous warnings (some were real bugs)
 
          * Fixed include path bug

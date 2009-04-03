@@ -56,6 +56,7 @@ TEST(should_fail_after_delay)
 
 TESTSUITE(asserts)
 {
+#ifndef CRPCUT_NO_EXCEPTION_SUPPORT
   TEST(should_succeed_assert_throw_with_correct_exception)
   {
     ASSERT_THROW(throw std::bad_alloc(), std::bad_alloc);
@@ -98,7 +99,7 @@ TESTSUITE(asserts)
   {
     ASSERT_NO_THROW(throw std::range_error("apa"));
   }
-
+  #endif
   TEST(should_succeed_on_assert_eq_with_fixture, fixture<3>)
   {
     ASSERT_EQ(num, 3);
