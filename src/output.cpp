@@ -86,7 +86,7 @@ namespace crpcut
       size_t bytes_written = 0;
       while (bytes_written < len)
         {
-          int rv = wrapped::write(fd, p, len);
+          ssize_t rv = wrapped::write(fd_, p, len);
           assert(rv >= 0);
           bytes_written += rv;
         }

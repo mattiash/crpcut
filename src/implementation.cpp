@@ -96,28 +96,28 @@ namespace crpcut {
 
     polltype poller;
 
-    void fdreader::set_fd(int fd_)
+    void fdreader::set_fd(int fd)
     {
-      assert(fd == 0);
+      assert(fd_ == 0);
       assert(reg != 0);
-      fd = fd_;
-      poller.add_fd(fd, this);
+      fd_ = fd;
+      poller.add_fd(fd_, this);
       reg->activate_reader();
     }
 
     void fdreader::unregister()
     {
-      assert(fd != 0);
+      assert(fd_ != 0);
       assert(reg != 0);
       reg->deactivate_reader();
-      poller.del_fd(fd);
-      fd = 0;
+      poller.del_fd(fd_);
+      fd_ = 0;
     }
 
     bool report_reader::do_read(int fd)
     {
       comm::type t;
-      int rv;
+      ssize_t rv;
       do {
         rv = wrapped::read(fd, &t, sizeof(t));
       } while (rv == -1 && errno == EINTR);
@@ -138,7 +138,7 @@ namespace crpcut {
         {
           assert(len == sizeof(reg->absolute_deadline_ms));
           assert(!reg->deadline_is_set());
-          unsigned ts;
+          clocks::monotonic::timestamp ts;
           char *p = static_cast<char*>(static_cast<void*>(&ts));
           while (bytes_read < len)
             {
@@ -292,11 +292,12 @@ namespace crpcut {
                                  msg);
     }
 
-    int test_case_registrator::ms_until_deadline() const
+    unsigned long test_case_registrator::ms_until_deadline() const
     {
-      unsigned now = clocks::monotonic::timestamp_ms_absolute();
-      int diff = absolute_deadline_ms - now;
-      return diff < 0 ? 0 : diff;
+      clocks::monotonic::timestamp now
+        = clocks::monotonic::timestamp_ms_absolute();
+      long diff = absolute_deadline_ms - now;
+      return diff < 0 ? 0UL : diff;
     }
 
     void test_case_registrator::clear_deadline()

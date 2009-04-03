@@ -306,9 +306,13 @@ namespace crpcut {
       template <typename T>
       T sym(const char *name)
       {
-        void *addr = ::dlsym(libp, name);
-        if (!addr) *(int*)(addr) = 0; // can't rely on abort() here
-        return reinterpret_cast<T>(addr);
+        union {       // I don't like silencing the warning this way,
+          T func;     // but it should be safe. *IF* the function pointer
+          void *addr; // can't be represented by void*, dlsym() can't
+        } dlr;        // exist either.
+        dlr.addr = ::dlsym(libp, name);
+        if (!dlr.addr) *(int*)(dlr.addr) = 0; // can't rely on abort() here
+        return dlr.func;
       }
       static loader& obj()
       {
@@ -936,7 +940,7 @@ namespace crpcut {
     namespace timeout {
       typedef enum { realtime, cputime } type;
 
-      template <type t, unsigned ms>
+      template <type t, unsigned long ms>
       class enforcer;
     }
 
@@ -1075,39 +1079,39 @@ namespace crpcut {
 
     namespace timeout {
 
-      template <type t, unsigned timeout_ms>
+      template <type t, unsigned long timeout_ms>
       class enforcer;
 
       class cputime_enforcer
       {
       protected:
-        cputime_enforcer(unsigned timeout_ms);
+        cputime_enforcer(unsigned long timeout_ms);
         ~cputime_enforcer();
       private:
 
-        unsigned duration_ms;
-        unsigned start_timestamp_ms;
+        unsigned long duration_ms;
+        unsigned long start_timestamp_ms;
       };
 
       class monotonic_enforcer
       {
       protected:
-        monotonic_enforcer(unsigned timeout_ms);
+        monotonic_enforcer(unsigned long timeout_ms);
         ~monotonic_enforcer();
       private:
 
-        unsigned duration_ms;
-        unsigned start_timestamp_ms;
+        unsigned long duration_ms;
+        unsigned long start_timestamp_ms;
       };
 
-      template <unsigned timeout_ms>
+      template <unsigned long timeout_ms>
       class enforcer<cputime, timeout_ms> : public cputime_enforcer
       {
       public:
         enforcer();
       };
 
-      template <unsigned timeout_ms>
+      template <unsigned long timeout_ms>
       class enforcer<realtime, timeout_ms> : public monotonic_enforcer
       {
       public:
@@ -1202,9 +1206,9 @@ namespace crpcut {
     {
       typedef std::basic_streambuf<charT, traits> parent;
     public:
-      oabuf(charT *begin, charT *end)
+      oabuf(charT *begin_, charT *end_)
       {
-        setp(begin, end);
+        setp(begin_, end_);
       }
       const charT *begin() const { return parent::pbase(); }
       const charT *end() const { return parent::pptr(); }
@@ -1214,13 +1218,13 @@ namespace crpcut {
     class basic_oastream : public std::basic_ostream<charT, traits>
     {
     public:
-      basic_oastream(charT *begin, charT *end)
-        : buf(begin, end)
+      basic_oastream(charT *begin_, charT *end_)
+        : buf(begin_, end_)
       {
         init(&buf);
       }
-      basic_oastream(charT *begin, size_t size)
-        : buf(begin, begin + size)
+      basic_oastream(charT *begin_, size_t size_)
+        : buf(begin_, begin_ + size_)
       {
         init(&buf);
       }
@@ -1304,12 +1308,12 @@ namespace crpcut {
       void unregister();
       virtual ~fdreader() {} // silence gcc, it's really not needed
     protected:
-      fdreader(test_case_registrator *r, int fd_ = 0);
-      void set_fd(int fd_);
+      fdreader(test_case_registrator *r, int fd = 0);
+      void set_fd(int fd);
       test_case_registrator *const reg;
     private:
       virtual bool do_read(int fd) = 0;
-      int fd;
+      int fd_;
     };
 
     template <comm::type t>
@@ -1350,7 +1354,7 @@ namespace crpcut {
       void manage_death();
       test_case_registrator *unlink();
       void kill();
-      int ms_until_deadline() const;
+      unsigned long ms_until_deadline() const;
       void clear_deadline();
       bool deadline_is_set() const;
       static bool timeout_compare(const test_case_registrator *lh,
@@ -1381,7 +1385,7 @@ namespace crpcut {
       bool                   death_note;
       bool                   deadline_set;
       pid_t                  pid_;
-      unsigned               absolute_deadline_ms;
+      unsigned long          absolute_deadline_ms;
       int                    dirnum;
       report_reader          rep_reader;
       reader<comm::stdout>   stdout_reader;
@@ -1397,10 +1401,10 @@ namespace crpcut {
   public:
     static const unsigned max_parallel = 8;
 
-    static unsigned run_test(int argc, char *argv[],
-                             std::ostream &os = std::cerr);
-    static unsigned run_test(int argc, const char *argv[],
-                             std::ostream &os = std::cerr);
+    static int run_test(int argc, char *argv[],
+                        std::ostream &os = std::cerr);
+    static int run_test(int argc, const char *argv[],
+                        std::ostream &os = std::cerr);
     static void introduce_name(pid_t pid, const char *name, size_t len);
     static void present(pid_t pid, comm::type t, test_phase phase,
                         size_t len, const char *buff);
@@ -1451,7 +1455,7 @@ namespace crpcut {
     void manage_children(unsigned max_pending_children);
     void start_test(implementation::test_case_registrator *i);
 
-    unsigned do_run(int argc, const char *argv[], std::ostream &os);
+    int do_run(int argc, const char *argv[], std::ostream &os);
     void do_present(pid_t pid, comm::type t, test_phase phase,
                     size_t len, const char *buff);
     void do_introduce_name(pid_t pid, const char *name, size_t len);
@@ -1500,7 +1504,7 @@ namespace crpcut {
       static char buff[1024];
       for (;;)
         {
-          int rv = wrapped::read(fd, buff, sizeof(buff));
+          ssize_t rv = wrapped::read(fd, buff, sizeof(buff));
           if (rv == 0) return false;
           if (rv == -1)
             {
@@ -1865,14 +1869,14 @@ namespace crpcut {
 
     namespace timeout {
 
-      template <unsigned timeout_ms>
+      template <unsigned long timeout_ms>
       inline
       enforcer<cputime, timeout_ms>::enforcer()
         : cputime_enforcer(timeout_ms)
       {
       }
 
-      template <unsigned timeout_ms>
+      template <unsigned long timeout_ms>
       inline
       enforcer<realtime, timeout_ms>::enforcer()
         : monotonic_enforcer(timeout_ms)
@@ -1918,10 +1922,10 @@ namespace crpcut {
     }
 
     inline void
-    reporter::set_fds(int read, int write)
+    reporter::set_fds(int rfd, int wfd)
     {
-      write_fd = write;
-      read_fd = read;
+      write_fd = wfd;
+      read_fd = rfd;
     }
 
     inline void
@@ -1946,9 +1950,9 @@ namespace crpcut {
       const char *p = static_cast<const char*>(static_cast<const void*>(&t));
       while (bytes_written < len)
         {
-          int rv = wrapped::write(write_fd,
-                                  p + bytes_written,
-                                  len - bytes_written);
+          ssize_t rv = wrapped::write(write_fd,
+                                      p + bytes_written,
+                                      len - bytes_written);
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) throw "write failed";
           bytes_written += rv;
@@ -1977,9 +1981,9 @@ namespace crpcut {
       char *p = static_cast<char*>(static_cast<void*>(&t));
       while (bytes_read < len)
         {
-          int rv = wrapped::read(read_fd,
-                                 p + bytes_read,
-                                 len - bytes_read);
+          ssize_t rv = wrapped::read(read_fd,
+                                     p + bytes_read,
+                                     len - bytes_read);
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) {
             throw "read failed";
@@ -2002,7 +2006,7 @@ namespace crpcut {
     inline bool
     fdreader::read()
     {
-      return do_read(fd);
+      return do_read(fd_);
     }
 
     inline test_case_registrator *
@@ -2014,17 +2018,17 @@ namespace crpcut {
     inline void
     fdreader::close()
     {
-      if (fd)
+      if (fd_)
         {
-          ::close(fd);
+          ::close(fd_);
         }
       unregister();
     }
 
     inline
-    fdreader::fdreader(test_case_registrator *r, int fd_)
+    fdreader::fdreader(test_case_registrator *r, int fd)
       : reg(r),
-        fd(fd_)
+        fd_(fd)
     {
     }
 
@@ -2107,7 +2111,7 @@ namespace crpcut {
       assert(lh->deadline_set);
       assert(rh->deadline_set);
 
-      int diff = lh->absolute_deadline_ms - rh->absolute_deadline_ms;
+      long diff = lh->absolute_deadline_ms - rh->absolute_deadline_ms;
       return diff >= 0;
     }
 
@@ -2185,13 +2189,13 @@ namespace crpcut {
     return b;
   }
 
-  inline unsigned
+  inline int
   test_case_factory::run_test(int argc, char *argv[], std::ostream &os)
   {
     return obj().do_run(argc, const_cast<const char**>(argv), os);
   }
 
-  inline unsigned
+  inline int
   test_case_factory::run_test(int argc, const char *argv[], std::ostream &os)
   {
     return obj().do_run(argc, argv, os);
@@ -3041,8 +3045,8 @@ extern crpcut::implementation::namespace_info current_namespace;
   do {                                                                  \
     static const char CRPCUT_LOCAL_NAME(sep)[][3] = { ", ", "" };       \
     try {                                                               \
-      std::string m;                                                    \
-      if (!crpcut::match_pred(m,                                        \
+      std::string CRPCUT_LOCAL_NAME(m);                                 \
+      if (!crpcut::match_pred(CRPCUT_LOCAL_NAME(m),                     \
                               #pred,                                    \
                               pred,                                     \
                               crpcut::datatypes::params(__VA_ARGS__)))  \
@@ -3050,7 +3054,7 @@ extern crpcut::implementation::namespace_info current_namespace;
           FAIL << "ASSERT_PRED(" #pred                                  \
                << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                \
                << #__VA_ARGS__ ")\n"                                    \
-               << m;                                                    \
+               << CRPCUT_LOCAL_NAME(m);                                 \
         }                                                               \
     }                                                                   \
     catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \

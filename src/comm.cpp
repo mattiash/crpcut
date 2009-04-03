@@ -52,9 +52,9 @@ namespace crpcut {
       size_t bytes_written = 0;
       while (bytes_written < len)
         {
-          int rv = wrapped::write(write_fd,
-                                  p + bytes_written,
-                                  len - bytes_written);
+          ssize_t rv = wrapped::write(write_fd,
+                                      p + bytes_written,
+                                      len - bytes_written);
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) throw "report failed";
           bytes_written += rv;

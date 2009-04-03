@@ -146,12 +146,12 @@ namespace crpcut {
   }
 
   template <typename T, size_t N>
-  inline void poll<T, N>::add_fd(int fd, T* data)
+  inline void poll<T, N>::add_fd(int fd, T* data_)
   {
     epoll_event ev;
     ev.events = EPOLLIN | EPOLLHUP;
     ev.data.u64 = 0; // Unnecessary, but silences valgrind msg about uninit mem
-    ev.data.ptr = data;
+    ev.data.ptr = data_;
     int rv = wrapped::epoll_ctl(this->data.epoll_fd, EPOLL_CTL_ADD, fd, &ev);
     assert(rv == 0);
     (void)rv; // silence warning

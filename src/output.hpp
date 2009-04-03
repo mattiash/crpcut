@@ -48,7 +48,7 @@ namespace crpcut
       virtual void blocked_test(const implementation::test_case_registrator *)  = 0;
       virtual ~formatter() {} // keeps compilers happy. Not needed for this use.
     protected:
-      formatter(int fd_) : fd(fd_) {}
+      formatter(int fd) : fd_(fd) {}
       size_t write(const std::string &s, type t = verbatim) const
       {
         return write(s.c_str(), s.size(), t);
@@ -61,7 +61,7 @@ namespace crpcut
       size_t write(const char *str, size_t len, type t = verbatim) const;
     private:
       size_t do_write(const char *p, size_t len) const;
-      int fd;
+      int fd_;
     };
 
 

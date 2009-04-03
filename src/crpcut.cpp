@@ -113,34 +113,34 @@ namespace crpcut {
     int pipe = presenter_pipe;
     for (;;)
       {
-        int rv = wrapped::write(pipe, &pid, sizeof(pid));
+        ssize_t rv = wrapped::write(pipe, &pid, sizeof(pid));
         if (rv == sizeof(pid)) break;
         assert (rv == -1 && errno == EINTR);
       }
     const comm::type t = comm::begin_test;
     for (;;)
       {
-        int rv = wrapped::write(pipe, &t, sizeof(t));
+        ssize_t rv = wrapped::write(pipe, &t, sizeof(t));
         if (rv == sizeof(t)) break;
         assert(rv == -1 && errno == EINTR);
       }
     const test_phase p = running;
     for (;;)
       {
-        int rv = wrapped::write(pipe, &p, sizeof(p));
+        ssize_t rv = wrapped::write(pipe, &p, sizeof(p));
         if (rv == sizeof(p)) break;
         assert(rv == -1 && errno == EINTR);
       }
 
     for (;;)
       {
-        int rv = wrapped::write(pipe, &len, sizeof(len));
+        ssize_t rv = wrapped::write(pipe, &len, sizeof(len));
         if (rv == sizeof(len)) break;
         assert(rv == -1 && errno == EINTR);
       }
     for (;;)
       {
-        int rv = wrapped::write(pipe, name, len);
+        ssize_t rv = wrapped::write(pipe, name, len);
         if (size_t(rv) == len) break;
         assert(rv == -1 && errno == EINTR);
       }
@@ -153,7 +153,7 @@ namespace crpcut {
                                      const char *buff)
   {
     int pipe = presenter_pipe;
-    int rv = wrapped::write(pipe, &pid, sizeof(pid));
+    ssize_t rv = wrapped::write(pipe, &pid, sizeof(pid));
     assert(rv == sizeof(pid));
     rv = wrapped::write(pipe, &t, sizeof(t));
     assert(rv == sizeof(t));
@@ -211,10 +211,10 @@ namespace crpcut {
     {
     public:
       typedef enum { release_ownership, keep_ownership } purpose;
-      pipe_pair(const char *purpose)
+      pipe_pair(const char *purpose_msg)
       {
         int rv = wrapped::pipe(fds);
-        if (rv < 0) throw datatypes::posix_error(errno, purpose);
+        if (rv < 0) throw datatypes::posix_error(errno, purpose_msg);
       }
       ~pipe_pair()
       {
@@ -264,9 +264,9 @@ namespace crpcut {
       for (;;)
         {
           pid_t test_case_id;
-          int rv = wrapped::read(presenter_pipe,
-                                &test_case_id,
-                                sizeof(test_case_id));
+          ssize_t rv = wrapped::read(presenter_pipe,
+                                     &test_case_id,
+                                     sizeof(test_case_id));
           if (rv == 0)
             {
               assert(messages.size() == 0);
@@ -293,12 +293,12 @@ namespace crpcut {
                 // introduction to test case, name follows
 
                 size_t len = 0;
-                char *p = static_cast<char*>(static_cast<void*>(&len));
+                char *ptr = static_cast<char*>(static_cast<void*>(&len));
                 size_t bytes_read = 0;
                 while (bytes_read < sizeof(len))
                   {
                     rv = wrapped::read(presenter_pipe,
-                                      p + bytes_read,
+                                      ptr + bytes_read,
                                       sizeof(len) - bytes_read);
                     assert(rv > 0);
                     bytes_read += rv;
@@ -341,7 +341,7 @@ namespace crpcut {
                             const char *wd
                               = test_case_factory::get_working_dir();
                             const size_t dlen = wrapped::strlen(wd);
-                            size_t len = dlen;
+                            len = dlen;
                             len+= 1;
                             len+= s.name.size();
                             char *dn = static_cast<char*>(alloca(len));
@@ -431,7 +431,7 @@ namespace crpcut {
         using namespace implementation;
 
         int timeout_ms = deadlines.size()
-          ? deadlines.front()->ms_until_deadline()
+          ? int(deadlines.front()->ms_until_deadline())
           : -1;
         polltype::descriptor desc = poller.wait(timeout_ms);
 
@@ -555,8 +555,8 @@ namespace crpcut {
     return 0;
   }
 
-  unsigned test_case_factory::do_run(int argc, const char *argv_[],
-                                     std::ostream &err_os)
+  int test_case_factory::do_run(int argc, const char *argv_[],
+                                std::ostream &err_os)
   {
     argv = argv_;
     const char *working_dir = 0;

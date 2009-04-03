@@ -70,7 +70,7 @@ namespace crpcut {
 
     namespace timeout {
 
-      cputime_enforcer::cputime_enforcer(unsigned timeout_ms)
+      cputime_enforcer::cputime_enforcer(unsigned long timeout_ms)
         : duration_ms(timeout_ms),
           start_timestamp_ms(clocks::cputime::timestamp_ms_absolute())
       {
@@ -80,8 +80,9 @@ namespace crpcut {
 
       cputime_enforcer::~cputime_enforcer()
       {
-        unsigned now = clocks::cputime::timestamp_ms_absolute();
-        int diff = now - start_timestamp_ms;
+        clocks::cputime::timestamp now
+          = clocks::cputime::timestamp_ms_absolute();
+        long diff = now - start_timestamp_ms;
         if  (diff > int(duration_ms))
           {
             stream::toastream<128> os;
@@ -92,13 +93,13 @@ namespace crpcut {
           }
       }
 
-      monotonic_enforcer::monotonic_enforcer(unsigned timeout_ms)
+      monotonic_enforcer::monotonic_enforcer(unsigned long timeout_ms)
         : duration_ms(timeout_ms),
           start_timestamp_ms(clocks::monotonic::timestamp_ms_absolute())
       {
 
         // calculated deadline + 1 sec should give plenty of slack
-        unsigned deadline = duration_ms + 1000;
+        clocks::monotonic::timestamp deadline = duration_ms + 1000;
         if (test_case_factory::tests_as_child_procs())
           {
             report(comm::set_timeout, deadline);
@@ -107,12 +108,13 @@ namespace crpcut {
 
       monotonic_enforcer::~monotonic_enforcer()
       {
-        unsigned now = clocks::monotonic::timestamp_ms_absolute();
+        clocks::monotonic::timestamp now
+          = clocks::monotonic::timestamp_ms_absolute();
         if (test_case_factory::tests_as_child_procs())
           {
             report(comm::cancel_timeout, 0, 0);
           }
-        int diff = now - start_timestamp_ms;
+        long diff = now - start_timestamp_ms;
         if (diff > int(duration_ms))
           {
             stream::toastream<128> os;

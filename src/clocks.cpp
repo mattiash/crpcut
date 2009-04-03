@@ -64,11 +64,11 @@ namespace {
     mach_timebase_info(&info);
     return info;
   }
-  unsigned get_mach_high_res_timestamp()
+  unsigned long get_mach_high_res_timestamp()
   {
     static mach_timebase_info_data_t conv = getconv();
     uint64_t ts_ms = mach_absolute_time()/1000000*conv.numer/conv.denom;
-    return static_cast<unsigned>(ts_ms);
+    return static_cast<unsigned long>(ts_ms);
   }
 }
 
@@ -90,7 +90,7 @@ namespace clocks {
 #if defined(HAVE_CLOCK_GETTIME)&& defined(CLOCK_MONOTONIC)
 namespace {
 
-  unsigned get_clock_gettime_monotonic_timestamp()
+  unsigned long get_clock_gettime_monotonic_timestamp()
   {
     struct timespec ts;
     int rv = crpcut::wrapped::clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -119,7 +119,7 @@ namespace clocks {
 
 #if defined(HAVE_CLOCK_GETTIME)&& defined(CLOCK_PROCESS_CPUTIME_ID)
 namespace {
-  unsigned get_clock_gettime_cputime_timestamp()
+  unsigned long get_clock_gettime_cputime_timestamp()
   {
     struct timespec ts;
     int rv = crpcut::wrapped::clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
@@ -155,7 +155,7 @@ namespace crpcut {
 
 }
 namespace {
-  unsigned get_itimer_real_timestamp()
+  unsigned long get_itimer_real_timestamp()
   {
     static pid_t initialized = 0;
     pid_t pid = crpcut::wrapped::getpid();
@@ -169,7 +169,7 @@ namespace {
     struct itimerval v;
     int rv = crpcut::wrapped::getitimer(ITIMER_REAL, &v);
     assert(rv == 0);
-    return (99999 - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
+    return (99999UL - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
   }
 }
 
@@ -193,7 +193,7 @@ namespace clocks {
 
 #if defined (HAVE_ITIMER) && defined(ITIMER_VIRTUAL)
 namespace {
-  unsigned get_itimer_virtual_timestamp()
+  unsigned long get_itimer_virtual_timestamp()
   {
     static bool initialized = false;
     if (!initialized)
@@ -206,7 +206,7 @@ namespace {
     struct itimerval v;
     int rv = crpcut::wrapped::getitimer(ITIMER_VIRTUAL, &v);
     assert(rv == 0);
-    return (99999 - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
+    return (99999UL - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
   }
 }
 
@@ -229,7 +229,7 @@ namespace clocks {
 
 #if defined (HAVE_ITIMER) && defined(ITIMER_PROF)
 namespace {
-  unsigned get_itimer_prof_timestamp()
+  unsigned long get_itimer_prof_timestamp()
   {
     static bool initialized = false;
     if (!initialized)
@@ -272,7 +272,7 @@ namespace crpcut {
   }
 }
 namespace {
-  unsigned get_gettimeofday_timestamp()
+  unsigned long get_gettimeofday_timestamp()
   {
     struct timeval tv;
     int rv = crpcut::wrapped::gettimeofday(&tv, 0);

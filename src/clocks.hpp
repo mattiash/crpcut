@@ -30,9 +30,10 @@ namespace clocks {
   class monotonic
   {
   public:
-    static unsigned timestamp_ms_absolute() { return func(); }
+    typedef unsigned long timestamp;
+    static timestamp timestamp_ms_absolute() { return func(); }
     static const char *get_name() { return name; }
-    typedef unsigned (*timestamp_func)();
+    typedef timestamp (*timestamp_func)();
   private:
     static timestamp_func func;
     static const char    *name;
@@ -53,9 +54,10 @@ namespace clocks {
   class cputime
   {
   public:
-    static unsigned timestamp_ms_absolute() { return func(); }
+    typedef unsigned long timestamp;
+    static timestamp timestamp_ms_absolute() { return func(); }
     static const char *get_name() { return name; }
-    typedef unsigned (*timestamp_func)();
+    typedef timestamp (*timestamp_func)();
   private:
     static timestamp_func func;
     static const char    *name;
