@@ -1,4 +1,4 @@
-<doc title="crpcut - The Compartmented Robust Posix C++ Unit Tester">
+<doc title="crpcut-0.6.2 - The Compartmented Robust Posix C++ Unit Tester">
 <abstract>
 crpcut (pronounced &quot;crap cut&quot;) is the
 Compartmented Robust Posix C++ Unit Tester
@@ -69,7 +69,7 @@ you.
 </chapter>
 
 <chapter title="crpcut links">
-The current version of crpcut is 0.6.1
+The current version of crpcut is 0.6.2
 <p/>
 <li>Latest version of <link url="http://crpcut.sourceforge.net">this document</link></li>
 <li>Sourceforge <link url="http://www.sourceforge.net/projects/crpcut">project page</link></li>

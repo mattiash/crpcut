@@ -1,3 +1,5 @@
+2009-04-06 0.6.2
+
          * Fixed ASSERT_* for non copyable objects
 
          * Fixed ASSERT_EQ for pointer values
