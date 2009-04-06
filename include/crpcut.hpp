@@ -385,6 +385,12 @@ namespace crpcut {
     {
       static const bool value = true;
     };
+
+    template <typename T>
+    struct is_output_streamable<T*>
+    {
+      static const bool value = true;
+    };
   } // namespace stream_checker
 
 
