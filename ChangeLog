@@ -1,3 +1,7 @@
+         * Fixed ASSERT_* for non copyable objects
+
+         * Fixed ASSERT_EQ for pointer values
+
          * Fixed hex dump formatting
 
          * Fixed printing of pointer values

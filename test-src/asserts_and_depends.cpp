@@ -195,6 +195,7 @@ TESTSUITE(asserts)
       return data ? reinterpret_cast<const nieu*>(&data) : 0;
     }
   private:
+    unstreamable(const unstreamable&);
     T data;
   };
 
@@ -202,6 +203,62 @@ TESTSUITE(asserts)
   {
     unstreamable<int> i(3);
     ASSERT_GT(i, num);
+  }
+
+  TEST(should_succeed_pointer_eq_0)
+  {
+    int *pi = 0;
+    ASSERT_EQ(pi, 0);
+  }
+  TEST(should_succeed_0_eq_pointer)
+  {
+    int *pi = 0;
+    ASSERT_EQ(0, pi);
+  }
+
+  TEST(should_succeed_void_ptr_eq_ptr)
+  {
+    int i;
+    int *pi = &i;
+    void *pv = &i;
+    ASSERT_EQ(pv, pi);
+  }
+
+  TEST(should_succeed_ptr_eq_void_ptr)
+  {
+    int i;
+    int *pi = &i;
+    void *pv = &i;
+    ASSERT_EQ(pi, pv);
+  }
+
+  TEST(should_fail_pointer_eq_0)
+  {
+    int i;
+    int *pi = &i;
+    ASSERT_EQ(pi, 0);
+  }
+  TEST(should_fail_0_eq_pointer)
+  {
+    int i;
+    int *pi = &i;
+    ASSERT_EQ(0, pi);
+  }
+
+  TEST(should_fail_void_ptr_eq_ptr)
+  {
+    int i;
+    int *pi = &i;
+    void *pv = 0;
+    ASSERT_EQ(pv, pi);
+  }
+
+  TEST(should_fail_ptr_eq_void_ptr)
+  {
+    int i;
+    int *pi = &i;
+    void *pv = 0;
+    ASSERT_EQ(pi, pv);
   }
 
 }

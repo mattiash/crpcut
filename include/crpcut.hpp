@@ -907,9 +907,6 @@ namespace crpcut {
       typedef datatypes::tlist<> type;
     };
 
-    template <typename T>
-    const typename std::remove_cv<typename std::remove_reference<T>::type>::type&
-    gettype();
 
 
 
@@ -1612,10 +1609,6 @@ namespace crpcut {
       comm::report(comm::exit_fail, os.size(), os.begin());
     }
 
-  } // namespace implementation
-
-
-  namespace implementation {
     template <typename T,
               bool b = stream_checker::is_output_streamable<T>::value>
     struct conditional_streamer
@@ -2843,10 +2836,20 @@ extern crpcut::implementation::namespace_info current_namespace;
 #define CRPCUT_STRINGIZE(a) #a
 #define CRPCUT_STRINGIZE_(a) CRPCUT_STRINGIZE(a)
 
+#ifdef decltype
+#define CRPCUT_REFTYPE(expr) \
+  const decltype(expr) &
+#else
+namespace crpcut {
+  namespace datatypes {
+    template <typename T>
+    const typename std::remove_cv<typename std::remove_reference<T>::type>::type &gettype();
+
+  }
+}
 #define CRPCUT_REFTYPE(expr) \
   decltype(crpcut::datatypes::gettype<decltype(expr)>())
-
-
+#endif
 #define NO_CORE_FILE \
   protected virtual crpcut::policies::no_core_file
 
@@ -2891,13 +2894,130 @@ extern crpcut::implementation::namespace_info current_namespace;
     f_ ## name param;                                                   \
   }
 
+namespace crpcut {
+  template <bool l_is_null, bool r_is_null>
+  class comparator;
 
-#define CRPCUT_BINARY_ASSERT(name, oper, lh, rh)                        \
+  template <>
+  class comparator<false, false>
+  {
+  public:
+    template <typename T1, typename T2>
+    static bool EQ(T1 t1, T2 t2) { return t1 == t2; }
+
+    template <typename T1, typename T2>
+    static bool NE(T1 t1, T2 t2) { return t1 != t2; }
+
+    template <typename T1, typename T2>
+    static bool GT(T1 t1, T2 t2) { return t1 > t2; }
+
+    template <typename T1, typename T2>
+    static bool GE(T1 t1, T2 t2) { return t1 >= t2; }
+
+    template <typename T1, typename T2>
+    static bool LE(T1 t1, T2 t2) { return t1 <= t2; }
+
+    template <typename T1, typename T2>
+    static bool LT(T1 t1, T2 t2) { return t1 < t2; }
+  };
+
+  template <>
+  class comparator<true, false>
+  {
+  public:
+    template <typename T1, typename T2>
+    static bool EQ(T1, T2 t2) { return 0 == t2; }
+
+    template <typename T1, typename T2>
+    static bool NE(T1, T2 t2) { return 0 != t2; }
+
+    template <typename T1, typename T2>
+    static bool LT(T1, T2 t2) { return 0 < t2; }
+
+    template <typename T1, typename T2>
+    static bool LE(T1, T2 t2) { return 0 <= t2; }
+
+    template <typename T1, typename T2>
+    static bool GT(T1, T2 t2) { return 0 > t2; }
+
+    template <typename T1, typename T2>
+    static bool GE(T1, T2 t2) { return 0 >= t2; }
+  };
+
+  template <>
+  class comparator<false, true>
+  {
+  public:
+    template <typename T1, typename T2>
+    static bool EQ(T1 t1, T2) { return t1 == 0; }
+
+    template <typename T1, typename T2>
+    static bool NE(T1 t1, T2) { return t1 != 0; }
+
+    template <typename T1, typename T2>
+    static bool LT(T1 t1, T2) { return t1 < 0; }
+
+    template <typename T1, typename T2>
+    static bool LE(T1 t1, T2) { return t1 <= 0; }
+
+    template <typename T1, typename T2>
+    static bool GE(T1 t1, T2) { return t1 >= 0; }
+
+    template <typename T1, typename T2>
+    static bool GT(T1 t1, T2) { return t1 > 0; }
+  };
+
+  template <>
+  class comparator<true, true>
+  {
+  public:
+    template <typename T1, typename T2>
+    static bool EQ(T1, T2) { return true; }
+
+    template <typename T1, typename T2>
+    static bool NE(T1, T2) { return false; }
+
+    template <typename T1, typename T2>
+    static bool LT(T1, T2) { return false; }
+
+    template <typename T1, typename T2>
+    static bool LE(T1, T2) { return true; }
+
+    template <typename T1, typename T2>
+    static bool GE(T1, T2) { return true; }
+
+    template <typename T1, typename T2>
+    static bool GT(T1, T2) { return false; }
+  };
+
+  class null_cmp
+  {
+    class secret;
+  public:
+    static char func(secret*);
+    static char (&func(...))[2];
+    template <typename T>
+    static char (&func(T*))[2];
+  };
+
+}
+
+#define CRPCUT_IS_ZERO_LIT(x) (sizeof(crpcut::null_cmp::func(x)) == 1)
+
+
+
+#define CRPCUT_BINARY_ASSERT(name, lh, rh)                              \
   do {                                                                  \
     try {                                                               \
+      typedef crpcut::comparator<CRPCUT_IS_ZERO_LIT(lh), CRPCUT_IS_ZERO_LIT(rh)> \
+        CRPCUT_LOCAL_NAME(comp);                                        \
       CRPCUT_REFTYPE((lh)) CRPCUT_LOCAL_NAME(rl) = lh;                  \
       CRPCUT_REFTYPE((rh)) CRPCUT_LOCAL_NAME(rr) = rh;                  \
-      if (!(CRPCUT_LOCAL_NAME(rl) oper CRPCUT_LOCAL_NAME(rr)))          \
+      bool (*CRPCUT_LOCAL_NAME(f))(CRPCUT_REFTYPE((lh)),                \
+                                   CRPCUT_REFTYPE((rh)))                \
+        = &CRPCUT_LOCAL_NAME(comp)::name;                               \
+      if (!(CRPCUT_LOCAL_NAME(f)(CRPCUT_LOCAL_NAME(rl),                 \
+                                 CRPCUT_LOCAL_NAME(rr))))               \
         {                                                               \
           std::ostringstream CRPCUT_LOCAL_NAME(os);                     \
           CRPCUT_LOCAL_NAME(os) <<                                      \
@@ -2998,17 +3118,17 @@ extern crpcut::implementation::namespace_info current_namespace;
                   })                                                    \
   } while(0)
 
-#define ASSERT_EQ(lh, rh)  CRPCUT_BINARY_ASSERT(EQ, ==, lh, rh)
+#define ASSERT_EQ(lh, rh)  CRPCUT_BINARY_ASSERT(EQ, lh, rh)
 
-#define ASSERT_NE(lh, rh)  CRPCUT_BINARY_ASSERT(NE, !=, lh, rh)
+#define ASSERT_NE(lh, rh)  CRPCUT_BINARY_ASSERT(NE, lh, rh)
 
-#define ASSERT_GE(lh, rh)  CRPCUT_BINARY_ASSERT(GE, >=, lh, rh)
+#define ASSERT_GE(lh, rh)  CRPCUT_BINARY_ASSERT(GE, lh, rh)
 
-#define ASSERT_GT(lh, rh)  CRPCUT_BINARY_ASSERT(GT, >, lh, rh)
+#define ASSERT_GT(lh, rh)  CRPCUT_BINARY_ASSERT(GT, lh, rh)
 
-#define ASSERT_LT(lh, rh)  CRPCUT_BINARY_ASSERT(LT, <, lh, rh)
+#define ASSERT_LT(lh, rh)  CRPCUT_BINARY_ASSERT(LT, lh, rh)
 
-#define ASSERT_LE(lh, rh)  CRPCUT_BINARY_ASSERT(LE, <=, lh, rh)
+#define ASSERT_LE(lh, rh)  CRPCUT_BINARY_ASSERT(LE, lh, rh)
 
 #ifndef CRPCUT_NO_EXCEPTION_SUPPORT
 #define ASSERT_THROW(expr, exc)                                         \
