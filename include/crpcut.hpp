@@ -1639,7 +1639,7 @@ namespace crpcut {
         for (size_t n = 0; n < sizeof(T); ++n)
           {
             if (n > 0U && ((n & 1) == 0)) os << ' ';
-            os << std::hex << std::setw(2) << static_cast<int>(p[n]);
+            os << std::hex << std::setw(2) << (static_cast<unsigned>(p[n]) & 0xff);
           }
         os.flags(old_flags);
         os.fill(old_fill);

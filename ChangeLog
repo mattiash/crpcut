@@ -1,3 +1,5 @@
+         * Fixed hex dump formatting
+
          * Fixed printing of pointer values
 
          * Fixed 2728096 - Support test programs compiled with
