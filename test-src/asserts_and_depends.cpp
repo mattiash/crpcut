@@ -261,6 +261,20 @@ TESTSUITE(asserts)
     ASSERT_EQ(pi, pv);
   }
 
+  struct local
+  {
+    static const int apa = 1;
+  };
+  TEST(should_succeed_class_const_int_member)
+  {
+    ASSERT_EQ(local::apa, 1);
+  }
+
+  TEST(should_succeed_0_eq_pointer_to_member)
+  {
+    int local::*p = 0;
+    ASSERT_EQ(0, p);
+  }
 }
 
 DISABLED_TEST(should_never_run, fixture<3>)

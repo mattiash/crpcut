@@ -2850,6 +2850,7 @@ namespace crpcut {
 #define CRPCUT_REFTYPE(expr) \
   decltype(crpcut::datatypes::gettype<decltype(expr)>())
 #endif
+
 #define NO_CORE_FILE \
   protected virtual crpcut::policies::no_core_file
 
@@ -2895,145 +2896,265 @@ namespace crpcut {
   }
 
 namespace crpcut {
-  template <bool l_is_null, bool r_is_null>
-  class comparator;
+  namespace datatypes {
+    class null_cmp
+    {
+      class secret;
+    public:
+      static char func(secret*);
+      static char (&func(...))[2];
+      template <typename T>
+      static char (&func(T*))[2];
+    };
 
-  template <>
-  class comparator<false, false>
-  {
-  public:
-    template <typename T1, typename T2>
-    static bool EQ(T1 t1, T2 t2) { return t1 == t2; }
-
-    template <typename T1, typename T2>
-    static bool NE(T1 t1, T2 t2) { return t1 != t2; }
-
-    template <typename T1, typename T2>
-    static bool GT(T1 t1, T2 t2) { return t1 > t2; }
-
-    template <typename T1, typename T2>
-    static bool GE(T1 t1, T2 t2) { return t1 >= t2; }
-
-    template <typename T1, typename T2>
-    static bool LE(T1 t1, T2 t2) { return t1 <= t2; }
-
-    template <typename T1, typename T2>
-    static bool LT(T1 t1, T2 t2) { return t1 < t2; }
-  };
-
-  template <>
-  class comparator<true, false>
-  {
-  public:
-    template <typename T1, typename T2>
-    static bool EQ(T1, T2 t2) { return 0 == t2; }
-
-    template <typename T1, typename T2>
-    static bool NE(T1, T2 t2) { return 0 != t2; }
-
-    template <typename T1, typename T2>
-    static bool LT(T1, T2 t2) { return 0 < t2; }
-
-    template <typename T1, typename T2>
-    static bool LE(T1, T2 t2) { return 0 <= t2; }
-
-    template <typename T1, typename T2>
-    static bool GT(T1, T2 t2) { return 0 > t2; }
-
-    template <typename T1, typename T2>
-    static bool GE(T1, T2 t2) { return 0 >= t2; }
-  };
-
-  template <>
-  class comparator<false, true>
-  {
-  public:
-    template <typename T1, typename T2>
-    static bool EQ(T1 t1, T2) { return t1 == 0; }
-
-    template <typename T1, typename T2>
-    static bool NE(T1 t1, T2) { return t1 != 0; }
-
-    template <typename T1, typename T2>
-    static bool LT(T1 t1, T2) { return t1 < 0; }
-
-    template <typename T1, typename T2>
-    static bool LE(T1 t1, T2) { return t1 <= 0; }
-
-    template <typename T1, typename T2>
-    static bool GE(T1 t1, T2) { return t1 >= 0; }
-
-    template <typename T1, typename T2>
-    static bool GT(T1 t1, T2) { return t1 > 0; }
-  };
-
-  template <>
-  class comparator<true, true>
-  {
-  public:
-    template <typename T1, typename T2>
-    static bool EQ(T1, T2) { return true; }
-
-    template <typename T1, typename T2>
-    static bool NE(T1, T2) { return false; }
-
-    template <typename T1, typename T2>
-    static bool LT(T1, T2) { return false; }
-
-    template <typename T1, typename T2>
-    static bool LE(T1, T2) { return true; }
-
-    template <typename T1, typename T2>
-    static bool GE(T1, T2) { return true; }
-
-    template <typename T1, typename T2>
-    static bool GT(T1, T2) { return false; }
-  };
-
-  class null_cmp
-  {
-    class secret;
-  public:
-    static char func(secret*);
-    static char (&func(...))[2];
     template <typename T>
-    static char (&func(T*))[2];
-  };
+    class is_struct // or class or union
+    {
+      template <typename U>
+      static char check_member(double U::*);
+      template <typename U>
+      static char (&check_member(...))[2];
+    public:
+      static const bool value = (sizeof(check_member<T>(0)) == 1);
+    };
+    template <bool b, typename T1, typename T2>
+    struct if_else
+    {
+      typedef T1 type;
+    };
 
-}
+    template <typename T1, typename T2>
+    struct if_else<false, T1, T2>
+    {
+      typedef T2 type;
+    };
 
-#define CRPCUT_IS_ZERO_LIT(x) (sizeof(crpcut::null_cmp::func(x)) == 1)
+    template <typename T>
+    struct param_traits
+    {
+      typedef typename if_else<is_struct<T>::value, const  T&, T>::type type;
+    };
 
+    template <typename T>
+    struct param_traits<const T>
+    {
+      typedef typename param_traits<T>::type type;
+    };
+
+    template <typename T>
+    struct param_traits<volatile T>
+    {
+      typedef typename param_traits<T>::type type;
+    };
+
+    template <typename T, size_t N>
+    struct param_traits<T[N]>
+    {
+      typedef T *type;
+    };
+
+    template <typename T, size_t N>
+    struct param_traits<const T[N]>
+    {
+      typedef const T *type;
+    };
+
+    template <typename T, size_t N>
+    struct param_traits<volatile T[N]>
+    {
+      typedef volatile T *type;
+    };
+
+    template <typename T, size_t N>
+    struct param_traits<const volatile T[N]>
+    {
+      typedef volatile const T *type;
+    };
+
+    template <typename T>
+    struct param_traits<T&>
+    {
+      typedef typename param_traits<T>::type type;
+    };
+
+    class tester_base
+    {
+    protected:
+      tester_base(const char *loc, const char *ops)
+        : location(loc), op(ops)
+      {
+      }
+      template <typename T1, typename T2>
+      void verify(bool b, T1 v1, const char *n1, T2 v2, const char *n2) const
+      {
+        if (!b)
+          {
+            std::ostringstream os;
+            os << location
+               << "\nASSERT_" << op << "(" << n1 << ", " << n2 << ")\n";
+            stream_param(os, "\n  where ", n1, v1);
+            stream_param(os, "\n        ", n2, v2);
+            comm::report(comm::exit_fail, os);
+          }
+      }
+    private:
+      const char *location;
+      const char *op;
+    };
+
+    template <typename T1, typename T2>
+    class tester_t : tester_base
+    {
+      typedef typename param_traits<T1>::type type1;
+      typedef typename param_traits<T2>::type type2;
+    public:
+      tester_t(const char *loc, const char *ops) : tester_base(loc, ops) {}
+      void EQ(type1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<type1, type2>(v1 == v2, v1, n1, v2, n2);
+      }
+      void NE(type1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<type1, type2>(v1 != v2, v1, n1, v2, n2);
+      }
+      void GT(type1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<type1, type2>(v1 > v2, v1, n1, v2, n2);
+      }
+      void GE(type1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<type1, type2>(v1 >= v2, v1, n1, v2, n2);
+      }
+      void LT(type1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<type1, type2>(v1 < v2, v1, n1, v2, n2);
+      }
+      void LE(type1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<type1, type2>(v1 <= v2, v1, n1, v2, n2);
+      }
+    };
+
+    template <typename T1>
+    class tester_t<T1, void> : tester_base
+    {
+      typedef typename param_traits<T1>::type type1;
+    public:
+      tester_t(const char *loc, const char *ops) : tester_base(loc, ops) {}
+      template <typename T2>
+      void EQ(type1 v1, const char *n1, T2 v2, const char *n2) const
+      {
+        verify<type1, T2>(v1 == 0, v1, n1, v2, n2);
+      }
+      template <typename T2>
+      void NE(type1 v1, const char *n1, T2 v2, const char *n2) const
+      {
+        verify<type1, T2>(v1 != 0, v1, n1, v2, n2);
+      }
+      template <typename T2>
+      void GT(type1 v1, const char *n1, T2 v2, const char *n2) const
+      {
+        verify<type1, T2>(v1 > 0, v1, n1, v2, n2);
+      }
+      template <typename T2>
+      void GE(type1 v1, const char *n1, T2 v2, const char *n2) const
+      {
+        verify<type1, T2>(v1 >= 0, v1, n1, v2, n2);
+      }
+      template <typename T2>
+      void LT(type1 v1, const char *n1, T2 v2, const char *n2) const
+      {
+        verify<type1, T2>(v1 < 0, v1, n1, v2, n2);
+      }
+      template <typename T2>
+      void LE(type1 v1, const char *n1, T2 v2, const char *n2) const
+      {
+        verify<type1, T2>(v1 <= 0, v1, n1, v2, n2);
+      }
+    };
+
+    template <typename T2>
+    class tester_t<void, T2> : tester_base
+    {
+      typedef typename param_traits<T2>::type type2;
+    public:
+      tester_t(const char *loc, const char *ops) : tester_base(loc, ops) {}
+      template <typename T1>
+      void EQ(T1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<T1, type2>(0 == v2, v1, n1, v2, n2);
+      }
+      template <typename T1>
+      void NE(T1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<T1, type2>(0 != v2, v1, n1, v2, n2);
+      }
+      template <typename T1>
+      void GT(T1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<T1, type2>(0 > v2, v1, n1, v2, n2);
+      }
+      template <typename T1>
+      void GE(T1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<T1, type2>(0 >= v2, v1, n1, v2, n2);
+      }
+      template <typename T1>
+      void LT(T1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<T1, type2>(0 < v2, v1, n1, v2, n2);
+      }
+      template <typename T1>
+      void LE(T1 v1, const char *n1, type2 v2, const char *n2) const
+      {
+        verify<T1, type2>(0 <= v2, v1, n1, v2, n2);
+      }
+    };
+
+    template <>
+    class tester_t<void, void> /* pretty bizarre */ : tester_base
+    {
+    public:
+      void EQ(int, const char*,int, const char*) const { }
+      void NE(int, const char *n1, int, const char *n2) const
+      {
+        verify<int,int>(false, 0, n1, 0, n2);
+      }
+      void GT(int, const char *n1, int, const char *n2) const
+      {
+        verify<int,int>(false, 0, n1, 0, n2);
+      }
+      void GE(int, const char*, int, const char *) const { }
+      void LT(int, const char *n1, int, const char *n2) const
+      {
+        verify<int,int>(false, 0, n1, 0, n2);
+      }
+      void LE(int, const char*, int, const char*) const { }
+    };
+
+    template <bool null1, typename T1, bool null2, typename T2>
+    tester_t<typename if_else<null1, void, T1>::type,
+             typename if_else<null2, void, T2>::type>
+    tester(const char *loc, const char *op)
+    {
+      tester_t<typename if_else<null1, void, T1>::type,
+        typename if_else<null2, void, T2>::type> v(loc, op);
+      return v;
+    }
+  } // namespace datatypes
+} // namespace crpcut
+
+#define CRPCUT_IS_ZERO_LIT(x) (sizeof(crpcut::datatypes::null_cmp::func(x)) == 1)
 
 
 #define CRPCUT_BINARY_ASSERT(name, lh, rh)                              \
   do {                                                                  \
     try {                                                               \
-      typedef crpcut::comparator<CRPCUT_IS_ZERO_LIT(lh), CRPCUT_IS_ZERO_LIT(rh)> \
-        CRPCUT_LOCAL_NAME(comp);                                        \
-      CRPCUT_REFTYPE((lh)) CRPCUT_LOCAL_NAME(rl) = lh;                  \
-      CRPCUT_REFTYPE((rh)) CRPCUT_LOCAL_NAME(rr) = rh;                  \
-      bool (*CRPCUT_LOCAL_NAME(f))(CRPCUT_REFTYPE((lh)),                \
-                                   CRPCUT_REFTYPE((rh)))                \
-        = &CRPCUT_LOCAL_NAME(comp)::name;                               \
-      if (!(CRPCUT_LOCAL_NAME(f)(CRPCUT_LOCAL_NAME(rl),                 \
-                                 CRPCUT_LOCAL_NAME(rr))))               \
-        {                                                               \
-          std::ostringstream CRPCUT_LOCAL_NAME(os);                     \
-          CRPCUT_LOCAL_NAME(os) <<                                      \
-            __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                    \
-            "\nASSERT_" #name "(" #lh ", " #rh ")";                     \
-          crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                   \
-                               "\n  where ",                            \
-                               #lh,                                     \
-                               CRPCUT_LOCAL_NAME(rl));                  \
-          crpcut::stream_param(CRPCUT_LOCAL_NAME(os),                   \
-                               "\n        ",                            \
-                               #rh,                                     \
-                               CRPCUT_LOCAL_NAME(rr));                  \
-          crpcut::comm::report(crpcut::comm::exit_fail,                 \
-                               CRPCUT_LOCAL_NAME(os));                  \
-        }                                                               \
+      crpcut::datatypes::tester                                         \
+        <CRPCUT_IS_ZERO_LIT(lh), decltype(lh),                          \
+        CRPCUT_IS_ZERO_LIT(rh), decltype(rh)>                           \
+        (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__), #name)               \
+        .name(lh, #lh, rh, #rh);                                        \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e), {                 \
         FAIL <<                                                         \
