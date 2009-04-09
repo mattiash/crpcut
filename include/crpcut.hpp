@@ -1648,16 +1648,19 @@ namespace crpcut {
   }
 
   template <typename T>
-  void stream_param(std::ostream &os,
+  bool stream_param(std::ostream &os,
                     const char *prefix,
                     const char *name, const T& t)
   {
     std::ostringstream tmp;
     conditionally_stream(tmp, t);
-    if (tmp.str() != name)
+    std::string str = tmp.str();
+    if (str != name)
       {
-        os << prefix << name << " = " << tmp.str();
+        os << prefix << name << " = " << str;
+        return true;
       }
+    return false;
   }
 
   //// template and inline func implementations
@@ -2991,9 +2994,11 @@ namespace crpcut {
           {
             std::ostringstream os;
             os << location
-               << "\nASSERT_" << op << "(" << n1 << ", " << n2 << ")\n";
-            stream_param(os, "\n  where ", n1, v1);
-            stream_param(os, "\n        ", n2, v2);
+               << "\nASSERT_" << op << "(" << n1 << ", " << n2 << ")";
+
+            static const char *prefix[] = { "\n  where ", "\n        " };
+            bool prev = stream_param(os, prefix[0], n1, v1);
+            stream_param(os, prefix[prev], n2, v2);
             comm::report(comm::exit_fail, os);
           }
       }

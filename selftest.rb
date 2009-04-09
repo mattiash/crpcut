@@ -224,7 +224,7 @@ TESTS = {
   'asserts::should_fail_0_eq_pointer' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_EQ\(0, pi\)\n[[:space:]]+pi = (0x)?[[:xdigit:]]+$/me),
+      /#{A_H}ASSERT_EQ\(0, pi\)\n[[:space:]]+where pi = (0x)?[[:xdigit:]]+$/me),
 
   'asserts::should_fail_void_ptr_eq_ptr' =>
   Test.new('FAILED').
