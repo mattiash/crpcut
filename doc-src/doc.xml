@@ -451,77 +451,6 @@ a candidate for running. It is not possible to state dependency on a disabled
 test.
 </section>
 </chapter>
-<chapter title="The main program">
-The normal <id>main()</id> is exactly the below:
-<code>
-  int main(int argc, char *argv[])
-  {
-    return crpcut::test_case_factory::run_test(argc, argv);
-  }
-</code>
-<id>crpcut::test_case_factory::run_test()</id> expects parameters as a set of
-flags followed by a set of test case or test suite names. The flags are:
-<definitions notion="flag" meaning="meaning">
-<def notion="-l">List, on stdout, all test cases matching the test case or test
-                 suite names, then exit with code 0.
-                 </def>
-<def notion="-d&#xA0;name">Set working dir for test to named directory. The
-                           directory must exist prior to run, and should
-                           preferably be empty. By default a directory is
-                           created under /tmp/crpcut??????</def>
-<def notion="-n">Ignore dependencies when running tests.</def>
-<def notion="-v">Include the result of successful tests, in addition to that
-                 of the failed ones, in the test report.</def>
-<def notion="-c&#xA0;num">Control the number of parallel spawned test
-                          case processes. The default is 1. If 0, the
-                          test cases are run in the parent process.</def>
-<def notion="-o&#xA0;file">Direct xml output to named file. Brief result
-                           will be displayed on stdout.</def>
-<def notion="-p&#xA0;name=value">Create a named command line parameter to be
-                                 accessed from test cases.</def>
-<def notion="-q">Don't display the -o brief</def>
-<def notion="-x">Print XML-output on stdout or non-XML to named file
-                 (-o above)</def>
-</definitions>
-Note that running test cases in the parent process has severe implications and
-should really only be used when debugging a test case (below.) The whole test
-program will terminate when reaching the first failed test. Tests that die,
-will also terminate the program, even if death is expected.
-<p/>
-To run the tests in test suite named &quot;asserts&quot;, 8 test cases in
-parallel, ignore all dependencies, and print also successful tests, start the
-test program using <id>-n&#xA0;-v&#xA;-c&#xA;8 asserts</id>.
-<p/>
-The exact prototype for <id>run_test</id> is:
-<code>
-  namespace crpcut {
-    class test_case_factory
-    {
-    public:
-      static int run_test(int argc, const char *argv[], std::ostream &amp; = std::cerr);
-    };
-  }
-</code>
-The return value is the number of failed tests, or -1 if anything was printed
-on the stream. The output stream is where to print information if the
-parameters in the call don&apos;t make sense.
-<p/>
-The result from a test run is printed on stdout, or the file named with
-the <id>-o</id> flag. By default, the result on stdout is a human readable
-format, while output to a named file (the <id>-o</id> flag) is formatted using
-the XML Schema provided in <id>crpcut.xsd</id>. The <id>-x</id> flag inverts
-the output formats so output on stdout becomes XML-formatted and named file
-output becomes human readable.
-<p/>
-The test program must be linked with <id>libcrpcut.so</id>. If you use
-<link url="http://code.google.com/p/googlemock">google-mock</link>, extra care
-must be taken with the linking. You must link with both <id>libcrpcut.so</id>
-and <id>libcrpcut_gmock.so</id> from crpcut, before <id>libgmock.so</id> and
-<id>libgtest.so</id> from the
-<link url="http://code.google.com/p/googlemock">google-mock</link> installation.
-Failing to follow this link order may produce a program that can run, but
-will behave erratically.
-</chapter>
 
 <chapter title="Comparing strings">
 crpcut currently provides two ways of comparing strings:
@@ -648,6 +577,79 @@ since it (at least in version 3.4.1 and older) never makes floating point
 calculations with greater precision than
 64 bits (<id>double</id>.)
 </chapter>
+
+<chapter title="The main program">
+The normal <id>main()</id> is exactly the below:
+<code>
+  int main(int argc, char *argv[])
+  {
+    return crpcut::test_case_factory::run_test(argc, argv);
+  }
+</code>
+<id>crpcut::test_case_factory::run_test()</id> expects parameters as a set of
+flags followed by a set of test case or test suite names. The flags are:
+<definitions notion="flag" meaning="meaning">
+<def notion="-l">List, on stdout, all test cases matching the test case or test
+                 suite names, then exit with code 0.
+                 </def>
+<def notion="-d&#xA0;name">Set working dir for test to named directory. The
+                           directory must exist prior to run, and should
+                           preferably be empty. By default a directory is
+                           created under /tmp/crpcut??????</def>
+<def notion="-n">Ignore dependencies when running tests.</def>
+<def notion="-v">Include the result of successful tests, in addition to that
+                 of the failed ones, in the test report.</def>
+<def notion="-c&#xA0;num">Control the number of parallel spawned test
+                          case processes. The default is 1. If 0, the
+                          test cases are run in the parent process.</def>
+<def notion="-o&#xA0;file">Direct xml output to named file. Brief result
+                           will be displayed on stdout.</def>
+<def notion="-p&#xA0;name=value">Create a named command line parameter to be
+                                 accessed from test cases.</def>
+<def notion="-q">Don't display the -o brief</def>
+<def notion="-x">Print XML-output on stdout or non-XML to named file
+                 (-o above)</def>
+</definitions>
+Note that running test cases in the parent process has severe implications and
+should really only be used when debugging a test case (below.) The whole test
+program will terminate when reaching the first failed test. Tests that die,
+will also terminate the program, even if death is expected.
+<p/>
+To run the tests in test suite named &quot;asserts&quot;, 8 test cases in
+parallel, ignore all dependencies, and print also successful tests, start the
+test program using <id>-n&#xA0;-v&#xA;-c&#xA;8 asserts</id>.
+<p/>
+The exact prototype for <id>run_test</id> is:
+<code>
+  namespace crpcut {
+    class test_case_factory
+    {
+    public:
+      static int run_test(int argc, const char *argv[], std::ostream &amp; = std::cerr);
+    };
+  }
+</code>
+The return value is the number of failed tests, or -1 if anything was printed
+on the stream. The output stream is where to print information if the
+parameters in the call don&apos;t make sense.
+<p/>
+The result from a test run is printed on stdout, or the file named with
+the <id>-o</id> flag. By default, the result on stdout is a human readable
+format, while output to a named file (the <id>-o</id> flag) is formatted using
+the XML Schema provided in <id>crpcut.xsd</id>. The <id>-x</id> flag inverts
+the output formats so output on stdout becomes XML-formatted and named file
+output becomes human readable.
+<p/>
+The test program must be linked with <id>libcrpcut.so</id>. If you use
+<link url="http://code.google.com/p/googlemock">google-mock</link>, extra care
+must be taken with the linking. You must link with both <id>libcrpcut.so</id>
+and <id>libcrpcut_gmock.so</id> from crpcut, before <id>libgmock.so</id> and
+<id>libgtest.so</id> from the
+<link url="http://code.google.com/p/googlemock">google-mock</link> installation.
+Failing to follow this link order may produce a program that can run, but
+will behave erratically.
+</chapter>
+
 <chapter title="Debugging">
 Debugging a test case is easy. Load the test program into your favourite
 debugger. Set a break point on <id>testcasename::test</id>. Run with
