@@ -960,6 +960,7 @@ order is:
 <list>
 <li>Set regexp match rules for stdout and stderr (probably won't happen before 1.0)</li>
 <li>ULPS difference comparison for ieee754 floating point values</li>
+<li>Dependencies between test suites</li>
 <li>OS/X compatibility would be nice</li>
 </list>
 </chapter>
