@@ -2226,6 +2226,27 @@ namespace crpcut {
       --num_elements;
     }
 
+    template <std::size_t N>
+    struct fp_rep;
+
+#define CRPCUT_MAKE_FP_REP(x)                   \
+    template <>                                 \
+    struct fp_rep<sizeof(x)>                    \
+    {                                           \
+      typedef x type;                           \
+    }
+
+    CRPCUT_MAKE_FP_REP(uint32_t);
+    CRPCUT_MAKE_FP_REP(uint64_t);
+
+#undef CRPCUT_MAKE_FP_REP
+
+    template <typename T>
+    union fp
+    {
+      T data;
+      typename fp_rep<sizeof(T)>::type rep;
+    };
 
   } // namespace datatypes
 
@@ -2946,6 +2967,67 @@ namespace crpcut {
     };
   };
 
+  template <typename T>
+  class long_double_not_supported {};
+
+  template <>
+  class long_double_not_supported<long double>;
+
+  template <typename T, bool b = std::numeric_limits<T>::is_iec559>
+  struct must_be_ieee754_fp_type : long_double_not_supported<T>
+  {
+    must_be_ieee754_fp_type(int) {}
+  };
+
+  template <typename T>
+  class must_be_ieee754_fp_type<T, false>;
+
+
+
+  typedef enum { exclude_inf, include_inf } inf_in_ulps_diff;
+
+  class ulps_diff
+  {
+  public:
+    ulps_diff(unsigned max, inf_in_ulps_diff inf_val= exclude_inf)
+      : max_diff(max),
+        inf(inf_val)
+    {
+    }
+    template <typename T>
+    bool operator()(T lh,
+                    T rh,
+                    const must_be_ieee754_fp_type<T> & = 0)
+    {
+      typedef typename datatypes::fp_rep<sizeof(T)>::type rep;
+      if (lh != lh) return false; // NaN
+      if (rh != rh) return false; // NaN
+      if (!inf && std::numeric_limits<T>::max() / lh == 0.0) return false;
+      if (!inf && std::numeric_limits<T>::max() / rh == 0.0) return false;
+      datatypes::fp<T> fl;
+      datatypes::fp<T> fr;
+      fl.data = lh;
+      fr.data = rh;
+      fl.rep = signbit2bias(fl.rep);
+      fr.rep = signbit2bias(fr.rep);
+      return (fl.rep > fr.rep ? fl.rep - fr.rep : fr.rep - fl.rep) <= max_diff;
+    }
+  private:
+    template <typename T>
+    static T signbit2bias(T t)
+    {
+      static const T one = T() + 1;
+      static const T neg_bit = one << (std::numeric_limits<T>::digits - 1);
+      if (t & neg_bit)
+        {
+            return ~t + 1;
+        }
+      return t | neg_bit;
+    }
+
+    unsigned         max_diff;
+    inf_in_ulps_diff inf;
+  };
   template <typename T>
   struct match_traits<relative_diff, T>
   {

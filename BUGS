@@ -1,2 +1,7 @@
-Yes, probably
+ULPS tests are not available for long double
 
+ULPS tests are only verified on x86, and thus most probably not correct
+for other architectures. Most notably it will not even compile if
+sizeof(float) and sizeof(double) is not the same as sizeof(uint32_t) and
+sizeof(uint64_t). Should the byte order be different for FP numbers and
+integers, it will fail horrenduously.

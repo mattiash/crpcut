@@ -549,7 +549,7 @@ you do normally not want to check that a computed value is exactly equal to
 an expected value, but rather that the computed value is close to the
 expected, with some chosen precision.
 <p/>
-crpcut currently provides two ways of expressing that precision, both with their
+crpcut provides three ways of expressing that precision, with their
 advantages and disadvantages.
 <definitions>
 <def notion="relative_diff(diff)(a,&#xA0;b)">Check that 2*|a-b|/|a+b|&lt;=diff.
@@ -562,14 +562,35 @@ advantages and disadvantages.
                                        well for numbers near 0, but for large
                                        numbers it quickly becomes
                                        uninteresting.</def>
+<def notion="ulps_diff(diff,&#xA0;inf)(a,&#xA0;b)">Check that the number of
+                                                   possible floating point
+                                                   values between <id>a</id> and
+                                                   <id>b</id> is not greater
+                                                   than <id>diff</id>.
+                                                   <id>inf</id> can be one of
+                                                   <id>include_inf</id> or
+                                                   <id>exclude_inf</id> and
+                                                   controls whether infinity
+                                                   is a valid number (one
+                                                   representation away from max)
+                                                   or not. It defaults to
+                                                   <id>exclude_inf</id>. See
+<link url="http://www.cygnus-software.com">Cygnus</link> information on
+<link url="http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm">comparing floating point numbers</link>, and also David Goldberg's <link
+url="http://docs.sun.com/source/806-3568/ncg_goldberg.html">What Every Computer Scientists Should Know About Floating-Point Arithmetic</link>.
+</def>
 </definitions>
 Floating point comparisons are made using <id>ASSERT_PRED</id> with the
 <id>match</id> function template like this:
 <code>
   ASSERT_PRED(crpcut::match&lt;crpcut::abs_diff&gt;(0.0001), a, b);
 </code>
-The precision, and the two values must all have exactly the same floating point
-type.
+
+The two values must all have exactly the same floating point type. For
+<id>relative_diff</id> and <id>abs_diff</id> the precision must also be
+of the same type as the compared values. For <id>ulps_diff</id> the
+precision is an unsigned integer. <id>ulps_diff</id> is not available for
+<id>long double</id>.
 <p/>
 It is worth pointing out that arithmetics with <id>long double</id> might
 work poorly when run under <link url="http://www.valgrind.org">valgrind</link>,
@@ -961,7 +982,6 @@ The todo list, without any regard to importance or desired implementation
 order is:
 <list>
 <li>Set regexp match rules for stdout and stderr (probably won't happen before 1.0)</li>
-<li>ULPS difference comparison for ieee754 floating point values</li>
 <li>Dependencies between test suites</li>
 <li>OS/X compatibility would be nice</li>
 </list>

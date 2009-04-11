@@ -4,5 +4,5 @@
 * Features:
   - Regexp match rules for stdout and stderr (probably won't happen
     before 1.0)
-  - ULPS difference comparison for ieee754 floating point values.
   - Dependencies between test suites.
+

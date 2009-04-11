@@ -172,4 +172,196 @@ TESTSUITE(fp)
     }
 
   }
+
+  TESTSUITE(ulps)
+  {
+    TESTSUITE(using_float)
+    {
+      TEST(should_succeed_equal_zeroes_0_ulps)
+      {
+        float f1 = -0.0;
+        float f2 = +0.0;
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(0), f1, f2);
+      }
+
+      TEST(should_succeed_eps_diff_1_ulp)
+      {
+        float f1 = 1.0;
+        float f2 = f1 + std::numeric_limits<float>::epsilon();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1), f1, f2);
+      }
+
+      TEST(should_fail_eps_diff_0_ulp)
+      {
+        float f1 = 1.0;
+        float f2 = f1 + std::numeric_limits<float>::epsilon();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(0), f1, f2);
+      }
+
+      TEST(should_succeed_high_denorm_1_ulp)
+      {
+        float f1 = std::numeric_limits<float>::min();
+        float f2 = f1 - std::numeric_limits<float>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1), f1, f2);
+      }
+
+      TEST(should_fail_high_denorm_0_ulp)
+      {
+        float f1 = std::numeric_limits<float>::min();
+        float f2 = f1 - std::numeric_limits<float>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(0), f1, f2);
+      }
+
+      TEST(should_succeed_low_denorm_1_ulp)
+      {
+        float f1 = 0.0;
+        float f2 = std::numeric_limits<float>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1), f1, f2);
+      }
+
+      TEST(should_fail_low_denorm_0_ulp)
+      {
+        float f1 = 0.0;
+        float f2 = std::numeric_limits<float>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(0), f1, f2);
+      }
+
+      TEST(should_succeed_pos_neg_denorm_min_2_ulps)
+      {
+        float f1 = +std::numeric_limits<float>::denorm_min();
+        float f2 = -std::numeric_limits<float>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(2), f1, f2);
+      }
+
+      TEST(should_fail_pos_neg_denorm_min_1_ulp)
+      {
+        float f1 = +std::numeric_limits<float>::denorm_min();
+        float f2 = -std::numeric_limits<float>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1), f1, f2);
+      }
+
+      TEST(should_fail_nan)
+      {
+        float d1 = 0.0;
+        float d2 = 0.0;
+        float f1 = d1/d2;
+        float f2 = 0.0;
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(~unsigned()), f1, f2);
+      }
+
+      TEST(should_fail_max_inf_1_ulp)
+      {
+        float d1 = 1.0;
+        float d2 = 0.0;
+        float f1 = d1/d2;
+        float f2 = std::numeric_limits<float>::max();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1), f1, f2);
+      }
+
+      TEST(should_succeed_max_inf_1_ulp)
+      {
+        float d1 = 1.0;
+        float d2 = 0.0;
+        float f1 = d1/d2;
+        float f2 = std::numeric_limits<float>::max();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1, crpcut::include_inf),
+                    f1,
+                    f2);
+      }
+    }
+    TESTSUITE(using_double)
+    {
+      TEST(should_succeed_equal_zeroes_0_ulps)
+      {
+        double f1 = -0.0;
+        double f2 = +0.0;
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(0), f1, f2);
+      }
+
+      TEST(should_succeed_eps_diff_1_ulp)
+      {
+        double f1 = 1.0;
+        double f2 = f1 + std::numeric_limits<double>::epsilon();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1), f1, f2);
+      }
+
+      TEST(should_fail_eps_diff_0_ulp)
+      {
+        double f1 = 1.0;
+        double f2 = f1 + std::numeric_limits<double>::epsilon();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(0), f1, f2);
+      }
+
+      TEST(should_succeed_high_denorm_1_ulp)
+      {
+        double f1 = std::numeric_limits<double>::min();
+        double f2 = f1 - std::numeric_limits<double>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1), f1, f2);
+      }
+
+      TEST(should_fail_high_denorm_0_ulp)
+      {
+        double f1 = std::numeric_limits<double>::min();
+        double f2 = f1 - std::numeric_limits<double>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(0), f1, f2);
+      }
+
+      TEST(should_succeed_low_denorm_1_ulp)
+      {
+        double f1 = 0.0;
+        double f2 = std::numeric_limits<double>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1), f1, f2);
+      }
+
+      TEST(should_fail_low_denorm_0_ulp)
+      {
+        double f1 = 0.0;
+        double f2 = std::numeric_limits<double>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(0), f1, f2);
+      }
+
+      TEST(should_succeed_pos_neg_denorm_min_2_ulps)
+      {
+        double f1 = +std::numeric_limits<double>::denorm_min();
+        double f2 = -std::numeric_limits<double>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(2), f1, f2);
+      }
+
+      TEST(should_fail_pos_neg_denorm_min_1_ulp)
+      {
+        double f1 = +std::numeric_limits<double>::denorm_min();
+        double f2 = -std::numeric_limits<double>::denorm_min();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1), f1, f2);
+      }
+
+      TEST(should_fail_nan)
+      {
+        double d1 = 0.0;
+        double d2 = 0.0;
+        double f1 = d1/d2;
+        double f2 = 0.0;
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(~unsigned()), f1, f2);
+      }
+
+      TEST(should_fail_max_inf_1_ulp)
+      {
+        double d1 = 1.0;
+        double d2 = 0.0;
+        double f1 = d1/d2;
+        double f2 = std::numeric_limits<double>::max();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1), f1, f2);
+      }
+
+      TEST(should_succeed_max_inf_1_ulp)
+      {
+        double d1 = 1.0;
+        double d2 = 0.0;
+        double f1 = d1/d2;
+        double f2 = std::numeric_limits<double>::max();
+        ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(1, crpcut::include_inf),
+                    f1,
+                    f2);
+      }
+    }
+  }
 }
