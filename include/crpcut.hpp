@@ -2328,6 +2328,7 @@ namespace crpcut {
       {
         other->next = dependants;
         dependants = other;
+        other->inc();
       }
 
       inline void
@@ -2364,7 +2365,6 @@ namespace crpcut {
       inline
       enforcer<T>::enforcer()
       {
-        inc();
         T::crpcut_reg.add(this);
       }
     } // namespace dependencies
