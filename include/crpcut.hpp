@@ -1264,7 +1264,7 @@ namespace crpcut {
       t->test();
       stream::toastream<128> os;
       os << "Unexpectedly survived\nExpected ";
-      T::crpcut_reg.expected_death(os);
+      T::crpcut_reg().expected_death(os);
       comm::report(comm::exit_fail, os.size(), os.begin());
     }
 
@@ -2366,7 +2366,7 @@ namespace crpcut {
       inline
       enforcer<T>::enforcer()
       {
-        T::crpcut_reg.add(this);
+        T::crpcut_reg().add(this);
       }
     } // namespace dependencies
 
@@ -3178,13 +3178,23 @@ extern crpcut::implementation::namespace_info current_namespace;
          crpcut_registrator_base::crpcut_run_test_case<test_case_name>(); \
        }                                                                \
     };                                                                  \
-    static crpcut_registrator crpcut_reg;                               \
+    static crpcut_registrator &crpcut_reg()                             \
+    {                                                                   \
+      static crpcut_registrator obj;                                    \
+      return obj;                                                       \
+    };                                                                  \
+    class crpcut_trigger                                                \
+    {                                                                   \
+    public:                                                             \
+      crpcut_trigger() { crpcut_reg(); }                                \
+    };                                                                  \
+    static crpcut_trigger crpcut_trigger_obj;                           \
   };                                                                    \
 
 
 #define TEST_DEF(test_case_name, ...)                                   \
   CRPCUT_TEST_CASE_DEF(test_case_name, __VA_ARGS__)                     \
-  test_case_name :: crpcut_registrator test_case_name::crpcut_reg;      \
+  test_case_name::crpcut_trigger test_case_name::crpcut_trigger_obj;    \
   void test_case_name::test()
 
 #define DISABLED_TEST_DEF(test_case_name, ...)                          \
