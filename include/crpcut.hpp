@@ -715,6 +715,7 @@ namespace crpcut {
         bool succeeded() const;
         void register_success(bool value = true);
       private:
+        virtual void add_action(basic_enforcer *other);
         enum { success, fail, not_run } state;
         int num;
         basic_enforcer *dependants;
@@ -2328,7 +2329,7 @@ namespace crpcut {
       {
         other->next = dependants;
         dependants = other;
-        other->inc();
+        add_action(other);
       }
 
       inline void

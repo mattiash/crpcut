@@ -66,6 +66,11 @@ namespace crpcut {
           }
       }
 
+      inline void
+      base::add_action(basic_enforcer *other)
+      {
+        other->inc();
+      }
     } // namespace dependencies
 
     namespace timeout {
