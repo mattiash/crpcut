@@ -621,8 +621,12 @@ flags followed by a set of test case or test suite names. The flags are:
 <def notion="-v">Include the result of successful tests, in addition to that
                  of the failed ones, in the test report.</def>
 <def notion="-c&#xA0;num">Control the number of parallel spawned test
-                          case processes. The default is 1. If 0, the
-                          test cases are run in the parent process.</def>
+                          case processes. The default is 1. -c cannot be
+                          combined with -s (below.)</def>
+<def notion="-s">Single-shot - run a single test case, and run it in the main
+                 process. Useful for running a test case in a debugger. -s
+                 implies -n (above) and cannot be combined with -c (also
+                 above.)</def>
 <def notion="-o&#xA0;file">Direct xml output to named file. Brief result
                            will be displayed on stdout.</def>
 <def notion="-p&#xA0;name=value">Create a named command line parameter to be
@@ -631,9 +635,12 @@ flags followed by a set of test case or test suite names. The flags are:
 <def notion="-x">Print XML-output on stdout or non-XML to named file
                  (-o above)</def>
 </definitions>
-Note that running test cases in the parent process has severe implications and
-should really only be used when debugging a test case (below.) The whole test
-program will terminate when reaching the first failed test. Tests that die,
+Note that <id>-s</id> provides an environment that is markedly different
+from a normal run in a child process. Most notably no post-mortem checks are
+made (files left behind, processing of termination reason.) Also INFO and
+FAIL streamers (above) just print to stdout/stderr. Exit code from the run
+will be 0 on success, and whatever the process exits with on failure
+(typically SIGABRT from the ASSERT_* macros.) Tests that die,
 will also terminate the program, even if death is expected.
 <p/>
 To run the tests in test suite named &quot;asserts&quot;, 8 test cases in
@@ -674,29 +681,28 @@ will behave erratically.
 <chapter title="Debugging">
 Debugging a test case is easy. Load the test program into your favourite
 debugger. Set a break point on <id>testcasename::test</id>. Run with
-<id>-n&#xA0;-c&#xA0;0&#xA0;testcasename</id>. Example:
+<id>-s&#xA0;testcasename</id>. Example:
 <code>
-&gt; $ gdb ./testprog
-GNU gdb 6.7.1
-Copyright (C) 2007 Free Software Foundation, Inc.
+&gt;$ gdb --args ./test/testprog -s asserts::should_succeed_assert_no_throw
+GNU gdb 6.8
+Copyright (C) 2008 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;
 This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.  Type &quot;show copying&quot;
-and &quot;show warranty&quot; for details.
-This GDB was configured as &quot;x86_64-pc-linux-gnu&quot;...
-Using host libthread_db library &quot;/lib/libthread_db.so.1&quot;.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-pc-linux-gnu"...
 (gdb) break asserts::should_succeed_assert_no_throw::test
-Breakpoint 1 at 0x804a71c: file unitt.cpp, line 105.
-(gdb) run -c 0 -n asserts::should_succeed_assert_no_throw
-Starting program: ./testprog -c 0 -n asserts::should_succeed_assert_no_throw
+Breakpoint 1 at 0x487ce4: file /home/bjorn/devel/crpcut/test-src/asserts_and_depends.cpp, line 80.
+(gdb) run
+Starting program: /var/tmp/build/test/testprog -s -n asserts::should_succeed_assert_no_throw
 [Thread debugging using libthread_db enabled]
-[New Thread 0xf7c9a8e0 (LWP 25339)]
+[New Thread 0x7f5605d43700 (LWP 17769)]
+[Switching to Thread 0x7f5605d43700 (LWP 17769)]
 
-asserts::should_succeed_assert_no_throw[Switching to Thread 0xf7c9a8e0 (LWP 25339)]
-
-Breakpoint 1, asserts::should_succeed_assert_no_throw::test (this=0x807a688) at unitt.cpp:105
-105         ASSERT_NO_THROW(i=1);
-(gdb)
+Breakpoint 1, asserts::should_succeed_assert_no_throw::test (this=0x7fff0dd76340)
+    at /home/bjorn/devel/crpcut/test-src/asserts_and_depends.cpp:80
+80          ASSERT_NO_THROW(i=1);
+(gdb) quit
 </code>
 From there, you can single step the test case.
 </chapter>

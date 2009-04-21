@@ -563,6 +563,7 @@ namespace crpcut {
     bool quiet = false;
     int output_fd = 1;
     bool xml = false;
+    char process_limit_set = 0;
     const char **p = argv+1;
     while (const char *param = *p)
       {
@@ -590,23 +591,42 @@ namespace crpcut {
           verbose_mode = true;
           break;
         case 'c':
+          if (process_limit_set)
+            {
+              err_os <<
+                "The number of child processes is already limited with the -"
+                     << process_limit_set << "flag\n";
+              return -1;
+            }
           ++p;
           if (*p)
             {
               stream::iastream i(*p);
               unsigned l;
-              if ((i >> l) && l <= max_parallel)
+              if ((i >> l) && l <= max_parallel && l > 0)
                 {
                   num_parallel = l;
+                  process_limit_set = 'c';
                   break;
                 }
             }
           err_os <<
             "num child processes must be a positive integer no greater than "
                  << max_parallel
-                 << "\nA value of 0 means test cases are executed in the parent process"
-            "\n";
+                 << "\n";
           return -1;
+        case 's':
+          if (process_limit_set)
+            {
+              err_os <<
+                "The number of child processes is already limited with the -"
+                     << process_limit_set << "flag\n";
+              return -1;
+            }
+          num_parallel = 0;
+          nodeps = true;
+          process_limit_set = 's';
+          break;
         case 'l':
           {
             const char **names = ++p;
@@ -668,7 +688,9 @@ namespace crpcut {
             "   -d dir     - specify workind directory (must exist)\n"
             "   -v         - verbose mode\n"
             "   -c number  - Control number of spawned test case processes\n"
-            "                if 0 the tests are run in the parent process\n"
+            "                number must be >= 1 and <= " << max_parallel << "\n"
+            "   -s         - single shot. Run only one test case, and run it in\n"
+            "                the main process\n"
             "   -o file    - Direct xml output to named file. Brief result\n"
             "                will be displayed on stdout\n"
             "   -q         - Don't display the -o brief\n"
@@ -725,6 +747,10 @@ namespace crpcut {
                   continue;
                 }
               start_test(i);
+              if (!tests_as_child_procs())
+                {
+                  return 0;
+                }
               progress = true;
               i = i->unlink();
             }
