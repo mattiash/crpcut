@@ -55,7 +55,7 @@ TESTSUITE(output)
   TEST(should_succeed_with_info)
   {
     const char msg[] = "apa";
-    INFO << msg << "=" << 3;
+    INFO << msg << "=" << std::hex << 3;
   }
 
   TEST(should_fail_with_info)

@@ -859,7 +859,9 @@ namespace crpcut {
     public:
       direct_reporter() {}
       template <typename V>
-      direct_reporter& operator<<(V v) { os << v; return *this;}
+      direct_reporter& operator<<(const V& v) { os << v;  return *this;  }
+      template <typename P>
+      direct_reporter& operator<<(P (&p)(P))  { os << p;  return *this;  }
       ~direct_reporter() { report(t, os); }
     private:
       direct_reporter(const direct_reporter &);
