@@ -39,9 +39,9 @@ You can set deadlines for test cases, and if the allowed time is seriously
 overdrawn, the test case process is killed. These two make up the robustness
 part.
 <p/>
-You can define dependencies between test cases, so that if a fundamental
-tests fails, the tests that are based on the fundamental functionality will
-not even be run.
+You can define dependencies between test cases and between test suites, so that
+if a fundamental tests fails, the tests that are based on the fundamental
+functionality will not even be run.
 <p/>
 The crpcut main process does not have any dynamic memory allocated at the
 time a test case process is started, so you can run crpcut using a memory
@@ -254,11 +254,16 @@ Both <link section="Fixtures">fixtures</link> and
 are explained below.
 <p/>
 If several tests are related, they can be grouped into a test suite using the
-<id>TESTSUITE()</id> macro. For a large range of tests, it may be a good idea
-to nest test suites. Test cases can be written in several files and linked to
+<id>TESTSUITE()</id> macro. The macro is used to name a testsuite, and if
+desired also use the <id>DEPENDS_ON</id>
+<link section="Modifiers">modifier</link> to define dependencies for all tests
+in a testsuite. For a large range of tests, it may be a good idea
+to nest test suites. A nested testsuite inherits all dependencies of its
+enclosing testsuite. Test cases can be written in several files and linked to
 one main program. If several files define the same test-suite name, the tests
-will be joined it the same suite. The <id>crpcut_</id> name prefix is reserved
-for crpcut.
+will be joined it the same suite. Beware of dependencies with testsuites that
+span several files; the dependencies are file-local. The <id>crpcut_</id> name
+prefix is reserved for crpcut.
 <p/>
 In tests, assert correctness using the assertion macros.
 <p/>
@@ -437,8 +442,10 @@ The defined test case modifiers are:
                                                 is measured using
                                                 <id>clock_gettime()</id> with
                                                 <id>CLOCK_MONOTONIC</id>.</def>
-<def notion="DEPENDS_ON(...)">... is a list of test cases. Before the test can
-                              run, all tests in the list must have finished
+<def notion="DEPENDS_ON(...)">... is a list of test cases, or
+                              <id>ALL_IN(ns)</id>. Before the test can
+                              run, all tests in the list, or all tests in
+                              <id>TESTSUITE(ns)</id> must have finished
                               successfully.</def>
 </definitions>
 </section>
@@ -988,7 +995,6 @@ The todo list, without any regard to importance or desired implementation
 order is:
 <list>
 <li>Set regexp match rules for stdout and stderr (probably won't happen before 1.0)</li>
-<li>Dependencies between test suites</li>
 <li>OS/X compatibility would be nice</li>
 </list>
 </chapter>

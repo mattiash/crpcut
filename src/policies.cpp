@@ -57,7 +57,10 @@ namespace crpcut {
             state = success;
             for (basic_enforcer *p = dependants; p; p = p->next)
               {
-                --p->num;
+                if (--p->num == 0)
+                  {
+                    p->dec_action();
+                  };
               }
           }
         else

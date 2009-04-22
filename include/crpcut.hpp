@@ -706,8 +706,9 @@ namespace crpcut {
       class base
       {
       protected:
-        void inc();
       public:
+        void inc();
+        virtual ~base() {} // Silence warning on older gcc
         base();
         void add(basic_enforcer * other);
         bool can_run() const;
@@ -716,6 +717,7 @@ namespace crpcut {
         void register_success(bool value = true);
       private:
         virtual void add_action(basic_enforcer *other);
+        virtual void dec_action() {}
         enum { success, fail, not_run } state;
         int num;
         basic_enforcer *dependants;
@@ -1010,9 +1012,11 @@ namespace crpcut {
       int response_fd;
     };
 
+    class test_suite_base;
     class test_case_registrator : public virtual policies::deaths::none,
                                   public virtual policies::dependencies::base
     {
+      friend class test_suite_base;
     public:
       test_case_registrator(const char *name, const namespace_info &ns);
       friend std::ostream &operator<<(std::ostream &os,
@@ -1055,6 +1059,7 @@ namespace crpcut {
       const namespace_info  *ns_info;
       test_case_registrator *next;
       test_case_registrator *prev;
+      test_case_registrator *suite_list;
       unsigned               active_readers;
       bool                   death_note;
       bool                   deadline_set;
@@ -3135,10 +3140,57 @@ namespace crpcut {
     return collate_t<type>(s, l);
   }
 
+  namespace implementation {
+    class test_suite_base : public policies::dependencies::basic_enforcer
+    {
+    protected:
+      test_suite_base() : num_containing_cases(0), list(0) {}
+    public:
+      void add_case(test_case_registrator* r)
+      {
+        ++num_containing_cases;
+        r->suite_list = list;
+        list = r;
+        r->add(this);
+      }
+      void report_success()
+      {
+        --num_containing_cases;
+        if (num_containing_cases == 0) // now everything that depends on this
+          {                            // case may run.
+            register_success();
+          }
+      }
+    private:
+      unsigned num_containing_cases;
+      test_case_registrator *list;
+    };
+
+    template <typename T>
+    class test_suite : public test_suite_base
+    {
+    public:
+      test_suite() {}
+      static test_suite& crpcut_reg()
+      {
+        static test_suite object;
+        return object;
+      }
+      virtual void add_action(policies::dependencies::basic_enforcer* e)
+      {
+        e->inc(); // how to handle the case where this test_suite is empty?
+      }
+    private:
+      virtual void dec_action()
+      {
+        register_success();
+      }
+    };
+
+  } // namespace implementation
 } // namespace crpcut
 
 extern crpcut::implementation::namespace_info current_namespace;
-
 
 // Note, the order of inheritance below is important. test_case_base
 // destructor signals ending of test case, so it must be listed as the
@@ -3162,9 +3214,10 @@ extern crpcut::implementation::namespace_info current_namespace;
     void test();                                                        \
     class crpcut_registrator                                            \
       : public crpcut::implementation::test_case_registrator,           \
-        public virtual crpcut::policies::dependencies::base,            \
+        private virtual crpcut::policies::dependencies::base,           \
         public virtual test_case_name::crpcut_expected_death_cause,     \
-        private virtual test_case_name::crpcut_dependency               \
+        private virtual test_case_name::crpcut_dependency,              \
+        public virtual crpcut_testsuite_dep                             \
     {                                                                   \
        typedef crpcut::implementation::test_case_registrator            \
          crpcut_registrator_base;                                       \
@@ -3172,6 +3225,7 @@ extern crpcut::implementation::namespace_info current_namespace;
        crpcut_registrator()                                             \
          : crpcut_registrator_base(#test_case_name, current_namespace)  \
          {                                                              \
+           crpcut::implementation::test_suite<crpcut_testsuite_id>::crpcut_reg().add_case(this); \
          }                                                              \
        virtual void crpcut_run_test_case()                              \
        {                                                                \
@@ -3241,7 +3295,7 @@ namespace crpcut {
 #endif
 
 #define DEPENDS_ON(...) \
-  protected virtual crpcut::policies::dependency_policy<crpcut::datatypes::tlist_maker<__VA_ARGS__>::type >
+  crpcut::policies::dependency_policy<crpcut::datatypes::tlist_maker<__VA_ARGS__>::type >
 
 
 
@@ -3462,24 +3516,57 @@ namespace crpcut {
 
 
 
+class crpcut_testsuite_id;
+class crpcut_testsuite_dep
+  :
+  public virtual crpcut::policies::dependencies::base
+{
+};
+
+namespace crpcut
+{
+  template <typename T, typename U = crpcut::none>
+  struct dep_type
+  {
+    typedef typename T::crpcut_dependency type;
+  };
+
+  template <>
+  struct dep_type<crpcut::none, crpcut::none>
+  {
+    typedef crpcut::none type;
+  };
+}
+
 #define TEST(...) TEST_DEF(__VA_ARGS__, crpcut::none)
 #define DISABLED_TEST(...) DISABLED_TEST_DEF(__VA_ARGS__, crpcut::none)
 
-#define TESTSUITE(name)                                                 \
+#define TESTSUITE_DEF(name, ...)                                        \
   namespace name {                                                      \
+    typedef crpcut_testsuite_dep crpcut_parent_testsuite_dep;           \
     namespace {                                                         \
+      class crpcut_testsuite_dep                                        \
+        : public virtual crpcut_parent_testsuite_dep,                   \
+          public virtual crpcut::dep_type<__VA_ARGS__>::type            \
+      {                                                                 \
+      };                                                                \
       static crpcut::implementation::namespace_info *parent_namespace   \
       = &current_namespace;                                             \
     }                                                                   \
+    class crpcut_testsuite_id;                                          \
     static crpcut::implementation::namespace_info                       \
     current_namespace(#name, parent_namespace);                         \
   }                                                                     \
   namespace name
 
+#define ALL_TESTS(suite_name) crpcut::implementation::test_suite<suite_name :: crpcut_testsuite_id >
+#define TESTSUITE(...) TESTSUITE_DEF(__VA_ARGS__, crpcut::none)
+
+
 
 #define INFO crpcut::comm::direct_reporter<crpcut::comm::info>()
 #define FAIL crpcut::comm::direct_reporter<crpcut::comm::exit_fail>()   \
-  << __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__) << '\n'
+  << __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)  "\n"
 
 
 #endif // CRPCUT_HPP

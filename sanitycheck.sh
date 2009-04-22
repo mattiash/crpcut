@@ -26,10 +26,10 @@
 AWK=$1
 DIR=$2
 
-BLOCKED=2
-R=155
+BLOCKED=7
+R=166
 RN=$(($R+$BLOCKED))
-F=81
+F=82
 [ "$3" == "gmock" ] && {
   GR=11
   GF=7
@@ -60,10 +60,10 @@ tests=(
     "-n -c 8    asserts death" "run=51 failed=30 nodeps=1"
     "-n -c 8 -v asserts death" "run=51 failed=30 nodeps=1 verbose=1"
 
-    ""                         "run=$R failed=$F blocked=2"
-    "-v"                       "run=$R failed=$F blocked=2 verbose=1 "
-    "-c 8"                     "run=$R failed=$F blocked=2"
-    "-c 8 -v"                  "run=$R failed=$F blocked=2 verbose=1"
+    ""                         "run=$R failed=$F blocked=$BLOCKED"
+    "-v"                       "run=$R failed=$F blocked=$BLOCKED verbose=1 "
+    "-c 8"                     "run=$R failed=$F blocked=$BLOCKED"
+    "-c 8 -v"                  "run=$R failed=$F blocked=$BLOCKED verbose=1"
 
     "-n"                       "run=$RN failed=$F blocked=0 nodeps=1"
     "-n -v"                    "run=$RN failed=$F blocked=0 nodeps=1 verbose=1"

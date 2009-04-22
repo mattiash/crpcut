@@ -219,6 +219,7 @@ endif(GMOCK_LIBS)
 
 
 file(GLOB TEST_SRCS
+     test-src/unitt.cpp
      test-src/asserts_and_depends.cpp
      test-src/output.cpp
      test-src/timeouts.cpp
@@ -226,13 +227,14 @@ file(GLOB TEST_SRCS
      test-src/death_by_signal.cpp
      test-src/death_by_exception.cpp
      test-src/parametrized.cpp
-     test-src/unitt.cpp
      test-src/wrapped.cpp
      test-src/ext_parameters.cpp
      test-src/predicates.cpp
      test-src/regex.cpp
      test-src/fp.cpp
      test-src/collate.cpp
+     test-src/suite_deps1.cpp
+     test-src/suite_deps2.cpp
      ${GMOCK_TEST_SRCS}
 )
 

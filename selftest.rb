@@ -715,6 +715,57 @@ TESTS = {
   Test.new('OK').
   log('stdout', /hello/),
 
+  'suite_deps::simple_all_ok::should_succeed' =>
+  Test.new('OK'),
+
+  'suite_deps::simple_all_ok::should_also_succeed' =>
+  Test.new('OK'),
+
+  'suite_deps::simple_all_fail::should_succeed' =>
+  Test.new('OK'),
+
+  'suite_deps::simple_all_fail::should_fail' =>
+  Test.new('FAILED').
+  log('violation',
+      /ASSERT/),
+
+  'suite_deps::should_succeed' =>
+  Test.new('OK'),
+
+  'suite_deps::should_not_run_success' =>
+  Test.new('OK'),
+
+  'suite_deps::blocked_suite::cross_dep_violation_should_succeed' =>
+  Test.new('OK'),
+
+  'suite_deps::blocked_suite::should_not_run_success' =>
+  Test.new('OK'),
+
+  'suite_deps::blocked_case::should_not_run_success' =>
+  Test.new('OK'),
+
+  'suite_deps::blocked_case::nested_blocked::should_not_run_success' =>
+  Test.new('OK'),
+
+  'suite_deps::should_run_remote_suite::should_succeed' =>
+  Test.new('OK'),
+
+  'suite_deps::blocked_remote_suite::should_not_run_success' =>
+  Test.new('OK'),
+
+  'suite_deps::should_run_suite::should_succeed' =>
+  Test.new('OK'),
+
+  'suite_deps::should_run_case::should_succeed' =>
+  Test.new('OK'),
+
+  'suite_deps::should_run_case::nested_run::should_succeed' =>
+  Test.new('OK'),
+
+  'suite_deps::should_run_suite::should_also_succeed' =>
+  Test.new('OK'),
+
+
   'timeouts::should_fail_slow_cputime_deadline' =>
   Test.new('FAILED').
   log('info', /.*/me).
@@ -816,9 +867,15 @@ tests.each do |key, val|
   end
 end
 
-BLOCKED_TESTS = [
- 'depends::should_not_run_due_to_one_failed_dependency_success_otherwise',
- 'should_not_run_due_to_failed_left_behind_files_success_otherwise'
+BLOCKED_TESTS =
+  [
+   'depends::should_not_run_due_to_one_failed_dependency_success_otherwise',
+   'should_not_run_due_to_failed_left_behind_files_success_otherwise',
+   'suite_deps::should_not_run',
+   'suite_deps::blocked_suite::should_not_run_success',
+   'suite_deps::blocked_remote_suite::should_not_run_success',
+   'suite_deps::blocked_case::should_not_run_success',
+   'suite_deps::blocked_case::nested_blocked::should_not_run_success'
 ]
 
 def check_file(file_name, tests, names, results, run_count, fail_count, success_count, blocked)
