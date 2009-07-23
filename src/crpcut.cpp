@@ -78,13 +78,13 @@ namespace crpcut {
       {
         if (deadlines[n] == i)
           {
-            using namespace implementation;
+            using implementation::test_case_registrator;
             for (;;)
               {
                 size_t m = (n+1)*2-1;
                 if (m >= deadlines.size() - 1) break;
-                if (test_case_registrator::timeout_compare(deadlines[m],
-                                                           deadlines[m+1]))
+                if (test_case_registrator::timeout_compare(deadlines[m+1],
+                                                           deadlines[m]))
                   {
                     deadlines[n] = deadlines[m];
                   }
@@ -96,6 +96,9 @@ namespace crpcut {
               }
             deadlines[n] = deadlines.back();
             deadlines.pop_back();
+            assert(std::is_heap(deadlines.begin(),
+                                deadlines.end(),
+                                test_case_registrator::timeout_compare));
             return;
           }
       }

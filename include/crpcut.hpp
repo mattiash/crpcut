@@ -230,7 +230,7 @@ extern "C"
 }
 
 namespace std {
-  using namespace std::tr1;
+  using std::tr1::array;
 }
 
 
@@ -2613,7 +2613,7 @@ namespace crpcut {
       assert(rh->deadline_set);
 
       long diff = lh->absolute_deadline_ms - rh->absolute_deadline_ms;
-      return diff >= 0;
+      return diff > 0;
     }
 
     inline test_case_registrator *
