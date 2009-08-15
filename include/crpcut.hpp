@@ -3236,7 +3236,7 @@ extern crpcut::implementation::namespace_info current_namespace;
     {                                                                   \
       static crpcut_registrator obj;                                    \
       return obj;                                                       \
-    };                                                                  \
+    }                                                                   \
     class crpcut_trigger                                                \
     {                                                                   \
     public:                                                             \
