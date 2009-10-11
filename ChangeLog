@@ -1,3 +1,31 @@
+2009-10-11 0.7.0
+
+         * Added support for tests to have dependencies to testsuites, and
+           for testsuites to have dependencies to tests and other testsuites.
+
+         * Added support for ULPS difference tests for floating point values.
+
+         * Changed command line support for single tests in the main process
+           for debugging.
+
+           Use "-s testname" (for single shot) instead of "-c 0 -n" to run
+           a single test case in the main process.
+
+         * Fixed comparison between pointers and 0 in ASSERT macros.
+
+         * Fixed comparison between pointers to members and 0 in ASSERT macros.
+
+         * Fixed support for static const integer/enum members in ASSERT macros
+           without forcing instantiation.
+
+         * Fixed support for non-copyable types in ASSERT macros.
+
+         * Fixed support for stream manipulatiors in INFO/FAIL stream macros.
+
+         * Fixed a bug in the heap of test cases violating their maximum allowed
+           time.
+
+
 2009-04-06 0.6.2
 
          * Fixed ASSERT_* for non copyable objects
