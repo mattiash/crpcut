@@ -351,6 +351,8 @@ are used as normal <id>std::ostream</id> objects.
 <def notion="INFO">Add the streamed message to the test-case log, but do
                    not fail it.</def>
 </definitions>
+Each <id>FAIL</id> or <id>INFO</id> output statement is a complete log
+message. There is no need to add line-breaks or other separators.
 <p/>
 An example:
 <code>
