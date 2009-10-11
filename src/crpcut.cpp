@@ -96,9 +96,6 @@ namespace crpcut {
               }
             deadlines[n] = deadlines.back();
             deadlines.pop_back();
-            assert(std::is_heap(deadlines.begin(),
-                                deadlines.end(),
-                                test_case_registrator::timeout_compare));
             return;
           }
       }
