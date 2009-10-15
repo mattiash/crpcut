@@ -8,14 +8,50 @@ manage.<p/>
 </abstract>
 <chapter title="Introductory example">
 <p/>
-A complete example:<p/>
+An example testing parts of std::string:<p/>
 <code>
   #include &lt;crpcut.hpp&gt;
-  #include &lt;cassert&gt;
-  TEST(catch_assert, NO_CORE_FILE, EXPECT_SIGNAL_DEATH(SIGABRT))
+  #include &lt;string&gt;
+
+  struct apastr // fixture for mosts tests
   {
-    int i = 3;
-    assert(i==8);
+    apastr() : s("apa") {}
+    std::string s;
+  };
+
+  TESTSUITE(basics)
+  {
+    TEST(default_constr_and_destr)
+    {
+      std::string s;
+      ASSERT_TRUE(s.empty());
+      ASSERT_EQ(s.length(), 0);
+    }
+    TEST(constr_from_char_array, apastr,
+                                 DEPENDS_ON(default_constr_and_destr))
+    {
+      ASSERT_EQ(s.length(), 3UL);
+    }
+    TEST(at, apastr,
+             DEPENDS_ON(default_constr_and_destr))
+    {
+      ASSERT_EQ(s.at(1), 'p');
+    }
+  }
+
+  TESTSUITE(errors, DEPENDS_ON(ALL_TESTS(basics)))
+  {
+    TEST(at_out_of_range, apastr,
+                          EXPECT_EXCEPTION(std::out_of_range))
+    {
+      s.at(4);
+    }
+    TEST(index_oper_out_of_range, apastr,
+                                  EXPECT_SIGNAL_DEATH(SIGABRT),
+                                  NO_CORE_FILE)
+    {
+      s[4];
+    }
   }
 
   int main(int argc, char *argv[])
@@ -23,12 +59,20 @@ A complete example:<p/>
     return crpcut::test_case_factory::run_test(argc, argv);
   }
 </code>
-This test will fail if compiled without support for assertions, because it is
-expected to die on <id>SIGABRT</id>. When it succeeds, it will catch the output
-on <id>stderr</id> and add it to the test result log.
+Similar tests benefits from being grouped into test-suites. Test-suites
+can depend on other test-suites, meaning that the contained tests will only
+run if all tests it depends on have completed successfully. Results
+can be validated using a number of <id>ASSERT</id> macros. Tests can use
+fixtures to express common contents. Tests can be expected to exit by
+exception, or die. Expectations that are not met are errors. Messages on
+<id>stderr</id> and <id>stdout</id> are gaught, and included in the result log.
 </chapter>
 
 <chapter title="Why crpcut">
+Most importantly, it must be easy to write tests. With crpcut, you focus
+on your test structure and test logic, not on the limits imposed by
+your test environment.
+<p/>
 With crpcut, every test case runs in its own process and its own working
 directory. If a test case fails, the process terminates immediately, before
 it does further harm. This means that every test case starts from a clean
