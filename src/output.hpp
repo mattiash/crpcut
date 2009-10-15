@@ -35,23 +35,25 @@ namespace crpcut
     {
     public:
       typedef enum { escaped, verbatim } type;
-      virtual void begin_case(const std::string &name, bool result) = 0;
+      virtual void begin_case(const char *name, size_t name_len, bool result) = 0;
       virtual void end_case()  = 0;
       virtual void terminate(test_phase phase,
-                             const std::string &msg,
-                             const char *dirname = 0) = 0;
-      virtual void print(const std::string &tag, const std::string &data) = 0;
+                             const char *msg,
+                             size_t      msg_len,
+                             const char *dirname = 0,
+                             size_t      dn_len = 0) = 0;
+      virtual void print(const char *tag, size_t tlen, const char *data, size_t dlen) = 0;
       virtual void statistics(unsigned num_registered,
                               unsigned num_run,
                               unsigned num_failed) = 0;
-      virtual void nonempty_dir(const std::string &)  = 0;
+      virtual void nonempty_dir(const  char*)  = 0;
       virtual void blocked_test(const implementation::test_case_registrator *)  = 0;
       virtual ~formatter() {} // keeps compilers happy. Not needed for this use.
     protected:
       formatter(int fd) : fd_(fd) {}
-      size_t write(const std::string &s, type t = verbatim) const
+      size_t write(const char *s, type t = verbatim) const
       {
-        return write(s.c_str(), s.size(), t);
+        return write(s, wrapped::strlen(s), t);
       }
       template <size_t N>
       size_t write(const char (&str)[N], type t = verbatim) const
@@ -70,16 +72,18 @@ namespace crpcut
     public:
       xml_formatter(int fd, int argc_, const char *argv_[]);
       virtual ~xml_formatter();
-      virtual void begin_case(const std::string &name, bool result);
+      virtual void begin_case(const char *name, size_t name_len, bool result);
       virtual void end_case();
       virtual void terminate(test_phase phase,
-                             const std::string &msg,
-                             const char *dirname = 0);
-      virtual void print(const std::string &tag, const std::string &data);
+                             const char *msg,
+                             size_t      msg_len,
+                             const char *dirname = 0,
+                             size_t      dn_len = 0);
+      virtual void print(const char *tag, size_t tlen, const char *data, size_t dlen);
       virtual void statistics(unsigned num_registered,
                               unsigned num_run,
                               unsigned num_failed);
-      virtual void nonempty_dir(const std::string &s);
+      virtual void nonempty_dir(const char *s);
       virtual void blocked_test(const implementation::test_case_registrator*);
     private:
       void make_closed();
@@ -96,16 +100,18 @@ namespace crpcut
     {
     public:
       text_formatter(int fd, int, const char**) : formatter(fd) {}
-      virtual void begin_case(const std::string &name, bool result);
+      virtual void begin_case(const char *name, size_t name_len, bool result);
       virtual void end_case();
       virtual void terminate(test_phase phase,
-                             const std::string &msg,
-                             const char *dirname = 0);
-      virtual void print(const std::string &tag, const std::string &data);
+                             const char *msg,
+                             size_t      msg_len,
+                             const char *dirname = 0,
+                             size_t      dn_len = 0);
+      virtual void print(const char *tag, size_t tlen, const char *data, size_t dlen);
       virtual void statistics(unsigned num_registered,
                               unsigned num_run,
                               unsigned num_failed);
-      virtual void nonempty_dir(const std::string &s);
+      virtual void nonempty_dir(const char *s);
       virtual void blocked_test(const implementation::test_case_registrator *i);
     private:
       bool did_output;

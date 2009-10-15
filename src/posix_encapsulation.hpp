@@ -42,10 +42,12 @@ namespace crpcut {
     int                  dup2(int o, int n);
     CRPCUT_NORETURN void exit(int c);
     int                  fork(void);
+    void                 free(const void*);
     char *               getcwd(char *buf, size_t size);
     int                  gethostname(char *n, size_t l);
     struct tm *          gmtime(const time_t *t);
     int                  kill(pid_t p, int s);
+    void *               malloc(size_t);
     int                  mkdir(const char *n, mode_t m);
     char *               mkdtemp(char *t);
     DIR*                 opendir(const char *n);

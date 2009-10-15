@@ -30,16 +30,9 @@
 #include "implementation.hpp"
 #include "output.hpp"
 extern "C" {
-#include <sys/wait.h>
 #include <fcntl.h>
 }
-#include <map>
-#include <list>
-#include <cstdio>
-#include <limits>
-#include <ctime>
 #include <queue>
-#include <fstream>
 #include "posix_encapsulation.hpp"
 namespace crpcut {
 
@@ -169,18 +162,168 @@ namespace crpcut {
   }
 
   namespace {
-    struct event
+
+    struct info { size_t len; const char *str; };
+#define ESTR(s) { sizeof(#s)-1, #s }
+    static const info tag_info[] =
+      {
+        ESTR(stdout),
+        ESTR(stderr),
+        ESTR(info),
+        ESTR(exit_ok),
+        ESTR(exit_fail),
+        ESTR(dir),
+        ESTR(set_timeout),
+        ESTR(cancel_timeout),
+        ESTR(begin_test),
+        ESTR(end_test)
+      };
+#undef ESTR
+
+    template <typename T>
+    class list_elem
     {
-      std::string tag;
-      std::string body;
+    public:
+      list_elem() : next_(static_cast<T*>(this)), prev_(static_cast<T*>(this))
+      {
+      }
+      list_elem(T *p) : next_(p), prev_(p)
+      {
+      }
+      ~list_elem()
+      {
+        unlink(); }
+      void link_after(list_elem<T>& r)
+      {
+        next_ = r.next_;
+        prev_ = static_cast<T*>(&r);
+        next_->prev_ = static_cast<T*>(this);
+        r.next_ = static_cast<T*>(this);
+      }
+      void link_before(list_elem<T> &r)
+      {
+        prev_ = r.prev_;
+        next_ = static_cast<T*>(&r);
+        prev_->next_ = static_cast<T*>(this);
+        r.prev_ = static_cast<T*>(this);
+      }
+      T *next() { return next_; }
+      T *prev() { return prev_; }
+      bool is_empty() const { return next_ == static_cast<const T*>(this);  }
+    private:
+      void unlink() {
+        T *n = next_;
+        T *p = prev_;
+        n->prev_ = p;
+        p->next_ = n;
+        prev_ = static_cast<T*>(this);
+        next_ = static_cast<T*>(this);
+      }
+      list_elem(const list_elem&);
+      list_elem& operator=(const list_elem&);
+      T *next_;
+      T *prev_;
     };
-    struct test_case_result
+
+    template <typename T, size_t N>
+    class fix_allocator
     {
+      union elem {
+        char ballast[sizeof(T)];
+        elem *next;
+      };
+      static datatypes::array_v<elem, N> array;
+      static elem *first_free;
+    public:
+      static void *alloc() {
+        if (first_free)
+          {
+            elem *p = first_free;
+            first_free = p->next;
+            return p;
+          }
+        if (array.size() < N)
+          {
+            array.push_back(elem());
+            return &array.back();
+          }
+        return wrapped::malloc(sizeof(T));
+      }
+      static void release(void *p)
+      {
+        if (p >= array.begin() && p < array.end())
+          {
+            elem *e = static_cast<elem*>(p);
+            e->next = first_free;
+            first_free = e;
+          }
+        else
+          {
+            wrapped::free(p);
+          }
+      }
+    };
+
+    template <typename T, size_t N>
+    typename fix_allocator<T, N>::elem *fix_allocator<T, N>::first_free;
+
+    template <typename T, size_t N>
+    datatypes::array_v<typename fix_allocator<T, N>::elem, N>
+    fix_allocator<T, N>::array;
+
+    struct event : public list_elem<event>
+    {
+      event(comm::type t, const char *b, size_t bl)
+        : list_elem<event>(this), tag(t), body(b), body_len(bl)
+      {
+      }
+      ~event() {  wrapped::free(body); }
+      comm::type tag;
+      const char *body;
+      size_t body_len;
+      void *operator new(size_t) { return allocator::alloc(); }
+      void operator delete(void *p) { allocator::release(p); }
+    private:
+      event();
+      typedef fix_allocator<event,
+                            test_case_factory::max_parallel*3> allocator;
+    };
+    struct test_case_result : public list_elem<test_case_result>
+    {
+      test_case_result(pid_t pid)
+        :id(pid),
+         success(false),
+         nonempty_dir(false),
+         name(0),
+         name_len(0),
+         termination(0),
+         term_len(0)
+      {}
+      ~test_case_result()
+      {
+        wrapped::free(termination);
+        wrapped::free(name);
+        while (!history.is_empty())
+          {
+            event *e = history.next();
+            delete e;
+          }
+      }
+      void *operator new(size_t) { return allocator::alloc(); }
+      void operator delete(void *p) { allocator::release(p); }
+      pid_t            id;
       bool             success;
       bool             nonempty_dir;
-      std::string      name;
-      std::string      termination;
-      std::list<event> history;
+      const char      *name;
+      size_t           name_len;
+      const char      *termination;
+      size_t           term_len;
+      list_elem<event> history;
+    private:
+      test_case_result(const test_case_result& r);
+      test_case_result& operator=(const test_case_result&r);
+      typedef fix_allocator<test_case_result,
+                            test_case_factory::max_parallel> allocator;
     };
 
 
@@ -188,20 +331,21 @@ namespace crpcut {
     class printer
     {
     public:
-      printer(output::formatter& o_, const std::string &name, bool result)
+      printer(output::formatter& o_, const char *name, size_t n_len, bool result)
         : o(o_)
       {
-        o.begin_case(name, result);
+        o.begin_case(name, n_len, result);
       }
       ~printer() { o.end_case(); }
       void terminate(test_phase phase,
-                     const std::string &msg, const char *dirname = 0)
+                     size_t      msg_len,
+                     const char *msg, const char *dirname = 0)
       {
-        o.terminate(phase, msg, dirname);
+        o.terminate(phase, msg, msg_len, dirname);
       }
-      void print(const char *tag, const std::string &data)
+      void print(comm::type tag, size_t len, const char *data)
       {
-        o.print(tag, data);
+        o.print(tag_info[tag].str, tag_info[tag].len, data, len);
       }
     private:
       output::formatter &o;
@@ -260,7 +404,7 @@ namespace crpcut {
         }
       int presenter_pipe = p.for_reading();
 
-      std::map<pid_t, test_case_result> messages;
+      list_elem<test_case_result> messages;
       for (;;)
         {
           pid_t test_case_id;
@@ -269,12 +413,29 @@ namespace crpcut {
                                      sizeof(test_case_id));
           if (rv == 0)
             {
-              assert(messages.size() == 0);
-              wrapped::_Exit(0);
+              assert(messages.is_empty());
+              wrapped::exit(0);
             }
           assert(rv == sizeof(test_case_id));
-          test_case_result &s = messages[test_case_id];
+          test_case_result *s = 0;
 
+          // a linear search isn't that great, but the
+          // amount of data is small.
+          for (test_case_result *i = messages.next();
+               i != messages.next()->prev();
+               i = i->next())
+            {
+              if (i->id == test_case_id)
+                {
+                  s = i;
+                  break;
+                }
+            }
+          if (!s)
+            {
+              s = new test_case_result(test_case_id);
+              s->link_after(messages);
+            }
           comm::type t;
           rv = wrapped::read(presenter_pipe, &t, sizeof(t));
           assert(rv == sizeof(t));
@@ -287,9 +448,8 @@ namespace crpcut {
             {
             case comm::begin_test:
               {
-                assert(s.name.length() == 0);
-                assert(s.history.size() == 0);
-
+                assert(s->name_len == 0);
+                assert(s->history.is_empty());
                 // introduction to test case, name follows
 
                 size_t len = 0;
@@ -303,7 +463,7 @@ namespace crpcut {
                     assert(rv > 0);
                     bytes_read += rv;
                   }
-                char *buff = static_cast<char *>(alloca(len));
+                char *buff = static_cast<char *>(wrapped::malloc(len + 1));
                 bytes_read = 0;
                 while (bytes_read < len)
                   {
@@ -313,9 +473,11 @@ namespace crpcut {
                     assert(rv >= 0);
                     bytes_read += rv;
                   }
-                s.name.assign(buff, len);
-                s.success = true;
-                s.nonempty_dir = false;
+                buff[len] = 0;
+                s->name = buff;
+                s->name_len = len;
+                s->success = true;
+                s->nonempty_dir = false;
               }
               break;
             case comm::end_test:
@@ -324,41 +486,42 @@ namespace crpcut {
                 rv = wrapped::read(presenter_pipe, &len, sizeof(len));
                 assert(rv == sizeof(len));
                 assert(len == 0);
-                std::ostringstream os;
-                if (!s.success || verbose)
+
+                if (!s->success || verbose)
                   {
-                    printer print(out, s.name, s.success);
-                    for (std::list<event>::iterator i = s.history.begin();
-                         i != s.history.end();
-                         ++i)
+                    printer print(out, s->name, s->name_len, s->success);
+
+                    for (event *i = s->history.next();
+                         i != static_cast<event*>(&s->history);
+                         i = i->next())
                       {
-                        out.print(i->tag, i->body);
+                        out.print(tag_info[i->tag].str, tag_info[i->tag].len,
+                                  i->body, i->body_len);
                       }
-                    if (!s.termination.empty() || s.nonempty_dir)
+                    if (s->term_len || s->nonempty_dir)
                       {
-                        if (s.nonempty_dir)
+                        if (s->nonempty_dir)
                           {
                             const char *wd
                               = test_case_factory::get_working_dir();
                             const size_t dlen = wrapped::strlen(wd);
                             len = dlen;
                             len+= 1;
-                            len+= s.name.size();
-                            char *dn = static_cast<char*>(alloca(len));
-                            lib::strcpy(lib::strcpy(lib::strcpy(dn,
-                                                                wd),
+                            len+= s->name_len;
+                            char *dn = static_cast<char*>(alloca(len + 1));
+                            lib::strcpy(lib::strcpy(lib::strcpy(dn,  wd),
                                                     "/"),
-                                        s.name.c_str());;
-                            out.terminate(phase, s.termination, dn);
+                                        s->name);
+                            out.terminate(phase, s->termination, s->term_len, dn, len);
                           }
                         else
                           {
-                            out.terminate(phase, s.termination);
+                            out.terminate(phase, s->termination, s->term_len);
                           }
                       }
                   }
               }
-              messages.erase(test_case_id);
+              delete s;
               break;
             case comm::dir:
               {
@@ -367,13 +530,13 @@ namespace crpcut {
                 assert(rv == sizeof(len));
                 assert(len == 0);
                 (void)len; // silense warning
-                s.success = false;
-                s.nonempty_dir = true;
+                s->success = false;
+                s->nonempty_dir = true;
               }
               break;
             case comm::exit_ok:
             case comm::exit_fail:
-              s.success &= t == comm::exit_ok; // fallthrough
+              s->success &= t == comm::exit_ok; // fallthrough
             case comm::stdout:
             case comm::stderr:
             case comm::info:
@@ -383,22 +546,19 @@ namespace crpcut {
                 assert(rv == sizeof(len));
                 if (len)
                   {
-                    char *buff = static_cast<char *>(alloca(len));
+                    char *buff = static_cast<char *>(wrapped::malloc(len));
                     rv = wrapped::read(presenter_pipe, buff, len);
                     assert(size_t(rv) == len);
 
                     if (t == comm::exit_ok || t == comm::exit_fail)
                       {
-                        s.termination=std::string(buff, len);
+                        s->termination = buff;
+                        s->term_len = len;
                       }
                     else
                       {
-                        static const char *tag[] = { "stdout",
-                                                     "stderr",
-                                                     "info" };
-                        assert(size_t(t) < (sizeof(tag)/sizeof(tag[0])));
-                        event e = { tag[t], std::string(buff, len) };
-                        s.history.push_back(e);
+                        event *e = new event(t, buff, len);
+                        e->link_before(s->history);
                       }
                   }
               }
@@ -771,7 +931,6 @@ namespace crpcut {
       if (tests_as_child_procs())
         {
           kill_presenter_process();
-          std::ostringstream os;
           out.statistics(num_registered_tests,
                          num_tests_run,
                          num_tests_run - num_successful_tests);
@@ -808,8 +967,6 @@ namespace crpcut {
                 }
               (void)wrapped::rmdir(dirbase); // ignore, taken care of as error
             }
-          const std::string &s = os.str();
-          wrapped::write(output_fd, s.c_str(), s.length());
         }
 
       if (reg.get_next() != &reg)

@@ -151,10 +151,10 @@ namespace crpcut
         }
     }
 
-    void xml_formatter::begin_case(const std::string &name, bool result)
+    void xml_formatter::begin_case(const char *name, size_t name_len, bool result)
     {
       write("  <test name=\"");
-      write(name, escaped);
+      write(name, name_len, escaped);
       write("\" result=");
       static const char *rstring[] = { "\"FAILED\"", "\"OK\"" };
       write(rstring[result]);
@@ -174,8 +174,10 @@ namespace crpcut
     }
 
     void xml_formatter::terminate(test_phase phase,
-                                  const std::string &msg,
-                                  const char *dirname)
+                                  const char *msg,
+                                  size_t      msg_len,
+                                  const char *dirname,
+                                  size_t      dn_len)
     {
       make_closed();
       write("      <violation phase=");
@@ -183,31 +185,31 @@ namespace crpcut
       if (dirname)
         {
           write(" nonempty_dir=\"");
-          write(dirname, wrapped::strlen(dirname), escaped);
+          write(dirname, dn_len, escaped);
           write("\"");
         }
-      if (msg.size() == 0)
+      if (msg_len == 0)
         {
           write("/>\n");
           return;
         }
       write(">");
-      write(msg, escaped);
+      write(msg, msg_len, escaped);
       write("</violation>\n");
     }
 
-    void xml_formatter::print(const std::string &tag, const std::string &data)
+    void xml_formatter::print(const char *tag, size_t tlen, const char *data, size_t dlen)
     {
       make_closed();
       write("    <");
-      write(tag);
-      if (data.size() == 0)
+      write(tag, tlen);
+      if (dlen == 0)
         {
           write("/>\n");
           return;
         }
       write(">");
-      write(data, escaped);
+      write(data, dlen, escaped);
       write("</");
       write(tag);
       write(">\n");
@@ -243,7 +245,7 @@ namespace crpcut
       statistics_printed = true;
     }
 
-    void xml_formatter::nonempty_dir(const std::string &s)
+    void xml_formatter::nonempty_dir(const char *s)
     {
       write("  <remaining_files nonempty_dir=\"");
       write(s);
@@ -258,10 +260,12 @@ namespace crpcut
           write("  <blocked_tests>\n");
           blocked_tests = true;
         }
-      std::ostringstream os;
+      const size_t len = i->full_name_len() + 1;
+      char *name = static_cast<char*>(alloca(len));
+      stream::oastream os(name, name + len);
       write("    <test name=\"");
       os << *i;
-      write(os.str(), escaped);
+      write(os.begin(), os.size(), escaped);
       write("\"/>\n");
     }
 
@@ -287,11 +291,11 @@ namespace {
 namespace crpcut {
   namespace output {
 
-    void text_formatter::begin_case(const std::string &name, bool result)
+    void text_formatter::begin_case(const char *name, size_t name_len, bool result)
     {
       did_output = false;
       write(rlabel[result], 8);
-      write(name);
+      write(name, name_len);
       write("\n");
     }
 
@@ -300,38 +304,40 @@ namespace crpcut {
       write(barrier);
     }
 
-    void text_formatter::terminate(test_phase         phase,
-                                   const std::string &msg,
-                                   const char        *dirname)
+    void text_formatter::terminate(test_phase   phase,
+                                   const char  *msg,
+                                   size_t       msg_len,
+                                   const char  *dirname,
+                                   size_t       dn_len)
     {
       did_output = true;
       if (dirname)
         {
-          write(dirname, wrapped::strlen(dirname));
+          write(dirname, dn_len);
           write(" is not empty!!\n");
         }
-      if (!msg.empty())
+      if (msg_len)
         {
           write("phase=");
           write(phase_str[phase].str, phase_str[phase].len);
           write("  ");
           write(delim + 8 + phase_str[phase].len,
                 sizeof(delim) - 8 - phase_str[phase].len - 1);
-          write(msg);
+          write(msg, msg_len);
           write("\n");
           write(delim);
         }
     }
 
-    void text_formatter::print(const std::string &tag, const std::string &data)
+    void text_formatter::print(const char *tag, size_t tlen, const char *data, size_t dlen)
     {
       did_output = true;
-      const size_t len = write(tag);
+      const size_t len = write(tag, tlen);
       if (len < sizeof(delim))
         {
           write(delim + len, sizeof(delim) - len - 1);
         }
-      write(data);
+      write(data, dlen);
       write("\n");
     }
 
@@ -365,7 +371,7 @@ namespace crpcut {
       write(" FAILED!\n");
     }
 
-    void text_formatter::nonempty_dir(const std::string &s)
+    void text_formatter::nonempty_dir(const char *s)
     {
       write("Files remain under ");
       write(s);
@@ -379,9 +385,11 @@ namespace crpcut {
           write("The following tests were blocked from running:\n");
           blocked_tests = true;
         }
-      std::ostringstream os;
-      os << "  " << *i << '\n';
-      write(os.str());
+      const size_t len = i->full_name_len()+1;
+      char * name = static_cast<char*>(alloca(len));
+      stream::oastream os(name, name+len);
+      os << *i << '\n';
+      write(os.begin(), os.size());
     }
 
   }

@@ -260,6 +260,8 @@ namespace crpcut {
   class collate_t;
 
   namespace wrapped { // stdc and posix functions
+    void                 free(const void* p);
+    void                *malloc(size_t n);
     ssize_t              read(int fd, void* p, size_t s);
     int                  regcomp(regex_t*, const char*, int);
     size_t               regerror(int, const regex_t*, char*, size_t);
@@ -406,21 +408,31 @@ namespace crpcut {
     {
     public:
       posix_error(int e, const char *msg)
-        : errno_(e), msg_(msg)
       {
+        const size_t mlen = wrapped::strlen(msg);
+        const char *errstr = wrapped::strerror(e);
+        const size_t elen = wrapped::strlen(errstr);
+
+        char *str = static_cast<char*>(wrapped::malloc(elen + mlen + 6 + 1));
+        if (!str)
+          {
+            // better to bite the dust here, due to memory error, than to
+            // terminate in the what() member function
+            static std::bad_alloc exc;
+            throw exc;
+          }
+        lib::strcpy(lib::strcpy(lib::strcpy(str, errstr),
+                                " from "),
+                    msg);
+        msg_ = str;
       }
       virtual const char *what() const throw ()
       {
-        str_ = wrapped::strerror(errno);
-        str_ += " from ";
-        str_ += msg_;
-        return str_.c_str();
+        return msg_;
       }
-      virtual ~posix_error() throw () {}
+      virtual ~posix_error() throw () { wrapped::free(msg_);}
     private:
-      int errno_;
       const char *msg_;
-      mutable std::string str_;
     };
 
 
@@ -739,6 +751,18 @@ namespace crpcut {
         enforcer();
       };
 
+      template <typename T, typename U = crpcut::none>
+      struct nested
+      {
+        typedef typename T::crpcut_dependency type;
+      };
+
+      template <>
+      struct nested<crpcut::none, crpcut::none>
+      {
+        typedef crpcut::none type;
+      };
+
     } // namespace dependencies
 
     template <typename T>
@@ -843,7 +867,7 @@ namespace crpcut {
       void set_fds(int read, int write);
       void operator()(type t, std::ostringstream &os) const;
       void operator()(type t, const char *msg) const;
-      void operator()(type t, size_t len, const char *msg) const;
+      void operator()(type t, const char *msg, size_t len) const;
       template <typename T>
       void operator()(type t, const T& data) const;
     private:
@@ -863,8 +887,22 @@ namespace crpcut {
       direct_reporter() {}
       template <typename V>
       direct_reporter& operator<<(const V& v) { os << v;  return *this;  }
-      template <typename P>
-      direct_reporter& operator<<(P (&p)(P))  { os << p;  return *this;  }
+      template <typename V>
+      direct_reporter& operator<<(V (&p)(V)){ os << p; return *this; }
+      template <typename V>
+      direct_reporter& operator<<(V& (&p)(V&)){ os << p; return *this; }
+      direct_reporter& operator<<(std::ostream& (&p)(std::ostream&))
+      {
+        os << p; return *this;
+      }
+      direct_reporter& operator<<(std::ios& (&p)(std::ios&))
+      {
+        os << p; return *this;
+      }
+      direct_reporter& operator<<(std::ios_base& (&p)(std::ios_base&))
+      {
+        os << p; return *this;
+      }
       ~direct_reporter() { report(t, os); }
     private:
       direct_reporter(const direct_reporter &);
@@ -968,6 +1006,7 @@ namespace crpcut {
       // returns 0 on mismatch, otherwise a pointer into n where namespace name
       // ended.
 
+      std::size_t full_name_len() const;
       friend std::ostream &operator<<(std::ostream &, const namespace_info &);
     private:
       const char *name;
@@ -1024,6 +1063,7 @@ namespace crpcut {
       {
         return t.print_name(os);
       }
+      std::size_t full_name_len() const;
       bool match_name(const char *name) const;
       void setup(pid_t pid,
                  int in_fd, int out_fd,
@@ -1107,7 +1147,9 @@ namespace crpcut {
               return;
             }
         }
-      std::ostringstream msg;
+      size_t len = 80 + wrapped::strlen(name) + (v ? wrapped::strlen(v) : 0);
+      char *msg_str = static_cast<char*>(alloca(len));
+      stream::oastream msg(msg_str, msg_str + len);
       msg << "Parameter " << name << " with ";
       if (v)
         {
@@ -1118,7 +1160,7 @@ namespace crpcut {
           msg << "no value";
         }
       msg << " cannot be interpreted as desired type";
-      comm::report(comm::exit_fail, msg);
+      comm::report(comm::exit_fail, msg.begin(), msg.size());
     }
     template <typename T>
     static T get_parameter(const char *name)
@@ -1270,7 +1312,7 @@ namespace crpcut {
       stream::toastream<128> os;
       os << "Unexpectedly survived\nExpected ";
       T::crpcut_reg().expected_death(os);
-      comm::report(comm::exit_fail, os.size(), os.begin());
+      comm::report(comm::exit_fail, os.begin(), os.size());
     }
 
     template <typename T,
@@ -2440,13 +2482,13 @@ namespace crpcut {
     reporter::operator()(type t, std::ostringstream &os) const
     {
       const std::string &s = os.str();
-      operator()(t, s.length(), s.c_str());
+      operator()(t, s.c_str(), s.length());
     }
 
     inline void
     reporter::operator()(type t, const char *msg) const
     {
-      operator()(t, wrapped::strlen(msg), msg);
+      operator()(t, msg, wrapped::strlen(msg));
     }
 
     template <typename T>
@@ -3086,7 +3128,7 @@ namespace crpcut {
       }
       ~type()
       {
-        regfree(&r);
+        wrapped::regfree(&r);
         delete[] errmsg;
       }
     private:
@@ -3523,21 +3565,6 @@ class crpcut_testsuite_dep
 {
 };
 
-namespace crpcut
-{
-  template <typename T, typename U = crpcut::none>
-  struct dep_type
-  {
-    typedef typename T::crpcut_dependency type;
-  };
-
-  template <>
-  struct dep_type<crpcut::none, crpcut::none>
-  {
-    typedef crpcut::none type;
-  };
-}
-
 #define TEST(...) TEST_DEF(__VA_ARGS__, crpcut::none)
 #define DISABLED_TEST(...) DISABLED_TEST_DEF(__VA_ARGS__, crpcut::none)
 
@@ -3547,7 +3574,7 @@ namespace crpcut
     namespace {                                                         \
       class crpcut_testsuite_dep                                        \
         : public virtual crpcut_parent_testsuite_dep,                   \
-          public virtual crpcut::dep_type<__VA_ARGS__>::type            \
+          public virtual crpcut::policies::dependencies::nested<__VA_ARGS__>::type \
       {                                                                 \
       };                                                                \
       static crpcut::implementation::namespace_info *parent_namespace   \

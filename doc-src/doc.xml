@@ -445,7 +445,7 @@ The defined test case modifiers are:
                                                 <id>clock_gettime()</id> with
                                                 <id>CLOCK_MONOTONIC</id>.</def>
 <def notion="DEPENDS_ON(...)">... is a list of test cases, or
-                              <id>ALL_IN(ns)</id>. Before the test can
+                              <id>ALL_TESTS(ns)</id>. Before the test can
                               run, all tests in the list, or all tests in
                               <id>TESTSUITE(ns)</id> must have finished
                               successfully.</def>

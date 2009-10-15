@@ -97,7 +97,7 @@ namespace crpcut {
             os << "CPU-time timeout " << duration_ms
                << "ms exceeded.\n  Actual time to completion was " << diff
                << "ms";
-            report(comm::exit_fail, os.size(), os.begin());
+            report(comm::exit_fail, os.begin(), os.size());
           }
       }
 
@@ -131,7 +131,7 @@ namespace crpcut {
                << "ms";
             if (test_case_factory::tests_as_child_procs())
               {
-                report(comm::exit_fail, os.size(), os.begin());
+                report(comm::exit_fail, os.begin(), os.size());
               }
             else
               {

@@ -67,6 +67,11 @@ namespace crpcut {
       return *p ? 0 : match;
     }
 
+    std::size_t namespace_info::full_name_len() const
+    {
+      return (name ? wrapped::strlen(name) : 0)
+        + (parent ? 2 + parent->full_name_len() : 0);
+    }
     std::ostream &operator<<(std::ostream &os, const namespace_info &ns)
     {
       if (!ns.parent) return os;
@@ -238,6 +243,11 @@ namespace crpcut {
       return crpcut::wrapped::strcmp(p, name_) == 0;
     }
 
+    std::size_t test_case_registrator::full_name_len() const
+    {
+      return ns_info->full_name_len() + 2 + wrapped::strlen(name_);
+    }
+
     std::ostream &test_case_registrator::print_name(std::ostream &os) const
     {
       os << *ns_info;
@@ -259,7 +269,7 @@ namespace crpcut {
           char *msg = static_cast<char *>(alloca(head_size + len + 1));
           lib::strcpy(lib::strcpy(msg, TEMPLATE_HEAD), e.what());
 #undef TEMPLATE_HEAD
-          report(comm::exit_fail, head_size + len, msg);
+          report(comm::exit_fail, msg, head_size + len);
         }
       catch (...)
         {

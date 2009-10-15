@@ -70,4 +70,9 @@ TESTSUITE(output)
     const char msg[] = "apa";
     FAIL << msg << "=" << std::hex << 31;
   }
+
+  TEST(should_succeed_with_info_endl)
+  {
+    INFO << "apa" << std::endl << "katt";
+  }
 }

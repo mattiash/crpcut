@@ -32,7 +32,7 @@ namespace crpcut {
 
   namespace comm {
 
-    void reporter::operator()(type t, size_t len, const char *msg) const
+    void reporter::operator()(type t, const char *msg, size_t len) const
     {
       if (!test_case_factory::tests_as_child_procs())
         {
