@@ -35,28 +35,51 @@ extern "C"
 #include <unistd.h>
 }
 
+#ifdef USE_GMOCK_11
+#define GET(x) x ## _
+#define SUCCESS TPRT_SUCCESS
+#else
+#ifdef USE_GMOCK_14
+#define GET(x) data_->x
+#define SUCCESS TestPartResult::kSuccess
+#else
+#error Unknown version of google mock
+#endif
+#endif
 namespace testing
 {
   void InitGoogleTest(int*, char **) {}
   void InitGoogleTest(int*, wchar_t **) {}
+
+  const char *TestInfo::test_case_name() const
+  {
+    return "";
+  }
+  const char *TestInfo::name() const
+  {
+    return "";
+  }
   namespace internal
   {
-
+    class UnitTestImpl
+    {
+    public:
+      UnitTestImpl(UnitTest*) {};
+    };
     void AssertHelper::operator=(const Message &msg) const
     {
-      if (type_ == TPRT_SUCCESS) return;
-
       std::ostringstream os;
-      if (file_)
+      if (GET(type) == SUCCESS) return;
+      if (GET(file))
         {
-          os << file_ << ':' << line_ << '\n';
+          os << GET(file) << ':' << GET(line) << '\n';
         }
-      os << message_ << msg;
+      os << GET(message) << msg;
       crpcut::comm::report(crpcut::comm::exit_fail, os);
     }
   }
   UnitTest* UnitTest::GetInstance() { static UnitTest obj; return &obj; }
-  UnitTest::UnitTest() {}
+  UnitTest::UnitTest()  { static internal::UnitTestImpl obj(this); impl_ = &obj;}
   UnitTest::~UnitTest() { }
 }
 namespace crpcut {

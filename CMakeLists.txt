@@ -65,6 +65,28 @@ if (WITH_GOOGLE_MOCK)
    endif (NOT GOOGLE_MOCK_DIR)
    file(GLOB GMOCK_LIB_SRCS src/gmock.cpp)
    set(SELFTEST_PARAM ${SELFTEST_PARAM} gmock)
+
+   file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/gmock_11.cpp
+        "#include <gmock/gmock.h>\nstatic testing::TestPartResultType apa = testing::TPRT_SUCCESS;\nint main() {}\n")
+   try_compile(HAVE_GMOCK_11 ${CMAKE_BINARY_DIR}
+     ${CMAKE_BINARY_DIR}/CMakeTmp/gmock_11.cpp
+     COMPILE_DEFINITIONS -I ${GOOGLE_MOCK_DIR}/include)
+   if (HAVE_GMOCK_11)
+      add_definitions(-DUSE_GMOCK_11)
+   else (HAVE_GMOCK_11)
+   file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/gmock_14.cpp
+        "#include <gmock/gmock.h>\nstatic testing::TestPartResult::Type apa = testing::TestPartResult::kSuccess;\nint main() {} \n")
+    try_compile(HAVE_GMOCK_14 ${CMAKE_BINARY_DIR}
+      ${CMAKE_BINARY_DIR}/CMakeTmp/gmock_14.cpp
+     COMPILE_DEFINITIONS -I ${GOOGLE_MOCK_DIR}/include)
+    if (NOT HAVE_GMOCK_14)
+      message(FATAL_ERROR "Unknown version of Google Mock")
+    else (NOT HAVE_GMOCK_14)
+      add_definitions(-DUSE_GMOCK_14)
+    endif (NOT HAVE_GMOCK_14)
+  endif (HAVE_GMOCK_11)
+
+
 endif (WITH_GOOGLE_MOCK)
 
 
