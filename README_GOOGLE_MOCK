@@ -1,5 +1,5 @@
-The support for google-mock <http://code.google.com/p/googlemock> is still
-considered experimental.
+The support for google-mock <http://code.google.com/p/googlemock> is
+experimental.
 
 Building
 ========
@@ -20,6 +20,9 @@ defaults.
 Only useful together with -DWITH_GOOGLE_MOCK=yes. Explicitly points out the
 google-mock headers and libs to reside under <path> (the exact same path used
 with --prefix=<path> to google-mock's ./configure.)
+
+Note that if you upgrade to a new version of google-mock, you must rerun
+cmake for crpcut and install again.
 
 Using
 =====

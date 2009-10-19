@@ -1,3 +1,7 @@
+2009-10-19 0.7.3
+
+         * Added support for google-mock 1.4.0
+
 2009-10-15 0.7.2
 
          * Small bugfixes and reduced memory footprint
