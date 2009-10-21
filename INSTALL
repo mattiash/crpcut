@@ -16,7 +16,8 @@ on http://crpcut.sourceforge.net
 
 Ruby (http://www.ruby-lang.org/en/) if you want to run a selftest
 
-
+If google-mock (http://code.google.com/p/googlemock) is to be used, at least version
+1.4.0 is required.
 
 Build
 =====
