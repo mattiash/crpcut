@@ -65,7 +65,7 @@ run if all tests it depends on have completed successfully. Results
 can be validated using a number of <id>ASSERT</id> macros. Tests can use
 fixtures to express common contents. Tests can be expected to exit by
 exception, or die. Expectations that are not met are errors. Messages on
-<id>stderr</id> and <id>stdout</id> are gaught, and included in the result log.
+<id>stderr</id> and <id>stdout</id> are collected, and included in the result log.
 </chapter>
 
 <chapter title="Why crpcut">
