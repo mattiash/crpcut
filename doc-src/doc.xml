@@ -250,8 +250,12 @@ for <link url="http://software.intel.com/en-us/intel-compilers/">ICC</link>
 becomes
 <code>  &gt; CXX=icpc cmake ...</code>
 <p/>
-If you want to enable support for
-<link url="http://code.google.com/p/googlemock">google-mock</link> add also
+crpcut supports
+<link url="http://code.google.com/p/googlemock">google-mock</link>
+automatically, but should you want to include test cases for the built-in self
+test, that verifies the
+<link url="http://code.google.com/p/googlemock">google-mock</link> interaction,
+add
 <code>
   -DWITH_GOOGLE_MOCK=yes
 </code>
@@ -259,7 +263,7 @@ to the <link url="http://www.cmake.org">cmake</link> line. If
 <link url="http://code.google.com/p/googlemock">google-mock</link> is not
 installed in a directory that is reachable by you C++ compiler and
 linker, without additional flags, provide
-<link url="http://www.cmake.org">CMake</link> with the directory of
+<link url="http://www.cmake.org">cmake</link> with the directory of
 <link url="http://code.google.com/p/googlemock">google-mock</link> using:
 <code>
   -DGOOGLE_MOCK_DIR=path
@@ -267,11 +271,8 @@ linker, without additional flags, provide
 where path is the exact same as used in the <id>--prefix=path</id> option for
 <id>configure</id> in
 <link url="http://code.google.com/p/googlemock">google-mock</link>.
-Note that if you upgrade to a new version of
-<link url="http://code.google.com/p/googlemock">google-mock</link>,
-you must reinstall crpcut.
 <p/>
-Once <link url="http://www.cmake.org">CMake</link> has completed, build crpcut
+Once <link url="http://www.cmake.org">cmake</link> has completed, build crpcut
 by typing:
 <code>
   &gt; make
@@ -664,6 +665,94 @@ calculations with greater precision than
 64 bits (<id>double</id>.)
 </chapter>
 
+<chapter title="Using google-mock with crpcut">
+When using <link url="http://code.google.com/p/googlemock">google-mock</link>
+in crpcut tests, the order of the <id>#include</id> preprocessor directives
+are important:
+<code>
+  #include &lt;gmock/gmock.h&gt; // Always gmock/gmock.h before crpcut.hpp
+  #include &lt;crpcut.hpp&gt;    // since crpcut redefines some macros.
+</code>
+
+There's an important difference when running
+<link url="http://code.google.com/p/googlemock">google-mock</link> under crpcut
+compared to running under
+<link url="http://code.google.com/p/googletest">google-test</link>. Unlike
+<link url="http://code.google.com/p/googletest">google-test</link>, crpcut always
+terminates the test case immediately when a violation is detected.
+<p/>
+<link url="http://code.google.com/p/googlemock">google-mock</link> interacts very
+nicely with crpcut fixtures. Here's an example of letting several test cases use the
+same mocks, in different sequences.
+
+<code>
+  #include &lt;gmock/gmock.h&gt;
+  #include &lt;crpcut.hpp&gt;
+
+  struct iface1 {
+    virtual void f1(int) = 0;
+  };
+
+  struct iface2 {
+    virtual void f1(const char *) = 0;
+  };
+
+  struct mock1 : iface1 {
+    MOCK_METHOD1(f1, void(int));
+  };
+
+  struct mock2 : iface2 {
+    MOCK_METHOD1(f1, void(const char*));
+  };
+
+  struct fix_base {
+    mock1 m1;
+    mock2 m2;
+  };
+
+  class fix_seq1 : public fix_base {
+  public:
+    fix_seq1() {
+      EXPECT_CALL(m1, f1(3)).InSequence(s);
+      EXPECT_CALL(m2, "hello").InSequence(s);
+    }
+  private:
+    testing::sequence s; // prevent test cases from changing the sequence
+  };
+
+  class fix_seq2 : public fix_base {
+  public:
+    fix_seq2() {
+      EXPECT_CALL(m1, f1(3)).InSequence(s1, s2);
+      EXPECT_CALL(m1, f1(4)).InSequence(s1);
+    }
+  protected:
+    testing::sequence s1; // open-ended, for test-cases
+    testing::sequence s2; // to add more to the sequences
+  };
+
+  TEST(t1, fix_seq1)
+  {
+    ... // do things with m1 and m2
+  }
+
+  TEST(t2, fix_seq2)
+  {
+    // add more to the started sequence
+    EXPECT_CALL(m2, f("hello")).InSequence(s2);
+
+    ... // do things with m1 and m2
+  }
+
+  TEST(t3, fix_seq2)
+  {
+    // add other things to the started sequence
+    EXPECT_CALL(m2, f("world")).InSequence(s2);
+
+    ... // do things with m1 and m2
+  }
+</code>
+</chapter>
 <chapter title="The main program">
 The normal <id>main()</id> is exactly the below:
 <code>
@@ -734,13 +823,8 @@ the output formats so output on stdout becomes XML-formatted and named file
 output becomes human readable.
 <p/>
 The test program must be linked with <id>libcrpcut.so</id>. If you use
-<link url="http://code.google.com/p/googlemock">google-mock</link>, extra care
-must be taken with the linking. You must link with both <id>libcrpcut.so</id>
-and <id>libcrpcut_gmock.so</id> from crpcut, before <id>libgmock.so</id> and
-<id>libgtest.so</id> from the
-<link url="http://code.google.com/p/googlemock">google-mock</link> installation.
-Failing to follow this link order may produce a program that can run, but
-will behave erratically.
+<link url="http://code.google.com/p/googlemock">google-mock</link> in your test
+cases, you must also link with <id>libgmock.so</id> and <id>libgtest.so</id>.
 </chapter>
 
 <chapter title="Debugging">

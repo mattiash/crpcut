@@ -21,10 +21,11 @@ Ruby (http://www.ruby-lang.org/en/) if you want to run a selftest
 Build
 =====
 
-1. 'cd' to the directory containing the unpacked crpcut files and type
-   'cmake .', or if you want to control the installation directory,
-   type 'cmake . -DCMAKE_INSTALL_PREFIX=<desired install directory>'.
-   See also README_GOOGLE_MOCK for additional parameters.
+1. 'cd' to the directory containing the unpacked crpcut files and type 'cmake .',
+   or if you want to control the installation directory, type
+   'cmake . -DCMAKE_INSTALL_PREFIX=<desired install directory>'. If you have
+   google-mock, and want to run a self test (below) that verifies that google-mock
+   and crpcut cooperate, add -DWITH_GOOGLE_MOCK=yes to the 'cmake' command.
 
    If you want tu use Intel ICC instead of your default compiler,
    type 'CXX=icpc cmake ...'
@@ -43,8 +44,9 @@ Out-of-tree Build
    this to be an empty directory.
 
 2. type 'cmake <crpcut source directory>", optionally together with the
-   -DCMAKE_INSTALL_PREFIX=<path> described above. See also
-   README_GOOGLE_MOCK for additional parameters.
+   -DCMAKE_INSTALL_PREFIX=<path> described above. If you have google-mock,
+   and want to run a self test (below) that verifies that google-mock and
+   crpcut cooperate, add -DWITH_GOOGLE_MOCK=yes to the 'cmake' command.
 
    If you want tu use Intel ICC instead of your default compiler,
    type 'CXX=icpc cmake ...'

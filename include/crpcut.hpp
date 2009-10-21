@@ -118,17 +118,7 @@
 #undef TYPED_TEST_CASE_P
 #undef TYPED_TEST_P
 
-namespace crpcut {
-  class you_must_link_with_libcrpcut_gmock
-  {
-  public:
-    you_must_link_with_libcrpcut_gmock();
-  };
-  static you_must_link_with_libcrpcut_gmock libcrpcut_gmock_reminder;
-}
 #else
-#define GMOCK_INCLUDE_GMOCK_GMOCK_H_
-
 // In a way this isn't nice, but the resulting compiler error gives
 // the user a very obvious hint about what's wrong and what to do instead
 
@@ -3608,4 +3598,56 @@ class crpcut_testsuite_dep
   << __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)  "\n"
 
 
+#ifdef GMOCK_INCLUDE_GMOCK_GMOCK_H_
+namespace crpcut {
+  class gmock_initializer
+  {
+    class reporter : public ::testing::EmptyTestEventListener
+    {
+      static void *obj_addr()
+      {
+        class placeholder
+        {
+          char ballast[sizeof(reporter)];
+        };
+        static placeholder here; // strictly not guaranteed to fulfil alignment
+        return &here;            // requirements, but in the real world it works
+      }
+    public:
+      void *operator new(size_t)
+      {
+        return obj_addr();
+      }
+      void operator delete(void *)
+      {
+      }
+      virtual void OnTestPartResult(const testing::TestPartResult& result)
+      {
+        if (result.failed())
+          {
+            std::ostringstream os;
+            if (result.file_name())
+              {
+                os << result.file_name() << ":" << result.line_number() << "\n";
+              }
+            os << result.summary() << result.message();
+            crpcut::comm::report(crpcut::comm::exit_fail, os);
+          }
+      }
+    };
+  public:
+    gmock_initializer()
+    {
+      static reporter *obj = new reporter();
+      ::testing::TestEventListeners& listeners =
+          ::testing::UnitTest::GetInstance()->listeners();
+      delete listeners.Release(listeners.default_result_printer());
+      listeners.Append(obj);
+    }
+  };
+  namespace {
+    gmock_initializer gmock_initializer_obj;
+  }
+}
+#endif
 #endif // CRPCUT_HPP

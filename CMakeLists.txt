@@ -51,43 +51,6 @@ file(GLOB LIB_SRCS
      src/output.cpp
 )
 include_directories(include)
-if (WITH_GOOGLE_MOCK)
-   if (NOT GOOGLE_MOCK_DIR)
-      find_library(GOOGLE_MOCK_LIB "gmock")
-      if (NOT GOOGLE_MOCK_LIB)
-         message(FATAL_ERROR
-                 "Can't find google mock, try -DGOOGLE_MOCK_DIR=<path>")
-      endif (NOT GOOGLE_MOCK_LIB)
-      set(GMOCK_LIBS "-lgmock -lgtest")
-   else (NOT GOOGLE_MOCK_DIR)
-      include_directories(AFTER ${GOOGLE_MOCK_DIR}/include)
-      set(GMOCK_LIBS "-Wl,-rpath,${GOOGLE_MOCK_DIR}/lib -L${GOOGLE_MOCK_DIR}/lib -lgmock -lgtest")
-   endif (NOT GOOGLE_MOCK_DIR)
-   file(GLOB GMOCK_LIB_SRCS src/gmock.cpp)
-   set(SELFTEST_PARAM ${SELFTEST_PARAM} gmock)
-
-   file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/gmock_11.cpp
-        "#include <gmock/gmock.h>\nstatic testing::TestPartResultType apa = testing::TPRT_SUCCESS;\nint main() {}\n")
-   try_compile(HAVE_GMOCK_11 ${CMAKE_BINARY_DIR}
-     ${CMAKE_BINARY_DIR}/CMakeTmp/gmock_11.cpp
-     COMPILE_DEFINITIONS -I ${GOOGLE_MOCK_DIR}/include)
-   if (HAVE_GMOCK_11)
-      add_definitions(-DUSE_GMOCK_11)
-   else (HAVE_GMOCK_11)
-   file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/gmock_14.cpp
-        "#include <gmock/gmock.h>\nstatic testing::TestPartResult::Type apa = testing::TestPartResult::kSuccess;\nint main() {} \n")
-    try_compile(HAVE_GMOCK_14 ${CMAKE_BINARY_DIR}
-      ${CMAKE_BINARY_DIR}/CMakeTmp/gmock_14.cpp
-     COMPILE_DEFINITIONS -I ${GOOGLE_MOCK_DIR}/include)
-    if (NOT HAVE_GMOCK_14)
-      message(FATAL_ERROR "Unknown version of Google Mock")
-    else (NOT HAVE_GMOCK_14)
-      add_definitions(-DUSE_GMOCK_14)
-    endif (NOT HAVE_GMOCK_14)
-  endif (HAVE_GMOCK_11)
-
-
-endif (WITH_GOOGLE_MOCK)
 
 
 if (NOT CMAKE_INSTALL_PREFIX)
@@ -231,6 +194,33 @@ if(HAVE_EPOLL)
   add_definitions(-DHAVE_EPOLL)
 endif(HAVE_EPOLL)
 
+# check google-mock
+if (WITH_GOOGLE_MOCK)
+  if (NOT GOOGLE_MOCK_DIR)
+    find_library(GOOGLE_MOCK_LIB "gmock")
+    if (NOT GOOGLE_MOCK_LIB)
+      message(FATAL_ERROR
+        "Can't find google mock, try to add -DGOOGLE_MOCK_DIR=<path> to the command line")
+    endif (NOT GOOGLE_MOCK_LIB)
+    set(GMOCK_LIBS "-lgmock -lgtest")
+  else (NOT GOOGLE_MOCK_DIR)
+    include_directories(AFTER ${GOOGLE_MOCK_DIR}/include)
+    set(GMOCK_LIBS "-Wl,-rpath,${GOOGLE_MOCK_DIR}/lib -L${GOOGLE_MOCK_DIR}/lib -lgmock -lgtest")
+  endif (NOT GOOGLE_MOCK_DIR)
+  file(GLOB GMOCK_LIB_SRCS src/gmock.cpp)
+  set(SELFTEST_PARAM ${SELFTEST_PARAM} gmock)
+
+  file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/gmock.cpp
+    "#include <gmock/gmock.h>\nclass C : public ::testing::EmptyTestEventListener {};\nint main() {\n  C obj;\n  ::testing::UnitTest::GetInstance()->listeners().Append(&obj);\n}\n")
+  try_compile(HAVE_GMOCK ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/CMakeTmp/gmock.cpp
+    CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${GOOGLE_MOCK_DIR}/include
+    -DLINK_DIRECTORIES=${GOOGLE_MOCK_DIR}/lib
+    -DLINK_LIBRARIES=gtest)
+  if (NOT HAVE_GMOCK)
+    message(FATAL_ERROR "Unknown version of Google Mock")
+  endif (NOT HAVE_GMOCK)
+endif (WITH_GOOGLE_MOCK)
 
 include_directories(include)
 
@@ -241,11 +231,6 @@ set_target_properties(crpcut PROPERTIES
  LINK_FLAGS "${EXTRA_LIBS}")
 
 if(GMOCK_LIBS)
-  add_library(crpcut_gmock SHARED ${GMOCK_LIB_SRCS})
-  set_target_properties(crpcut_gmock PROPERTIES
-    VERSION ${CRPCUT_LIB_VERSION}
-    SOVERSION ${CRPCUT_LIB_SOVERSION}
-    LINK_FLAGS "${GMOCK_LIBS}")
   file(GLOB GMOCK_TEST_SRCS   test-src/gmock.cpp)
 endif(GMOCK_LIBS)
 
@@ -274,7 +259,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FEATURE_SELECTION}")
 add_executable(testprog EXCLUDE_FROM_ALL ${TEST_SRCS})
 target_link_libraries(testprog crpcut)
 if (GMOCK_LIBS)
-  target_link_libraries(testprog crpcut_gmock "${GMOCK_LIBS}")
+  target_link_libraries(testprog "${GMOCK_LIBS}")
 endif (GMOCK_LIBS)
 
 find_program(XSLTPROC "xsltproc")
@@ -325,9 +310,6 @@ install(
 
 install(TARGETS crpcut DESTINATION lib)
 
-if(GMOCK_LIBS)
-  install(TARGETS crpcut_gmock DESTINATION lib)
-endif(GMOCK_LIBS)
 install(
   FILES ${TEST_SRCS}
   DESTINATION "${SHAREDIR}/example_source"
