@@ -431,8 +431,11 @@ namespace crpcut {
         return msg_;
       }
       virtual ~posix_error() throw () { wrapped::free(msg_);}
+      posix_error(const posix_error &e) : msg_(e.msg_) { e.msg_ = 0; } // move
     private:
-      const char *msg_;
+      posix_error();
+      typedef const char *cstr;
+      mutable cstr msg_;
     };
 
 
