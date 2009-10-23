@@ -172,49 +172,49 @@ TESTS = {
       /#{A_H}ASSERT_TRUE\(num\)\s+where\s+num\s*=\s*0/me),
 
   'asserts::should_succeed_assert_no_throw' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_assert_throw_with_correct_exception' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_on_assert_eq_with_fixture' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_on_assert_false_with_fixture' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_on_assert_ge_with_fixture' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_on_assert_gt_with_fixture' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_on_assert_le_with_fixture' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_on_assert_lt_with_fixture' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_on_assert_ne_with_fixture' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_on_assert_true_with_fixture' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_throw_any_with_int_exception' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_pointer_eq_0' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_0_eq_pointer' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_void_ptr_eq_ptr' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_ptr_eq_void_ptr' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_fail_pointer_eq_0' =>
   Test.new('FAILED').
@@ -237,10 +237,10 @@ TESTS = {
       /#{A_H}ASSERT_EQ\(pi, pv\)\n\s+where pi = (0x)?[[:xdigit:]]+\n\s+pv = 0\s*$/me),
 
   'asserts::should_succeed_class_const_int_member' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'asserts::should_succeed_0_eq_pointer_to_member' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'death::by_exception::should_fail_any_exception' =>
   Test.new('FAILED').
@@ -268,10 +268,10 @@ TESTS = {
       /Unexpectedly caught \.\.\./),
 
   'death::by_exception::should_succed_with_any_exception' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'death::by_exception::should_succeed_with_range_error_thrown' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'death::by_exit::should_fail_with_exit_code_3' =>
   Test.new('FAILED').
@@ -289,7 +289,7 @@ TESTS = {
       /Exited with code 4\s+Expected exit with code 3/me),
 
   'death::by_exit::should_succeed_with_exit_code_3' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'death::by_signal::should_fail_with_left_behind_core_dump_due_to_death_on_signal_11' =>
   Test.new('FAILED').
@@ -313,30 +313,30 @@ TESTS = {
       /Died on signal 11\s+Expected normal exit/me),
 
   'death::by_signal::should_succeed_with_death_on_signal_11' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'default_success' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
  'depends::should_not_run_due_to_one_failed_dependency_success_otherwise' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'depends::should_succeed_after_success_dependencies' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'ext_parameters::should_succeed_expected_value' =>
-  Test.new('OK').
+  Test.new('PASSED').
   log('info',
       /katt/),
 
   'ext_parameters::should_succeed_no_value' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'ext_parameters::should_succeed_no_value_with_too_long_name' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'ext_parameters::should_succeed_value_interpret' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'ext_parameters::should_fail_value_interpret' =>
   Test.new('FAILED').
@@ -349,10 +349,10 @@ TESTS = {
       /Parameter orm with no value cannot be interpreted/),
 
   'fp::abs::should_succeed_add_epsilon_float' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::abs::should_succeed_sub_epsilon_float' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::abs::should_fail_add_2epsilon_float' =>
   Test.new('FAILED').
@@ -365,10 +365,10 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(.*abs_diff.*param1 = \d+\.\d+.*Max allowed difference is.*Actual difference is.*/me),
 
   'fp::abs::should_succeed_add_epsilon_double' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::abs::should_succeed_sub_epsilon_double' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::abs::should_fail_add_2epsilon_double' =>
   Test.new('FAILED').
@@ -382,10 +382,10 @@ TESTS = {
 
 
   'fp::abs::should_succeed_add_epsilon_long_double' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::abs::should_succeed_sub_epsilon_long_double' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::abs::should_fail_add_2epsilon_long_double' =>
   Test.new('FAILED').
@@ -403,7 +403,7 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(.*relative_diff.*(\s+param[12] = \d+\.\d+){2}.*Max allowed relative difference is.*Actual relative difference is/me),
 
   'fp::relative::should_succeed_relative_epsilon_float' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::relative::should_fail_relative_epsilon_double' =>
   Test.new('FAILED').
@@ -411,7 +411,7 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(.*relative_diff.*(\s+param[12] = \d+\.\d+){2}.*Max allowed relative difference is.*Actual relative difference is/me),
 
   'fp::relative::should_succeed_relative_epsilon_double' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::relative::should_fail_relative_epsilon_long_double' =>
   Test.new('FAILED').
@@ -419,13 +419,13 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(.*relative_diff.*(\s+param[12] = \d+\.\d+){2}.*Max allowed relative difference is.*Actual relative difference is/me),
 
   'fp::relative::should_succeed_relative_epsilon_long_double' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_float::should_succeed_equal_zeroes_0_ulps' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_float::should_succeed_eps_diff_1_ulp' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_float::should_fail_eps_diff_0_ulp' =>
   Test.new('FAILED').
@@ -433,7 +433,7 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = 1\n\s+param2 = 1/me),
 
   'fp::ulps::using_float::should_succeed_high_denorm_1_ulp' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_float::should_fail_high_denorm_0_ulp' =>
   Test.new('FAILED').
@@ -441,7 +441,7 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = [0-9\.e+-]+\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_float::should_succeed_low_denorm_1_ulp' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_float::should_fail_low_denorm_0_ulp' =>
   Test.new('FAILED').
@@ -449,7 +449,7 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = 0\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_float::should_succeed_pos_neg_denorm_min_2_ulps' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_float::should_fail_pos_neg_denorm_min_1_ulp' =>
   Test.new('FAILED').
@@ -467,14 +467,14 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(1\), f1, f2\)\n\s+param1 = [Ii][Nn][Ff]\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_float::should_succeed_max_inf_1_ulp' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
 
   'fp::ulps::using_double::should_succeed_equal_zeroes_0_ulps' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_double::should_succeed_eps_diff_1_ulp' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_double::should_fail_eps_diff_0_ulp' =>
   Test.new('FAILED').
@@ -482,7 +482,7 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = 1\n\s+param2 = 1/me),
 
   'fp::ulps::using_double::should_succeed_high_denorm_1_ulp' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_double::should_fail_high_denorm_0_ulp' =>
   Test.new('FAILED').
@@ -490,7 +490,7 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = [0-9\.e+-]+\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_double::should_succeed_low_denorm_1_ulp' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_double::should_fail_low_denorm_0_ulp' =>
   Test.new('FAILED').
@@ -498,7 +498,7 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = 0\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_double::should_succeed_pos_neg_denorm_min_2_ulps' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'fp::ulps::using_double::should_fail_pos_neg_denorm_min_1_ulp' =>
   Test.new('FAILED').
@@ -516,7 +516,7 @@ TESTS = {
       /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(1\), f1, f2\)\n\s+param1 = [Ii][Nn][Ff]\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_double::should_succeed_max_inf_1_ulp' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
 
   'parametrized::should_fail_assert_lt_char_array_string' =>
@@ -535,16 +535,16 @@ TESTS = {
       /#{P_H}ASSERT_LT\(p1, p2\)\s+where p1 = 4\s+p2 = 3.14[12]\d*/me),
 
   'parametrized::should_succeed_assert_lt_char_array_string' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'parametrized::should_succeed_assert_lt_int_char' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'parametrized::should_succeed_assert_lt_int_double' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'predicates::should_succeed_simple_func' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'predicates::should_fail_simple_func' =>
   Test.new('FAILED').
@@ -552,7 +552,7 @@ TESTS = {
        /#{PR_H}ASSERT_PRED\(is_positive, v\)\s+param1 = -1/me),
 
   'predicates::should_succeed_simple_func_with_param_side_effect' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'predicates::should_fail_simple_func_with_param_side_effect' =>
   Test.new('FAILED').
@@ -560,7 +560,7 @@ TESTS = {
        /#{PR_H}ASSERT_PRED\(is_positive, --v\)\s+param1 = -1/me),
 
   'predicates::should_succeed_func_wrap_class' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'predicates::should_fail_func_wrap_class' =>
   Test.new('FAILED').
@@ -568,7 +568,7 @@ TESTS = {
       /#{PR_H}ASSERT_PRED\(bifuncwrap.*less.*strcmp.*katt.*apa\"\)\s+param1 = katt\s+param2 = apa/me),
 
   'predicates::should_succeed_streamable_pred' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'predicates::should_fail_streamable_pred' =>
   Test.new('FAILED').
@@ -576,7 +576,7 @@ TESTS = {
       /#{PR_H}ASSERT_PRED\(string_equal\(.*"katt"\)\s+param1 = katt\s+string_equal.*\) :\ncompare.*equal to "apa"/me),
 
   'predicates::should_succeed_ptr_deref_eq' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'predicates::should_fail_ptr_deref_eq' =>
   Test.new('FAILED').
@@ -584,10 +584,10 @@ TESTS = {
       /#{PR_H}ASSERT_PRED.*pointing to:\s+4.*pointing to:\s+3/me),
 
   'collate::should_succeed_collation_string' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'collate::should_succeed_collation_char_array' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'collate::should_fail_collation_string' =>
   Test.new('FAILED').
@@ -600,7 +600,7 @@ TESTS = {
       /right hand value = \"APA\"/me),
 
   'collate::should_succeed_equal_upcase' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'collate::should_fail_with_nonexisting_locale' =>
   Test.new('FAILED').
@@ -608,7 +608,7 @@ TESTS = {
       /ASSERT_.*caught std::exception/me),
 
   'regex::should_succeed_simple_re' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'regex::should_fail_illegal_re' =>
   Test.new('FAILED').
@@ -626,7 +626,7 @@ TESTS = {
       /#{RE_H}ASSERT_PRED.*regex.*\)\n\s+param1 = APA.*\) :\ndid not match/me),
 
   'regex::should_succeed_case_mismatch' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'regex::should_fail_ere_paren_on_non_e_re' =>
   Test.new('FAILED').
@@ -634,10 +634,10 @@ TESTS = {
       /#{RE_H}ASSERT_PRED.*\).*\)\s+param1 = apakattkattkatttupp.*did not match/me),
 
   'regex::should_succeed_ere_paren_on_e_re' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'regex::should_succeed_non_ere_paren_on_non_e_re' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'regex::should_fail_non_ere_paren_on_e_re' =>
   Test.new('FAILED').
@@ -645,10 +645,10 @@ TESTS = {
       /#{RE_H}ASSERT_PRED.*regex::e\), \".*\"\)\s+param1 = apakattkattkatttupp.*did not match/me),
 
   'regex::should_succeed_paren_litteral_e_re' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'regex::should_succeed_paren_litteral_non_e_re' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'regex::should_fail_ere_on_non_e_re' =>
   Test.new('FAILED').
@@ -656,7 +656,7 @@ TESTS = {
       /#{RE_H}ASSERT_PRED.*\"apa\+\"\), \"apaaa\"\)\n\s+param1 = apaaa.*did not match\n/me),
 
   'regex::should_succeed_ere_on_e_re' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'should_fail_after_delay' =>
   Test.new('FAILED').
@@ -669,11 +669,11 @@ TESTS = {
   file("apa"),
 
   'should_succeed_reading_file_in_start_dir' =>
-  Test.new('OK').
+  Test.new('PASSED').
   log('info', /in.rdstate\(\)=(0x)?0+/),
 
  'should_not_run_due_to_failed_left_behind_files_success_otherwise' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'output::should_fail_with_terminate' =>
   Test.new('FAILED').
@@ -681,7 +681,7 @@ TESTS = {
       /output.cpp:\d+\n\s*apa=(0[Xx])?1[fF]/),
 
   'output::should_succeed_with_info' =>
-  Test.new('OK').
+  Test.new('PASSED').
   log('info',
       /apa=3/),
 
@@ -693,7 +693,7 @@ TESTS = {
       /Exited with code 1\s+Expected normal exit/me),
 
   'output::should_succeed_with_info_endl' =>
-  Test.new('OK').
+  Test.new('PASSED').
   log('info',/apa\nkatt/me),
 
   'output::should_fail_with_death_and_left_behind_core_dump' =>
@@ -712,21 +712,21 @@ TESTS = {
       /Died on signal \d+\s+Expected normal exit/me),
 
   'output::should_succeed_with_stderr' =>
-  Test.new('OK').
+  Test.new('PASSED').
   log('stderr', /hello/),
 
   'output::should_succeed_with_stdout' =>
-  Test.new('OK').
+  Test.new('PASSED').
   log('stdout', /hello/),
 
   'suite_deps::simple_all_ok::should_succeed' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::simple_all_ok::should_also_succeed' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::simple_all_fail::should_succeed' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::simple_all_fail::should_fail' =>
   Test.new('FAILED').
@@ -734,40 +734,40 @@ TESTS = {
       /ASSERT/),
 
   'suite_deps::should_succeed' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::should_not_run_success' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::blocked_suite::cross_dep_violation_should_succeed' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::blocked_suite::should_not_run_success' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::blocked_case::should_not_run_success' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::blocked_case::nested_blocked::should_not_run_success' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::should_run_remote_suite::should_succeed' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::blocked_remote_suite::should_not_run_success' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::should_run_suite::should_succeed' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::should_run_case::should_succeed' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::should_run_case::nested_run::should_succeed' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'suite_deps::should_run_suite::should_also_succeed' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
 
   'timeouts::should_fail_slow_cputime_deadline' =>
@@ -792,16 +792,16 @@ TESTS = {
       /Timed out - killed/),
 
   'timeouts::should_succeed_slow_cputime_deadline' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'timeouts::should_succeed_slow_realtime_deadline' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'very_slow_success' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'wrapped::should_succeed_in_range' =>
-  Test.new('OK').
+  Test.new('PASSED').
   log('info',
       /d=0.523\d+/),
 
@@ -813,7 +813,7 @@ TESTS = {
 
 GMOCK_TESTS = {
   'google_mock::basic_success' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'google_mock::should_fail_by_calling_with_wrong_value' =>
   Test.new('FAILED').
@@ -831,10 +831,10 @@ GMOCK_TESTS = {
       /call count doesn't match this expectation.*Actual: never called/me),
 
   'google_mock::sequence_success_1' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'google_mock::sequence_success_2' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'google_mock::sequence_should_fail_incomplete' =>
   Test.new('FAILED').
@@ -852,7 +852,7 @@ GMOCK_TESTS = {
       /Unexpected mock function call.*call: func\(4\).*none matched:/me),
 
   'google_mock::success_with_unstreamable_type' =>
-  Test.new('OK'),
+  Test.new('PASSED'),
 
   'google_mock::should_fail_with_unstreamable_type_wrong_value' =>
   Test.new('FAILED').
@@ -864,7 +864,7 @@ tests.merge! GMOCK_TESTS if ARGV[0] == 'gmock'
 fails = 0
 oks = 0
 tests.each do |key, val|
-  if val.expected_result?(/OK/) then
+  if val.expected_result?(/PASSED/) then
     oks+=1
   else
     fails+= 1
@@ -938,7 +938,7 @@ def check_file(file_name, tests, names, results, run_count, fail_count, success_
     puts "\n#{regs} registered tests in statistics, expected #{tests.size}"
 report = true
   end
-  t = collection.delete('OK');
+  t = collection.delete('PASSED');
   count = (t && t.size) || 0
   if count != success_count then
     puts "\n#{count} successful found, expected #{success_count}"
@@ -952,13 +952,13 @@ report = true
       l.each { |name| puts "  #{name}" }
     end
   end
-  puts "OK" if !report
+  puts "PASSED" if !report
   !report
 end
 
 RUNS={
   "            default_success" =>
-  [ /default_success/,    /OK/,      1,  0,  0, BLOCKED_TESTS ],
+  [ /default_success/,    /PASSED/,      1,  0,  0, BLOCKED_TESTS ],
 
   "            asserts" =>
   [ /^asserts::/,         /FAILED/, 35, 18,  0, BLOCKED_TESTS ],
@@ -1082,5 +1082,5 @@ rescue
   puts "Couldn't remove created files"
   is_error = true
 end
-puts "OK" if !is_error
-#File.unlink "./apafil"
+puts "PASSED" if !is_error
+File.unlink "./apafil"

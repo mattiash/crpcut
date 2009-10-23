@@ -71,13 +71,13 @@ counting_blocks==1 && /<test name=.*\"\/>/  {
         next;
     }
 }
-/<test name=.*should_fail.*result=\"OK\"/ {
+/<test name=.*should_fail.*result=\"PASSED\"/ {
     unexpected_success[failed_ok++]=$0; next;
 }
 /<test name=.*succ.*FAILED/ {
     unexpected_fail[ok_fail++]=$0; next;
 }
-/<test name=.*succ.*OK\"\/>/ {
+/<test name=.*succ.*PASSED\"\/>/ {
     ++counted_succeeded;
     if (($0 ~ /should_not_run/) && !nodeps) {
         unexpected_run[unexpected_run_count++]=$0;
@@ -85,7 +85,7 @@ counting_blocks==1 && /<test name=.*\"\/>/  {
     }
     next;
 }
-/<test name=.*succ.*OK\">/,/<\/test>/ {
+/<test name=.*succ.*PASSED\">/,/<\/test>/ {
     if ($0 ~ /<\/test>/) {
         if (files_left) {
             unexpected_files_behind[unexpected_files_behind_count++]=testname;
@@ -161,7 +161,7 @@ END {
         report=1;
     }
     if (!verbose && counted_succeeded) {
-        printf("ERROR: OK tests printed without verbose flag\n");
+        printf("ERROR: PASSED tests printed without verbose flag\n");
         report=1;
     }
     if (blocked != block_count)
