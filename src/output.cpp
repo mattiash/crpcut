@@ -52,12 +52,16 @@ namespace crpcut
 {
   namespace output
   {
+
+    using implementation::test_case_registrator;
+
     size_t formatter::write(const char *str, size_t len, type t) const
     {
       if (t == verbatim)
         {
           return do_write(str, len);
         }
+
       const char *prev = str;
       for (size_t n = 0; n < len; ++n)
         {
@@ -65,12 +69,12 @@ namespace crpcut
           size_t esc_len;
           switch (str[n])
             {
-            case '<' : esc = "&lt;"; esc_len = 4; break;
-            case '>' : esc = "&gt;"; esc_len = 4; break;
-            case '&' : esc = "&amp;"; esc_len = 5; break;
+            case '<' : esc = "&lt;";   esc_len = 4; break;
+            case '>' : esc = "&gt;";   esc_len = 4; break;
+            case '&' : esc = "&amp;";  esc_len = 5; break;
             case '"' : esc = "&quot;"; esc_len = 6; break;
             case '\'': esc = "&apos;"; esc_len = 6; break;
-            case '\0': esc = 0; esc_len = 0; break;
+            case '\0': esc = 0;        esc_len = 0; break;
             default: continue;
             }
           do_write(prev, &str[n] - prev);
@@ -106,7 +110,7 @@ namespace crpcut
             " xsi:noNamespaceSchemaLocation=\"crpcut.xsd\""
             " starttime=\"");
 
-      char time_string[] = "2009-01-09T23:59:59Z";
+      char time_string[sizeof("2009-01-09T23:59:59Z")];
       time_t now = wrapped::time(0);
       struct tm *tmdata = wrapped::gmtime(&now);
       int len = wrapped::snprintf(time_string, sizeof(time_string),
@@ -127,13 +131,13 @@ namespace crpcut
           machine_string[0] = 0;
         }
       write("\" host=\"");
-      write(machine_string, wrapped::strlen(machine_string), escaped);
+      write(machine_string, escaped);
 
       write("\" command=\"");
       for (int i = 0; i < argc; ++i)
         {
           if (i > 0) write(" ", 1);
-          write(argv[i], wrapped::strlen(argv[i]), escaped);
+          write(argv[i], escaped);
         }
       write("\">\n");
     }
@@ -151,12 +155,14 @@ namespace crpcut
         }
     }
 
-    void xml_formatter::begin_case(const char *name, size_t name_len, bool result)
+    void xml_formatter::begin_case(const char *name,
+                                   size_t      name_len,
+                                   bool        result)
     {
       write("  <test name=\"");
       write(name, name_len, escaped);
       write("\" result=");
-      static const char *rstring[] = { "\"FAILED\"", "\"OK\"" };
+      static const char *rstring[] = { "\"FAILED\"", "\"PASSED\"" };
       write(rstring[result]);
       last_closed=false;
     }
@@ -173,7 +179,7 @@ namespace crpcut
         }
     }
 
-    void xml_formatter::terminate(test_phase phase,
+    void xml_formatter::terminate(test_phase  phase,
                                   const char *msg,
                                   size_t      msg_len,
                                   const char *dirname,
@@ -198,7 +204,10 @@ namespace crpcut
       write("</violation>\n");
     }
 
-    void xml_formatter::print(const char *tag, size_t tlen, const char *data, size_t dlen)
+    void xml_formatter::print(const char *tag,
+                              size_t      tlen,
+                              const char *data,
+                              size_t      dlen)
     {
       make_closed();
       write("    <");
@@ -216,30 +225,22 @@ namespace crpcut
     }
 
     void xml_formatter::statistics(unsigned num_registered,
+                                   unsigned num_selected,
                                    unsigned num_run,
                                    unsigned num_failed)
     {
       write("  <statistics>\n"
             "    <registered_test_cases>");
-      {
-        stream::toastream<10> o;
-        o << num_registered;
-        write(o.begin(), o.size());
-      }
+      write(num_registered);
       write("</registered_test_cases>\n"
+            "    <selected_test_cases>");
+      write(num_selected);
+      write("</selected_test_cases>\n"
             "    <run_test_cases>");
-      {
-        stream::toastream<10> o;
-        o << num_run;
-        write(o.begin(), o.size());
-      }
+      write(num_run);
       write("</run_test_cases>\n"
             "    <failed_test_cases>");
-      {
-        stream::toastream<10> o;
-        o << num_failed;
-        write(o.begin(), o.size());
-      }
+      write(num_failed);
       write("</failed_test_cases>\n"
             "  </statistics>\n");
       statistics_printed = true;
@@ -253,7 +254,7 @@ namespace crpcut
     }
 
     void
-    xml_formatter::blocked_test(const implementation::test_case_registrator *i)
+    xml_formatter::blocked_test(const test_case_registrator *i)
     {
       if (!blocked_tests)
         {
@@ -265,7 +266,7 @@ namespace crpcut
       stream::oastream os(name, name + len);
       write("    <test name=\"");
       os << *i;
-      write(os.begin(), os.size(), escaped);
+      write(os, escaped);
       write("\"/>\n");
     }
 
@@ -283,7 +284,7 @@ namespace crpcut
 namespace {
   static const char barrier[] =
     "===============================================================================\n";
-  static const char rlabel[2][9] = { "FAILED! ", "OK      " };
+  static const char rlabel[2][9] = { "FAILED: ", "PASSED: " };
   static const char delim[]=
     "-------------------------------------------------------------------------------\n";
 }
@@ -291,7 +292,9 @@ namespace {
 namespace crpcut {
   namespace output {
 
-    void text_formatter::begin_case(const char *name, size_t name_len, bool result)
+    void text_formatter::begin_case(const char *name,
+                                    size_t      name_len,
+                                    bool        result)
     {
       did_output = false;
       write(rlabel[result], 8);
@@ -329,7 +332,10 @@ namespace crpcut {
         }
     }
 
-    void text_formatter::print(const char *tag, size_t tlen, const char *data, size_t dlen)
+    void text_formatter::print(const char *tag,
+                               size_t      tlen,
+                               const char *data,
+                               size_t      dlen)
     {
       did_output = true;
       const size_t len = write(tag, tlen);
@@ -342,33 +348,23 @@ namespace crpcut {
     }
 
     void text_formatter::statistics(unsigned num_registered,
+                                    unsigned num_selected,
                                     unsigned num_run,
                                     unsigned num_failed)
     {
-      {
-        stream::toastream<10> o;
-        o << num_registered;
-        write(o.begin(), o.size());
-      }
-      write(" registered, ");
-      {
-        stream::toastream<10> o;
-        o << num_run;
-        write(o.begin(), o.size());
-      }
-      write(" run, ");
-      {
-        stream::toastream<10> o;
-        o << num_run - num_failed;
-        write(o.begin(), o.size());
-      }
-      write(" OK, ");
-      {
-        stream::toastream<10> o;
-        o << num_failed;
-        write(o.begin(), o.size());
-      }
-      write(" FAILED!\n");
+      write("Total  : ");
+      write(num_selected);
+      write("\nPASSED : ");
+      write(num_run - num_failed);
+      write("\nFAILED : ");
+      write(num_failed + num_selected - num_run);
+      if (num_run != num_selected)
+        {
+          write(" (");
+          write(num_selected - num_run);
+          write(" blocked)");
+        }
+      write("\n");
     }
 
     void text_formatter::nonempty_dir(const char *s)
@@ -378,7 +374,7 @@ namespace crpcut {
       write("\n");
     }
 
-    void text_formatter::blocked_test(const implementation::test_case_registrator *i)
+    void text_formatter::blocked_test(const test_case_registrator *i)
     {
       if (!blocked_tests)
         {
@@ -387,9 +383,9 @@ namespace crpcut {
         }
       const size_t len = i->full_name_len()+1;
       char * name = static_cast<char*>(alloca(len));
-      stream::oastream os(name, name+len);
-      os << *i << '\n';
-      write(os.begin(), os.size());
+      stream::oastream os(name, name+len+2);
+      os << "  " << *i << '\n';
+      write(os);
     }
 
   }

@@ -31,8 +31,16 @@ namespace crpcut
 {
   namespace output
   {
+    template <bool b>
+    struct enable_if;
+    template <>
+    struct enable_if<true>
+    {
+      typedef void type;
+    };
     class formatter
     {
+
     public:
       typedef enum { escaped, verbatim } type;
       virtual void begin_case(const char *name, size_t name_len, bool result) = 0;
@@ -44,6 +52,7 @@ namespace crpcut
                              size_t      dn_len = 0) = 0;
       virtual void print(const char *tag, size_t tlen, const char *data, size_t dlen) = 0;
       virtual void statistics(unsigned num_registered,
+                              unsigned num_selected,
                               unsigned num_run,
                               unsigned num_failed) = 0;
       virtual void nonempty_dir(const  char*)  = 0;
@@ -60,7 +69,18 @@ namespace crpcut
       {
         return write(&str[0], N - 1, t);
       }
+      size_t write(const stream::oastream &o, type t = verbatim) const
+      {
+        return write(o.begin(), o.size(), t);
+      }
       size_t write(const char *str, size_t len, type t = verbatim) const;
+      template <typename T>
+      size_t write(T val, typename enable_if<std::numeric_limits<T>::is_integer>::type *p = 0)
+      {
+        stream::toastream<std::numeric_limits<T>::digits10> o;
+        o << val;
+        return write(o.begin(), o.size());
+      }
     private:
       size_t do_write(const char *p, size_t len) const;
       int fd_;
@@ -81,6 +101,7 @@ namespace crpcut
                              size_t      dn_len = 0);
       virtual void print(const char *tag, size_t tlen, const char *data, size_t dlen);
       virtual void statistics(unsigned num_registered,
+                              unsigned num_selected,
                               unsigned num_run,
                               unsigned num_failed);
       virtual void nonempty_dir(const char *s);
@@ -109,6 +130,7 @@ namespace crpcut
                              size_t      dn_len = 0);
       virtual void print(const char *tag, size_t tlen, const char *data, size_t dlen);
       virtual void statistics(unsigned num_registered,
+                              unsigned num_selected,
                               unsigned num_run,
                               unsigned num_failed);
       virtual void nonempty_dir(const char *s);

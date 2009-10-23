@@ -1208,6 +1208,7 @@ namespace crpcut {
     unsigned         num_parallel;
     bool             single_process;
     unsigned         num_registered_tests;
+    unsigned         num_selected_tests;
     unsigned         num_tests_run;
     unsigned         num_successful_tests;
     int              presenter_pipe;

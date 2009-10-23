@@ -43,6 +43,7 @@ namespace crpcut {
       nodeps(false),
       num_parallel(1),
       num_registered_tests(0),
+      num_selected_tests(0),
       num_tests_run(0),
       num_successful_tests(0),
       first_free_working_dir(0)
@@ -637,7 +638,7 @@ namespace crpcut {
             if (!r->has_active_readers())
               {
                 r->manage_death();
-                ++num_tests_run;
+                //   ++num_tests_run;
                 --pending_children;
               }
           }
@@ -646,11 +647,11 @@ namespace crpcut {
 
   void test_case_factory::start_test(implementation::test_case_registrator *i)
   {
+    ++num_tests_run;
     if (!tests_as_child_procs())
       {
         std::cout << *i << " ";
         i->crpcut_run_test_case();
-        ++num_tests_run;
         std::cout << "OK\n";
         return;
       }
@@ -865,17 +866,18 @@ namespace crpcut {
           err_os <<
             "Usage: " << argv[0] << " [flags] {testcases}\n"
             "  where flags can be:\n"
+            "   -c number  - Control number of spawned test case processes\n"
+            "                number must be >= 1 and <= "
+                      << max_parallel << "\n"
+            "   -d dir     - specify working directory (must exist)\n"
             "   -l         - list test cases\n"
             "   -n         - ignore dependencies\n"
-            "   -d dir     - specify workind directory (must exist)\n"
-            "   -v         - verbose mode\n"
-            "   -c number  - Control number of spawned test case processes\n"
-            "                number must be >= 1 and <= " << max_parallel << "\n"
-            "   -s         - single shot. Run only one test case, and run it in\n"
-            "                the main process\n"
-            "   -o file    - Direct xml output to named file. Brief result\n"
+            "   -o file    - Direct XML output to named file. Brief result\n"
             "                will be displayed on stdout\n"
             "   -q         - Don't display the -o brief\n"
+            "   -s         - single shot. Run only one test case, and run it in\n"
+            "                the main process\n"
+            "   -v         - verbose mode\n"
             "   -x         - XML output on std-out or non-XML output on file\n";
 
           return -1;
@@ -901,40 +903,44 @@ namespace crpcut {
           presenter_pipe = start_presenter_process(out, verbose_mode);
         }
       const char **names = p;
+        {
+          implementation::test_case_registrator *i = reg.get_next();
+          while (i != &reg)
+            {
+              ++num_registered_tests;
+              bool found = false;
+              if (*names)
+                {
+                  for (const char **name = names; *name; ++name)
+                    {
+                      if ((found = i->match_name(*name))) goto found;
+                    }
+                  i = i->unlink();
+                  continue;
+                }
+            found:
+              ++num_selected_tests;
+              i = i->get_next();
+            }
+        }
       for (;;)
         {
           bool progress = false;
           implementation::test_case_registrator *i = reg.get_next();
-          unsigned count = 0;
           while (i != &reg)
             {
-              ++count;
-              if (*names)
-                {
-                  bool found = false;
-                  for (const char **name = names; *name; ++name)
-                    {
-                      if ((found = i->match_name(*name))) break;
-                    }
-                  if (!found)
-                    {
-                      progress = true;
-                      i = i->unlink();
-                      continue;
-                    }
-                }
               if (!nodeps && !i->can_run())
                 {
                   i = i->get_next();
                   continue;
                 }
+              progress = true;
               start_test(i);
+              i = i->unlink();
               if (!tests_as_child_procs())
                 {
                   return 0;
                 }
-              progress = true;
-              i = i->unlink();
             }
           if (!progress)
             {
@@ -944,25 +950,11 @@ namespace crpcut {
                 }
               manage_children(1);
             }
-          if (count > num_registered_tests)
-            {
-              num_registered_tests = count;
-            }
         }
       if (pending_children) manage_children(1);
       if (tests_as_child_procs())
         {
           kill_presenter_process();
-          out.statistics(num_registered_tests,
-                         num_tests_run,
-                         num_tests_run - num_successful_tests);
-          if (output_fd != 1 && !quiet)
-            {
-              std::cout << num_registered_tests << " registered, "
-                        << num_tests_run << " run, "
-                        << num_successful_tests << " OK, "
-                        << num_tests_run - num_successful_tests << " FAILED!\n";
-            }
           for (unsigned n = 0; n < max_parallel; ++n)
             {
               stream::toastream<std::numeric_limits<unsigned>::digits/3+1> name;
@@ -1008,7 +1000,22 @@ namespace crpcut {
                 }
             }
         }
-      return num_tests_run - num_successful_tests;
+          out.statistics(num_registered_tests,
+                         num_selected_tests,
+                         num_tests_run,
+                         num_tests_run - num_successful_tests);
+          if (output_fd != 1 && !quiet)
+            {
+              std::cout << "Total  : " << num_selected_tests
+                        << "\nPASSED  : " << num_successful_tests
+                        << "\nFAILED  : " << num_selected_tests - num_successful_tests;
+              if (num_selected_tests != num_tests_run)
+                {
+                  std::cout << " ("<< num_selected_tests - num_tests_run << " blocked)";
+                }
+              std::cout << std::endl;
+            }
+      return num_selected_tests - num_successful_tests;
     }
     catch (datatypes::posix_error &e)
       {
