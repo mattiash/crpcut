@@ -1,7 +1,7 @@
 Requirements
 ============
 
-A modern C++ compiler (g++ 4.1 or later works) that supports:
+A modern C++ compiler (ICC 11.1, g++ 4.1 or later works) that supports:
 
 * C99 variadic macros
 * C99 _Exit() function
@@ -26,6 +26,9 @@ Build
    type 'cmake . -DCMAKE_INSTALL_PREFIX=<desired install directory>'.
    See also README_GOOGLE_MOCK for additional parameters.
 
+   If you want tu use Intel ICC instead of your default compiler,
+   type 'CXX=icpc cmake ...'
+
 2. Type 'make'
 
 3. If you have Ruby, and you want to check that crpcut works, type
@@ -42,6 +45,9 @@ Out-of-tree Build
 2. type 'cmake <crpcut source directory>", optionally together with the
    -DCMAKE_INSTALL_PREFIX=<path> described above. See also
    README_GOOGLE_MOCK for additional parameters.
+
+   If you want tu use Intel ICC instead of your default compiler,
+   type 'CXX=icpc cmake ...'
 
 3. type 'make'
 

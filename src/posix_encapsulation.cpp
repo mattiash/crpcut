@@ -139,7 +139,7 @@ namespace crpcut {
     {
       va_list ap;
       va_start(ap, f);
-      int r = vsnprintf(s, si, f, ap);
+      int r = wrapped::vsnprintf(s, si, f, ap);
       va_end(ap);
       return r;
     }

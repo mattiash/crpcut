@@ -49,6 +49,9 @@ namespace crpcut {
     }
 
     namespace dependencies {
+      base::~base()
+      {
+      }
       void base::register_success(bool value)
       {
         if (value)
@@ -70,7 +73,7 @@ namespace crpcut {
       }
 
       inline void
-      base::add_action(basic_enforcer *other)
+      base::add_action(dependencies::basic_enforcer *other)
       {
         other->inc();
       }
@@ -97,7 +100,7 @@ namespace crpcut {
             os << "CPU-time timeout " << duration_ms
                << "ms exceeded.\n  Actual time to completion was " << diff
                << "ms";
-            report(comm::exit_fail, os.begin(), os.size());
+            comm::report(comm::exit_fail, os.begin(), os.size());
           }
       }
 
@@ -110,7 +113,7 @@ namespace crpcut {
         clocks::monotonic::timestamp deadline = duration_ms + 1000;
         if (test_case_factory::tests_as_child_procs())
           {
-            report(comm::set_timeout, deadline);
+            comm::report(comm::set_timeout, deadline);
           }
       }
 
@@ -120,7 +123,7 @@ namespace crpcut {
           = clocks::monotonic::timestamp_ms_absolute();
         if (test_case_factory::tests_as_child_procs())
           {
-            report(comm::cancel_timeout, 0, 0);
+            comm::report(comm::cancel_timeout, 0, 0);
           }
         long diff = now - start_timestamp_ms;
         if (diff > int(duration_ms))
@@ -131,7 +134,7 @@ namespace crpcut {
                << "ms";
             if (test_case_factory::tests_as_child_procs())
               {
-                report(comm::exit_fail, os.begin(), os.size());
+                comm::report(comm::exit_fail, os.begin(), os.size());
               }
             else
               {

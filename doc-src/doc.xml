@@ -242,6 +242,14 @@ Should you want to use a different install directory than the
   &gt; cmake path -DCMAKE_INSTALL_PREFIX=&lt;desired_install_directory&gt;
 </code>
 <p/>
+If you want to use another compiler than your default, for example
+<link url="www.intel.com">Intel</link>'s C++ compiler
+<link url="http://software.intel.com/en-us/intel-compilers/">ICC</link>,
+add <id>CXX=compilername</id> before the <id>cmake</id> command. An example
+for <link url="http://software.intel.com/en-us/intel-compilers/">ICC</link>
+becomes
+<code>  &gt; CXX=icpc cmake ...</code>
+<p/>
 If you want to enable support for
 <link url="http://code.google.com/p/googlemock">google-mock</link> add also
 <code>

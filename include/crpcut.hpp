@@ -213,8 +213,13 @@ namespace crpcut {
 #include <iomanip>
 #include <cerrno>
 #include <cassert>
+#if BOOST_TR1
+#include <boost/tr1/type_traits.hpp>
+#include <boost/tr1/array.hpp>
+#else
 #include <tr1/type_traits>
 #include <tr1/array>
+#endif
 #include <cstring>
 #include <cstdlib>
 #include <limits>
@@ -231,6 +236,10 @@ extern "C"
 
 namespace std {
   using std::tr1::array;
+#ifdef BOOST_TR1
+  using std::tr1::remove_cv;
+  using std::tr1::remove_reference;
+#endif
 }
 
 
@@ -723,7 +732,7 @@ namespace crpcut {
       protected:
       public:
         void inc();
-        virtual ~base() {} // Silence warning on older gcc
+        virtual ~base(); // Silence warning on older gcc
         base();
         void add(basic_enforcer * other);
         bool can_run() const;
@@ -2195,14 +2204,14 @@ namespace crpcut {
     inline typename array_v<T, N>::iterator
     array_v<T, N>::end()
     {
-      return iterator(&operator[](size()));
+      return iterator(&operator[](size() - 1) + 1);
     }
 
     template <typename T, std::size_t N>
     inline typename array_v<T, N>::const_iterator
     array_v<T, N>::end() const
     {
-      return iterator(&operator[](size()));
+      return iterator(&operator[](size() - 1) + 1);
     }
 
     template <typename T, std::size_t N>
@@ -2447,7 +2456,7 @@ namespace crpcut {
   test_case_base::crpcut_test_finished()
   {
     finished = true;
-    report(comm::end_test, 0, 0);
+    comm::report(comm::end_test, 0, 0);
   }
 
   inline
@@ -2455,7 +2464,7 @@ namespace crpcut {
   {
     if (finished)
       {
-        report(comm::exit_ok, 0, 0);
+        comm::report(comm::exit_ok, 0, 0);
       }
   }
 

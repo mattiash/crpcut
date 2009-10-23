@@ -256,7 +256,7 @@ namespace crpcut {
 
     void test_case_registrator::manage_test_case_execution(test_case_base* p)
     {
-      report(comm::begin_test, 0, 0);
+      comm::report(comm::begin_test, 0, 0);
 
       try {
         p->run();
@@ -269,12 +269,12 @@ namespace crpcut {
           char *msg = static_cast<char *>(alloca(head_size + len + 1));
           lib::strcpy(lib::strcpy(msg, TEMPLATE_HEAD), e.what());
 #undef TEMPLATE_HEAD
-          report(comm::exit_fail, msg, head_size + len);
+          comm::report(comm::exit_fail, msg, head_size + len);
         }
       catch (...)
         {
           static const char msg[] = "Unexpectedly caught ...";
-          report(comm::exit_fail, msg);
+          comm::report(comm::exit_fail, msg);
         }
 
 
@@ -348,7 +348,7 @@ namespace crpcut {
       name << dirnum << '\0';
       if (wrapped::chdir(name.begin()) != 0)
         {
-          report(comm::exit_fail, "Couldn't chdir working dir");
+          comm::report(comm::exit_fail, "Couldn't chdir working dir");
           assert("unreachable code reached" == 0);
         }
     }

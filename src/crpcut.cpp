@@ -184,46 +184,77 @@ namespace crpcut {
     class list_elem
     {
     public:
-      list_elem() : next_(static_cast<T*>(this)), prev_(static_cast<T*>(this))
-      {
-      }
-      list_elem(T *p) : next_(p), prev_(p)
-      {
-      }
-      ~list_elem()
-      {
-        unlink(); }
-      void link_after(list_elem<T>& r)
-      {
-        next_ = r.next_;
-        prev_ = static_cast<T*>(&r);
-        next_->prev_ = static_cast<T*>(this);
-        r.next_ = static_cast<T*>(this);
-      }
-      void link_before(list_elem<T> &r)
-      {
-        prev_ = r.prev_;
-        next_ = static_cast<T*>(&r);
-        prev_->next_ = static_cast<T*>(this);
-        r.prev_ = static_cast<T*>(this);
-      }
+      list_elem();
+      list_elem(T *p);
+      ~list_elem();
+      void link_after(list_elem& r);
+      void link_before(list_elem &r);
       T *next() { return next_; }
       T *prev() { return prev_; }
-      bool is_empty() const { return next_ == static_cast<const T*>(this);  }
+      bool is_empty() const;
     private:
-      void unlink() {
-        T *n = next_;
-        T *p = prev_;
-        n->prev_ = p;
-        p->next_ = n;
-        prev_ = static_cast<T*>(this);
-        next_ = static_cast<T*>(this);
-      }
+      void unlink();
       list_elem(const list_elem&);
       list_elem& operator=(const list_elem&);
       T *next_;
       T *prev_;
     };
+
+    template <typename T>
+    inline list_elem<T>::list_elem()
+      : next_(static_cast<T*>(this)),
+        prev_(static_cast<T*>(this))
+    {
+    }
+
+    template <typename T>
+    inline list_elem<T>::list_elem(T *p)
+      : next_(p),
+        prev_(p)
+    {
+    }
+
+    template <typename T>
+    inline list_elem<T>::~list_elem()
+    {
+      unlink();
+    }
+
+    template <typename T>
+    inline void list_elem<T>::link_after(list_elem& r)
+    {
+      next_ = r.next_;
+      prev_ = static_cast<T*>(&r);
+      next_->prev_ = static_cast<T*>(this);
+      r.next_ = static_cast<T*>(this);
+    }
+
+    template <typename T>
+    inline void list_elem<T>::link_before(list_elem &r)
+    {
+      prev_ = r.prev_;
+      next_ = static_cast<T*>(&r);
+      prev_->next_ = static_cast<T*>(this);
+      r.prev_ = static_cast<T*>(this);
+    }
+
+    template <typename T>
+    inline bool list_elem<T>::is_empty() const
+    {
+      return next_ == static_cast<const T*>(this);
+    }
+
+    template <typename T>
+    inline void list_elem<T>::unlink()
+    {
+      T *n = next_;
+      T *p = prev_;
+      n->prev_ = p;
+      p->next_ = n;
+      prev_ = static_cast<T*>(this);
+      next_ = static_cast<T*>(this);
+    }
+
 
     template <typename T, size_t N>
     class fix_allocator
@@ -291,7 +322,8 @@ namespace crpcut {
     struct test_case_result : public list_elem<test_case_result>
     {
       test_case_result(pid_t pid)
-        :id(pid),
+        :list_elem(this),
+         id(pid),
          success(false),
          nonempty_dir(false),
          name(0),
@@ -337,16 +369,6 @@ namespace crpcut {
         o.begin_case(name, n_len, result);
       }
       ~printer() { o.end_case(); }
-      void terminate(test_phase phase,
-                     size_t      msg_len,
-                     const char *msg, const char *dirname = 0)
-      {
-        o.terminate(phase, msg, msg_len, dirname);
-      }
-      void print(comm::type tag, size_t len, const char *data)
-      {
-        o.print(tag_info[tag].str, tag_info[tag].len, data, len);
-      }
     private:
       output::formatter &o;
     };

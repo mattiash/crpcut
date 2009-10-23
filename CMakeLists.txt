@@ -116,9 +116,9 @@ endif(NOT HAVE__EXIT)
 # Check for decltype
 
 include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(--std=c++0x HAVE_CXX0X)
+check_cxx_compiler_flag(-std=c++0x HAVE_CXX0X)
 if (HAVE_CXX0X)
-  add_definitions(--std=c++0x)
+  add_definitions(-std=c++0x)
 else (HAVE_CXX0X)
   file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp
     "template <typename T> T* func(T);\n"
@@ -154,7 +154,17 @@ file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/tr1.cpp
 try_compile(HAVE_TR1 ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/CMakeTmp/tr1.cpp)
 if(NOT HAVE_TR1)
-  message(FATAL_ERROR "${CMAKE_CXX_COMPILER} doesn't have std/tr1")
+  file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/boost_tr1.cpp
+    "#include <boost/tr1/type_traits.hpp>\n"
+    "const bool v = std::tr1::is_reference<int>::type::value;\n"
+    "int main() { return v; }\n")
+  try_compile(HAVE_BOOST_TR1 ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/CMakeTmp/boost_tr1.cpp)
+  if (NOT HAVE_BOOST_TR1)
+    message(FATAL_ERROR "${CMAKE_CXX_COMPILER} doesn't have std/tr1")
+  else (NOT HAVE_BOOST_TR1)
+    add_definitions(-DBOOST_TR1)
+  endif (NOT HAVE_BOOST_TR1)
 endif(NOT HAVE_TR1)
 # check for clock_gettime()
 
@@ -299,11 +309,14 @@ set(LIBRARY_OUTPUT_PATH lib)
 set(EXECUTABLE_OUTPUT_PATH test)
 
 if(HAVE_CXX0X)
-  message("*** IMPORTANT *** Compile your tests using --std=c++0x")
+  message("*** IMPORTANT *** Compile your tests using -std=c++0x")
 endif(HAVE_CXX0X)
 if(USING_TYPEOF)
   message("*** IMPORTANT *** Compile your tests using -Ddecltype=typeof")
 endif(USING_TYPEOF)
+if (HAVE_BOOST_TR1)
+    message("*** IMPORTANT *** Compile your tests using -DBOOST_TR1")
+endif(HAVE_BOOST_TR1)
 
 install(
   FILES include/crpcut.hpp
