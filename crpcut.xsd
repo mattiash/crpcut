@@ -33,7 +33,7 @@
 
   <xs:simpleType name="result">
     <xs:restriction base="xs:string">
-      <xs:pattern value="OK|FAILED"/>
+      <xs:pattern value="PASSED|FAILED"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -66,9 +66,9 @@
   <xs:complexType name="testrun">
     <xs:sequence>
       <xs:element name="test" type="test" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="statistics" type="statistics"/>
       <xs:element name="remaining_files" type="remaining_files" minOccurs="0"/>
       <xs:element name="blocked_tests" type="blocked_tests" minOccurs="0"/>
+      <xs:element name="statistics" type="statistics"/>
     </xs:sequence>
     <xs:attribute name="command" type="xs:string" use="required"/>
     <xs:attribute name="host" type="xs:string" use="required"/>

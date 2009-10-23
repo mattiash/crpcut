@@ -1006,16 +1006,16 @@ namespace crpcut {
                          num_tests_run - num_successful_tests);
           if (output_fd != 1 && !quiet)
             {
-              std::cout << "Total  : " << num_selected_tests
-                        << "\nPASSED  : " << num_successful_tests
-                        << "\nFAILED  : " << num_selected_tests - num_successful_tests;
-              if (num_selected_tests != num_tests_run)
-                {
-                  std::cout << " ("<< num_selected_tests - num_tests_run << " blocked)";
-                }
+              std::cout << "Total " << num_selected_tests
+                        << " test cases selected"
+                        << "\nUNTESTED : "
+                        << num_selected_tests - num_tests_run
+                        << "\nPASSED   : " << num_successful_tests
+                        << "\nFAILED   : "
+                        << num_tests_run - num_successful_tests;
               std::cout << std::endl;
             }
-      return num_selected_tests - num_successful_tests;
+          return num_tests_run - num_successful_tests;
     }
     catch (datatypes::posix_error &e)
       {

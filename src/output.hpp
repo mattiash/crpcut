@@ -75,7 +75,8 @@ namespace crpcut
       }
       size_t write(const char *str, size_t len, type t = verbatim) const;
       template <typename T>
-      size_t write(T val, typename enable_if<std::numeric_limits<T>::is_integer>::type *p = 0)
+      size_t write(T val,
+                   typename enable_if<std::numeric_limits<T>::is_integer>::type *p = 0)
       {
         stream::toastream<std::numeric_limits<T>::digits10> o;
         o << val;

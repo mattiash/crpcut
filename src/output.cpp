@@ -131,7 +131,7 @@ namespace crpcut
           machine_string[0] = 0;
         }
       write("\" host=\"");
-      write(machine_string, escaped);
+      write(machine_string, wrapped::strlen(machine_string), escaped);
 
       write("\" command=\"");
       for (int i = 0; i < argc; ++i)
@@ -147,10 +147,6 @@ namespace crpcut
     {
       if (statistics_printed)
         {
-          if (blocked_tests)
-            {
-              write("  </blocked_tests>\n");
-            }
           write("</crpcut>\n");
         }
     }
@@ -229,13 +225,15 @@ namespace crpcut
                                    unsigned num_run,
                                    unsigned num_failed)
     {
+      if (blocked_tests)
+        {
+          write("  </blocked_tests>\n");
+        }
+
       write("  <statistics>\n"
             "    <registered_test_cases>");
       write(num_registered);
       write("</registered_test_cases>\n"
-            "    <selected_test_cases>");
-      write(num_selected);
-      write("</selected_test_cases>\n"
             "    <run_test_cases>");
       write(num_run);
       write("</run_test_cases>\n"
@@ -352,18 +350,15 @@ namespace crpcut {
                                     unsigned num_run,
                                     unsigned num_failed)
     {
-      write("Total  : ");
+      write("Total ");
       write(num_selected);
-      write("\nPASSED : ");
+      write(" test cases selected");
+      write("\nUNTESTED : ");
+      write(num_selected - num_run);
+      write("\nPASSED   : ");
       write(num_run - num_failed);
-      write("\nFAILED : ");
-      write(num_failed + num_selected - num_run);
-      if (num_run != num_selected)
-        {
-          write(" (");
-          write(num_selected - num_run);
-          write(" blocked)");
-        }
+      write("\nFAILED   : ");
+      write(num_failed);
       write("\n");
     }
 
