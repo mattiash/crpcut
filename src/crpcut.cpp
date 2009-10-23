@@ -323,7 +323,7 @@ namespace crpcut {
     struct test_case_result : public list_elem<test_case_result>
     {
       test_case_result(pid_t pid)
-        :list_elem(this),
+        :list_elem<test_case_result>(this),
          id(pid),
          success(false),
          nonempty_dir(false),
