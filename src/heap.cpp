@@ -25,6 +25,15 @@
  */
 
 #include <crpcut.hpp>
+#ifdef HAVE_VALGRIND
+#include <valgrind/valgrind.h>
+#define ALLOCATED_MEM(p, s) VALGRIND_MALLOCLIKE_BLOCK(p, s, 0UL, 0)
+#define FREED_MEM(p) VALGRIND_FREELIKE_BLOCK(p, 0UL)
+#else
+#define ALLOCATED_MEM(p, s) do { } while (0)
+#define FREED_MEM(p) do { } while (0)
+#endif
+
 namespace {
   typedef enum { by_malloc, by_new_elem, by_new_array } alloc_type;
   static const char *alloc_name[] = {
@@ -109,6 +118,7 @@ namespace crpcut
             p->mem = s;
             p->type = type;
             ++p;
+            ALLOCATED_MEM((void*)p, s);
             return p;
           }
         void *addr = crpcut::wrapped::malloc(s + sizeof(stats));
@@ -127,7 +137,11 @@ namespace crpcut
       stats *p = static_cast<stats*>(addr);
       alloc_type_check(p-1, expected);
       bytes-= p[-1].mem;
-      if (addr >= vector && addr < &vector[num_elems]) return;
+      if (addr >= vector && addr < &vector[num_elems])
+        {
+          FREED_MEM(addr);
+          return;
+        }
 
       crpcut::wrapped::free(p - 1);
     }

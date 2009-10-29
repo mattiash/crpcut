@@ -109,6 +109,7 @@ else (HAVE_CXX0X)
   endif(NOT HAVE_DECLTYPE)
 endif(HAVE_CXX0X)
 
+
 # check for TR1
 
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/tr1.cpp
@@ -130,6 +131,22 @@ if(NOT HAVE_TR1)
     add_definitions(-DBOOST_TR1)
   endif (NOT HAVE_BOOST_TR1)
 endif(NOT HAVE_TR1)
+
+# check for valgrind
+
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/valgrind.cpp
+  "#include <valgrind/valgrind.h>\n"
+  "int main(int argc, char *argv[])\n"
+  "{\n"
+  "  VALGRIND_MALLOCLIKE_BLOCK(argv, 4, 0, 0);\n"
+  "  return 0;\n"
+  "}\n")
+try_compile(HAVE_VALGRIND ${CMAKE_BINARY_DIR}
+  ${CMAKE_BINARY_DIR}/CMakeTmp/valgrind.cpp)
+if (HAVE_VALGRIND)
+  message("*** compiling with support for valgrind")
+  add_definitions(-DHAVE_VALGRIND)
+endif (HAVE_VALGRIND)
 
 # check for clock_gettime()
 
