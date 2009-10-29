@@ -254,6 +254,12 @@ namespace std {
 #define ANY_CODE -1
 
 namespace crpcut {
+  namespace heap {
+    const size_t system = ~size_t();
+    size_t allocated_bytes();
+    size_t set_limit(size_t n); // must be higher than allocated_bytes()
+  }
+
   typedef enum { verbatim, uppercase, lowercase } case_convert_type;
   template <case_convert_type>
   class collate_t;
@@ -328,7 +334,7 @@ namespace crpcut {
           void *addr; // can't be represented by void*, dlsym() can't
         } dlr;        // exist either.
         dlr.addr = ::dlsym(libp, name);
-        if (!dlr.addr) *(int*)(dlr.addr) = 0; // can't rely on abort() here
+        //        if (!dlr.addr) *(int*)(dlr.addr) = 0; // can't rely on abort() here
         return dlr.func;
       }
       static loader& obj()
@@ -891,7 +897,7 @@ namespace crpcut {
     class direct_reporter
     {
     public:
-      direct_reporter() {}
+      direct_reporter() : heap_limit(heap::set_limit(heap::system)) {}
       template <typename V>
       direct_reporter& operator<<(const V& v) { os << v;  return *this;  }
       template <typename V>
@@ -911,6 +917,7 @@ namespace crpcut {
         os << p; return *this;
       }
       ~direct_reporter() {
+        heap::set_limit(heap_limit);
         using std::ostringstream;
         std::string s(os.str());
         size_t len = s.length();
@@ -924,6 +931,7 @@ namespace crpcut {
     private:
       direct_reporter(const direct_reporter &);
       direct_reporter& operator=(const direct_reporter&);
+      size_t heap_limit;
       std::ostringstream os;
     };
 
@@ -3703,5 +3711,6 @@ namespace crpcut {
     gmock_initializer gmock_initializer_obj;
   }
 }
+
 #endif
 #endif // CRPCUT_HPP

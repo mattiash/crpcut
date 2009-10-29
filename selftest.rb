@@ -808,7 +808,71 @@ TESTS = {
   'wrapped::should_fail_assert_lt' =>
   Test.new('FAILED').
   log('violation',
-      /wrapped\.cpp:\d+\s+ASSERT_LT\(d, 1\.\d*\)\s+where d = 1\.(1|0999).*/me)
+      /wrapped\.cpp:\d+\s+ASSERT_LT\(d, 1\.\d*\)\s+where d = 1\.(1|0999).*/me),
+
+  'heap::should_succeed_allocation_leak' =>
+  Test.new('PASSED').
+  log('info',
+      /pre=\d+/),
+
+  'heap::should_succeed_malloc_free_balance' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_worlds_worst_strcpy' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_malloc_blast_limit' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_new_blast_limit' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_new_array_blast_limit' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_new_nothrow_blast_limit' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_new_array_nothrow_blast_limit' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_blast_limit_with_string' =>
+  Test.new('PASSED'),
+
+  'heap::should_fail_limit_too_low' =>
+  Test.new('FAILED').
+  log('violation',
+      /heap::set_limit.*is below current/),
+
+  'heap::should_fail_cross_malloc_delete' =>
+  Test.new('FAILED').
+  log('violation',
+      /DEALLOC FAIL\ndelete.*using malloc/me),
+
+  'heap::should_fail_cross_malloc_delete_array' =>
+  Test.new('FAILED').
+  log('violation',
+      /DEALLOC FAIL\ndelete\[\].*using malloc/me),
+
+  'heap::should_fail_cross_new_free' =>
+  Test.new('FAILED').
+  log('violation',
+      /DEALLOC FAIL\nfree.*using new/me),
+
+  'heap::should_fail_cross_new_delete_array' =>
+  Test.new('FAILED').
+  log('violation',
+      /DEALLOC FAIL\ndelete\[\].*using new/me),
+
+  'heap::should_fail_cross_new_array_free' =>
+  Test.new('FAILED').
+  log('violation',
+      /DEALLOC FAIL\nfree.*using new\[\]/me),
+
+  'heap::should_fail_cross_new_array_delete' =>
+  Test.new('FAILED').
+  log('violation',
+      /DEALLOC FAIL\ndelete.*using new\[\]/me)
 }
 
 GMOCK_TESTS = {

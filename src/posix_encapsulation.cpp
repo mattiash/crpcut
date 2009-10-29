@@ -76,7 +76,6 @@ namespace crpcut {
     CRPCUT_WRAP_FUNC(libc, closedir, int, (DIR *d), (d))
     CRPCUT_WRAP_FUNC(libc, dup2, int, (int f1, int f2), (f1, f2))
     CRPCUT_WRAP_FUNC(libc, fork, int, (void), ())
-    CRPCUT_WRAP_V_FUNC(libc, free, void, (const void *p), (p))
     CRPCUT_WRAP_FUNC(libc, getcwd, char*, (char *buf, size_t size), (buf, size))
     CRPCUT_WRAP_FUNC(libc, gethostname, int, (char *n, size_t s), (n, s))
     CRPCUT_WRAP_FUNC(libc, getitimer, int, (int i, struct itimerval *v), (i, v))
@@ -87,7 +86,6 @@ namespace crpcut {
                      (tv, tz))
     CRPCUT_WRAP_FUNC(libc, gmtime, struct tm*, (const time_t *t), (t))
     CRPCUT_WRAP_FUNC(libc, kill, int, (pid_t p, int s), (p, s))
-    CRPCUT_WRAP_FUNC(libc, malloc, void *, (size_t s), (s))
     CRPCUT_WRAP_FUNC(libc, mkdir, int, (const char *n, mode_t m), (n, m))
     CRPCUT_WRAP_FUNC(libc, mkdtemp, char*, (char *n), (n))
     CRPCUT_WRAP_FUNC(libc, open, int,

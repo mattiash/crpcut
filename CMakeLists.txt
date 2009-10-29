@@ -49,6 +49,7 @@ file(GLOB LIB_SRCS
      src/xml.cpp
      src/posix_encapsulation.cpp
      src/output.cpp
+     src/heap.cpp
 )
 include_directories(include)
 
@@ -129,6 +130,7 @@ if(NOT HAVE_TR1)
     add_definitions(-DBOOST_TR1)
   endif (NOT HAVE_BOOST_TR1)
 endif(NOT HAVE_TR1)
+
 # check for clock_gettime()
 
 set(EXTRA_LIBS "${EXTRA_LIBS} -ldl")
@@ -252,6 +254,7 @@ file(GLOB TEST_SRCS
      test-src/collate.cpp
      test-src/suite_deps1.cpp
      test-src/suite_deps2.cpp
+     test-src/heap.cpp
      ${GMOCK_TEST_SRCS}
 )
 
