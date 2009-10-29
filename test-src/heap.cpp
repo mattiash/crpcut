@@ -30,10 +30,12 @@ TESTSUITE(heap)
 {
   TEST(should_succeed_allocation_leak)
   {
-    size_t pre = crpcut::heap::allocated_bytes();
+    size_t pre_bytes = crpcut::heap::allocated_bytes();
+    size_t pre_objects = crpcut::heap::allocated_objects();
     void *p1 = malloc(100);
     INFO << "p1=" << p1;
-    ASSERT_LE(pre + 100, crpcut::heap::allocated_bytes());
+    ASSERT_EQ(pre_bytes + 100, crpcut::heap::allocated_bytes());
+    ASSERT_EQ(pre_objects + 1, crpcut::heap::allocated_objects());
   }
 
   TEST(should_succeed_malloc_free_balance)

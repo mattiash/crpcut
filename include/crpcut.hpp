@@ -257,6 +257,7 @@ namespace crpcut {
   namespace heap {
     const size_t system = ~size_t();
     size_t allocated_bytes();
+    size_t allocated_objects();
     size_t set_limit(size_t n); // must be higher than allocated_bytes()
   }
 

@@ -856,6 +856,34 @@ Breakpoint 1, asserts::should_succeed_assert_no_throw::test (this=0x7fff0dd76340
 From there, you can single step the test case.
 </chapter>
 <chapter title="Advanced techniques">
+<section title="Heap management">
+  Testing how your software behaves in low memory situations can be difficult. With crpcut you can
+  limit the number of bytes that can be allocated on the heap. Any attempt to allocate more will fail
+  (<id>malloc()</id> returns 0 and <id>new</id> throws <id>std::bad_alloc</id>.) The limit is expressed
+  in absolute bytes allocated, using <id>crpcut::heap::set_limit(size_t)</id>. The value
+  <id>crpcut::heap::system</id> can be used to remove all limitations. To know what limit to set,
+  use the heap inspection function <id>crpcut::heap::allocated_bytes()</id> and add a suitable number.
+<code>
+  TEST(fail_vector_resize)
+  {
+    std::vector&lt;int&gt; vec;
+    crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 100);
+    vec.resize(50); // throws!
+  }
+</code>
+  Another heap inspection function is <id>crpcut::heap::allocated_objects()</id>. The heap inspection
+  functions can be used to verify that your tests do not leak memory.
+<code>
+  TEST(verify_no_leaks)
+  {
+    size_t pre_bytes = crpcut::heap::allocated_bytes();
+    size_t pre_objs = crpcut::heap::allocated_objects();
+    function_suspect_of_memor_leak();
+    ASSERT_EQ(pre_objs, crpcut::heap::allocated_objects());
+    ASSERT_EQ(pre_bytes, crpcut::heap::allocated_bytes());
+  }
+</code>
+</section>
 <section title="File system access">
 Since all test cases run in their own working directory, the path to the
 working directory when starting the test suite is lost. If you need that

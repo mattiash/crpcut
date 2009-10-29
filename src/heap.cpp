@@ -85,7 +85,7 @@ namespace crpcut
 
       size_t limit = heap::system;
       size_t bytes;
-
+      size_t objects;
 
       void alloc_type_check(stats *p, alloc_type type) throw ()
       {
@@ -119,11 +119,12 @@ namespace crpcut
             p->type = type;
             ++p;
             ALLOCATED_MEM((void*)p, s);
+            ++objects;
             return p;
           }
         void *addr = crpcut::wrapped::malloc(s + sizeof(stats));
         stats *p = static_cast<stats*>(addr);
-        if (p) { p->mem = s; p->type = type; ++p; bytes+= s; }
+        if (p) { p->mem = s; p->type = type; ++p; bytes+= s; ++objects; }
         return p;
       }
     }
@@ -137,6 +138,7 @@ namespace crpcut
       stats *p = static_cast<stats*>(addr);
       alloc_type_check(p-1, expected);
       bytes-= p[-1].mem;
+      --objects;
       if (addr >= vector && addr < &vector[num_elems])
         {
           FREED_MEM(addr);
@@ -163,6 +165,10 @@ namespace crpcut
     size_t allocated_bytes()
     {
       return bytes;
+    }
+    size_t allocated_objects()
+    {
+      return objects;
     }
   }
 }
