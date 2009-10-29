@@ -31,8 +31,8 @@ TESTSUITE(heap)
   TEST(should_succeed_allocation_leak)
   {
     size_t pre = crpcut::heap::allocated_bytes();
-    INFO << "pre=" << pre;
     void *p1 = malloc(100);
+    INFO << "p1=" << p1;
     ASSERT_LE(pre + 100, crpcut::heap::allocated_bytes());
   }
 
@@ -85,12 +85,14 @@ TESTSUITE(heap)
       char str[101];
     };
     apa * p = new apa;
+    INFO << p;
   }
 
   TEST(should_succeed_new_array_blast_limit, EXPECT_EXCEPTION(std::bad_alloc))
     {
     crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 100);
     char *p = new char[101];
+    INFO << p;
     }
 
   TEST(should_succeed_new_nothrow_blast_limit)

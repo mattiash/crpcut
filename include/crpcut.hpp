@@ -898,6 +898,7 @@ namespace crpcut {
     {
     public:
       direct_reporter() : heap_limit(heap::set_limit(heap::system)) {}
+      direct_reporter& operator<<(const void *v) { os << v; return *this; }
       template <typename V>
       direct_reporter& operator<<(const V& v) { os << v;  return *this;  }
       template <typename V>

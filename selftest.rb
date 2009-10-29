@@ -813,7 +813,7 @@ TESTS = {
   'heap::should_succeed_allocation_leak' =>
   Test.new('PASSED').
   log('info',
-      /pre=\d+/),
+      /p1=.*/),
 
   'heap::should_succeed_malloc_free_balance' =>
   Test.new('PASSED'),
