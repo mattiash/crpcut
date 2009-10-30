@@ -221,7 +221,7 @@ namespace crpcut
     }
 
     void xml_formatter::statistics(unsigned num_registered,
-                                   unsigned num_selected,
+                                   unsigned /* num_selected */,
                                    unsigned num_run,
                                    unsigned num_failed)
     {
@@ -345,7 +345,7 @@ namespace crpcut {
       write("\n");
     }
 
-    void text_formatter::statistics(unsigned num_registered,
+    void text_formatter::statistics(unsigned /* num_registered */,
                                     unsigned num_selected,
                                     unsigned num_run,
                                     unsigned num_failed)

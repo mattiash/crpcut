@@ -430,7 +430,12 @@ namespace crpcut {
         return msg_;
       }
       virtual ~posix_error() throw () { wrapped::free(msg_);}
-      posix_error(const posix_error &e) : msg_(e.msg_) { e.msg_ = 0; } // move
+      posix_error(const posix_error &e) :
+        std::exception(*this),
+        msg_(e.msg_)
+      {
+        e.msg_ = 0; // move
+      }
     private:
       posix_error();
       typedef const char *cstr;
