@@ -905,7 +905,17 @@ namespace crpcut {
       {
         os << p; return *this;
       }
-      ~direct_reporter() { report(t, os); }
+      ~direct_reporter() {
+        using std::ostringstream;
+        std::string s(os.str());
+        size_t len = s.length();
+        char *p = static_cast<char*>(alloca(len));
+        s.copy(p, len);
+        std::string().swap(s);
+        os.~ostringstream();
+        new (&os) ostringstream(); // Just how ugly is this?
+        report(t, p, len);
+      }
     private:
       direct_reporter(const direct_reporter &);
       direct_reporter& operator=(const direct_reporter&);
@@ -1442,14 +1452,23 @@ namespace crpcut {
       {
         if (!b)
           {
-            std::ostringstream os;
+            using std::ostringstream;
+            ostringstream os;
             os << location
                << "\nASSERT_" << op << "(" << n1 << ", " << n2 << ")";
 
             static const char *prefix[] = { "\n  where ", "\n        " };
             bool prev = stream_param(os, prefix[0], n1, v1);
             stream_param(os, prefix[prev], n2, v2);
-            comm::report(comm::exit_fail, os);
+            std::string s(os.str());
+            os.str(std::string());
+            size_t len = s.length();
+            char *p = static_cast<char *>(alloca(len));
+            s.copy(p, len);
+            std::string().swap(s);
+            os.~ostringstream();
+            new (&os) ostringstream();
+            comm::report(comm::exit_fail, p, len);
           }
       }
     private:
@@ -3404,7 +3423,8 @@ namespace crpcut {
         }                                                               \
       else                                                              \
         {                                                               \
-          std::ostringstream CRPCUT_LOCAL_NAME(os);                     \
+          using std::ostringstream;                                     \
+          ostringstream CRPCUT_LOCAL_NAME(os);                          \
           CRPCUT_LOCAL_NAME(os) <<                                      \
             __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                    \
             "\nASSERT_TRUE(" #a ")\n";                                  \
@@ -3412,8 +3432,18 @@ namespace crpcut {
                                                "  where ",              \
                                                #a,                      \
                                                CRPCUT_LOCAL_NAME(ra));  \
+          std::string CRPCUT_LOCAL_NAME(s)(CRPCUT_LOCAL_NAME(os).str()); \
+          size_t CRPCUT_LOCAL_NAME(len) = CRPCUT_LOCAL_NAME(s).length(); \
+          char *CRPCUT_LOCAL_NAME(p)                                    \
+            = static_cast<char*>(alloca(CRPCUT_LOCAL_NAME(len)));       \
+          CRPCUT_LOCAL_NAME(s).copy(CRPCUT_LOCAL_NAME(p),               \
+                                    CRPCUT_LOCAL_NAME(len));            \
+          std::string().swap(CRPCUT_LOCAL_NAME(s));                     \
+          CRPCUT_LOCAL_NAME(os).~ostringstream();                       \
+          new (&CRPCUT_LOCAL_NAME(os)) ostringstream();                 \
           crpcut::comm::report(crpcut::comm::exit_fail,                 \
-                               CRPCUT_LOCAL_NAME(os));                  \
+                               CRPCUT_LOCAL_NAME(p),                    \
+                               CRPCUT_LOCAL_NAME(len));                 \
         }                                                               \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
@@ -3438,7 +3468,8 @@ namespace crpcut {
       CRPCUT_REFTYPE((a)) CRPCUT_LOCAL_NAME(ra) = a;                    \
       if (CRPCUT_LOCAL_NAME(ra))                                        \
         {                                                               \
-          std::ostringstream CRPCUT_LOCAL_NAME(os);                     \
+          using std::ostringstream;                                     \
+          ostringstream CRPCUT_LOCAL_NAME(os);                          \
           CRPCUT_LOCAL_NAME(os) <<                                      \
             __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                    \
             "\nASSERT_FALSE(" #a ")\n";                                 \
@@ -3446,8 +3477,18 @@ namespace crpcut {
                                                "  where ",              \
                                                #a,                      \
                                                CRPCUT_LOCAL_NAME(ra));  \
+          std::string CRPCUT_LOCAL_NAME(s)(CRPCUT_LOCAL_NAME(os).str()); \
+          size_t CRPCUT_LOCAL_NAME(len) = CRPCUT_LOCAL_NAME(s).length(); \
+          char *CRPCUT_LOCAL_NAME(p)                                    \
+          = static_cast<char*>(alloca(CRPCUT_LOCAL_NAME(s).length()));  \
+          CRPCUT_LOCAL_NAME(s).copy(CRPCUT_LOCAL_NAME(p),               \
+                                    CRPCUT_LOCAL_NAME(len));            \
+          std::string().swap(CRPCUT_LOCAL_NAME(s));                     \
+          CRPCUT_LOCAL_NAME(os).~ostringstream();                       \
+          new (&CRPCUT_LOCAL_NAME(os)) ostringstream();                 \
           crpcut::comm::report(crpcut::comm::exit_fail,                 \
-                               CRPCUT_LOCAL_NAME(os));                  \
+                               CRPCUT_LOCAL_NAME(p),                    \
+                               CRPCUT_LOCAL_NAME(len));                 \
         }                                                               \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
@@ -3536,10 +3577,17 @@ namespace crpcut {
                                               pred,                     \
                                               crpcut::implementation::params(__VA_ARGS__))) \
         {                                                               \
+          size_t CRPCUT_LOCAL_NAME(len) = CRPCUT_LOCAL_NAME(m).length(); \
+          char *CRPCUT_LOCAL_NAME(p)                                    \
+            = static_cast<char*>(alloca(CRPCUT_LOCAL_NAME(len)+1));     \
+          CRPCUT_LOCAL_NAME(m).copy(CRPCUT_LOCAL_NAME(p),               \
+                                    CRPCUT_LOCAL_NAME(len));            \
+          CRPCUT_LOCAL_NAME(p)[CRPCUT_LOCAL_NAME(len)]=0;               \
+            std::string().swap(CRPCUT_LOCAL_NAME(m));                   \
           FAIL << "ASSERT_PRED(" #pred                                  \
                << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                \
                << #__VA_ARGS__ ")\n"                                    \
-               << CRPCUT_LOCAL_NAME(m);                                 \
+               << CRPCUT_LOCAL_NAME(p);                                 \
         }                                                               \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
