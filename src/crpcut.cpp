@@ -621,9 +621,11 @@ namespace crpcut {
         if (desc.timeout())
           {
             assert(deadlines.size());
-            deadlines.front()->kill();
-            std::pop_heap(deadlines.begin(), deadlines.end());
+            test_case_registrator *i = deadlines.front();
+            std::pop_heap(deadlines.begin(), deadlines.end(),
+                          &test_case_registrator::timeout_compare);
             deadlines.pop_back();
+            i->kill();
             continue;
           }
         bool read_failed = false;
