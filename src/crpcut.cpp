@@ -876,6 +876,8 @@ namespace crpcut {
             "   -n         - ignore dependencies\n"
             "   -o file    - Direct XML output to named file. Brief result\n"
             "                will be displayed on stdout\n"
+            "   -p var=val - Define a named variable for the test cases to\n"
+            "                pick up\n"
             "   -q         - Don't display the -o brief\n"
             "   -s         - single shot. Run only one test case, and run it in\n"
             "                the main process\n"

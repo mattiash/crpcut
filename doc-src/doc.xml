@@ -764,28 +764,28 @@ The normal <id>main()</id> is exactly the below:
 <id>crpcut::test_case_factory::run_test()</id> expects parameters as a set of
 flags followed by a set of test case or test suite names. The flags are:
 <definitions notion="flag" meaning="meaning">
-<def notion="-l">List, on stdout, all test cases matching the test case or test
-                 suite names, then exit with code 0.
-                 </def>
+<def notion="-c&#xA0;num">Control the number of parallel spawned test
+                          case processes. The default is 1. -c cannot be
+                          combined with -s (below.)</def>
 <def notion="-d&#xA0;name">Set working dir for test to named directory. The
                            directory must exist prior to run, and should
                            preferably be empty. By default a directory is
                            created under /tmp/crpcut??????</def>
+<def notion="-l">List, on stdout, all test cases matching the test case or test
+                 suite names, then exit with code 0.
+                 </def>
 <def notion="-n">Ignore dependencies when running tests.</def>
-<def notion="-v">Include the result of successful tests, in addition to that
-                 of the failed ones, in the test report.</def>
-<def notion="-c&#xA0;num">Control the number of parallel spawned test
-                          case processes. The default is 1. -c cannot be
-                          combined with -s (below.)</def>
-<def notion="-s">Single-shot - run a single test case, and run it in the main
-                 process. Useful for running a test case in a debugger. -s
-                 implies -n (above) and cannot be combined with -c (also
-                 above.)</def>
 <def notion="-o&#xA0;file">Direct xml output to named file. Brief result
                            will be displayed on stdout.</def>
 <def notion="-p&#xA0;name=value">Create a named command line parameter to be
                                  accessed from test cases.</def>
 <def notion="-q">Don't display the -o brief</def>
+<def notion="-s">Run a single test case, and run it in the main
+                 process. Useful for running a test case in a debugger. -s
+                 implies -n (above) and cannot be combined with -c (also
+                 above.)</def>
+<def notion="-v">Include the result of successful tests, in addition to that
+                 of the failed ones, in the test report.</def>
 <def notion="-x">Print XML-output on stdout or non-XML to named file
                  (-o above)</def>
 </definitions>
@@ -857,23 +857,26 @@ From there, you can single step the test case.
 </chapter>
 <chapter title="Advanced techniques">
 <section title="Heap management">
-  Testing how your software behaves in low memory situations can be difficult. With crpcut you can
-  limit the number of bytes that can be allocated on the heap. Any attempt to allocate more will fail
-  (<id>malloc()</id> returns 0 and <id>new</id> throws <id>std::bad_alloc</id>.) The limit is expressed
-  in absolute bytes allocated, using <id>crpcut::heap::set_limit(size_t)</id>. The value
-  <id>crpcut::heap::system</id> can be used to remove all limitations. To know what limit to set,
-  use the heap inspection function <id>crpcut::heap::allocated_bytes()</id> and add a suitable number.
-<code>
+  Testing how your software behaves in low memory situations can be difficult.
+  With crpcut you can limit the number of bytes that can be allocated on the
+  heap. Any attempt to allocate more will fail (<id>malloc()</id> returns 0
+  and <id>new</id> throws <id>std::bad_alloc</id>.) The limit is expressed
+  in absolute bytes allocated, using <id>crpcut::heap::set_limit(size_t)</id>.
+  The value <id>crpcut::heap::system</id> can be used to remove all limitations.
+  To know what limit to set, use the heap inspection function
+  <id>crpcut::heap::allocated_bytes()</id> and add a suitable number.
+  <code>
   TEST(fail_vector_resize)
   {
-    std::vector&lt;int&gt; vec;
-    crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 100);
-    vec.resize(50); // throws!
+  std::vector&lt;int&gt; vec;
+  crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 100);
+  vec.resize(50); // throws!
   }
-</code>
-  Another heap inspection function is <id>crpcut::heap::allocated_objects()</id>. The heap inspection
+  </code>
+  Another heap inspection function is
+  <id>crpcut::heap::allocated_objects()</id>. The heap inspection
   functions can be used to verify that your tests do not leak memory.
-<code>
+  <code>
   TEST(verify_no_leaks)
   {
     size_t pre_bytes = crpcut::heap::allocated_bytes();
@@ -882,13 +885,13 @@ From there, you can single step the test case.
     ASSERT_EQ(pre_objs, crpcut::heap::allocated_objects());
     ASSERT_EQ(pre_bytes, crpcut::heap::allocated_bytes());
   }
-</code>
+  </code>
 </section>
 <section title="File system access">
-Since all test cases run in their own working directory, the path to the
-working directory when starting the test suite is lost. If you need that
-path, for example to populate test vectors from a file, you can get the
-path name through the static member function:
+  Since all test cases run in their own working directory, the path to the
+  working directory when starting the test suite is lost. If you need that
+  path, for example to populate test vectors from a file, you can get the
+  path name through the static member function:
 <code>
   const char *crpcut::test_case_factory::get_start_dir();
 </code>
