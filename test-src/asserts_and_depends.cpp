@@ -261,6 +261,37 @@ TESTSUITE(asserts)
     ASSERT_EQ(pi, pv);
   }
 
+  TEST(should_fail_eq_volatile)
+  {
+    volatile int n = 3;
+    int ref = 4;
+    const volatile int &m = ref;
+    ASSERT_EQ(n, m);
+  }
+
+  TEST(should_fail_false_volatile)
+  {
+    volatile int n = 3;
+    ASSERT_FALSE(n);
+  }
+
+  TEST(should_fail_false_const_volatile)
+  {
+    const volatile int n = 3;
+    ASSERT_FALSE(n);
+  }
+
+  TEST(should_fail_true_volatile)
+  {
+    volatile int n = 0;
+    ASSERT_TRUE(n);
+  }
+
+  TEST(should_fail_true_const_volatile)
+  {
+    const volatile int n = 0;
+    ASSERT_TRUE(n);
+  }
   struct local
   {
     static const int apa = 1;

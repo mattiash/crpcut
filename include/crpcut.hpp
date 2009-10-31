@@ -1425,6 +1425,12 @@ namespace crpcut {
       typedef typename param_traits<T>::type type;
     };
 
+    template <typename T>
+    struct param_traits<const volatile T>
+    {
+      typedef typename param_traits<T>::type type;
+    };
+
     template <typename T, size_t N>
     struct param_traits<T[N]>
     {
@@ -1628,6 +1634,50 @@ namespace crpcut {
     {
       tester_t<typename if_else<null1, void, T1>::type,
         typename if_else<null2, void, T2>::type> v(loc, op);
+      return v;
+    }
+
+    template <typename T>
+    class bool_tester_t
+    {
+      typedef typename param_traits<T>::type type;
+      const char *loc_;
+    public:
+      bool_tester_t(const char *loc) : loc_(loc) {}
+      void assert_true(type v, const char *vn) const
+      {
+        if (v) {} else { report("ASSERT_TRUE", v, vn); }
+      }
+      void assert_false(type v, const char *vn) const
+      {
+        if (v) { report("ASSERT_FALSE", v, vn); }
+      }
+    private:
+      void report(const char *name, type v, const char *vn) const
+      {
+        using std::ostringstream;
+        ostringstream os;
+
+        os << loc_ << "\n" << name << "(" << vn << ")\n";
+        stream_param(os,
+                     "  where ",
+                     vn,
+                     v);
+        std::string s(os.str());
+        os.~ostringstream();
+        new (&os) ostringstream();
+        size_t len = s.length();
+        char *p = static_cast<char*>(alloca(len));
+        s.copy(p, len);
+        std::string().swap(s);
+        comm::report(crpcut::comm::exit_fail, p, len);
+      }
+    };
+
+    template <typename T>
+    bool_tester_t<T> bool_tester(const char *loc)
+    {
+      bool_tester_t<T> v(loc);
       return v;
     }
 
@@ -3351,7 +3401,7 @@ extern crpcut::implementation::namespace_info current_namespace;
 namespace crpcut {
   namespace datatypes {
     template <typename T>
-    const typename std::remove_cv<typename std::remove_reference<T>::type>::type &gettype();
+    const volatile typename std::remove_cv<typename std::remove_reference<T>::type>::type &gettype();
 
   }
 }
@@ -3429,37 +3479,14 @@ namespace crpcut {
         })                                                              \
   } while(0)
 
+
+
 #define ASSERT_TRUE(a)                                                  \
   do {                                                                  \
     try {                                                               \
-      CRPCUT_REFTYPE((a)) CRPCUT_LOCAL_NAME(ra) = a;                    \
-      if (CRPCUT_LOCAL_NAME(ra))                                        \
-        {                                                               \
-        }                                                               \
-      else                                                              \
-        {                                                               \
-          using std::ostringstream;                                     \
-          ostringstream CRPCUT_LOCAL_NAME(os);                          \
-          CRPCUT_LOCAL_NAME(os) <<                                      \
-            __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                    \
-            "\nASSERT_TRUE(" #a ")\n";                                  \
-          crpcut::implementation::stream_param(CRPCUT_LOCAL_NAME(os),   \
-                                               "  where ",              \
-                                               #a,                      \
-                                               CRPCUT_LOCAL_NAME(ra));  \
-          std::string CRPCUT_LOCAL_NAME(s)(CRPCUT_LOCAL_NAME(os).str()); \
-          size_t CRPCUT_LOCAL_NAME(len) = CRPCUT_LOCAL_NAME(s).length(); \
-          char *CRPCUT_LOCAL_NAME(p)                                    \
-            = static_cast<char*>(alloca(CRPCUT_LOCAL_NAME(len)));       \
-          CRPCUT_LOCAL_NAME(s).copy(CRPCUT_LOCAL_NAME(p),               \
-                                    CRPCUT_LOCAL_NAME(len));            \
-          std::string().swap(CRPCUT_LOCAL_NAME(s));                     \
-          CRPCUT_LOCAL_NAME(os).~ostringstream();                       \
-          new (&CRPCUT_LOCAL_NAME(os)) ostringstream();                 \
-          crpcut::comm::report(crpcut::comm::exit_fail,                 \
-                               CRPCUT_LOCAL_NAME(p),                    \
-                               CRPCUT_LOCAL_NAME(len));                 \
-        }                                                               \
+      crpcut::implementation::bool_tester<decltype((a))>                \
+        (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__))                      \
+        .assert_true((a), #a);                                          \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
                 {                                                       \
@@ -3475,36 +3502,12 @@ namespace crpcut {
       })                                                                \
   } while(0)
 
-
-
 #define ASSERT_FALSE(a)                                                 \
   do {                                                                  \
     try {                                                               \
-      CRPCUT_REFTYPE((a)) CRPCUT_LOCAL_NAME(ra) = a;                    \
-      if (CRPCUT_LOCAL_NAME(ra))                                        \
-        {                                                               \
-          using std::ostringstream;                                     \
-          ostringstream CRPCUT_LOCAL_NAME(os);                          \
-          CRPCUT_LOCAL_NAME(os) <<                                      \
-            __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__)                    \
-            "\nASSERT_FALSE(" #a ")\n";                                 \
-          crpcut::implementation::stream_param(CRPCUT_LOCAL_NAME(os),   \
-                                               "  where ",              \
-                                               #a,                      \
-                                               CRPCUT_LOCAL_NAME(ra));  \
-          std::string CRPCUT_LOCAL_NAME(s)(CRPCUT_LOCAL_NAME(os).str()); \
-          size_t CRPCUT_LOCAL_NAME(len) = CRPCUT_LOCAL_NAME(s).length(); \
-          char *CRPCUT_LOCAL_NAME(p)                                    \
-          = static_cast<char*>(alloca(CRPCUT_LOCAL_NAME(s).length()));  \
-          CRPCUT_LOCAL_NAME(s).copy(CRPCUT_LOCAL_NAME(p),               \
-                                    CRPCUT_LOCAL_NAME(len));            \
-          std::string().swap(CRPCUT_LOCAL_NAME(s));                     \
-          CRPCUT_LOCAL_NAME(os).~ostringstream();                       \
-          new (&CRPCUT_LOCAL_NAME(os)) ostringstream();                 \
-          crpcut::comm::report(crpcut::comm::exit_fail,                 \
-                               CRPCUT_LOCAL_NAME(p),                    \
-                               CRPCUT_LOCAL_NAME(len));                 \
-        }                                                               \
+      crpcut::implementation::bool_tester<decltype((a))>                \
+        (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__))                      \
+        .assert_false((a), #a);                                         \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
                 {                                                       \
@@ -3513,13 +3516,13 @@ namespace crpcut {
                     "  caught std::exception\n"                         \
                     "  what()=" << CRPCUT_LOCAL_NAME(e).what();         \
                 })                                                      \
-      CATCH_BLOCK(...,                                                  \
-                  {                                                     \
-                    FAIL <<                                             \
-                      "ASSERT_FALSE(" #a ")\n"                          \
-                      "  caught ...";                                   \
-                  })                                                    \
+    CATCH_BLOCK(..., {                                                  \
+        FAIL <<                                                         \
+          "ASSERT_FALSE(" #a ")\n"                                      \
+          "  caught ...";                                               \
+      })                                                                \
   } while(0)
+
 
 #define ASSERT_EQ(lh, rh)  CRPCUT_BINARY_ASSERT(EQ, lh, rh)
 
