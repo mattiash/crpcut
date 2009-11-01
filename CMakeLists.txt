@@ -146,6 +146,7 @@ try_compile(HAVE_VALGRIND ${CMAKE_BINARY_DIR}
 if (HAVE_VALGRIND)
   message("*** compiling with support for valgrind")
   add_definitions(-DHAVE_VALGRIND)
+  set(CMAKE_CXX_FLAGS_MAINT "${CMAKE_CXX_FLAGS_MAINT} -Wno-long-long")
 endif (HAVE_VALGRIND)
 
 # check for clock_gettime()

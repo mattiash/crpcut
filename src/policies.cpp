@@ -72,8 +72,7 @@ namespace crpcut {
           }
       }
 
-      inline void
-      base::add_action(dependencies::basic_enforcer *other)
+      void base::add_action(dependencies::basic_enforcer *other)
       {
         other->inc();
       }

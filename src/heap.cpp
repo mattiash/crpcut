@@ -86,50 +86,52 @@ namespace crpcut
       size_t limit = heap::system;
       size_t bytes;
       size_t objects;
-
-      void alloc_type_check(stats *p, alloc_type type) throw ()
-      {
-        if (p->type != type)
-          {
-            comm::direct_reporter<crpcut::comm::exit_fail>()
-              << "DEALLOC FAIL\n"
-              << free_name[type] << " " << p+1 << " was allocated using "
-              << alloc_name[p->type];
-          }
-      }
-
-      void *alloc_mem(size_t s, alloc_type type) throw ()
-      {
-        if (!s) return 0;
-
-        const size_t current_limit = limit;
-        if (bytes + s > current_limit)
-          {
-            return 0;
-          }
-
-        const size_t blocks = (s + sizeof(stats) - 1)/sizeof(stats) + 1;
-
-        if (current_offset + blocks < num_elems)
-          {
-            stats *p = &vector[current_offset];
-            current_offset += blocks;
-            bytes += s;
-            p->mem = s;
-            p->type = type;
-            ++p;
-            ALLOCATED_MEM((void*)p, s);
-            ++objects;
-            return p;
-          }
-        void *addr = crpcut::wrapped::malloc(s + sizeof(stats));
-        stats *p = static_cast<stats*>(addr);
-        if (p) { p->mem = s; p->type = type; ++p; bytes+= s; ++objects; }
-        return p;
-      }
     }
 
-    void free_mem(void *addr, alloc_type expected) throw ()
+    static void alloc_type_check(stats *p, alloc_type type) throw ()
+    {
+      if (p->type != type)
+        {
+          void *addr = p + 1;
+          comm::direct_reporter<crpcut::comm::exit_fail>()
+            << "DEALLOC FAIL\n"
+            << free_name[type] << " " << addr << " was allocated using "
+            << alloc_name[p->type];
+        }
+    }
+
+    static void *alloc_mem(size_t s, alloc_type type) throw ()
+    {
+      if (!s) return 0;
+
+      const size_t current_limit = limit;
+      if (bytes + s > current_limit)
+        {
+          return 0;
+        }
+
+      const size_t blocks = (s + sizeof(stats) - 1)/sizeof(stats) + 1;
+
+      if (current_offset + blocks < num_elems)
+        {
+          stats *p = &vector[current_offset];
+          current_offset += blocks;
+          bytes += s;
+          p->mem = s;
+          p->type = type;
+          ++p;
+          ALLOCATED_MEM((void*)p, s);
+          ++objects;
+          return p;
+        }
+      void *addr = crpcut::wrapped::malloc(s + sizeof(stats));
+      stats *p = static_cast<stats*>(addr);
+      if (p) { p->mem = s; p->type = type; ++p; bytes+= s; ++objects; }
+      return p;
+    }
+
+
+    static void free_mem(void *addr, alloc_type expected) throw ()
     {
       if (!addr) return;
 
@@ -200,7 +202,7 @@ extern "C"
         return 0;
       }
     crpcut::heap::stats *p = static_cast<crpcut::heap::stats*>(addr);
-    alloc_type_check(p-1, by_malloc);
+    crpcut::heap::alloc_type_check(p-1, by_malloc);
     if (s <= p[-1].mem) return addr;
 
     void *new_addr = malloc(s);

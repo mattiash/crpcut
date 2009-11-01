@@ -187,7 +187,7 @@ namespace crpcut {
     public:
       list_elem();
       list_elem(T *p);
-      ~list_elem();
+      virtual ~list_elem();
       void link_after(list_elem& r);
       void link_before(list_elem &r);
       T *next() { return next_; }
@@ -912,12 +912,11 @@ namespace crpcut {
           while (i != &reg)
             {
               ++num_registered_tests;
-              bool found = false;
               if (*names)
                 {
                   for (const char **name = names; *name; ++name)
                     {
-                      if ((found = i->match_name(*name))) goto found;
+                      if (i->match_name(*name)) goto found;
                     }
                   i = i->unlink();
                   continue;
