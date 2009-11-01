@@ -77,38 +77,23 @@ if (NOT HAVE__EXIT)
   message(FATAL_ERROR "${CMAKE_CXX_COMPILER} doesn't support std::_Exit()")
 endif(NOT HAVE__EXIT)
 
-# Check for decltype
+# Check for decltype and typeof
+
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-std=c++0x HAVE_CXX0X)
-if (HAVE_CXX0X)
-  add_definitions(-std=c++0x)
-else (HAVE_CXX0X)
-  file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp
-    "template <typename T> T* func(T);\n"
-    "typedef decltype(func(3.14)) apa;\n"
-    "int main() {}\n")
-
-  try_compile(HAVE_DECLTYPE ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/CMakeTmp/decltype.cpp)
-  if(NOT HAVE_DECLTYPE)
-    file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp
-      "template <typename T> T* func(T);\n"
-      "typedef typeof(func(3.14)) apa;\n"
-      "int main() {}\n")
-    try_compile(HAVE_DECLTYPE ${CMAKE_BINARY_DIR}
-      ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp)
-    if(NOT HAVE_DECLTYPE)
-      message(
-        FATAL_ERROR
-        "${CMAKE_CXX_COMPILER} doesn't support decltype or typeof")
-    else(NOT HAVE_DECLTYPE)
-      set(USING_TYPEOF 1)
-      add_definitions(-Ddecltype=typeof)
-    endif(NOT HAVE_DECLTYPE)
-  endif(NOT HAVE_DECLTYPE)
-endif(HAVE_CXX0X)
-
+file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp
+  "template <typename T> T* func(T);\n"
+  "typedef typeof(func(3.14)) apa;\n"
+  "int main() {}\n")
+try_compile(HAVE_TYPEOF ${CMAKE_BINARY_DIR}
+  ${CMAKE_BINARY_DIR}/CMakeTmp/typeof.cpp)
+if (NOT HAVE_TYPEOF)
+  if (NOT HAVE_CXX0X)
+    mesage(FATAL_ERROR
+      "${CMAKE_CXX_COMPILER} supports neither decltype nor typeof")
+  endif (NOT HAVE_CXX0X)
+endif (NOT HAVE_TYPEOF)
 
 # check for TR1
 
@@ -126,9 +111,7 @@ if(NOT HAVE_TR1)
   try_compile(HAVE_BOOST_TR1 ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/CMakeTmp/boost_tr1.cpp)
   if (NOT HAVE_BOOST_TR1)
-    message(FATAL_ERROR "${CMAKE_CXX_COMPILER} doesn't have std/tr1")
-  else (NOT HAVE_BOOST_TR1)
-    add_definitions(-DBOOST_TR1)
+    message(FATAL_ERROR "${CMAKE_CXX_COMPILER} doesn't have std/tr1 nor boost/tr1")
   endif (NOT HAVE_BOOST_TR1)
 endif(NOT HAVE_TR1)
 
@@ -143,11 +126,6 @@ file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/valgrind.cpp
   "}\n")
 try_compile(HAVE_VALGRIND ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/CMakeTmp/valgrind.cpp)
-if (HAVE_VALGRIND)
-  message("*** compiling with support for valgrind")
-  add_definitions(-DHAVE_VALGRIND)
-  set(CMAKE_CXX_FLAGS_MAINT "${CMAKE_CXX_FLAGS_MAINT} -Wno-long-long")
-endif (HAVE_VALGRIND)
 
 # check for clock_gettime()
 
@@ -314,15 +292,15 @@ endif (AWK AND BASH AND XMLLINT)
 set(LIBRARY_OUTPUT_PATH lib)
 set(EXECUTABLE_OUTPUT_PATH test)
 
-if(HAVE_CXX0X)
-  message("*** IMPORTANT *** Compile your tests using -std=c++0x")
-endif(HAVE_CXX0X)
-if(USING_TYPEOF)
-  message("*** IMPORTANT *** Compile your tests using -Ddecltype=typeof")
-endif(USING_TYPEOF)
-if (HAVE_BOOST_TR1)
-    message("*** IMPORTANT *** Compile your tests using -DBOOST_TR1")
-endif(HAVE_BOOST_TR1)
+if(HAVE_CXX0X AND NOT HAVE_TYPEOF)
+  message("*** IMPORTANT *** You must compile your tests using -std=c++0x")
+  add_definitions(-std=c++0x)
+endif(HAVE_CXX0X AND NOT HAVE_TYPEOF)
+if (HAVE_VALGRIND)
+  message("*** compiling with support for valgrind")
+  add_definitions(-DHAVE_VALGRIND)
+  set(CMAKE_CXX_FLAGS_MAINT "${CMAKE_CXX_FLAGS_MAINT} -Wno-long-long")
+endif (HAVE_VALGRIND)
 
 install(
   FILES include/crpcut.hpp

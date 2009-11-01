@@ -27,11 +27,13 @@ An example testing parts of std::string:<p/>
       ASSERT_TRUE(s.empty());
       ASSERT_EQ(s.length(), 0);
     }
+
     TEST(constr_from_char_array, apastr,
                                  DEPENDS_ON(default_constr_and_destr))
     {
       ASSERT_EQ(s.length(), 3UL);
     }
+
     TEST(at, apastr,
              DEPENDS_ON(default_constr_and_destr))
     {
@@ -41,11 +43,18 @@ An example testing parts of std::string:<p/>
 
   TESTSUITE(errors, DEPENDS_ON(ALL_TESTS(basics)))
   {
+    TEST(out_of_mem, EXPECT_EXCEPTION(std::bad_alloc))
+    {
+      crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 2);
+      std::string s("apa");
+    }
+
     TEST(at_out_of_range, apastr,
                           EXPECT_EXCEPTION(std::out_of_range))
     {
       s.at(4);
     }
+
     TEST(index_oper_out_of_range, apastr,
                                   EXPECT_SIGNAL_DEATH(SIGABRT),
                                   NO_CORE_FILE)
@@ -89,7 +98,7 @@ functionality will not even be run.
 <p/>
 The crpcut main process does not have any dynamic memory allocated at the
 time a test case process is started, so you can run crpcut using a memory
-test tool, such as <link url="http://www.valgrind.org">valgrind</link>,
+test tool, such as <link url="http://valgrind.org">valgrind</link>,
  and if there is memory allocated when the test
 case process terminates, you can be assured that you have found a memory leak
 in your test.
@@ -165,7 +174,9 @@ The C++ extensions are:
   <def notion="_Exit()">C99/c++0x</def>
 </definitions>
 All will become standardized for C++ soon, and are since some time supported
-by gcc. The lowest version tested with is 4.1.2.
+by compilers like <link url="http://gcc.gnu.org">g++</link> and
+<link url="www.intel.com">Intel</link>'s C++ compiler
+<link url="http://software.intel.com/en-us/intel-compilers/">ICC</link>.
 <p/>
 The required Posix functions are:
 <definitions notion="Standard" meaning="Requirement">
@@ -228,7 +239,14 @@ First obtain the crpcut sources, either a release from the
 sourceforge
 <link url="https://sourceforge.net:443/project/showfiles.php?group_id=251473">download</link>
 page, or from the git repository
-<id>git://crpcut.git.sourceforge.net/gitroot/crpcut</id>
+<id>git://crpcut.git.sourceforge.net/gitroot/crpcut/crpcut</id>
+<p/>
+If you intend to build a binary lib for distribution, it is recommended
+to build on a host which has <link url="http://valgrind.org">valgrind</link>
+installed. crpcut's heap management adds valgrind special instructions, if
+<id>valgrind.h</id> is found, which helps track memory leaks. Those special
+instructions are no-ops if <link url="http://valgrind.org">valgrind</link>
+is not used or available.
 <p/>
 In a build directory (can be the same as the source directory)
 <code>
@@ -659,7 +677,7 @@ precision is an unsigned integer. <id>ulps_diff</id> is not available for
 <id>long double</id>.
 <p/>
 It is worth pointing out that arithmetics with <id>long double</id> might
-work poorly when run under <link url="http://www.valgrind.org">valgrind</link>,
+work poorly when run under <link url="http://valgrind.org">valgrind</link>,
 since it (at least in version 3.4.1 and older) never makes floating point
 calculations with greater precision than
 64 bits (<id>double</id>.)

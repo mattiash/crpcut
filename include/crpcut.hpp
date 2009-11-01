@@ -196,6 +196,31 @@
 
 #endif
 
+#ifdef __INTEL_COMPILER
+#  ifndef __GXX_EXPERIMENTAL_CPP0X__
+#    define CRPCUT_DECLTYPE typeof
+#  else
+#    define __EXPERIMENTAL_CXX0X__
+#    define CRPCUT_DECLTYPE decltype
+#  endif
+#  define BOOST_TR1
+#  define CRPCUT_NORETURN
+#else
+#  ifdef __GNUG__
+#    ifdef __GXX_EXPERIMENTAL_CXX0X__
+#      define CRPCUT_DECLTYPE decltype
+#      define __EXPERIMENTAL_CXX0X__
+#    else
+#      define CRPCUT_DECLTYPE typeof
+#    endif
+#    define CRPCUT_NORETURN __attribute__((noreturn))
+#    ifndef __EXCEPTIONS
+#      define CRPCUT_NO_EXCEPTION_SUPPORT
+#    endif
+#  else
+#    define CRPCUT_NORETURN
+#  endif
+#endif
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
@@ -203,7 +228,7 @@
 #include <iomanip>
 #include <cerrno>
 #include <cassert>
-#if BOOST_TR1
+#ifdef BOOST_TR1
 #include <boost/tr1/type_traits.hpp>
 #include <boost/tr1/array.hpp>
 #else
@@ -226,21 +251,13 @@ extern "C"
 
 namespace std {
   using std::tr1::array;
-#ifdef BOOST_TR1
+#if (not defined(__EXPERIMENTAL_CXX0X__) || defined (BOOST_TR1))
   using std::tr1::remove_cv;
   using std::tr1::remove_reference;
 #endif
 }
 
 
-#ifdef __GNUC__
-#define CRPCUT_NORETURN __attribute__((noreturn))
-#ifndef __EXCEPTIONS
-#define CRPCUT_NO_EXCEPTION_SUPPORT
-#endif
-#else
-#define CRPCUT_NORETURN
-#endif
 
 #ifdef CRPCUT_NO_EXCEPTION_SUPPORT
 #ifndef try
@@ -2373,8 +2390,8 @@ namespace crpcut {
       typedef x type;                           \
     }
 
-    CRPCUT_MAKE_FP_REP(uint32_t);
-    CRPCUT_MAKE_FP_REP(uint64_t);
+    CRPCUT_MAKE_FP_REP(u_int32_t);
+    CRPCUT_MAKE_FP_REP(u_int64_t);
 
 #undef CRPCUT_MAKE_FP_REP
 
@@ -3394,9 +3411,9 @@ extern crpcut::implementation::namespace_info current_namespace;
 #define CRPCUT_STRINGIZE(a) #a
 #define CRPCUT_STRINGIZE_(a) CRPCUT_STRINGIZE(a)
 
-#ifdef decltype
+#ifndef __EXPERIMENTAL_CXX0X__
 #define CRPCUT_REFTYPE(expr) \
-  const decltype(expr) &
+  const CRPCUT_DECLTYPE(expr) &
 #else
 namespace crpcut {
   namespace datatypes {
@@ -3406,7 +3423,7 @@ namespace crpcut {
   }
 }
 #define CRPCUT_REFTYPE(expr) \
-  decltype(crpcut::datatypes::gettype<decltype(expr)>())
+  CRPCUT_DECLTYPE(crpcut::datatypes::gettype<CRPCUT_DECLTYPE(expr)>())
 #endif
 
 #define NO_CORE_FILE \
@@ -3461,8 +3478,8 @@ namespace crpcut {
   do {                                                                  \
     try {                                                               \
       crpcut::implementation::tester                                    \
-        <CRPCUT_IS_ZERO_LIT(lh), decltype(lh),                          \
-        CRPCUT_IS_ZERO_LIT(rh), decltype(rh)>                           \
+        <CRPCUT_IS_ZERO_LIT(lh), CRPCUT_DECLTYPE(lh),                   \
+        CRPCUT_IS_ZERO_LIT(rh), CRPCUT_DECLTYPE(rh)>                    \
         (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__), #name)               \
         .name(lh, #lh, rh, #rh);                                        \
     }                                                                   \
@@ -3484,7 +3501,7 @@ namespace crpcut {
 #define ASSERT_TRUE(a)                                                  \
   do {                                                                  \
     try {                                                               \
-      crpcut::implementation::bool_tester<decltype((a))>                \
+      crpcut::implementation::bool_tester<CRPCUT_DECLTYPE((a))>         \
         (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__))                      \
         .assert_true((a), #a);                                          \
     }                                                                   \
@@ -3505,7 +3522,7 @@ namespace crpcut {
 #define ASSERT_FALSE(a)                                                 \
   do {                                                                  \
     try {                                                               \
-      crpcut::implementation::bool_tester<decltype((a))>                \
+      crpcut::implementation::bool_tester<CRPCUT_DECLTYPE((a))>         \
         (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__))                      \
         .assert_false((a), #a);                                         \
     }                                                                   \

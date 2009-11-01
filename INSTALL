@@ -16,8 +16,14 @@ on http://crpcut.sourceforge.net
 
 Ruby (http://www.ruby-lang.org/en/) if you want to run a selftest
 
-If google-mock (http://code.google.com/p/googlemock) is to be used, at least version
-1.4.0 is required.
+If google-mock (http://code.google.com/p/googlemock) is to be used, at least
+version 1.4.0 is required.
+
+If you intend to build a binary lib for distribution, it is recommended to
+build on a machine that has valgrind (http://valgrind.org) installed.
+crpcut's heap management adds valgrind special instructions, if valgrind.h is
+found, which helps track memory leaks. Those special instructions are no-ops
+if valgrind is not used/available.
 
 Build
 =====
@@ -25,11 +31,12 @@ Build
 1. 'cd' to the directory containing the unpacked crpcut files and type 'cmake .',
    or if you want to control the installation directory, type
    'cmake . -DCMAKE_INSTALL_PREFIX=<desired install directory>'. If you have
-   google-mock, and want to run a self test (below) that verifies that google-mock
-   and crpcut cooperate, add -DWITH_GOOGLE_MOCK=yes to the 'cmake' command.
+   google-mock, and want to run a self test (below) that verifies that
+   google-mock and crpcut cooperate, add -DWITH_GOOGLE_MOCK=yes to the 'cmake'
+   command.
 
-   If you want tu use Intel ICC instead of your default compiler,
-   type 'CXX=icpc cmake ...'
+   If you want to use another compiler than your default, e.g. Intel ICC
+     type 'CXX=icpc cmake ...'
 
 2. Type 'make'
 
@@ -49,7 +56,7 @@ Out-of-tree Build
    and want to run a self test (below) that verifies that google-mock and
    crpcut cooperate, add -DWITH_GOOGLE_MOCK=yes to the 'cmake' command.
 
-   If you want tu use Intel ICC instead of your default compiler,
+   If you want to use another compiler than your default, e.g. Intel ICC
    type 'CXX=icpc cmake ...'
 
 3. type 'make'
