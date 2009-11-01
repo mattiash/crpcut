@@ -113,11 +113,18 @@ directory is left untouched by crpcut, for you to examine.
 
 <chapter title="Competition">
 You may want to check out the competition and decide which system is best for
-you.
+you. Some examples:
 <list>
 <li><link url="http://code.google.com/p/googletest/">googletest</link></li>
 <li><link url="http://cppunit.sourceforge.net">CppUnit</link></li>
 <li><link url="http://unittest-cpp.sourceforge.net">UnitTest++</link></li>
+<li><link url="http://unitmm.sourceforge.net/">unit--</link></li>
+<li><link url="http://cpptest.sourceforge.net/">CppTest</link></li>
+<li><link url="http://dut.sourceforge.net/">Dave's Unit Test</link></li>
+<li><link url="http://unitpp.sourceforge.net/">unit++</link></li>
+<li><link url="http://testsoon.sourceforge.net/">Test soon</link></li>
+<li><link url="http://www.cxxtester.onlinehome.de/">CxxTester</link></li>
+<li><link url="http://snipabacken.se/~grahn/comp/#testicle">testicle</link></li>
 </list>
 </chapter>
 
