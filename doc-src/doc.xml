@@ -1,4 +1,4 @@
-<doc title="crpcut-0.7.3 - The Compartmented Robust Posix C++ Unit Tester">
+<doc title="crpcut-0.8.0 (a.k.a 1.0-beta1) - The Compartmented Robust Posix C++ Unit Tester">
 <abstract>
 crpcut (pronounced &quot;crap cut&quot;) is the
 Compartmented Robust Posix C++ Unit Tester
@@ -129,7 +129,7 @@ you. Some examples:
 </chapter>
 
 <chapter title="crpcut links">
-The current version of crpcut is 0.7.3
+The current version of crpcut is 0.8.0 (a.k.a. 1.0-beta-1)
 <p/>
 <li>Latest version of <link url="http://crpcut.sourceforge.net">this document</link></li>
 <li>Sourceforge <link url="http://www.sourceforge.net/projects/crpcut">project page</link></li>
@@ -893,9 +893,9 @@ From there, you can single step the test case.
   <code>
   TEST(fail_vector_resize)
   {
-  std::vector&lt;int&gt; vec;
-  crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 100);
-  vec.resize(50); // throws!
+    std::vector&lt;int&gt; vec;
+    crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 100);
+    vec.resize(50); // throws!
   }
   </code>
   Another heap inspection function is
@@ -1192,6 +1192,7 @@ global namespace for testing purposes.
 The todo list, without any regard to importance or desired implementation
 order is:
 <list>
+<li>Rewrite documenation before 1.0</li>
 <li>Set regexp match rules for stdout and stderr (probably won't happen before 1.0)</li>
 <li>OS/X compatibility would be nice</li>
 </list>

@@ -1,3 +1,30 @@
+2009-11-01 0.8.0 (a.k.a. 1.0-beta-1)
+
+         * crpcut has entered Beta stage!
+
+         * Google-mock support is now official instead of a dirty hack.
+           Only google-mock 1.4.0 and later is supported. The support lib
+           libcrpcut-gmock.so no longer exists. The CMake option
+           -DWITH_GOOGLE_MOCK=yes now only controls whether google-mock
+           tests shall be included in selftest. It is otherwise not needed.
+
+         * Added heap-management, through which you can query the heap
+           for allated objects and allocated bytes. You can also limit
+           the available heap to test out-of-memory situations. The crpcut
+           heap instruments valgrind (http://valgrind.org) if available,
+           to aid search for memory leaks.
+
+         * Build support is simplified. crpcut detects the compiler used,
+           and adapts at compile time. It is no longer necessary to add
+           flags like -Ddecltype=typeof or -std=c++0x.
+
+         * Support for Intel C++ compiler ICC
+           http://software.intel.com/en-us/intel-compilers/
+
+         * Improved readability on the test result reports. Unfortunately
+           this includes a slight change to the XML-schema for XML-output.
+           See crpcut.xsd.
+
 2009-10-19 0.7.3
 
          * Added support for google-mock 1.4.0

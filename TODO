@@ -1,8 +1,11 @@
+* Documentation
+    Restructuring for improved readability (ideas and help is welcome)
+
 * Compatibility
   - OS/X would be nice
 
 * Features:
   - Regexp match rules for stdout and stderr (probably won't happen
     before 1.0)
-  - Dependencies between test suites.
+
 
