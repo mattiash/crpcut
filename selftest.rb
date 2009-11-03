@@ -799,7 +799,7 @@ TESTS = {
   Test.new('FAILED').
   log('info', /.*/me).
   log('violation',
-      /CPU-time timeout 500ms exceeded.\s+#{A_T} (([6-9]\d\d)|(1\d\d\d))ms/me),
+      /CPU-time timeout 500ms exceeded.\s+#{A_T} (([5-9]\d\d)|(1\d\d\d))ms/me),
 
   'timeouts::should_fail_slow_cputime_deadline_by_death' =>
   Test.new('FAILED').

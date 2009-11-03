@@ -27,7 +27,7 @@
 
 #include <crpcut.hpp>
 extern "C" {
-#include <sys/time.h> // gettimeofday
+#include <sys/times.h>
 }
 TESTSUITE(timeouts)
 {
@@ -51,23 +51,16 @@ TESTSUITE(timeouts)
 
   TEST(should_fail_slow_cputime_deadline, DEADLINE_CPU_MS(500), NO_CORE_FILE)
   {
-    INFO << "Note! This test case will fail for the wrong reason if NTP makes\n"
-         << "an unfortunate time adjustment here, or in the unlikely event\n"
-         << "that gettimeofday() consumes lots and lots of real time and\n"
-         << "very little cpu time.";
-
-    struct timeval deadline;
-    gettimeofday(&deadline, 0);
-    deadline.tv_sec+=1;
+    const clock_t clocks_per_tick = sysconf(_SC_CLK_TCK);
+    tms t;
+    times(&t);
+    clock_t deadline = t.tms_utime + t.tms_stime + clocks_per_tick;
     for (;;)
       {
         for (volatile int n = 0; n < 100000; ++n)
           ;
-        struct timeval now;
-        gettimeofday(&now, 0);
-        if (now.tv_sec > deadline.tv_sec) break;
-        if (now.tv_sec == deadline.tv_sec && now.tv_usec >= deadline.tv_usec)
-          break;
+        times(&t);
+        if (t.tms_utime + t.tms_stime > deadline) break;
       }
   }
 
