@@ -60,6 +60,7 @@ namespace {
 }
 namespace crpcut
 {
+
   namespace wrapped
   {
     CRPCUT_WRAP_FUNC(libc, malloc, void*, (size_t s), (s))
@@ -87,16 +88,26 @@ namespace crpcut
       size_t bytes;
       size_t objects;
     }
+    bool control::enabled;
 
     static void alloc_type_check(stats *p, alloc_type type) throw ()
     {
       if (p->type != type)
         {
           void *addr = p + 1;
-          comm::direct_reporter<crpcut::comm::exit_fail>()
-            << "DEALLOC FAIL\n"
-            << free_name[type] << " " << addr << " was allocated using "
-            << alloc_name[p->type];
+          if (control::is_enabled())
+            {
+              comm::direct_reporter<crpcut::comm::exit_fail>()
+                << "DEALLOC FAIL\n"
+                << free_name[type] << " " << addr << " was allocated using "
+                << alloc_name[p->type];
+            }
+          else
+            {
+              static const char msg[]="alloc/dealloc type mismatch\n";
+              wrapped::write(2, msg, sizeof(msg) - 1);
+              abort();
+            }
         }
     }
 
@@ -154,11 +165,21 @@ namespace crpcut
     {
       if (n < bytes)
         {
-          size_t now_bytes = bytes;
-          comm::direct_reporter<crpcut::comm::exit_fail>()
-            << "heap::set_limit(" << n
-            << ") is below current use of " << now_bytes
-            << " bytes";
+          if (control::is_enabled())
+            {
+              size_t now_bytes = bytes;
+              comm::direct_reporter<crpcut::comm::exit_fail>()
+                << "heap::set_limit(" << n
+                << ") is below current use of " << now_bytes
+                << " bytes";
+            }
+          else
+            {
+              static const char msg[]
+                = "heap::set_limit() below current use\n";
+              wrapped::write(2, msg, sizeof(msg) - 1);
+              abort();
+            }
         }
       size_t rv = limit;
       limit = n;

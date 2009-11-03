@@ -301,11 +301,20 @@ namespace std {
 #define ANY_CODE -1
 
 namespace crpcut {
+  class test_case_factory;
   namespace heap {
     const size_t system = ~size_t();
     size_t allocated_bytes();
     size_t allocated_objects();
     size_t set_limit(size_t n); // must be higher than allocated_bytes()
+
+    class control {
+    public:
+      static bool is_enabled() { return enabled; }
+    private:
+      friend class ::crpcut::test_case_factory;
+      static bool enabled;
+    };
   }
 
   typedef enum { verbatim, uppercase, lowercase } case_convert_type;
