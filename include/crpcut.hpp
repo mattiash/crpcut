@@ -118,7 +118,37 @@
 #undef TYPED_TEST_CASE_P
 #undef TYPED_TEST_P
 
+#define CRPCUT_DEFINE_REPORTER                                          \
+  class crpcut_reporter : public ::testing::EmptyTestEventListener      \
+  {                                                                     \
+  public:                                                               \
+    virtual ~crpcut_reporter() {};                                      \
+    virtual void OnTestPartResult(const testing::TestPartResult& result) \
+    {                                                                   \
+      if (result.failed())                                              \
+        {                                                               \
+          std::ostringstream os;                                        \
+          if (result.file_name())                                       \
+            {                                                           \
+              os << result.file_name()                                  \
+                 << ":"                                                 \
+                 << result.line_number()                                \
+                 << "\n";                                               \
+            }                                                           \
+          os << result.summary() << result.message();                   \
+          crpcut::comm::report(crpcut::comm::exit_fail, os);            \
+        }                                                               \
+    }                                                                   \
+  };                                                                    \
+  ::testing::TestEventListeners& listeners =                            \
+                ::testing::UnitTest::GetInstance()->listeners();        \
+  delete listeners.Release(listeners.default_result_printer());         \
+  listeners.Append(new crpcut_reporter())
+
 #else
+
+#define CRPCUT_DEFINE_REPORTER do {} while (0)
+
 // In a way this isn't nice, but the resulting compiler error gives
 // the user a very obvious hint about what's wrong and what to do instead
 
@@ -3375,6 +3405,7 @@ extern crpcut::implementation::namespace_info current_namespace;
          }                                                              \
        virtual void crpcut_run_test_case()                              \
        {                                                                \
+         CRPCUT_DEFINE_REPORTER;                                        \
          crpcut_registrator_base::crpcut_run_test_case<test_case_name>(); \
        }                                                                \
     };                                                                  \
@@ -3683,56 +3714,8 @@ class crpcut_testsuite_dep
 
 
 #ifdef GMOCK_INCLUDE_GMOCK_GMOCK_H_
-namespace crpcut {
-  class gmock_initializer
-  {
-    class reporter : public ::testing::EmptyTestEventListener
-    {
-      static void *obj_addr()
-      {
-        class placeholder
-        {
-          char ballast[sizeof(reporter)];
-        };
-        static placeholder here; // strictly not guaranteed to fulfil alignment
-        return &here;            // requirements, but in the real world it works
-      }
-    public:
-      void *operator new(size_t)
-      {
-        return obj_addr();
-      }
-      void operator delete(void *)
-      {
-      }
-      virtual void OnTestPartResult(const testing::TestPartResult& result)
-      {
-        if (result.failed())
-          {
-            std::ostringstream os;
-            if (result.file_name())
-              {
-                os << result.file_name() << ":" << result.line_number() << "\n";
-              }
-            os << result.summary() << result.message();
-            crpcut::comm::report(crpcut::comm::exit_fail, os);
-          }
-      }
-    };
-  public:
-    gmock_initializer()
-    {
-      static reporter *obj = new reporter();
-      ::testing::TestEventListeners& listeners =
-          ::testing::UnitTest::GetInstance()->listeners();
-      delete listeners.Release(listeners.default_result_printer());
-      listeners.Append(obj);
-    }
-  };
-  namespace {
-    gmock_initializer gmock_initializer_obj;
-  }
-}
+
+
 
 #endif
 #endif // CRPCUT_HPP

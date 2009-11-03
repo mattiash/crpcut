@@ -50,6 +50,23 @@ TESTSUITE(heap)
     ASSERT_EQ(pre, crpcut::heap::allocated_bytes());
   }
 
+  struct no_leak_fixture
+  {
+    size_t pre;
+    no_leak_fixture() : pre(crpcut::heap::allocated_bytes()) {}
+    ~no_leak_fixture() { ASSERT_EQ(pre, crpcut::heap::allocated_bytes()); }
+  };
+
+  TEST(should_succeed_empty_balance_fix, no_leak_fixture)
+  {
+  }
+
+  TEST(should_succeed_malloc_balance_fix, no_leak_fixture)
+  {
+    void *p = malloc(100);
+    free(p);
+  }
+
   TEST(should_succeed_worlds_worst_strcpy)
   {
     // Believe it or not, but I've actually seen an almost

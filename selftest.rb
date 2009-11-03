@@ -843,6 +843,12 @@ TESTS = {
   'heap::should_succeed_malloc_free_balance' =>
   Test.new('PASSED'),
 
+  'heap::should_succeed_empty_balance_fix' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_malloc_balance_fix' =>
+  Test.new('PASSED'),
+
   'heap::should_succeed_worlds_worst_strcpy' =>
   Test.new('PASSED'),
 
