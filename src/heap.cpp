@@ -45,8 +45,11 @@ namespace {
 
   inline void *zeromem(void *p, size_t n)
   {
-    char *d = static_cast<char *>(p);
-    while (n--) *d++ = 0;
+    if (p)
+      {
+        char *d = static_cast<char *>(p);
+        while (n--) *d++ = 0;
+      }
     return p;
   }
 
