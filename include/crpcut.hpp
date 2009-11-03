@@ -230,7 +230,7 @@
 #  ifndef __GXX_EXPERIMENTAL_CPP0X__
 #    define CRPCUT_DECLTYPE typeof
 #  else
-#    define __EXPERIMENTAL_CXX0X__
+#    define CRPCUT_EXPERIMENTAL_CXX0X
 #    define CRPCUT_DECLTYPE decltype
 #  endif
 #  define BOOST_TR1
@@ -239,7 +239,7 @@
 #  ifdef __GNUG__
 #    ifdef __GXX_EXPERIMENTAL_CXX0X__
 #      define CRPCUT_DECLTYPE decltype
-#      define __EXPERIMENTAL_CXX0X__
+#      define CRPCUT_EXPERIMENTAL_CXX0X
 #    else
 #      define CRPCUT_DECLTYPE typeof
 #    endif
@@ -281,7 +281,7 @@ extern "C"
 
 namespace std {
   using std::tr1::array;
-#if (not defined(__EXPERIMENTAL_CXX0X__) || defined (BOOST_TR1))
+#if (not defined(CRPCUT_EXPERIMENTAL_CXX0X) || defined (BOOST_TR1))
   using std::tr1::remove_cv;
   using std::tr1::remove_reference;
 #endif
@@ -3442,7 +3442,7 @@ extern crpcut::implementation::namespace_info current_namespace;
 #define CRPCUT_STRINGIZE(a) #a
 #define CRPCUT_STRINGIZE_(a) CRPCUT_STRINGIZE(a)
 
-#ifndef __EXPERIMENTAL_CXX0X__
+#ifndef CRPCUT_EXPERIMENTAL_CXX0X
 #define CRPCUT_REFTYPE(expr) \
   const CRPCUT_DECLTYPE(expr) &
 #else
