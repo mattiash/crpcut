@@ -1,3 +1,14 @@
+2009-11-04 0.8.1 (a.k.a. 1.0-beta-2)
+
+         * Delayed hooking with Google test reporter until test case starts,
+           which avoids a spurious SIGSEGV at exit in some circumstances.
+
+         * Fixed bug in calloc(), which wrote to NULL when memory allocation
+           failed.
+
+         * Fixed error reporting when heap-failures were discovered outside
+           of test cases.
+
 2009-11-01 0.8.0 (a.k.a. 1.0-beta-1)
 
          * crpcut has entered Beta stage!
