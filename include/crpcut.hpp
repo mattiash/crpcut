@@ -322,6 +322,7 @@ namespace crpcut {
   class collate_t;
 
   namespace wrapped { // stdc and posix functions
+    CRPCUT_NORETURN void abort();
     void                 free(const void* p);
     void                *malloc(size_t n);
     ssize_t              read(int fd, void* p, size_t s);

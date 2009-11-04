@@ -109,7 +109,7 @@ namespace crpcut
             {
               static const char msg[]="alloc/dealloc type mismatch\n";
               wrapped::write(2, msg, sizeof(msg) - 1);
-              abort();
+              wrapped::abort();
             }
         }
     }
@@ -181,7 +181,7 @@ namespace crpcut
               static const char msg[]
                 = "heap::set_limit() below current use\n";
               wrapped::write(2, msg, sizeof(msg) - 1);
-              abort();
+              wrapped::abort();
             }
         }
       size_t rv = limit;
