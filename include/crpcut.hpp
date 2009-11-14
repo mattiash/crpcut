@@ -457,6 +457,144 @@ namespace crpcut {
     {
       static const bool value = true;
     };
+
+    template <typename T>
+    struct is_output_streamable<T (*)()>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename P1>
+    struct is_output_streamable<T (*)(P1)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename P1, typename P2>
+    struct is_output_streamable<T (*)(P1, P2)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename P1, typename P2, typename P3>
+    struct is_output_streamable<T (*)(P1, P2, P3)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename P1, typename P2, typename P3, typename P4>
+    struct is_output_streamable<T (*)(P1, P2, P3, P4)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename P1, typename P2, typename P3, typename P4,
+              typename P5>
+    struct is_output_streamable<T (*)(P1, P2, P3, P4, P5)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename P1, typename P2, typename P3, typename P4,
+              typename P5, typename P6>
+    struct is_output_streamable<T (*)(P1, P2, P3, P4, P5, P6)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename P1, typename P2, typename P3, typename P4,
+              typename P5, typename P6, typename P7>
+    struct is_output_streamable<T (*)(P1, P2, P3, P4, P5, P6, P7)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename P1, typename P2, typename P3, typename P4,
+              typename P5, typename P6, typename P7, typename P8>
+    struct is_output_streamable<T (*)(P1, P2, P3, P4, P5, P6, P7, P8)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename P1, typename P2, typename P3, typename P4,
+              typename P5, typename P6, typename P7, typename P8, typename P9>
+    struct is_output_streamable<T (*)(P1, P2, P3, P4, P5, P6, P7, P8, P9)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename C>
+    struct is_output_streamable<T (C::*)()>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename C, typename P1>
+    struct is_output_streamable<T (C::*)(P1)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename C,
+              typename P1, typename P2>
+    struct is_output_streamable<T (C::*)(P1, P2)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename C,
+              typename P1, typename P2, typename P3>
+    struct is_output_streamable<T (C::*)(P1, P2, P3)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename C,
+              typename P1, typename P2, typename P3, typename P4>
+    struct is_output_streamable<T (C::*)(P1, P2, P3, P4)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename C,
+              typename P1, typename P2, typename P3, typename P4,
+              typename P5>
+    struct is_output_streamable<T (C::*)(P1, P2, P3, P4, P5)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename C,
+              typename P1, typename P2, typename P3, typename P4,
+              typename P5, typename P6>
+    struct is_output_streamable<T (C::*)(P1, P2, P3, P4, P5, P6)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename C,
+              typename P1, typename P2, typename P3, typename P4,
+              typename P5, typename P6, typename P7>
+    struct is_output_streamable<T (C::*)(P1, P2, P3, P4, P5, P6, P7)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename C,
+              typename P1, typename P2, typename P3, typename P4,
+              typename P5, typename P6, typename P7, typename P8>
+    struct is_output_streamable<T (C::*)(P1, P2, P3, P4, P5, P6, P7, P8)>
+    {
+      static const bool value = false;
+    };
+
+    template <typename T, typename C,
+              typename P1, typename P2, typename P3, typename P4,
+              typename P5, typename P6, typename P7, typename P8, typename P9>
+    struct is_output_streamable<T (C::*)(P1, P2, P3, P4, P5, P6, P7, P8, P9)>
+    {
+      static const bool value = false;
+    };
   } // namespace stream_checker
 
 
@@ -2419,14 +2557,15 @@ namespace crpcut {
   private:
     int compare(std::string s) const
     {
-      char *p = &*s.begin();
-      implementation::convert_traits<converter>::do_convert(p,
-                                                            p + s.length(),
+      char *begin = &*s.begin();
+      char *end = begin + s.length();
+      implementation::convert_traits<converter>::do_convert(begin,
+                                                            end,
                                                             locale);
       typedef std::collate<char> coll;
       const coll &fac = std::use_facet<coll>(locale);
       return fac.compare(ref.c_str(), ref.c_str() + ref.length(),
-                         p, p + s.length());
+                         begin, end);
     }
     int compare(const char *p) const
     {

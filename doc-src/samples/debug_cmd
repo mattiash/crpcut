@@ -1,0 +1,15 @@
+echo break assert_eq_fails::test()
+break assert_eq_fails::test()
+echo run -s assert_eq_fails
+run -s assert_eq_fails
+echo n
+n
+echo n
+n
+echo print val1
+print val1
+echo print val2 - 2
+print val2 - 2
+echo quit
+quit
+y
