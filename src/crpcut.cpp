@@ -933,7 +933,7 @@ namespace crpcut {
           implementation::test_case_registrator *i = reg.get_next();
           while (i != &reg)
             {
-              if (!nodeps && !i->can_run())
+              if (!nodeps && !i->crpcut_can_run())
                 {
                   i = i->get_next();
                   continue;

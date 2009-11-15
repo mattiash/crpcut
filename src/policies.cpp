@@ -42,39 +42,40 @@ namespace crpcut {
     }
 
     namespace deaths {
-      void none::expected_death(std::ostream &os)
+      void crpcut_none::crpcut_expected_death(std::ostream &os)
       {
         os << "normal exit";
       }
     }
 
     namespace dependencies {
-      base::~base()
+      crpcut_base::~crpcut_base()
       {
       }
-      void base::register_success(bool value)
+
+      void crpcut_base::crpcut_register_success(bool value)
       {
         if (value)
           {
-            if (state != not_run) return;
-            state = success;
-            for (basic_enforcer *p = dependants; p; p = p->next)
+            if (crpcut_state != crpcut_not_run) return;
+            crpcut_state = crpcut_success;
+            for (basic_enforcer *p = crpcut_dependants; p; p = p->next)
               {
-                if (--p->num == 0)
+                if (--p->crpcut_num == 0)
                   {
-                    p->dec_action();
+                    p->crpcut_dec_action();
                   };
               }
           }
         else
           {
-            state = fail;
+            crpcut_state = crpcut_fail;
           }
       }
 
-      void base::add_action(dependencies::basic_enforcer *other)
+      void crpcut_base::crpcut_add_action(dependencies::basic_enforcer *other)
       {
-        other->inc();
+        other->crpcut_inc();
       }
     } // namespace dependencies
 

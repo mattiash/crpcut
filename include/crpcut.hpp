@@ -392,7 +392,6 @@ namespace crpcut {
           void *addr; // can't be represented by void*, dlsym() can't
         } dlr;        // exist either.
         dlr.addr = ::dlsym(libp, name);
-        //        if (!dlr.addr) *(int*)(dlr.addr) = 0; // can't rely on abort() here
         return dlr.func;
       }
       static loader& obj()
@@ -463,7 +462,7 @@ namespace crpcut {
   } // namespace stream_checker
 
 
-  class none {};
+  class crpcut_none {};
 
   namespace datatypes {
 
@@ -548,10 +547,10 @@ namespace crpcut {
       size_t num_elements;
     };
 
-    class none {};
+    class crpcut_none {};
 
 
-    template <typename T1 = none, typename T2 = none>
+    template <typename T1 = crpcut_none, typename T2 = crpcut_none>
     class tlist : public T1,
                   public T2
     {
@@ -561,18 +560,21 @@ namespace crpcut {
     };
 
     template <typename T>
-    struct tlist<none, T>
+    struct tlist<crpcut_none, T>
     {
-      typedef none head;
+      typedef crpcut_none head;
     };
 
     // Man, I'm longing for variadic templates... this is insanity
-    template <typename T1 = none, typename T2 = none, typename T3 = none,
-              typename T4 = none, typename T5 = none, typename T6 = none,
-              typename T7 = none, typename T8 = none, typename T9 = none,
-              typename T10 = none, typename T11 = none, typename T12 = none,
-              typename T13 = none, typename T14 = none, typename T15 = none,
-              typename T16 = none, typename T17 = none, typename T18 = none>
+    template <typename T1 = crpcut_none, typename T2 = crpcut_none,
+              typename T3 = crpcut_none, typename T4 = crpcut_none,
+              typename T5 = crpcut_none, typename T6 = crpcut_none,
+              typename T7 = crpcut_none, typename T8 = crpcut_none,
+              typename T9 = crpcut_none, typename T10 = crpcut_none,
+              typename T11 = crpcut_none, typename T12 = crpcut_none,
+              typename T13 = crpcut_none, typename T14 = crpcut_none,
+              typename T15 = crpcut_none, typename T16 = crpcut_none,
+              typename T17 = crpcut_none, typename T18 = crpcut_none>
     struct tlist_maker
     {
       typedef tlist<
@@ -640,7 +642,7 @@ namespace crpcut {
     };
 
     template <template <typename> class envelope, typename T>
-    class wrap<envelope, datatypes::tlist<none, T> >
+    class wrap<envelope, datatypes::tlist<crpcut_none, T> >
     {
     public:
       typedef datatypes::tlist<> type;
@@ -672,9 +674,11 @@ namespace crpcut {
 
 
   template <typename D,
-            typename T1,        typename T2 = none, typename T3 = none,
-            typename T4 = none, typename T5 = none, typename T6 = none,
-            typename T7 = none, typename T8 = none, typename T9 = none>
+            typename T1,                typename T2 = crpcut_none,
+            typename T3 = crpcut_none,  typename T4 = crpcut_none,
+            typename T5 = crpcut_none,  typename T6 = crpcut_none,
+            typename T7 = crpcut_none,  typename T8 = crpcut_none,
+            typename T9 = crpcut_none>
   struct match_traits
   {
     typedef D type;
@@ -682,11 +686,11 @@ namespace crpcut {
 
   namespace policies {
     namespace deaths {
-      class none;
+      class crpcut_none;
     }
 
     namespace dependencies {
-      class none {};
+      class crpcut_none {};
     }
 
     namespace timeout {
@@ -701,38 +705,38 @@ namespace crpcut {
     protected:
       typedef void crpcut_run_wrapper;
 
-      typedef deaths::none crpcut_expected_death_cause;
+      typedef deaths::crpcut_none crpcut_expected_death_cause;
 
-      typedef dependencies::none crpcut_dependency;
+      typedef dependencies::crpcut_none crpcut_dependency;
 
       typedef timeout::enforcer<timeout::realtime,2000> crpcut_timeout_enforcer;
     };
 
     namespace deaths {
 
-      class none
+      class crpcut_none
       {
       public:
-        virtual ~none() {}
-        virtual bool is_expected_exit(int) const;
-        virtual bool is_expected_signal(int) const;
-        virtual void expected_death(std::ostream &os);
+        virtual ~crpcut_none() {}
+        virtual bool crpcut_is_expected_exit(int) const;
+        virtual bool crpcut_is_expected_signal(int) const;
+        virtual void crpcut_expected_death(std::ostream &os);
       };
 
       template <int N>
-      class signal : public virtual none
+      class signal : public virtual crpcut_none
       {
       public:
-        virtual bool is_expected_signal(int code) const;
-        virtual void expected_death(std::ostream &os);
+        virtual bool crpcut_is_expected_signal(int code) const;
+        virtual void crpcut_expected_death(std::ostream &os);
       };
 
       template <int N>
-      class exit : public virtual none
+      class exit : public virtual crpcut_none
       {
       public:
-        virtual bool is_expected_exit(int code) const;
-        virtual void expected_death(std::ostream &os);
+        virtual bool crpcut_is_expected_exit(int code) const;
+        virtual void crpcut_expected_death(std::ostream &os);
       };
 
       class wrapper;
@@ -786,29 +790,29 @@ namespace crpcut {
     namespace dependencies {
 
       class basic_enforcer;
-      class base
+      class crpcut_base
       {
       protected:
       public:
-        void inc();
-        virtual ~base(); // Silence warning on older gcc
-        base();
-        void add(basic_enforcer * other);
-        bool can_run() const;
-        bool failed() const;
-        bool succeeded() const;
-        void register_success(bool value = true);
+        void crpcut_inc();
+        virtual ~crpcut_base(); // Silence warning on older gcc
+        crpcut_base();
+        void crpcut_add(basic_enforcer * other);
+        bool crpcut_can_run() const;
+        bool crpcut_failed() const;
+        bool crpcut_succeeded() const;
+        void crpcut_register_success(bool value = true);
       private:
-        virtual void add_action(basic_enforcer *other);
-        virtual void dec_action() {}
-        enum { success, fail, not_run } state;
-        int num;
-        basic_enforcer *dependants;
+        virtual void crpcut_add_action(basic_enforcer *other);
+        virtual void crpcut_dec_action() {}
+        enum { crpcut_success, crpcut_fail, crpcut_not_run } crpcut_state;
+        int crpcut_num;
+        basic_enforcer *crpcut_dependants;
       };
 
-      class basic_enforcer : public virtual base
+      class basic_enforcer : public virtual crpcut_base
       {
-        friend class base;
+        friend class crpcut_base;
         basic_enforcer *next;
       protected:
         basic_enforcer();
@@ -822,16 +826,16 @@ namespace crpcut {
         enforcer();
       };
 
-      template <typename T, typename U = crpcut::none>
+      template <typename T, typename U = crpcut::crpcut_none>
       struct nested
       {
         typedef typename T::crpcut_dependency type;
       };
 
       template <>
-      struct nested<crpcut::none, crpcut::none>
+      struct nested<crpcut::crpcut_none, crpcut::crpcut_none>
       {
-        typedef crpcut::none type;
+        typedef crpcut::crpcut_none type;
       };
 
     } // namespace dependencies
@@ -1136,8 +1140,9 @@ namespace crpcut {
     };
 
     class test_suite_base;
-    class test_case_registrator : public virtual policies::deaths::none,
-                                  public virtual policies::dependencies::base
+    class test_case_registrator
+      : public virtual policies::deaths::crpcut_none,
+        public virtual policies::dependencies::crpcut_base
     {
       friend class test_suite_base;
     public:
@@ -1396,7 +1401,7 @@ namespace crpcut {
       t->test();
       stream::toastream<128> os;
       os << "Unexpectedly survived\nExpected ";
-      T::crpcut_reg().expected_death(os);
+      T::crpcut_reg().crpcut_expected_death(os);
       comm::report(comm::exit_fail, os.begin(), os.size());
     }
 
@@ -1819,25 +1824,28 @@ namespace crpcut {
     };
 
     template <int N>
-    class holder<N, none> : private none
+    class holder<N, crpcut_none> : private crpcut_none
     {
     protected:
-      holder(const none&) {}
+      holder(const crpcut_none&) {}
       void print_to(std::ostream&) const {};
-      const none& getval() const { return *this; }
+      const crpcut_none& getval() const { return *this; }
     };
 
-    template <typename T1, typename T2 = none, typename T3 = none,
-              typename T4 = none, typename T5 = none, typename T6 = none,
-              typename T7 = none, typename T8 = none, typename T9 = none>
+    template <typename T1,               typename T2 = crpcut_none,
+              typename T3 = crpcut_none, typename T4 = crpcut_none,
+              typename T5 = crpcut_none, typename T6 = crpcut_none,
+              typename T7 = crpcut_none, typename T8 = crpcut_none,
+              typename T9 = crpcut_none>
     class param_holder  : holder<1, T1>, holder<2, T2>, holder<3, T3>,
                           holder<4, T4>, holder<5, T5>, holder<6, T6>,
                           holder<7, T7>, holder<8, T8>, holder<9, T9>
     {
     public:
       param_holder(const T1 &v1, const T2 &v2 = T2(), const T3 &v3 = T3(),
-                   const T4 &v4 = T4(), const T5 &v5 = T5(), const T6 &v6 = T6(),
-                   const T7 &v7 = T7(), const T8 &v8 = T8(), const T9 &v9 = T9())
+                   const T4 &v4 = T4(), const T5 &v5 = T5(),
+                   const T6 &v6 = T6(), const T7 &v7 = T7(),
+                   const T8 &v8 = T8(), const T9 &v9 = T9())
         : holder<1, T1>(v1),
           holder<2, T2>(v2),
           holder<3, T3>(v3),
@@ -1882,13 +1890,13 @@ namespace crpcut {
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6,
               typename T7, typename T8>
-    struct call_traits<T1, T2, T3, T4, T5, T6, T7, T8, none>
+    struct call_traits<T1, T2, T3, T4, T5, T6, T7, T8, crpcut_none>
     {
       template <typename P>
       static bool call(P &p,
                        const T1 &t1, const T2 &t2, const T3 &t3,
                        const T4 &t4, const T5 &t5, const T6 &t6,
-                       const T7 &t7, const T8 &t8, const none&)
+                       const T7 &t7, const T8 &t8, const crpcut_none&)
       {
         return p(t1, t2, t3, t4, t5, t6, t7, t8);
       }
@@ -1897,13 +1905,13 @@ namespace crpcut {
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6,
               typename T7>
-    struct call_traits<T1, T2, T3, T4, T5, T6, T7, none, none>
+    struct call_traits<T1, T2, T3, T4, T5, T6, T7, crpcut_none, crpcut_none>
     {
       template <typename P>
       static bool call(P &p,
                        const T1 &t1, const T2 &t2, const T3 &t3,
                        const T4 &t4, const T5 &t5, const T6 &t6,
-                       const T7 &t7, const none&, const none&)
+                       const T7 &t7, const crpcut_none&, const crpcut_none&)
       {
         return p(t1, t2, t3, t4, t5, t6, t7);
       }
@@ -1911,13 +1919,15 @@ namespace crpcut {
 
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6>
-    struct call_traits<T1, T2, T3, T4, T5, T6, none, none, none>
+    struct call_traits<T1, T2, T3, T4, T5, T6,
+                       crpcut_none, crpcut_none, crpcut_none>
     {
       template <typename P>
       static bool call(P &p,
                        const T1 &t1, const T2 &t2, const T3 &t3,
                        const T4 &t4, const T5 &t5, const T6 &t6,
-                       const none&, const none&, const none&)
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&)
       {
         return p(t1, t2, t3, t4, t5, t6);
       }
@@ -1925,12 +1935,14 @@ namespace crpcut {
 
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5>
-    struct call_traits<T1, T2, T3, T4, T5, none, none, none, none>
+    struct call_traits<T1, T2, T3, T4, T5,
+                       crpcut_none, crpcut_none, crpcut_none, crpcut_none>
     {
       template <typename P>
       static bool call(P &p, const T1& t1, const T2 &t2, const T3 &t3,
-                       const T4 &t4, const T5 &t5, const none&,
-                       const none&, const none&, const none&)
+                       const T4 &t4, const T5 &t5, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&)
       {
         return p(t1, t2, t3, t4, t5);
       }
@@ -1938,60 +1950,76 @@ namespace crpcut {
 
     template <typename T1, typename T2, typename T3,
               typename T4>
-    struct call_traits<T1, T2, T3, T4, none, none, none, none, none>
+    struct call_traits<T1, T2, T3, T4,
+                       crpcut_none, crpcut_none, crpcut_none,
+                       crpcut_none, crpcut_none>
     {
       template <typename P>
       static bool call(P &p, const T1& t1, const T2 &t2, const T3 &t3,
-                       const T4 &t4, const none&, const none&,
-                       const none&, const none&, const none&)
+                       const T4 &t4, const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&)
       {
         return p(t1, t2, t3, t4);
       }
     };
 
     template <typename T1, typename T2, typename T3>
-    struct call_traits<T1, T2, T3, none, none, none, none, none, none>
+    struct call_traits<T1, T2, T3, crpcut_none,
+                       crpcut_none, crpcut_none, crpcut_none, crpcut_none,
+                       crpcut_none>
     {
       template <typename P>
       static bool call(P &p, const T1& t1, const T2 &t2, const T3 &t3,
-                       const none&, const none&, const none&,
-                       const none&, const none&, const none&)
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&)
       {
         return p(t1, t2, t3);
       }
     };
 
     template <typename T1, typename T2>
-    struct call_traits<T1, T2, none, none, none, none, none, none, none>
+    struct call_traits<T1, T2, crpcut_none, crpcut_none, crpcut_none, crpcut_none, crpcut_none, crpcut_none, crpcut_none>
     {
       template <typename P>
-      static bool call(P &p, const T1& t1, const T2 &t2, const none&,
-                       const none&, const none&, const none&,
-                       const none&, const none&, const none&)
+      static bool call(P &p, const T1& t1, const T2 &t2, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&)
       {
         return p(t1, t2);
       }
     };
 
     template <typename T1>
-    struct call_traits<T1, none, none, none, none, none, none, none, none>
+    struct call_traits<T1, crpcut_none, crpcut_none,
+                       crpcut_none, crpcut_none, crpcut_none, crpcut_none,
+                       crpcut_none, crpcut_none>
     {
       template <typename P>
-      static bool call(P &p, const T1& t1, const none&, const none&,
-                       const none&, const none&, const none&,
-                       const none&, const none&, const none&)
+      static bool call(P &p, const T1& t1, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&)
       {
         return p(t1);
       }
     };
 
     template <>
-    struct call_traits<none, none, none, none, none, none, none, none, none>
+    struct call_traits<crpcut_none, crpcut_none, crpcut_none, crpcut_none,
+                       crpcut_none, crpcut_none, crpcut_none, crpcut_none,
+                       crpcut_none>
     {
       template <typename P>
-      static bool call(P &p, const none&, const none&, const none&,
-                       const none&, const none&, const none&,
-                       const none&, const none&, const none&)
+      static bool call(P &p,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&, const crpcut_none&,
+                       const crpcut_none&)
       {
         return p();
       }
@@ -2116,10 +2144,10 @@ namespace crpcut {
     }
 
     inline
-    param_holder<none>
+    param_holder<crpcut_none>
     params()
     {
-      return param_holder<none>(none());
+      return param_holder<crpcut_none>(crpcut_none());
     }
 
     template <typename P,
@@ -2450,27 +2478,27 @@ namespace crpcut {
     namespace deaths{
 
       inline bool
-      none::is_expected_exit(int) const
+      crpcut_none::crpcut_is_expected_exit(int) const
       {
         return false;
       }
 
       inline bool
-      none::is_expected_signal(int) const
+      crpcut_none::crpcut_is_expected_signal(int) const
       {
         return false;
       }
 
       template <int N>
       inline bool
-      signal<N>::is_expected_signal(int code) const
+      signal<N>::crpcut_is_expected_signal(int code) const
       {
         return N == ANY_CODE || code == N;
       }
 
       template <int N>
       inline void
-      signal<N>::expected_death(std::ostream &os)
+      signal<N>::crpcut_expected_death(std::ostream &os)
       {
         if (N == ANY_CODE)
           {
@@ -2484,14 +2512,14 @@ namespace crpcut {
 
       template <int N>
       inline bool
-      exit<N>::is_expected_exit(int code) const
+      exit<N>::crpcut_is_expected_exit(int code) const
       {
         return N == ANY_CODE || code == N;
       }
 
       template <int N>
       inline void
-      exit<N>::expected_death(std::ostream &os)
+      exit<N>::crpcut_expected_death(std::ostream &os)
       {
         if (N == ANY_CODE)
           {
@@ -2508,43 +2536,43 @@ namespace crpcut {
     namespace dependencies {
 
       inline
-      base::base()
-        : state(not_run),
-          num(0),
-          dependants(0)
+      crpcut_base::crpcut_base()
+        : crpcut_state(crpcut_not_run),
+          crpcut_num(0),
+          crpcut_dependants(0)
       {
       }
 
       inline void
-      base::add(basic_enforcer *other)
+      crpcut_base::crpcut_add(basic_enforcer *other)
       {
-        other->next = dependants;
-        dependants = other;
-        add_action(other);
+        other->next = crpcut_dependants;
+        crpcut_dependants = other;
+        crpcut_add_action(other);
       }
 
       inline void
-      base::inc()
+      crpcut_base::crpcut_inc()
       {
-        ++num;
+        ++crpcut_num;
       }
 
       inline bool
-      base::can_run() const
+      crpcut_base::crpcut_can_run() const
       {
-        return num == 0;
+        return crpcut_num == 0;
       }
 
       inline bool
-      base::failed() const
+      crpcut_base::crpcut_failed() const
       {
-        return state == fail;
+        return crpcut_state == crpcut_fail;
       }
 
       inline bool
-      base::succeeded() const
+      crpcut_base::crpcut_succeeded() const
       {
-        return state == success;
+        return crpcut_state == crpcut_success;
       }
 
       inline
@@ -2557,7 +2585,7 @@ namespace crpcut {
       inline
       enforcer<T>::enforcer()
       {
-        T::crpcut_reg().add(this);
+        T::crpcut_reg().crpcut_add(this);
       }
     } // namespace dependencies
 
@@ -3337,14 +3365,14 @@ namespace crpcut {
         ++num_containing_cases;
         r->suite_list = list;
         list = r;
-        r->add(this);
+        r->crpcut_add(this);
       }
       void report_success()
       {
         --num_containing_cases;
         if (num_containing_cases == 0) // now everything that depends on this
           {                            // case may run.
-            register_success();
+            crpcut_register_success();
           }
       }
     private:
@@ -3362,14 +3390,14 @@ namespace crpcut {
         static test_suite object;
         return object;
       }
-      virtual void add_action(policies::dependencies::basic_enforcer* e)
+      virtual void crpcut_add_action(policies::dependencies::basic_enforcer* e)
       {
-        e->inc(); // how to handle the case where this test_suite is empty?
+        e->crpcut_inc(); // how to handle the case where this is empty?
       }
     private:
-      virtual void dec_action()
+      virtual void crpcut_dec_action()
       {
-        register_success();
+        crpcut_register_success();
       }
     };
 
@@ -3400,7 +3428,7 @@ extern crpcut::implementation::namespace_info current_namespace;
     void test();                                                        \
     class crpcut_registrator                                            \
       : public crpcut::implementation::test_case_registrator,           \
-        private virtual crpcut::policies::dependencies::base,           \
+        private virtual crpcut::policies::dependencies::crpcut_base,    \
         public virtual test_case_name::crpcut_expected_death_cause,     \
         private virtual test_case_name::crpcut_dependency,              \
         public virtual crpcut_testsuite_dep                             \
@@ -3688,12 +3716,12 @@ namespace crpcut {
 class crpcut_testsuite_id;
 class crpcut_testsuite_dep
   :
-  public virtual crpcut::policies::dependencies::base
+  public virtual crpcut::policies::dependencies::crpcut_base
 {
 };
 
-#define TEST(...) TEST_DEF(__VA_ARGS__, crpcut::none)
-#define DISABLED_TEST(...) DISABLED_TEST_DEF(__VA_ARGS__, crpcut::none)
+#define TEST(...) TEST_DEF(__VA_ARGS__, crpcut::crpcut_none)
+#define DISABLED_TEST(...) DISABLED_TEST_DEF(__VA_ARGS__, crpcut::crpcut_none)
 
 #define TESTSUITE_DEF(name, ...)                                        \
   namespace name {                                                      \
@@ -3714,7 +3742,7 @@ class crpcut_testsuite_dep
   namespace name
 
 #define ALL_TESTS(suite_name) crpcut::implementation::test_suite<suite_name :: crpcut_testsuite_id >
-#define TESTSUITE(...) TESTSUITE_DEF(__VA_ARGS__, crpcut::none)
+#define TESTSUITE(...) TESTSUITE_DEF(__VA_ARGS__, crpcut::crpcut_none)
 
 
 

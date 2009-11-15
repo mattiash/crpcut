@@ -130,7 +130,7 @@ namespace crpcut {
       assert(rv == sizeof(t));
       if (t == comm::exit_fail)
         {
-          reg->register_success(false);
+          reg->crpcut_register_success(false);
         }
       size_t len = 0;
       do {
@@ -284,7 +284,7 @@ namespace crpcut {
         }
       else
         {
-          register_success();
+          crpcut_register_success();
         }
     }
 
@@ -294,7 +294,7 @@ namespace crpcut {
       death_note = true;
       deadline_set = false;
       static const char msg[] = "Timed out - killed";
-      register_success(false);
+      crpcut_register_success(false);
       test_case_factory::present(pid_,
                                  comm::exit_fail,
                                  phase,
@@ -365,7 +365,7 @@ namespace crpcut {
           assert(rv == 0);
           break;
         }
-      assert(!succeeded());
+      assert(!crpcut_succeeded());
       if (!death_note && deadline_is_set())
         {
           clear_deadline();
@@ -381,7 +381,7 @@ namespace crpcut {
             test_case_factory::present(pid_, comm::dir, phase, 0, 0);
             wrapped::rename(dirname.begin(), tcname.begin());
             t = comm::exit_fail;
-            register_success(false);
+            crpcut_register_success(false);
           }
       }
 
@@ -394,14 +394,14 @@ namespace crpcut {
                 {
                 case CLD_EXITED:
                   {
-                    if (!failed())
+                    if (!crpcut_failed())
                       {
-                        if (!is_expected_exit(info.si_status))
+                        if (!crpcut_is_expected_exit(info.si_status))
                           {
                             phase = post_mortem;
                             out << "Exited with code "
                                 << info.si_status << "\nExpected ";
-                            expected_death(out);
+                            crpcut_expected_death(out);
                             t = comm::exit_fail;
                           }
                       }
@@ -409,14 +409,14 @@ namespace crpcut {
                   break;
                 case CLD_KILLED:
                   {
-                    if (!failed())
+                    if (!crpcut_failed())
                       {
-                        if (!is_expected_signal(info.si_status))
+                        if (!crpcut_is_expected_signal(info.si_status))
                           {
                             phase = post_mortem;
                             out << "Died on signal "
                                 << info.si_status << "\nExpected ";
-                            expected_death(out);
+                            crpcut_expected_death(out);
                             t = comm::exit_fail;
                           }
                       }
@@ -434,11 +434,11 @@ namespace crpcut {
           death_note = true;
           test_case_factory::present(pid_, t, phase, out.size(), out.begin());
         }
-      register_success(t == comm::exit_ok);
+      crpcut_register_success(t == comm::exit_ok);
       test_case_factory::return_dir(dirnum);
       test_case_factory::present(pid_, comm::end_test, phase, 0, 0);
-      assert(succeeded() || failed());
-      if (succeeded())
+      assert(crpcut_succeeded() || crpcut_failed());
+      if (crpcut_succeeded())
         {
           test_case_factory::test_succeeded(this);
         }
