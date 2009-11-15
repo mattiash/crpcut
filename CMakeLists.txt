@@ -33,7 +33,7 @@ include(CheckLibraryExists)
 
 set(CRPCUT_LIB_MAJOR_VERSION "0")
 set(CRPCUT_LIB_MINOR_VERSION "8")
-set(CRPCUT_LIB_PATCH_VERSION "1")
+set(CRPCUT_LIB_PATCH_VERSION "2")
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "-O")
 set(CMAKE_CXX_FLAGS_MAINT "-ggdb -Wall -Wextra -Wcast-qual -Wconversion -Wshadow -Wunused-parameter -Wwrite-strings -pedantic -Wno-variadic-macros -D_GLIBCXX_DEBUG=1")

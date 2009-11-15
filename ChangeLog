@@ -1,3 +1,14 @@
+2009-11-15 0.8.2 (a.k.a. 1.0-beta-3)
+
+         * Fixed accidental namespace pollution that unfortunately
+           prohibited a number of perfectly reasonable test case names.
+
+         * Improved error reporting from EXPECT_EXCEPTION when the
+           exception thrown is of the wrong type, but inherits from
+           std::exception
+
+         * Fixed separation if log-items in text test reports.
+
 2009-11-04 0.8.1 (a.k.a. 1.0-beta-2)
 
          * Delayed hooking with Google test reporter until test case starts,
