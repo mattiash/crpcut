@@ -1342,6 +1342,13 @@ namespace crpcut {
     };
 
     template <typename T>
+    class test_wrapper<policies::exception_wrapper<std::exception>, T>
+    {
+    public:
+      static void run(T *t);
+    };
+
+    template <typename T>
     class test_wrapper<void, T>
     {
     public:
@@ -1379,6 +1386,39 @@ namespace crpcut {
         t->test();
       }
       catch (exc&) {
+        return;
+      }
+      catch (std::exception &e)
+        {
+          typedef  std::ostringstream oss;
+          oss os;
+          os << "Unexpectedly caught std::exception\n"
+             << "what() returns: " << e.what();
+          std::string s(os.str());
+          size_t length = s.length();
+          char *buff = static_cast<char*>(alloca(length));
+          s.copy(buff, length);
+          std::string().swap(s);
+          os.~oss();
+          new (&os) oss;
+          comm::report(comm::exit_fail,
+                       buff, length);
+        }
+      catch (...) {
+        comm::report(comm::exit_fail,
+                     "Unexpectedly caught ...");
+      }
+      comm::report(comm::exit_fail,
+                   "Unexpectedly did not throw");
+    }
+
+    template <typename T>
+    void test_wrapper<policies::exception_wrapper<std::exception>, T>::run(T* t)
+    {
+      try {
+        t->test();
+      }
+      catch (std::exception&) {
         return;
       }
       catch (...) {
