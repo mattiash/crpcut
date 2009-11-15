@@ -290,7 +290,7 @@ TESTS = {
   'death::by_exception::should_fail_with_wrong_exception' =>
   Test.new('FAILED').
   log('violation',
-      /Unexpectedly caught \.\.\./),
+      /Unexpectedly caught std::exception\n.*/),
 
   'death::by_exception::should_succed_with_any_exception' =>
   Test.new('PASSED'),
