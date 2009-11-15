@@ -311,6 +311,10 @@ namespace crpcut {
                                    const char  *dirname,
                                    size_t       dn_len)
     {
+      if (did_output)
+        {
+          write(delim);
+        }
       did_output = true;
       if (dirname)
         {
@@ -335,6 +339,10 @@ namespace crpcut {
                                const char *data,
                                size_t      dlen)
     {
+      if (did_output)
+        {
+          write(delim);
+        }
       did_output = true;
       const size_t len = write(tag, tlen);
       if (len < sizeof(delim))
