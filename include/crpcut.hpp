@@ -3272,7 +3272,13 @@ namespace crpcut {
       fr.data = rh;
       fl.rep = signbit2bias(fl.rep);
       fr.rep = signbit2bias(fr.rep);
-      return (fl.rep > fr.rep ? fl.rep - fr.rep : fr.rep - fl.rep) <= max_diff;
+      diff = (fl.rep > fr.rep ? fl.rep - fr.rep : fr.rep - fl.rep);
+      return diff <= max_diff;
+    }
+    friend std::ostream& operator<<(std::ostream &os, const ulps_diff& d)
+    {
+      return os << "Max allowed diff = " << d.max_diff
+                << " ULPS\nActual diff = " << d.diff << " ULPS";
     }
   private:
     template <typename T>
@@ -3289,6 +3295,7 @@ namespace crpcut {
 
     unsigned         max_diff;
     inf_in_ulps_diff inf;
+    unsigned         diff;
   };
   template <typename T>
   struct match_traits<relative_diff, T>
