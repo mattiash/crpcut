@@ -3277,8 +3277,8 @@ namespace crpcut {
     }
     friend std::ostream& operator<<(std::ostream &os, const ulps_diff& d)
     {
-      return os << "Max allowed diff = " << d.max_diff
-                << " ULPS\nActual diff = " << d.diff << " ULPS";
+      return os << "    Max allowed diff = " << d.max_diff
+                << " ULPS\n    Actual diff = " << d.diff << " ULPS";
     }
   private:
     template <typename T>
