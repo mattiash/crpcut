@@ -263,6 +263,7 @@ namespace crpcut {
       }
       catch (std::exception &e)
         {
+          heap::set_limit(heap::system);
           const size_t len = wrapped::strlen(e.what());
 #define TEMPLATE_HEAD "Unexpectedly caught std::exception\n  what()="
           const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;

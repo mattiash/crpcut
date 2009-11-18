@@ -127,6 +127,7 @@
     {                                                                   \
       if (result.failed())                                              \
         {                                                               \
+          crpcut::heap::set_limit(crpcut::heap::system);                \
           std::ostringstream os;                                        \
           if (result.file_name())                                       \
             {                                                           \
@@ -1575,6 +1576,7 @@ namespace crpcut {
       {
         if (!b)
           {
+            heap::set_limit(heap::system);
             using std::ostringstream;
             ostringstream os;
             os << location
@@ -1757,6 +1759,7 @@ namespace crpcut {
     private:
       void report(const char *name, type v, const char *vn) const
       {
+        heap::set_limit(heap::system);
         using std::ostringstream;
         ostringstream os;
 
@@ -2233,6 +2236,7 @@ namespace crpcut {
       bool b = params.apply(p);
       if (!b)
         {
+          heap::set_limit(heap::system);
           std::ostringstream out;
           params.print_to(out);
           out << stream_predicate(sp, p);
@@ -2835,6 +2839,7 @@ namespace crpcut {
       CATCH_BLOCK(..., { type = "..."; } )
       if (type)
         {
+          heap::set_limit(heap::system);
           std::ostringstream out;
           out << "Unexpected exception " << type;
           if (msg)
