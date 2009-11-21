@@ -254,6 +254,7 @@
 #endif
 #include <stdexcept>
 #include <sstream>
+#include <string>
 #include <iostream>
 #include <ostream>
 #include <iomanip>

@@ -116,8 +116,6 @@ namespace crpcut
 
     static void *alloc_mem(size_t s, alloc_type type) throw ()
     {
-      if (!s) return 0;
-
       const size_t current_limit = limit;
       if (bytes + s > current_limit)
         {
