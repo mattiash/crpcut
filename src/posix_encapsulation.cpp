@@ -15,20 +15,26 @@ extern "C"
 }
 
 namespace crpcut {
-  namespace libwrapper {
-    template <>
-    const char *traits<libs::libc>::name[] = {
-      "libc.so",
-      "libc.so.6",
-      0 };
-
-    template <>
-    const char *traits<libs::librt>::name[] = {
-      "librt.so",
-      "librt.so.1",
-      0 };
+  namespace libs {
+    const char * const * libc()
+    {
+      static const char * const name[] = {
+        "libc.so",
+        "libc.so.6",
+        0
+      };
+      return name;
+    }
+    const char * const * librt()
+    {
+      static const char * const name[] = {
+        "librt.so",
+        "librt.so.1",
+        0
+      };
+      return name;
+    }
   }
-
 }
 
 

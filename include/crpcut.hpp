@@ -358,24 +358,19 @@ namespace crpcut {
 
   namespace libs
   {
-    static const int libc  = -1;
-    static const int librt = -2;
+    const char * const * libc();
+    const char * const * librt();
   }
 
   namespace libwrapper {
-    template <int> struct traits
-    {
-      static const char *name[];
-    };
 
-
-    template <int lib>
+    template <const char * const * (&lib)()>
     class loader
     {
     public:
       loader()
       {
-        for (const char **name = traits<lib>::name; *name; ++name)
+        for (const char * const *name = lib(); *name; ++name)
           {
             libp = ::dlopen(*name, RTLD_NOW | RTLD_NOLOAD);
             if (libp) break;
@@ -3615,7 +3610,7 @@ namespace crpcut {
   rv name param_list                                                    \
   {                                                                     \
     static f_ ## name ## _t f_ ## name                                  \
-      = crpcut::libwrapper::loader<crpcut::libs::lib>::obj().sym<f_ ## name ## _t>(#name); \
+      = ::crpcut::libwrapper::loader< ::crpcut::libs::lib>::obj().sym<f_ ## name ## _t>(#name); \
     return f_ ## name param;                                            \
   }
 
@@ -3625,7 +3620,7 @@ namespace crpcut {
   rv name param_list                                                    \
   {                                                                     \
     static f_ ## name ## _t f_ ## name                                  \
-      = crpcut::libwrapper::loader<crpcut::libs::lib>::obj().sym<f_ ## name ## _t>(#name); \
+      = ::crpcut::libwrapper::loader< ::crpcut::libs::lib>::obj().sym<f_ ## name ## _t>(#name); \
     f_ ## name param;                                                   \
   }
 

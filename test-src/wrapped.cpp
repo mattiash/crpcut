@@ -30,15 +30,15 @@
 
 namespace crpcut {
   namespace libs {
-    static const int libm = 1;
-  }
-  namespace libwrapper {
-    template <>
-    const char *traits<libs::libm>::name[] = {
-      "libm.so",
-      "libm.so.6",
-      0
-    };
+    const char * const * libm()
+    {
+      static const char * const name[] = {
+        "libm.so",
+        "libm.so.6",
+        0
+      };
+      return name;
+    }
   }
 }
 namespace testwrapped {
