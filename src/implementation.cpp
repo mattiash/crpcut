@@ -279,11 +279,7 @@ namespace crpcut {
         }
 
 
-      if (test_case_factory::tests_as_child_procs())
-        {
-          p->crpcut_test_finished(); // tell destructor to report success
-        }
-      else
+      if (!test_case_factory::tests_as_child_procs())
         {
           crpcut_register_success();
         }

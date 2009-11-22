@@ -3509,6 +3509,10 @@ extern crpcut::implementation::namespace_info current_namespace;
       (void)obj; /* silence warning */                                  \
       using crpcut::implementation::test_wrapper;                       \
       test_wrapper<crpcut_run_wrapper, test_case_name>::run(this);      \
+      if (crpcut::test_case_factory::tests_as_child_procs())            \
+        {                                                               \
+          crpcut_test_finished(); /* tell destructor to report success */ \
+        }                                                               \
     }                                                                   \
     void test();                                                        \
     class crpcut_registrator                                            \
