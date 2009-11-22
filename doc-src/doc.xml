@@ -65,7 +65,7 @@ An example testing parts of std::string:<p/>
 
   int main(int argc, char *argv[])
   {
-    return crpcut::test_case_factory::run_test(argc, argv);
+    return crpcut::run(argc, argv);
   }
 </code>
 Similar tests benefits from being grouped into test-suites. Test-suites
@@ -783,10 +783,10 @@ The normal <id>main()</id> is exactly the below:
 <code>
   int main(int argc, char *argv[])
   {
-    return crpcut::test_case_factory::run_test(argc, argv);
+    return crpcut:::run(argc, argv);
   }
 </code>
-<id>crpcut::test_case_factory::run_test()</id> expects parameters as a set of
+<id>crpcut::run()</id> expects parameters as a set of
 flags followed by a set of test case or test suite names. The flags are:
 <definitions notion="flag" meaning="meaning">
 <def notion="-c&#xA0;num">Control the number of parallel spawned test
@@ -829,11 +829,7 @@ test program using <id>-n&#xA0;-v&#xA;-c&#xA;8 asserts</id>.
 The exact prototype for <id>run_test</id> is:
 <code>
   namespace crpcut {
-    class test_case_factory
-    {
-    public:
-      static int run_test(int argc, const char *argv[], std::ostream &amp; = std::cerr);
-    };
+    int run(int argc, const char *argv[], std::ostream &amp; = std::cerr);
   }
 </code>
 The return value is the number of failed tests, or -1 if anything was printed
@@ -918,24 +914,23 @@ From there, you can single step the test case.
   path, for example to populate test vectors from a file, you can get the
   path name through the static member function:
 <code>
-  const char *crpcut::test_case_factory::get_start_dir();
+  const char *crpcut::get_start_dir();
 </code>
 </section>
 <section title="Named command line parameters">
 Named command line parameters, added to the test run with the <id>-p</id>
 switch, can be accessed from within the test cases using:
 <code>
-  class test_case_factory
+  namespace crpcut
   {
-  public:
-    static const char *get_parameter(const char *name);
+    const char *get_parameter(const char *name);
 
     template &lt;typename T&gt;
-    static void get_parameter(const char *name, T&amp; t);
+    void get_parameter(const char *name, T&amp; t);
 
     template &lt;typename T&gt;
-    static T get_parameter(const char *name);
-  };
+    T get_parameter(const char *name);
+  }
 </code>
 The first returns the raw value of the parameter, or 0 if none was found.
 The other two fails the test case if the value is not found, or cannot be

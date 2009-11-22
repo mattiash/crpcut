@@ -29,5 +29,5 @@
 
 int main(int argc, char *argv[])
 {
-  return crpcut::test_case_factory::run_test(argc, argv);
+  return crpcut::run(argc, argv);
 }

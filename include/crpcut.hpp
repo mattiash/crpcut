@@ -2978,6 +2978,7 @@ namespace crpcut {
     return obj().do_run(argc, argv, os);
   }
 
+
   inline void
   test_case_factory::introduce_name(pid_t pid, const char *name, size_t len)
   {
@@ -3455,6 +3456,42 @@ namespace crpcut {
     };
 
   } // namespace implementation
+
+  inline int
+  run(int argc, char *argv[], std::ostream &os = std::cerr)
+  {
+    return test_case_factory::run_test(argc, argv, os);
+  }
+
+  inline int
+  run(int argc, const char *argv[], std::ostream &os = std::cerr)
+  {
+    return test_case_factory::run_test(argc, argv, os);
+  }
+
+  inline const char *
+  get_parameter(const char *name)
+  {
+    return test_case_factory::get_parameter(name);
+  }
+
+  template <typename T>
+  inline void get_parameter(const char *name, T& t)
+  {
+    return test_case_factory::get_parameter(name, t);
+  }
+
+  template <typename T>
+  inline T get_parameter(const char *name)
+  {
+    return test_case_factory::get_parameter<T>(name);
+  }
+
+  inline
+  const char *get_start_dir()
+  {
+    return test_case_factory::get_start_dir();
+  }
 } // namespace crpcut
 
 extern crpcut::implementation::namespace_info current_namespace;

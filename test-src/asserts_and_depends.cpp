@@ -341,7 +341,7 @@ TEST(should_fail_due_to_left_behind_files)
 
 TEST(should_succeed_reading_file_in_start_dir)
 {
-  std::string s(crpcut::test_case_factory::get_start_dir());
+  std::string s(crpcut::get_start_dir());
   s+= "/apafil";
   std::ifstream in(s.c_str());
   std::string content;

@@ -30,36 +30,36 @@ TESTSUITE(ext_parameters)
 {
   TEST(should_succeed_expected_value)
   {
-    const char *p = crpcut::test_case_factory::get_parameter("apa");
+    const char *p = crpcut::get_parameter("apa");
     INFO << p;
     ASSERT_EQ(p, std::string("katt"));
   }
 
   TEST(should_succeed_no_value)
   {
-    const char *p = crpcut::test_case_factory::get_parameter("orm");
+    const char *p = crpcut::get_parameter("orm");
     ASSERT_FALSE(p);
   }
 
   TEST(should_succeed_no_value_with_too_long_name)
   {
-    const char *p = crpcut::test_case_factory::get_parameter("apan");
+    const char *p = crpcut::get_parameter("apan");
     ASSERT_FALSE(p);
   }
 
   TEST(should_succeed_value_interpret)
   {
-    std::string s(crpcut::test_case_factory::get_parameter<std::string>("apa"));
+    std::string s(crpcut::get_parameter<std::string>("apa"));
     ASSERT_EQ(s, "katt");
   }
 
   TEST(should_fail_value_interpret)
   {
-    crpcut::test_case_factory::get_parameter<int>("apa");
+    crpcut::get_parameter<int>("apa");
   }
 
   TEST(should_fail_no_value_interpret)
   {
-    crpcut::test_case_factory::get_parameter<std::string>("orm");
+    crpcut::get_parameter<std::string>("orm");
   }
 }
