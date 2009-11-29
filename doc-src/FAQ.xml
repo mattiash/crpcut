@@ -1,0 +1,521 @@
+<?xml version="1.0"?>
+<!DOCTYPE book
+          [
+          <!ENTITY crpcut "<productname xmlns='http://docbook.org/ns/docbook'>crpcut</productname>">
+]>
+<book version="5.0" encoding="ascii"  xml:lang="en"
+      id="FAQ"
+      xmlns="http://docbook.org/ns/docbook"
+      xmlns:xi='http://www.w3.org/2001/XInclude'
+      xmlns:xlink='http://www.w3.org/1999/xlink'>
+<title>&crpcut; Frequently Asked Questions</title>
+<chapter id="crpcut-philosophy">
+  <title>&crpcut; philosophy</title>
+  <qandaset defaultlabel="number">
+    <qandaentry>
+      <question>
+        <para>
+          Why was &crpcut; written?
+        </para>
+      </question>
+      <answer>
+        <para>
+          Because, even though there are many C++ unit test systems out
+          there, none covered all the desired properties, although many
+          covered some:
+          <itemizedlist>
+            <listitem>
+              <para>
+                Ease of writing tests. If it isn't easy, it won't be done,
+                and most certainly won't be maintained.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                Handle inadvertent crashes and non-progress (like infinite
+                wait and infinite loops.)
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                Make it possible to fake system errors, such as a
+                socket disconnected unexpectedly or disk full. The handling
+                of these error situations are what defines program robustness,
+                and they are extremely difficult to test without support from
+                the test tool.
+              </para>
+            </listitem>
+            <listitem>
+              <para>Can express dependencies between tests.</para>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>Why run tests individually in separate processes?</para>
+      </question>
+      <answer>
+        <para>Because it protects the tests from each other. One failed
+          test cannot easily corrupt the environment for any other test. </para>
+        <para>It also makes it possible to handle inadvertent crashes and
+          even infinite loops as any other failure.</para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question><para>But doesn't forking all these short lived
+          processes consume a lot of time, making &crpcut; very
+          slow?</para>
+      </question>
+      <answer>
+        <para>Not really. The overhead is very low, typically much less
+          than a millisecond, so you would need a very long suite of very
+          short tests for this to matter. Experience shows that
+          build-time for a test program is typically much longer than the
+          run-time, and the test programs are usually build-once/run-once.
+        </para>
+        <para>In addition, &crpcut; allows you to run tests in parallel, which
+          on a multi-core CPU can reduce run time considerably, especially
+          if individual tests are time consuming.</para>
+    </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>Why not <symbol>throw</symbol> <type>exception</type> to
+          report errors? After all, that is the natural C++ error reporting
+          mechanism.</para>
+      </question>
+      <answer>
+        <para>
+          It is a bad idea just because it is the natural C++ error reporting
+          mechanism. A unit under test could accidentally prevent an error
+          report from being captured. Consider the following class, that
+          needs testing:
+          </para>
+        <programlisting language="C++">
+
+    class catchall
+    {
+    public:
+      catchall(int n);
+    };
+
+    inline catchall::catchall(int n)
+    {
+      try {
+        stubbed_function(n);
+      }
+      catch (...)
+      {
+         std::cerr &lt;&lt; "something bad happened, but I saved the day" &lt;&lt; std::endl;
+      }
+    }
+
+</programlisting>
+        <para>Assume a macro <function>THROW_ON_ERROR</function>
+          that behaves like an assert, except that it throws. It is used
+        by the stub to verify that the caller does the right thing.</para>
+        <programlisting language="C++">
+
+    int expected_value = 0;
+    void stubbed_function(int n)
+    {
+      THROW_ON_ERROR(n != expected_value);
+    }
+
+</programlisting>
+        <para>
+          Now we write a test for this program:
+        </para>
+        <programlisting language="C++">
+
+     TEST(construct_catchall_with_wrong_value)
+     {
+       expected_value = 3;
+       catchall object(2);
+     }
+
+</programlisting>
+        <para>
+          See what's wrong?
+        </para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>Why terminate a test process on the first found error? Isn't it
+          better to continue and see if there are more errors?</para>
+      </question>
+      <answer>
+        <para>The thought is tempting, but if an early assertion is found
+          to be false, how likely is the result from the rest of the code to
+          be of any real value? In the worst case it will do something harmful.
+          If the test is terminated immediately, it cannot do any further
+          damage.</para>
+      </answer>
+    </qandaentry>
+
+
+    <qandaentry>
+      <question>
+        <para>Why doesn't &crpcut; support parametrized tests?</para>
+      </question>
+      <answer>
+        <para>Parametrized tests, the way they are implemented in
+          other unit test systems, are convenient, but also makes it
+          a bit difficult to find what was in error and what wasn't.
+        </para>
+        <para>The &crpcut; way of doing parametrized tests, is to
+          express more or less the entire test functionality in a
+          fixture using templates, and add several tests, each
+          using different parameters for the test. Example:
+          <programlisting>
+
+    class parameter_base
+    {
+    protected:
+      template &lt;typename T1, typename T2&gt;
+      void my_test(T1 t1, T2 t2) {
+        ASSERT_GT(t1, t2);
+      }
+    };
+
+    TEST(gt_int_4_int_3, parameter_base)
+    {
+      my_test(4, 3);
+    }
+
+    TEST(gt_double_pi_int_3, parameter_base)
+    {
+      my_test(3.141592, 3);
+    }
+
+</programlisting>
+</para>
+      </answer>
+    </qandaentry>
+
+    <qandaentry>
+      <question>
+        <para>
+          How do I share a test setup that is expensive to initialize? I don't
+          want to do it over for every test.
+        </para>
+      </question>
+      <answer>
+        <para>
+          You initialize your setup once, outside the tests. It is probably
+          a good idea to use a singleton, which you initialize from the
+          <function>main()</function> function. The tests will get copies
+          of the state when the processes are forked.
+        </para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>How do I pass state from one test to another, to chain them,
+          if they run in isolated processes, or even in parallel?</para>
+      </question>
+      <answer>
+        <para>You really don't want to do that for a software unit
+          test. If you were running a hardware production test, it might be
+          interesting, in order to shorten the time to find defective units,
+          but for a software unit test you want to pinpoint logical errors,
+          and fix bugs. To do that effectively, you want to be able to run
+          each test case individually.</para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>But I really really really want to chain the result of tests.
+          How do I pass state from one test to another?</para>
+      </question>
+      <answer>
+        <para>Sigh, if you insist on making like difficult for yourself,
+        then so be it. What you do is that you set up a shared memory
+        region from the <function>main()</function> function, and use that
+          region to pass state. Do not forget to use the
+          <xref linkend="DEPENDS_ON" xrefstyle="select:title"/> modifier
+          to impose a strict order.</para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>Why the macros and template trickery,
+          instead of a more normal C++ use?</para>
+      </question>
+      <answer>
+        <para>It was not an easy decision, but the reason is simple. As ugly
+          as the implementation is, the ease of use is phenomenal. You focus
+          on writing test logic instead of writing boiler plate code to
+          match the test engine's implementation.</para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>Why require functionality that isn't even standardized yet, like
+          variadic macros and <symbol>decltype</symbol>?</para>
+      </question>
+      <answer>
+        <para>Most compilers today already support the functionality, so
+          it isn't too outrageous. The advantage gained in ease of writing
+          test cases far outweighs the disadvantage.</para>
+        <note>It is only the test code itself that must be
+          compiled with support for the non-standard functionality. The
+          units under test do not.
+        </note>
+      </answer>
+    </qandaentry>
+  </qandaset>
+</chapter>
+<chapter id="portability">
+  <title>Portability</title>
+  <qandaset  defaultlabel="number">
+    <qandaentry>
+      <question>
+        <para>Will &crpcut; be supported natively on OS/X?</para>
+      </question>
+      <answer>
+        <para>It is written such that it should work. With access to an
+          OS/X machine, and time, it is likely to happen.</para>
+        <para>Donations are most welcome. ;-)</para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>Will &crpcut; be supported on *BSD?</para>
+      </question>
+      <answer>
+        <para>The only obstacle currently preventing support is that
+          &crpcut; requires
+          <ulink url="http://www.opengroup.org/onlinepubs/9699919799/functions/waitid.html"><function>waitid()</function></ulink>, which it seems
+          no *BSD OS implements. Once that is in place, chances are good.
+        </para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>Will &crpcut; be ported to
+          <ulink url="http://www.microsoft.com">Microsoft</ulink>
+          <ulink url="http://www.microsoft.com/windows/">Windows</ulink>?</para>
+      </question>
+      <answer>
+        <para>Excruciatingly unlikely, although you are of course welcome
+        to make the port yourself.</para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>Does &crpcut; work under
+          <ulink url="http://www.cygwin.com">Cygwin</ulink>?</para>
+      </question>
+      <answer>
+        <para>Please try it out and report the result.</para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>Does &crpcut; work on other CPU architectures than
+          <ulink url="http://www.intel.com">intel</ulink>
+          x86 compatibles?</para>
+      </question>
+      <answer>
+        <para>
+          Since it hasn't been tried, the assumption must be that it doesn't.
+          However, should you decide to give it a try, please report your
+          findings. You will be assisted when it comes to making it work.
+        </para>
+        <note>
+          However, the <xref linkend="ulps_diff" xrefstyle="select:title"/>
+          floating point tests are almost guaranteed not to work on other
+          architectures.
+        </note>
+      </answer>
+    </qandaentry>
+
+    <qandaentry>
+      <question><para>
+        Which compilers are supported?
+        </para></question>
+      <answer>
+        <para>
+          &crpcut; has been successfully used with:
+          <itemizedlist>
+            <listitem><para>
+                <ulink url="http://gcc.gnu.org">gcc</ulink> versions 4.1.2,
+                4.3.2, 4.3.4, 4.4.1 and 4.4.2.
+            </para></listitem>
+            <listitem><para>
+                <ulink url="http://www.intel.com">Intel</ulink>
+                <ulink url="http://software.intel.com/en-us/intel-compilers">ICC</ulink>
+                compiler version 1.11.
+            </para></listitem>
+          </itemizedlist>
+        </para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question><para>
+          Which Linux versions are known to work with &crpcut;?
+      </para></question>
+      <answer>
+        <para>
+          Any reasonably modern Linux should be OK, but since the specific
+          question was about exact versions, they are:
+          <itemizedlist>
+            <listitem><ulink url="http://www.gentoo.org">gentoo</ulink> x86</listitem>
+            <listitem><ulink url="http://www.gentoo.org">gentoo</ulink> amd64</listitem>
+            <listitem><ulink url="http://www.ubuntu.com">Ubuntu</ulink> Linux 9.10 (karmic koala) x86</listitem>
+            <listitem><ulink url="http://www.ubuntu.com">Ubuntu</ulink> Linux 9.10 (karmic koala) x86-64</listitem>
+          </itemizedlist>
+        </para>
+      </answer>
+    </qandaentry>
+  </qandaset>
+</chapter>
+<chapter id="problems">
+  <title>Problems</title>
+  <qandaset defayltlabel="number">
+    <qandaentry>
+      <question>
+        <para>My test is killed by crpcut, what gives?</para>
+      </question>
+      <answer>
+        <para>A message like this, eh?
+          <screen>
+
+     FAILED: name_of_my_test
+     phase="running"  --------------------------------------------------------------
+     Timed out - killed
+
+          </screen>
+        </para>
+        <para>By default, tests are given 2s to complete. Your test consumed
+          at least 3s. Most probably your code waits for something that doesn't
+          happen, or is stuck in a no-progress loop (infinite, that is.)
+        </para>
+        <para>If, however, your test legitimately needs more time than that,
+          you can easily raise the limit. Just use the
+          <xref linkend="DEADLINE_REALTIME_MS" xrefstyle="select:title"/>
+          modifier and set a suitably long deadline.
+        </para>
+      </answer>
+    </qandaentry>
+  </qandaset>
+</chapter>
+<chapter id="google-mock">
+  <title>Google-mock</title>
+  <qandaset defaultlabel="number">
+    <qandaentry>
+      <question>
+        <para>I like
+          <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>.
+          Does &crpcut; work with it?
+        </para>
+      </question>
+      <answer>
+        <para>
+          Yes it does, and transparently too. There are only two differences
+          compared to running under
+          <ulink url="http://code.google.com/p/googletest">google-test</ulink>.
+          <itemizedlist>
+            <listitem>
+              <para>
+                Under &crpcut; a test is terminated immediately when a
+                violation is detected.
+              </para>
+            </listitem>
+            <listitem>
+              <para>
+                You must <symbol>#include &lt;gmock/gmock.h&gt;</symbol>
+                before <symbol>#include &lt;crpcut.hpp&gt;</symbol>
+              </para>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>
+          What versions of
+          <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
+          are supported.
+        </para>
+      </question>
+      <answer>
+        <para>
+          &crpcut; requires version 1.4.0.
+        </para>
+      </answer>
+    </qandaentry>
+
+    <qandaentry>
+      <question>
+        <para>How do I send command line parameters to
+          <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>?
+          </para>
+      </question>
+      <answer>
+        <para>Call <ulink url="http://code.google.com/p/googletest/wiki/GoogleTestPrimer#Writing_the_main()_Function"><symbol>::testing::InitGoogleTest(&amp;argc, argv)</symbol></ulink>
+          before the call to
+          <link linkend="run"><symbol>crpcut::run(argc, argv)</symbol></link>.
+          For example like:
+          <programlisting language="C++">
+
+    #include &lt;gmock/gmock.h&gt;
+    #include &lt;crpcut.hpp&gt;
+
+    int main(int argc, char *argv[])
+    {
+      ::testing::InitGoogleTest(&amp;argc, argv);
+      return crpcut::run(argc, argv);
+    }
+
+</programlisting>
+        </para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>Why do I get a lot of link errors with undefined references from libgmock.so?</para>
+      </question>
+      <answer>
+        <para>Does it look something like the below?
+          <screen>
+
+    /usr/lib/libgmock.so: undefined reference to `testing::AssertionSuccess()'
+    /usr/lib/libgmock.so: undefined reference to `testing::InitGoogleTest(int*, char**)'
+    /usr/lib/libgmock.so: undefined reference to `testing::internal::FormatForFailureMessage(char)'
+    /usr/lib/libgmock.so: undefined reference to `testing::internal::String::Compare(testing::internal::String const&amp;) const'
+
+</screen>
+          If so, you've forgotten to link with <symbol>-lgtest</symbol>.
+          <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
+          relies heavily on
+          <ulink url="http://code.google.com/p/googletest">google-test</ulink>,
+          so even if you run the tests under &crpcut; you need to link with
+          <symbol>-lgtest</symbol> to resolve all dependencies.
+        </para>
+      </answer>
+    </qandaentry>
+
+    <qandaentry>
+      <question>
+        <para>
+          Will a mocking framework, similar to
+          <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
+          be written in the vein of &crpcut;?
+        </para>
+      </question>
+      <answer>
+        <para>
+          Time permitting, maybe, but it is not planned, and it's a major
+          undertaking, so don't hold your breath waiting for it.
+        </para>
+      </answer>
+    </qandaentry>
+  </qandaset>
+</chapter>
+</book>

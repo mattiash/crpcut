@@ -34,6 +34,11 @@ include(CheckLibraryExists)
 set(CRPCUT_LIB_MAJOR_VERSION "0")
 set(CRPCUT_LIB_MINOR_VERSION "8")
 set(CRPCUT_LIB_PATCH_VERSION "2")
+set(CRPCUT_LIB_ALIAS_VERSION "1.0-beta3")
+set(CRPCUT_VERSION "${CRPCUT_MAJOR_VERSION}.${CRPCUT_MINOR_VERSION}.{CRPCUT_PATCH_VERSION}")
+if (CRPCUT_LIB_ALIAS_VERSION)
+  set(CRPCUT_VERSION "${CRPCUT_VERSION} (${CRPCUT_LIB_ALIAS_VERSION})")
+endif (CRPCUT_LIB_ALIAS_VERSION)
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "-O")
 set(CMAKE_CXX_FLAGS_MAINT "-ggdb -Wall -Wextra -Wcast-qual -Wconversion -Wshadow -Wunused-parameter -Wwrite-strings -pedantic -Wno-variadic-macros -D_GLIBCXX_DEBUG=1")
@@ -291,7 +296,8 @@ endif(NOT XSLTPROC)
 
 if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
   file(GLOB DOC_SRC_LIB "doc-src")
-  file(GLOB REFMAN_SOURCES "${DOC_SRC_LIB}/refman.docbook")
+  file(GLOB DOC_SOURCES "${DOC_SRC_LIB}/*.xml")
+  file(GLOB TOP_DOC_SOURCE "${DOC_SRC_LIB}/docs.xml")
   add_custom_target(
     stripped-src
     test -d stripped-src || mkdir stripped-src
@@ -1095,21 +1101,25 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
   # refman
   #
   add_custom_target(
-    refman_html
+    html_docs
     ${XSLTPROC}
     --stringparam chunk.first.sections 1
     --stringparam navig.graphics 1
     --stringparam navig.graphics.extension .png
-    --stringparam navig.graphics.path ../images/
+    --stringparam navig.graphics.path images/
     --stringparam admon.graphics 1
     --stringparam admon.graphics.extension .png
-    --stringparam admon.graphics.path ../images/
+    --stringparam admon.graphics.path images/
     --stringparam admon.graphic.width 57
-    --stringparam html.stylesheet ../crpcut-doc.css
-    --xinclude --stringparam use.extensions 1
+    --stringparam html.stylesheet crpcut-doc.css
+    --stringparam highlight.source 1
+    --stringparam use.id.as.filename 1
+    --stringparam use.extensions 1
     --stringparam textinsert.extension 1
-    ${HTML_CHUNK_XSL} - < ${REFMAN_SOURCES}
-    DEPENDS html/refman
+    --xinclude
+    ${HTML_CHUNK_XSL} - < ${TOP_DOC_SOURCE}
+    DEPENDS html
+    doc-src
     stripped-src/all_tests.cpp sample-output/all_tests.out
     stripped-src/exit_any_code.cpp sample-output/exit_any_code.out
     stripped-src/assert_ne_fails.cpp sample-output/assert_ne_fails.out
@@ -1153,8 +1163,8 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
     stripped-src/suite_depend.cpp sample-output/suite_depend.out
     stripped-src/suite_define.cpp
     can_dump_core
-    ${REFMAN_SOURCES} ${DOC_SRC_LIB}/crpcut-doc.css
-    WORKING_DIRECTORY html/refman)
+    ${DOC_SOURCES} ${DOC_SRC_LIB}/crpcut-doc.css
+    WORKING_DIRECTORY html)
 
   install(
     DIRECTORY ${CMAKE_BINARY_DIR}/html

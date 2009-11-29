@@ -1,17 +1,15 @@
 <?xml version="1.0"?>
 <!DOCTYPE book
           [
-          <!ENTITY crpcut "<productname xmlns='http://docbook.org/ns/docbook'>crpcut</productname>">
-          <!ENTITY mainprog "<xi:include href='../test-src/unitt.cpp'
-                             parse='text'
-                             xmlns:xi='http://www.w3.org/2001/XInclude'/>">
-]>
+         <!ENTITY crpcut "<productname xmlns='http://docbook.org/ns/docbook'>crpcut</productname>">
+ ]>
 <book version="5.0" encoding="ascii"  xml:lang="en"
+      id="refman"
       xmlns="http://docbook.org/ns/docbook"
       xmlns:xi='http://www.w3.org/2001/XInclude'
       xmlns:xlink='http://www.w3.org/1999/xlink'>
 <title>&crpcut; Reference Manual</title>
-<chapter>
+<chapter id="macros">
   <title>Macros</title>
   <section id="ALL_TESTS">
     <title><function>ALL_TESTS(testsuitename)</function></title>
@@ -23,12 +21,12 @@
     </formalpara>
     <para>Example: The test program</para>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/all_tests.cpp" parse="text"/>
+<xi:include href="../stripped-src/all_tests.cpp" parse="text"/>
 </programlisting>
     <para>reports one test that has not run:</para>
       <screen>
 
-<xi:include href="../../sample-output/all_tests.out" parse="text"/>
+<xi:include href="../sample-output/all_tests.out" parse="text"/>
 </screen>
   </section>
   <section id="ANY_CODE">
@@ -40,12 +38,12 @@
     </formalpara>
     <para>Example: The test program</para>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/exit_any_code.cpp" parse="text"/>
+<xi:include href="../stripped-src/exit_any_code.cpp" parse="text"/>
 </programlisting>
     <para>reports one failed test:</para>
       <screen>
 
-<xi:include href="../../sample-output/exit_any_code.out" parse="text"/>
+<xi:include href="../sample-output/exit_any_code.out" parse="text"/>
 </screen>
   </section>
   <section id="ASSERT_EQ">
@@ -72,12 +70,12 @@
       or a byte by byte hex dump otherwise.</para>
     <para>Example: The test program</para>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_eq_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_eq_fails.cpp" parse="text"/>
 </programlisting>
     <para>reports one failed test:</para>
       <screen>
 
-<xi:include href="../../sample-output/assert_eq_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_eq_fails.out" parse="text"/>
 </screen>
   </section>
   <section id="ASSERT_FALSE">
@@ -104,12 +102,12 @@
         a byte by  byte hex dump is used.</para>
       <para>Example: The test program
         <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_false_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_false_fails.cpp" parse="text"/>
         </programlisting>
         reports one failed test:
         <screen>
 
-<xi:include href="../../sample-output/assert_false_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_false_fails.out" parse="text"/>
         </screen>
       </para>
   </section>
@@ -137,12 +135,12 @@
       or a byte by byte hex dump otherwise.</para>
     <para>Example: The test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_ge_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_ge_fails.cpp" parse="text"/>
       </programlisting>
       reports one failed test:
       <screen>
 
-<xi:include href="../../sample-output/assert_ge_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_ge_fails.out" parse="text"/>
       </screen>
     </para>
   </section>
@@ -169,12 +167,12 @@
       or a byte by byte hex dump otherwise.</para>
     <para>Example: The test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_gt_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_gt_fails.cpp" parse="text"/>
 </programlisting>
       reports one failed test:
       <screen>
 
-<xi:include href="../../sample-output/assert_gt_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_gt_fails.out" parse="text"/>
 </screen>
     </para>
 
@@ -205,12 +203,12 @@
       or a byte by byte hex dump otherwise.</para>
     <para>Example: The test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_le_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_le_fails.cpp" parse="text"/>
       </programlisting>
       reports one failed test:
       <screen>
 
-<xi:include href="../../sample-output/assert_le_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_le_fails.out" parse="text"/>
       </screen>
     </para>
 
@@ -239,12 +237,12 @@
       or a byte by byte hex dump otherwise.</para>
     <para>Example: The test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_lt_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_lt_fails.cpp" parse="text"/>
       </programlisting>
       reports one failed test:
       <screen>
 
-<xi:include href="../../sample-output/assert_lt_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_lt_fails.out" parse="text"/>
       </screen>
     </para>
 
@@ -273,12 +271,12 @@
       or a byte by byte hex dump otherwise.</para>
     <para>Example: The test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_ne_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_ne_fails.cpp" parse="text"/>
       </programlisting>
       reports one failed test:
       <screen>
 
-<xi:include href="../../sample-output/assert_ne_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_ne_fails.out" parse="text"/>
       </screen>
     </para>
 
@@ -306,12 +304,12 @@
       generic message otherwise.</para>
     <para>Example: The test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_no_throw_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_no_throw_fails.cpp" parse="text"/>
       </programlisting>
       reports one failed test:
       <screen>
 
-<xi:include href="../../sample-output/assert_no_throw_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_no_throw_fails.out" parse="text"/>
       </screen>
     </para>
   </section>
@@ -343,12 +341,12 @@
     of it is included for extra information.</para>
     <para>Example: The test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_pred_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_pred_fails.cpp" parse="text"/>
       </programlisting>
       reports one failed test:
       <screen>
 
-<xi:include href="../../sample-output/assert_pred_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_pred_fails.out" parse="text"/>
       </screen>
     </para>
     <para>
@@ -393,12 +391,12 @@
       message otherwise.</para>
     <para>Example: The test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_throw_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_throw_fails.cpp" parse="text"/>
       </programlisting>
       reports one failed test:
       <screen>
 
-<xi:include href="../../sample-output/assert_throw_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_throw_fails.out" parse="text"/>
       </screen>
     </para>
   </section>
@@ -427,12 +425,12 @@
         a byte by  byte hex dump is used.</para>
       <para>Example: The test program
         <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_true_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_true_fails.cpp" parse="text"/>
         </programlisting>
         reports one failed test:
         <screen>
 
-<xi:include href="../../sample-output/assert_true_fails.out" parse="text"/>
+<xi:include href="../sample-output/assert_true_fails.out" parse="text"/>
         </screen>
       </para>
 
@@ -498,12 +496,12 @@
     </variablelist>
       <para>Example: The test program
         <programlisting language="c++">
-<xi:include href="../../stripped-src/wrap_func.cpp" parse="text"/>
+<xi:include href="../stripped-src/wrap_func.cpp" parse="text"/>
         </programlisting>
         reports one failed test:
         <screen>
 
-<xi:include href="../../sample-output/wrap_func.out" parse="text"/>
+<xi:include href="../sample-output/wrap_func.out" parse="text"/>
         </screen>
       </para>
       <para>
@@ -580,12 +578,12 @@
     </variablelist>
       <para>Example: The test program
         <programlisting language="c++">
-<xi:include href="../../stripped-src/wrap_v_func.cpp" parse="text"/>
+<xi:include href="../stripped-src/wrap_v_func.cpp" parse="text"/>
         </programlisting>
         reports one failed test:
         <screen>
 
-<xi:include href="../../sample-output/wrap_v_func.out" parse="text"/>
+<xi:include href="../sample-output/wrap_v_func.out" parse="text"/>
         </screen>
       </para>
       <para>
@@ -619,12 +617,12 @@
       about fixtures.)</note>
     <para>Example: The test program</para>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/deadline_cpu.cpp" parse="text"/>
+<xi:include href="../stripped-src/deadline_cpu.cpp" parse="text"/>
 </programlisting>
     <para>reports one failed test:</para>
       <screen>
 
-<xi:include href="../../sample-output/deadline_cpu.out" parse="text"/>
+<xi:include href="../sample-output/deadline_cpu.out" parse="text"/>
 </screen>
       <para>
         See also
@@ -653,12 +651,12 @@
       Should your test require more, you can set it higher.</para>
     <para>Example: The test program</para>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/deadline_realtime.cpp" parse="text"/>
+<xi:include href="../stripped-src/deadline_realtime.cpp" parse="text"/>
 </programlisting>
     <para>reports two failed test:</para>
       <screen>
 
-<xi:include href="../../sample-output/deadline_realtime.out" parse="text"/>
+<xi:include href="../sample-output/deadline_realtime.out" parse="text"/>
 </screen>
       <para>
         See also <xref linkend="DEADLINE_CPU_MS" xrefstyle="select:title"/>
@@ -702,12 +700,12 @@
     </note>
     <para>Example: The test program</para>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/depends_on.cpp" parse="text"/>
+<xi:include href="../stripped-src/depends_on.cpp" parse="text"/>
 </programlisting>
     <para>reports one failed test, and one that did not run:</para>
       <screen>
 
-<xi:include href="../../sample-output/depends_on.out" parse="text"/>
+<xi:include href="../sample-output/depends_on.out" parse="text"/>
 </screen>
       <para>See also the <xref linkend="nodepend" xrefstyle="select:title"/>
         command line flag.</para>
@@ -758,12 +756,12 @@
     </note>
     <para>Example: The test program</para>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/expect_exception.cpp" parse="text"/>
+<xi:include href="../stripped-src/expect_exception.cpp" parse="text"/>
 </programlisting>
     <para>reports two failed tests:</para>
       <screen>
 
-<xi:include href="../../sample-output/expect_exception.out" parse="text"/>
+<xi:include href="../sample-output/expect_exception.out" parse="text"/>
 </screen>
 
   </section>
@@ -792,12 +790,12 @@
     </note>
     <para>Example: The test program</para>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/expect_exit.cpp" parse="text"/>
+<xi:include href="../stripped-src/expect_exit.cpp" parse="text"/>
 </programlisting>
     <para>reports three failed tests:</para>
       <screen>
 
-<xi:include href="../../sample-output/expect_exit.out" parse="text"/>
+<xi:include href="../sample-output/expect_exit.out" parse="text"/>
 </screen>
 
 
@@ -832,12 +830,12 @@
     </note>
     <para>Example: The test program</para>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/expect_signal_death.cpp" parse="text"/>
+<xi:include href="../stripped-src/expect_signal_death.cpp" parse="text"/>
 </programlisting>
     <para>reports three failed tests:</para>
       <screen>
 
-<xi:include href="../../sample-output/expect_signal_death.out" parse="text"/>
+<xi:include href="../sample-output/expect_signal_death.out" parse="text"/>
 </screen>
 
   </section>
@@ -860,12 +858,12 @@
     </para>
       <para>Example: The test program
         <programlisting language="c++">
-<xi:include href="../../stripped-src/fail.cpp" parse="text"/>
+<xi:include href="../stripped-src/fail.cpp" parse="text"/>
         </programlisting>
         provides two detailed failure reports:
         <screen>
 
-<xi:include href="../../sample-output/fail.out" parse="text"/>
+<xi:include href="../sample-output/fail.out" parse="text"/>
         </screen>
       </para>
 
@@ -891,12 +889,12 @@
 
       <para>Example: The test program
         <programlisting language="c++">
-<xi:include href="../../stripped-src/info.cpp" parse="text"/>
+<xi:include href="../stripped-src/info.cpp" parse="text"/>
         </programlisting>
         provides one detailed failure report:
         <screen>
 
-<xi:include href="../../sample-output/info.out" parse="text"/>
+<xi:include href="../sample-output/info.out" parse="text"/>
         </screen>
       </para>
   </section>
@@ -929,12 +927,12 @@
     </tip>
     <para>Example: The test program</para>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/no_core.cpp" parse="text"/>
+<xi:include href="../stripped-src/no_core.cpp" parse="text"/>
 </programlisting>
     <para>reports one failed test, due to a left-behind core file:</para>
       <screen>
 
-<xi:include href="../../sample-output/no_core.out" parse="text"/>
+<xi:include href="../sample-output/no_core.out" parse="text"/>
 </screen>
 
   </section>
@@ -978,12 +976,12 @@
         is a failure.</para>
       <para>Example: The test program
         <programlisting language="c++">
-<xi:include href="../../stripped-src/file_fail.cpp" parse="text"/>
+<xi:include href="../stripped-src/file_fail.cpp" parse="text"/>
         </programlisting>
         fails because it left files behind.
         <screen>
 
-<xi:include href="../../sample-output/file_fail.out" parse="text"/>
+<xi:include href="../sample-output/file_fail.out" parse="text"/>
         </screen>
       </para>
       <para>By default &crpcut; imposes a real-time limit of
@@ -992,12 +990,12 @@
         failed.</para>
       <para>Example: The test program
         <programlisting language="c++">
-<xi:include href="../../stripped-src/infinite_loop.cpp" parse="text"/>
+<xi:include href="../stripped-src/infinite_loop.cpp" parse="text"/>
         </programlisting>
         is killed and failed:
         <screen>
 
-<xi:include href="../../sample-output/infinite_loop.out" parse="text"/>
+<xi:include href="../sample-output/infinite_loop.out" parse="text"/>
         </screen>
       </para>
       <para>Should you have a test that needs more time than
@@ -1022,7 +1020,7 @@
       access to the data and functionality of the fixture.</para>
       <para>Example: two tests sharing a fixture
         <programlisting language="c++">
-<xi:include href="../../stripped-src/simple_fix.cpp" parse="text"/>
+<xi:include href="../stripped-src/simple_fix.cpp" parse="text"/>
         </programlisting>
       </para>
       <para>
@@ -1030,7 +1028,7 @@
       but the same rules apply as for any multiple inheritance.</para>
       <para>Example: name disambiguation
         <programlisting language="c++">
-<xi:include href="../../stripped-src/ambiguous_fix.cpp" parse="text"/>
+<xi:include href="../stripped-src/ambiguous_fix.cpp" parse="text"/>
         </programlisting>
       </para>
       <para>
@@ -1040,12 +1038,12 @@
       </para>
       <para>Example: The test program
         <programlisting language="c++">
-<xi:include href="../../stripped-src/file_fix.cpp" parse="text"/>
+<xi:include href="../stripped-src/file_fix.cpp" parse="text"/>
         </programlisting>
         fails because the test did not remove the file, as it should have.
         <screen>
 
-<xi:include href="../../sample-output/file_fix.out" parse="text"/>
+<xi:include href="../sample-output/file_fix.out" parse="text"/>
         </screen>
         </para>
       <para>
@@ -1146,12 +1144,12 @@
     </para>
     <para>Example: The following test program:
         <programlisting language="c++">
-<xi:include href="../../stripped-src/simple_testsuite.cpp" parse="text"/>
+<xi:include href="../stripped-src/simple_testsuite.cpp" parse="text"/>
         </programlisting>
         Shows the failure of a test in a testsuite.
         <screen>
 
-<xi:include href="../../sample-output/simple_testsuite.out" parse="text"/>
+<xi:include href="../sample-output/simple_testsuite.out" parse="text"/>
         </screen>
     </para>
     <para>
@@ -1167,15 +1165,15 @@
       source file.</para>
     <para>Example: Cross-file testsuite dependency
       <programlisting language="c++">
-<xi:include href="../../stripped-src/suite_define.cpp" parse="text"/>
+<xi:include href="../stripped-src/suite_define.cpp" parse="text"/>
 </programlisting>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/suite_depend.cpp" parse="text"/>
+<xi:include href="../stripped-src/suite_depend.cpp" parse="text"/>
 </programlisting>
     <para>reports one failed test, and one that did not run:</para>
       <screen>
 
-<xi:include href="../../sample-output/suite_depend.out" parse="text"/>
+<xi:include href="../sample-output/suite_depend.out" parse="text"/>
 </screen>
     </para>
     <para>
@@ -1201,12 +1199,12 @@
     </para>
     <para>Example: the test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/abs_diff.cpp" parse="text"/>
+<xi:include href="../stripped-src/abs_diff.cpp" parse="text"/>
       </programlisting>
       fails one test:
       <screen>
 
-<xi:include href="../../sample-output/abs_diff.out" parse="text"/>
+<xi:include href="../sample-output/abs_diff.out" parse="text"/>
       </screen>
     </para>
     <para>See also <xref linkend="relative_diff" xrefstyle="select:title"/>
@@ -1271,12 +1269,12 @@
     </variablelist>
     <para>Example: The test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/collate.cpp" parse="text"/>
+<xi:include href="../stripped-src/collate.cpp" parse="text"/>
       </programlisting>
       fails the opposite tests in the different locales:
       <screen>
 
-<xi:include href="../../sample-output/collate.out" parse="text"/>
+<xi:include href="../sample-output/collate.out" parse="text"/>
       </screen>
     </para>
     <para>
@@ -1307,12 +1305,12 @@
     </para>
     <para>Example: The test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/collate_case.cpp" parse="text"/>
+<xi:include href="../stripped-src/collate_case.cpp" parse="text"/>
       </programlisting>
       fails one test:
       <screen>
 
-<xi:include href="../../sample-output/collate_case.out" parse="text"/>
+<xi:include href="../sample-output/collate_case.out" parse="text"/>
       </screen>
     </para>
   </section>
@@ -1435,12 +1433,12 @@
       The array returned must be zero-terminated.</para>
     <para>Example: The test program wrapping a function in <constant>libm</constant>
       <programlisting language="c++">
-<xi:include href="../../stripped-src/wrapped.cpp" parse="text"/>
+<xi:include href="../stripped-src/wrapped.cpp" parse="text"/>
       </programlisting>
       fails one test:
       <screen>
 
-<xi:include href="../../sample-output/wrapped.out" parse="text"/>
+<xi:include href="../sample-output/wrapped.out" parse="text"/>
       </screen>
     </para>
   </section>
@@ -1564,12 +1562,12 @@
     </para>
     <para>Example: the test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/regex.cpp" parse="text"/>
+<xi:include href="../stripped-src/regex.cpp" parse="text"/>
       </programlisting>
       fails one test:
       <screen>
 
-<xi:include href="../../sample-output/regex.out" parse="text"/>
+<xi:include href="../sample-output/regex.out" parse="text"/>
       </screen>
     </para>
   </section>
@@ -1589,12 +1587,12 @@
     </para>
     <para>Example: the test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/relative_diff.cpp" parse="text"/>
+<xi:include href="../stripped-src/relative_diff.cpp" parse="text"/>
       </programlisting>
       fails one test:
       <screen>
 
-<xi:include href="../../sample-output/relative_diff.out" parse="text"/>
+<xi:include href="../sample-output/relative_diff.out" parse="text"/>
       </screen>
     </para>
     <para>See also <xref linkend="abs_diff" xrefstyle="select:title"/>
@@ -1673,12 +1671,12 @@ int main(int argc, char *argv[])
       others.</caution>
     <para>Example: the test program
       <programlisting language="c++">
-<xi:include href="../../stripped-src/ulps_diff.cpp" parse="text"/>
+<xi:include href="../stripped-src/ulps_diff.cpp" parse="text"/>
       </programlisting>
       fails one test:
       <screen>
 
-<xi:include href="../../sample-output/ulps_diff.out" parse="text"/>
+<xi:include href="../sample-output/ulps_diff.out" parse="text"/>
       </screen>
     </para>
     <para>See also <xref linkend="abs_diff" xrefstyle="select:title"/>
@@ -1706,7 +1704,7 @@ int main(int argc, char *argv[])
   </section>
 
 </chapter>
-<chapter>
+<chapter id="running_tests">
   <title>Running tests</title>
   <section id="cli-flags">
     <title>The command line</title>
@@ -1859,7 +1857,7 @@ int main(int argc, char *argv[])
       <parameter>pwd</parameter> the name of the current working directory.
     </para>
   </section>
-  <section>
+  <section id="test_reports">
     <title>Test reports</title>
     <para>The output from a test program is
       <itemizedlist>
@@ -1924,14 +1922,14 @@ int main(int argc, char *argv[])
       <title>Human readable</title>
       <para>Example: The following test program
      <programlisting language="c++">
-<xi:include href="../../stripped-src/report_example.cpp" parse="text"/>
+<xi:include href="../stripped-src/report_example.cpp" parse="text"/>
       </programlisting>
       shows all types of information in its end report when run with
      the <xref linkend="verbose" xrefstyle="select:title"/>
      command line flag.
       <screen>
 
-<xi:include href="../../sample-output/report_example_human.out" parse="text"/>
+<xi:include href="../sample-output/report_example_human.out" parse="text"/>
       </screen>
 
       </para>
@@ -1940,20 +1938,20 @@ int main(int argc, char *argv[])
       <title>XML</title>
       <para>Example: The following test program
      <programlisting language="c++">
-<xi:include href="../../stripped-src/report_example.cpp" parse="text"/>
+<xi:include href="../stripped-src/report_example.cpp" parse="text"/>
       </programlisting>
       shows all types of information in its end report when run with
      the <xref linkend="verbose" xrefstyle="select:title"/>
      command line flag.
       <screen>
 
-<xi:include href="../../sample-output/report_example_xml.out" parse="text"/>
+<xi:include href="../sample-output/report_example_xml.out" parse="text"/>
       </screen>
 
       </para>
     </section>
   </section>
-  <section>
+  <section id="debugging">
     <title>Debugging a test</title>
     <para>The easiest way to debug a single test, is to run it with the
       <xref linkend="single-shot" xrefstyle="select:title"/>
@@ -1964,12 +1962,12 @@ int main(int argc, char *argv[])
     </para>
     <para>Example: To debug the test case <type>assert_eq_fails</type> in
       <programlisting language="c++">
-<xi:include href="../../stripped-src/assert_eq_fails.cpp" parse="text"/>
+<xi:include href="../stripped-src/assert_eq_fails.cpp" parse="text"/>
       </programlisting>
       run
       <screen>
 
-<xi:include href="../../sample-output/debug_assert_eq_fails.out" parse="text"/>
+<xi:include href="../sample-output/debug_assert_eq_fails.out" parse="text"/>
       </screen>
     </para>
   </section>

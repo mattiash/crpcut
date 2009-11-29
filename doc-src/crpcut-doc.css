@@ -1,12 +1,29 @@
 pre.programlisting {
-  font-size: 80%;
-  background-color: #f0f0ff ;
-  color: #000040 ;
-  border: 1px solid #000066 ;
+    font-size: 80%;
+    background-color: #f0f0ff ;
+    color: #000040 ;
+    border: 1px solid #000066 ;
 }
 pre.screen {
-  font-size: 80%;
-  background-color: #f0f0ff ;
-  color: #000040 ;
-  border: 1px solid #000066 ;
+    font-size: 80%;
+    background-color: #f0f0ff ;
+    color: #000040 ;
+    border: 1px solid #000066 ;
 }
+tr.question {
+    font-weight: bold ;
+}
+tr.question td {
+    vertical-align: baseline;
+}
+div.qandaset dt {
+    line-height: 180% ;
+}
+span.productname {
+    color: #404040 ;
+    font-style: oblique ;
+}
+a img {
+    border: none;
+}
+

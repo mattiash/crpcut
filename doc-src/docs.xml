@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!DOCTYPE book
+          [
+          <!ENTITY crpcut "<productname xmlns='http://docbook.org/ns/docbook'>crpcut</productname>">
+]>
+<set><title>&crpcut; documentation</title>
+<xi:include href="../doc-src/FAQ.xml" xmlns:xi='http://www.w3.org/2001/XInclude'/>
+<xi:include href="../doc-src/refman.xml" xmlns:xi='http://www.w3.org/2001/XInclude'/>
+</set>
