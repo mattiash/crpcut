@@ -26,24 +26,63 @@
 
 
 #include <crpcut.hpp>
+#include "sorted-names.hpp"
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
+#define aring "\xc3\xa5"
+#define auml  "\xc3\xa4"
+#define ouml  "\xc3\xb6"
+#define Aring "\xc3\x85"
+#define Auml  "\xc3\x84"
+#define Ouml  "\xc3\x96"
 
-
-TEST(in_german_locale)
+template <const char *(&locname)>
+class name_fixture
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+protected:
+  name_fixture()
+  {
+    names.push(Auml "ngla");
+    names.push(Ouml "rjan");
+    names.push(Auml "rlig");
+    names.push("Bj" ouml "rn");
+  }
+  sorted_names<locname> names;
+};
+
+template <const char *(&locname)>
+class sort_checker
+{
+public:
+  template <typename iter>
+  static void verify(iter b, iter e)
+  {
+    iter i = b++;
+    while (b != e)
+      {
+        INFO << *i << "<=" << *b;
+        ASSERT_PRED(crpcut::collate(*i, std::locale(locname)) <= *b);
+        i = b++;
+      }
+  }
+};
+
+const char *sv_SE = "sv_SE.utf8";
+const char *de_DE = "de_DE.utf8";
+
+
+TEST(coll_equal, name_fixture<sv_SE>)
+{
+  sort_checker<sv_SE>::verify(names.begin(), names.end());
 }
 
-TEST(in_swedish_locale)
+TEST(coll_mismatch, name_fixture<de_DE>)
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
+  sort_checker<sv_SE>::verify(names.begin(), names.end());
 }
 
 int main(int argc, char *argv[])
 {
   return crpcut::run(argc, argv);
 }
+
+

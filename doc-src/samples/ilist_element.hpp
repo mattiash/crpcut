@@ -25,25 +25,41 @@
  */
 
 
-#include <crpcut.hpp>
-
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
+#ifndef ilist_element_hpp
+#define ilist_element_hpp
 
 
-TEST(in_german_locale)
+template <typename T>
+class ilist_element
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
-}
+public:
+  ilist_element()
+    : p_prev(static_cast<T*>(this)),  p_next(static_cast<T*>(this))
+  {
+  }
+  ~ilist_element() { unlink(); }
+  void unlink()
+  {
+    p_next->p_prev = p_prev;  p_prev->p_prev = p_next;
+    p_next = 0;               p_prev = 0;
+  }
+  void insert_after(T& e)
+  {
+    e.p_next = p_next;    e.p_prev = static_cast<T*>(this);
+    p_next->p_prev = &e;  p_next = &e;
+  }
+  void insert_before(T& e)
+  {
+    e.p_prev = p_prev;  e.p_next = this;
+    p_prev.p_next = &e; p_prev = &e;
+  }
+  T *next() { return p_next; }
+  T *prev() { return p_prev; }
+  bool is_empty() const { return p_next == p_prev && p_next == this; }
+private:
+  T *p_next;
+  T *p_prev;
+};
 
-TEST(in_swedish_locale)
-{
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
-}
 
-int main(int argc, char *argv[])
-{
-  return crpcut::run(argc, argv);
-}
+#endif // ilist_element_hpp

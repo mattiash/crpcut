@@ -24,23 +24,40 @@
  * SUCH DAMAGE.
  */
 
-
+#include "stream-cast.hpp"
 #include <crpcut.hpp>
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+class leak_detect
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+protected:
+  leak_detect() : pre(crpcut::heap::allocated_bytes()) {}
+  ~leak_detect()
+  {
+    size_t post = crpcut::heap::allocated_bytes();
+    if (post != pre)
+      {
+        FAIL << "Memory leak detected\n"
+             << pre << " Bytes allocated at construction time\n"
+             << post << " Bytes allocated at destruction time";
+      }
+  }
+private:
+  size_t pre;
+};
+
+TEST(simple_string_to_int, leak_detect)
+{
+  const char s[] = "123";
+  int n = stream_cast(s);
+  ASSERT_EQ(n, 123);
 }
 
-TEST(in_swedish_locale)
+TEST(constrained_string_to_int, leak_detect)
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
+  crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 10);
+  const char s[] = "1234567";
+  int n = stream_cast(s);
+  ASSERT_EQ(1234567, n);
 }
 
 int main(int argc, char *argv[])

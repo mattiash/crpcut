@@ -378,7 +378,7 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
   add_custom_target(
     assert_eq_fails.out
     assert_eq_fails | sed "s/\\(.*\\)/     \\1/g" > assert_eq_fails.out
-    DEPENDS assert_eq_fails sample-output
+    DEPENDS sample-output assert_eq_fails
     WORKING_DIRECTORY sample-output
     VERBATIM)
   add_custom_target(
@@ -1021,6 +1021,37 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
     VERBATIM)
 
   #
+  # bare_minimum
+  #
+  file(GLOB BARE_MINIMUM "${DOC_SRC_LIB}/samples/bare-minimum.cpp")
+  add_custom_target(
+    bare-minimum.cpp
+    ${STRIP_SOURCES} < ${BARE_MINIMUM} > bare-minimum.cpp
+    DEPENDS stripped-src ${BARE_MINIMUM}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(bare-minimum EXCLUDE_FROM_ALL ${BARE_MINIMUM})
+  target_link_libraries(bare-minimum crpcut)
+  add_custom_target(
+    bare-minimum-list.out
+    bare-minimum "-l"| sed "s/\\(.*\\)/     \\1/g" > bare-minimum-list.out
+    DEPENDS bare-minimum sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+  add_custom_target(
+    bare-minimum-verbose.out
+    bare-minimum "-v"| sed "s/\\(.*\\)/     \\1/g" > bare-minimum-verbose.out
+    DEPENDS bare-minimum sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+  add_custom_target(
+    bare-minimum.out
+    bare-minimum | sed "s/\\(.*\\)/     \\1/g" > bare-minimum.out
+    DEPENDS bare-minimum sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
   # simple_testsuite
   #
   file(GLOB SIMPLE_TESTSUITE "${DOC_SRC_LIB}/samples/simple_testsuite.cpp")
@@ -1054,19 +1085,283 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
   set_target_properties(report_example PROPERTIES COMPILE_FLAGS "-ggdb")
   add_custom_target(
     report_example_human.out
-    report_example -v | sed "s/\\(.*\\)/     \\1/g" > report_example_human.out
+    report_example "-v" | sed "s/\\(.*\\)/     \\1/g" > report_example_human.out
     DEPENDS report_example sample-output
     WORKING_DIRECTORY sample-output
     VERBATIM)
   add_custom_target(
     report_example_xml.out
-    report_example -v -x | sed "s/\\(.*\\)/     \\1/g" > report_example_xml.out
+    report_example "-v" "-x" | sed "s/\\(.*\\)/     \\1/g" > report_example_xml.out
     DEPENDS report_example sample-output
     WORKING_DIRECTORY sample-output
     VERBATIM)
 
   #
-  # simple_depend
+  # itest
+  #
+  file(GLOB ILIST "${DOC_SRC_LIB}/samples/ilist_element.hpp")
+  add_custom_target(
+    ilist_element.hpp
+    ${STRIP_SOURCES} < ${ILIST} > ilist_element.hpp
+    DEPENDS stripped-src ${ITEST}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  file(GLOB ITEST "${DOC_SRC_LIB}/samples/itest.cpp")
+  add_custom_target(
+    itest.cpp
+    ${STRIP_SOURCES} < ${ITEST} > itest.cpp
+    DEPENDS stripped-src ${ITEST} ${ILIST}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(itest EXCLUDE_FROM_ALL ${ITEST})
+  target_link_libraries(itest crpcut)
+  set_target_properties(itest PROPERTIES COMPILE_FLAGS "-ggdb")
+  add_custom_target(
+    itest.out
+    itest  | sed "s/\\(.*\\)/     \\1/g" > itest.out
+    DEPENDS itest sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
+  # symtable
+  #
+  file(GLOB SYMTABLE "${DOC_SRC_LIB}/samples/symtable.hpp")
+  add_custom_target(
+    symtable.hpp
+    ${STRIP_SOURCES} < ${SYMTABLE} > symtable.hpp
+    DEPENDS stripped-src ${ITEST}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  file(GLOB SYMTABLE-TEST "${DOC_SRC_LIB}/samples/symtable-test.cpp")
+  add_custom_target(
+    symtable-test.cpp
+    ${STRIP_SOURCES} < ${SYMTABLE-TEST} > symtable-test.cpp
+    DEPENDS stripped-src ${SYMTABLE-TEST} ${SYMTABLE}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(symtable-test EXCLUDE_FROM_ALL ${SYMTABLE-TEST})
+  target_link_libraries(symtable-test crpcut)
+  add_custom_target(
+    symtable-test.out
+    symtable-test "-v"  | sed "s/\\(.*\\)/     \\1/g" > symtable-test.out
+    DEPENDS symtable-test sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  file(GLOB SYMTABLE-TEST2 "${DOC_SRC_LIB}/samples/symtable-test2.cpp")
+  add_custom_target(
+    symtable-test2.cpp
+    ${STRIP_SOURCES} < ${SYMTABLE-TEST2} > symtable-test2.cpp
+    DEPENDS stripped-src ${SYMTABLE-TEST2} ${SYMTABLE}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(symtable-test2 EXCLUDE_FROM_ALL ${SYMTABLE-TEST2})
+  target_link_libraries(symtable-test2 crpcut)
+  add_custom_target(
+    symtable-test2.out
+    symtable-test2  | sed "s/\\(.*\\)/     \\1/g" > symtable-test2.out
+    DEPENDS symtable-test2 sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+
+  #
+  # suite-example
+  #
+  file(GLOB SUITE-EXAMPLE "${DOC_SRC_LIB}/samples/suite-example.cpp")
+  add_custom_target(
+    suite-example.cpp
+    ${STRIP_SOURCES} < ${SUITE-EXAMPLE} > suite-example.cpp
+    DEPENDS stripped-src ${SUITE-EXAMPLE} ${SYMTABLE}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(suite-example EXCLUDE_FROM_ALL ${SUITE-EXAMPLE})
+  target_link_libraries(suite-example crpcut)
+  add_custom_target(
+    suite-example.out
+    suite-example "-v" "-n" "normal_access" | sed "s/\\(.*\\)/     \\1/g" > suite-example.out
+    DEPENDS suite-example sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
+  # string-template-fix
+  #
+  file(GLOB STRING-TEMPLATE-FIX "${DOC_SRC_LIB}/samples/string-template-fix.cpp")
+  add_custom_target(
+    string-template-fix.cpp
+    ${STRIP_SOURCES} < ${STRING-TEMPLATE-FIX} > string-template-fix.cpp
+    DEPENDS stripped-src ${STRING-TEMPLATE-FIX} ${SYMTABLE}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(string-template-fix EXCLUDE_FROM_ALL ${STRING-TEMPLATE-FIX})
+  target_link_libraries(string-template-fix crpcut)
+  add_custom_target(
+    string-template-fix.out
+    string-template-fix "-v" | sed "s/\\(.*\\)/     \\1/g" > string-template-fix.out
+    DEPENDS string-template-fix sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
+  # regex-simple
+  #
+  file(GLOB REGEX-SIMPLE "${DOC_SRC_LIB}/samples/regex-simple.cpp")
+  add_custom_target(
+    regex-simple.cpp
+    ${STRIP_SOURCES} < ${REGEX-SIMPLE} > regex-simple.cpp
+    DEPENDS stripped-src ${REGEX-SIMPLE} ${SYMTABLE}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(regex-simple EXCLUDE_FROM_ALL ${REGEX-SIMPLE})
+  target_link_libraries(regex-simple crpcut)
+  add_custom_target(
+    regex-simple.out
+    regex-simple "-v" | sed "s/\\(.*\\)/     \\1/g" > regex-simple.out
+    DEPENDS regex-simple sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
+  # collate_example
+  #
+  file(GLOB COLLATE_EXAMPLE "${DOC_SRC_LIB}/samples/collate_example.cpp")
+  file(GLOB SORTED_NAMES  "${DOC_SRC_LIB}/samples/sorted-names.hpp")
+  add_custom_target(
+    collate_example.cpp
+    ${STRIP_SOURCES} < ${COLLATE_EXAMPLE} > collate_example.cpp
+    DEPENDS stripped-src ${COLLATE_EXAMPLE}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+
+  add_custom_target(
+    sorted-names.hpp
+    ${STRIP_SOURCES} < ${SORTED_NAMES} > sorted-names.hpp
+    DEPENDS stripped-src ${SORTED_NAMES}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(collate_example EXCLUDE_FROM_ALL ${COLLATE_EXAMPLE} ${SORTED_NAMES})
+  target_link_libraries(collate_example crpcut)
+  add_custom_target(
+    collate_example.out
+    collate_example "-v" | sed "s/\\(.*\\)/     \\1/g" > collate_example.out
+    DEPENDS collate_example sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
+  # heap-check
+  #
+  file(GLOB STREAM-CAST "${DOC_SRC_LIB}/samples/stream-cast.hpp")
+  add_custom_target(
+    stream-cast.hpp
+    ${STRIP_SOURCES} < ${STREAM-CAST} > stream-cast.hpp
+    DEPENDS stripped-src ${STREAM-CAST}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  file(GLOB HEAP-CHECK "${DOC_SRC_LIB}/samples/heap-check.cpp")
+  add_custom_target(
+    heap-check.cpp
+    ${STRIP_SOURCES} < ${HEAP-CHECK} > heap-check.cpp
+    DEPENDS stripped-src ${HEAP-CHECK} ${STREAM-CAST}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(heap-check EXCLUDE_FROM_ALL ${HEAP-CHECK})
+  target_link_libraries(heap-check crpcut)
+  add_custom_target(
+    heap-check.out
+    heap-check  | sed "s/\\(.*\\)/     \\1/g" > heap-check.out
+    DEPENDS heap-check sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+
+  #
+  # process-test
+  #
+  file(GLOB PROCESS-EXAMPLE "${DOC_SRC_LIB}/samples/process-example.hpp")
+  add_custom_target(
+    process-example.hpp
+    ${STRIP_SOURCES} < ${PROCESS-EXAMPLE} > process-example.hpp
+    DEPENDS stripped-src ${PROCESS-EXAMPLE}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  file(GLOB PROCESS-TEST "${DOC_SRC_LIB}/samples/process-test.cpp")
+  add_custom_target(
+    process-test.cpp
+    ${STRIP_SOURCES} < ${PROCESS-TEST} > process-test.cpp
+    DEPENDS stripped-src ${PROCESS-TEST} ${PROCESS-EXAMPLE}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(process-test EXCLUDE_FROM_ALL ${PROCESS-TEST})
+  target_link_libraries(process-test crpcut)
+  add_custom_target(
+    process-test.out
+    process-test | sed "s/\\(.*\\)/     \\1/g" > process-test.out
+    DEPENDS process-test sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
+  # simple-pred
+  #
+  file(GLOB SIMPLE-PRED "${DOC_SRC_LIB}/samples/simple-pred.cpp")
+  add_custom_target(
+    simple-pred.cpp
+    ${STRIP_SOURCES} < ${SIMPLE-PRED} > simple-pred.cpp
+    DEPENDS stripped-src ${SIMPLE-PRED}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(simple-pred EXCLUDE_FROM_ALL ${SIMPLE-PRED})
+  target_link_libraries(simple-pred crpcut)
+  add_custom_target(
+    simple-pred.out
+    simple-pred  | sed "s/\\(.*\\)/     \\1/g" > simple-pred.out
+    DEPENDS simple-pred sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
+  # template-pred
+  #
+  file(GLOB TEMPLATE-PRED "${DOC_SRC_LIB}/samples/template-pred.cpp")
+  add_custom_target(
+    template-pred.cpp
+    ${STRIP_SOURCES} < ${TEMPLATE-PRED} > template-pred.cpp
+    DEPENDS stripped-src ${TEMPLATE-PRED}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(template-pred EXCLUDE_FROM_ALL ${TEMPLATE-PRED})
+  target_link_libraries(template-pred crpcut)
+  add_custom_target(
+    template-pred.out
+    template-pred  | sed "s/\\(.*\\)/     \\1/g" > template-pred.out
+    DEPENDS template-pred sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
+  # simple-depend
+  #
+  file(GLOB SIMPLE-DEPEND "${DOC_SRC_LIB}/samples/simple-depend.cpp")
+  add_custom_target(
+    simple-depend.cpp
+    ${STRIP_SOURCES} < ${SIMPLE-DEPEND} > simple-depend.cpp
+    DEPENDS stripped-src ${SIMPLE-DEPEND}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(simple-depend EXCLUDE_FROM_ALL ${SIMPLE-DEPEND})
+  target_link_libraries(simple-depend crpcut)
+  add_custom_target(
+    simple-depend.out
+    simple-depend  | sed "s/\\(.*\\)/     \\1/g" > simple-depend.out
+    DEPENDS simple-depend sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
+  # suite_depend
   #
   file(GLOB SUITE_DEPEND "${DOC_SRC_LIB}/samples/suite_depend.cpp")
   file(GLOB SUITE_DEFINE "${DOC_SRC_LIB}/samples/suite_define.cpp")
@@ -1116,6 +1411,9 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
     --stringparam use.id.as.filename 1
     --stringparam use.extensions 1
     --stringparam textinsert.extension 1
+    --stringparam toc.section.depth 1
+    --stringparam toc.max.depth 2
+    --stringparam callout.graphics 0
     --xinclude
     ${HTML_CHUNK_XSL} - < ${TOP_DOC_SOURCE}
     DEPENDS html
@@ -1152,9 +1450,15 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
     stripped-src/relative_diff.cpp sample-output/relative_diff.out
     stripped-src/ulps_diff.cpp sample-output/ulps_diff.out
     stripped-src/regex.cpp sample-output/regex.out
+    stripped-src/bare-minimum.cpp sample-output/bare-minimum.out
+    sample-output/bare-minimum-list.out
+    sample-output/bare-minimum-verbose.out
     stripped-src/simple_testsuite.cpp sample-output/simple_testsuite.out
     stripped-src/report_example.cpp sample-output/report_example_human.out
     sample-output/report_example_xml.out
+    stripped-src/ilist_element.hpp
+    stripped-src/itest.cpp sample-output/itest.out
+    stripped-src/simple-depend.cpp sample-output/simple-depend.out
     stripped-src/simple_fix.cpp sample-output/simple_fix.out
     stripped-src/file_fix.cpp sample-output/file_fix.out
     stripped-src/ambiguous_fix.cpp sample-output/ambiguous_fix.out
@@ -1162,6 +1466,20 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
     stripped-src/infinite_loop.cpp sample-output/infinite_loop.out
     stripped-src/suite_depend.cpp sample-output/suite_depend.out
     stripped-src/suite_define.cpp
+    stripped-src/symtable.hpp
+    stripped-src/symtable-test.cpp sample-output/symtable-test.out
+    stripped-src/symtable-test2.cpp sample-output/symtable-test2.out
+    stripped-src/suite-example.cpp sample-output/suite-example.out
+    stripped-src/string-template-fix.cpp sample-output/string-template-fix.out
+    stripped-src/regex-simple.cpp sample-output/regex-simple.out
+    stripped-src/collate_example.cpp sample-output/collate_example.out
+    stripped-src/sorted-names.hpp
+    stripped-src/heap-check.cpp sample-output/heap-check.out
+    stripped-src/stream-cast.hpp
+    stripped-src/process-example.hpp stripped-src/process-test.cpp
+    sample-output/process-test.out
+    stripped-src/simple-pred.cpp sample-output/simple-pred.out
+    stripped-src/template-pred.cpp sample-output/template-pred.out
     can_dump_core
     ${DOC_SOURCES} ${DOC_SRC_LIB}/crpcut-doc.css
     WORKING_DIRECTORY html)
@@ -1221,5 +1539,4 @@ install(
   FILES crpcut.xsd FAQ TODO
   DESTINATION "${SHAREDIR}"
   )
-if(XSLTPROC)
-endif(XSLTPROC)
+

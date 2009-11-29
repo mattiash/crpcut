@@ -24,26 +24,59 @@
  * SUCH DAMAGE.
  */
 
-
-#include <crpcut.hpp>
-
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+extern "C"
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h>
 }
 
-TEST(in_swedish_locale)
-{
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
-}
+#include <stdexcept>
+#include <string>
+#include <cassert>
 
-int main(int argc, char *argv[])
+class work
 {
-  return crpcut::run(argc, argv);
-}
+public:
+  class fork_exception : public std::exception  { };
+  class pipe_exception : public std::exception  { };
+  work() :pid(-1)
+  {
+    int rv = pipe(fd);
+    if (rv == -1) throw pipe_exception();
+    rv = ::fork();
+    if (rv == -1) throw fork_exception();
+    if (rv == 0) { close(fd[0]); fd[0] = -1; do_work(); return; } // child
+    close(fd[1]);
+    fd[1] = -1;
+    pid = rv;
+  }
+  ~work() {
+    assert(pid == -1 && "Hmm, child still alive, I think");
+    if (fd[0] != -1) close(fd[0]);
+    if (fd[1] != -1) close(fd[1]);
+  }
+  std::string get_data() // empty data signals that child is done
+  {
+    size_t len;
+    ::read(fd[0], &len, sizeof(len));
+    std::string data(len > 0 ? len : 0, '_');
+    if (len > 0)
+      {
+        ::read(fd[0], &data[0], len);
+      }
+    return data;
+  }
+  void wait()
+  {
+    int status;
+    int rv = ::wait(&status);
+    assert(rv != 0 || status == pid);
+    pid = -1;
+  }
+private:
+  void do_work() { /* very hard stuff */  }
+  int fd[2];
+  int pid;
+};

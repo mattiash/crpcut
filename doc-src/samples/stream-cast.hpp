@@ -24,26 +24,38 @@
  * SUCH DAMAGE.
  */
 
+#include <sstream>
+#include <ostream>
+#include <istream>
+#include <string>
 
-#include <crpcut.hpp>
-
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+class cast_type
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
-}
+private:
+  cast_type(const std::string str) : s(str) {}
+  cast_type& operator=(const cast_type&);
+public:
+  cast_type(const cast_type &other) : s(other.s) { }
+  ~cast_type() {  }
+  template <typename T>
+  operator T() const
+  {
+    std::istringstream is(s);
+    T rv = T();
+    is >> rv;
+    return rv;
+  }
+private:
+  std::string s;
 
-TEST(in_swedish_locale)
-{
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
-}
+  template <typename T>
+  friend cast_type stream_cast(const T&);
+};
 
-int main(int argc, char *argv[])
+template <typename T>
+inline cast_type stream_cast(const T& t)
 {
-  return crpcut::run(argc, argv);
+  std::ostringstream os;
+  os << t;
+  return cast_type(os.str());
 }

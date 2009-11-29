@@ -24,23 +24,37 @@
  * SUCH DAMAGE.
  */
 
-
 #include <crpcut.hpp>
-
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+#include <vector>
+class to_be_tested
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+public:
+  to_be_tested() { buffer.at(1) = 0; /* init */ }
+  char &next_char() { return buffer[index++]; }
+  int used_chars() const { return index; }
+private:
+  std::vector<char> buffer;
+  int index;
+};
+
+TEST(create)
+{
+  to_be_tested *p = new to_be_tested;
 }
 
-TEST(in_swedish_locale)
+TEST(destroy, DEPENDS_ON(create))
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
+  to_be_tested obj;
+}
+
+TEST(fill, DEPENDS_ON(destroy))
+{
+  to_be_tested obj;
+  for (int i = 0; i < 100; ++i)
+    {
+      obj.next_char() = 0;
+    }
+  ASSERT_EQ(obj.used_chars(), 100);
 }
 
 int main(int argc, char *argv[])

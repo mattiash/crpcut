@@ -5,5 +5,6 @@
 ]>
 <set><title>&crpcut; documentation</title>
 <xi:include href="../doc-src/FAQ.xml" xmlns:xi='http://www.w3.org/2001/XInclude'/>
+<xi:include href="../doc-src/users-guide.xml" xmlns:xi='http://www.w3.org/2001/XInclude'/>
 <xi:include href="../doc-src/refman.xml" xmlns:xi='http://www.w3.org/2001/XInclude'/>
 </set>

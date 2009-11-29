@@ -25,25 +25,42 @@
  */
 
 
-#include <crpcut.hpp>
+#include <set>
+#include <string>
+#include <algorithm>
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+template <const char *(&locname)>
+class sorted_names
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
-}
+  class comparator
+  {
+    typedef std::collate<char> coll_t;
+  public:
+    comparator() : loc(locname) {}
+    bool operator()(const std::string &lh, const std::string &rh) const
+    {
+      const coll_t &coll = std::use_facet<coll_t>(loc);
+      return coll.compare(lh.c_str(), lh.c_str()+lh.length(),
+                          rh.c_str(), rh.c_str()+rh.length()) < 0;
+    }
+    std::locale loc;
+  };
+  typedef std::multiset<std::string, comparator> collection;
+public:
+  typedef typename collection::const_iterator iterator;
+  void push(std::string name)
+  {
+    names.insert(name);
+  }
+  iterator begin() const
+  {
+    return names.begin();
+  }
+  iterator end()
+  {
+    return names.end();
+  }
+private:
+  collection names;
+};
 
-TEST(in_swedish_locale)
-{
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
-}
-
-int main(int argc, char *argv[])
-{
-  return crpcut::run(argc, argv);
-}

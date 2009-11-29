@@ -26,21 +26,23 @@
 
 
 #include <crpcut.hpp>
+#include <iostream>
+#include <ostream>
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+TEST(bare_minimum)
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
 }
 
-TEST(in_swedish_locale)
+TEST(print_a_message)
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
+  std::cout << "hello world, I am " << __PRETTY_FUNCTION__ << std::endl;
+}
+
+TEST(information)
+{
+  INFO << "This is also a test" << std::endl
+       << "Using the INFO macro";
+  INFO << "for output";
 }
 
 int main(int argc, char *argv[])

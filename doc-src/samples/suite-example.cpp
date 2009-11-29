@@ -24,23 +24,69 @@
  * SUCH DAMAGE.
  */
 
-
+#include "symtable.hpp"
 #include <crpcut.hpp>
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+TESTSUITE(construct_and_destroy)
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+  TEST(construct)
+  {
+    symtable *s = new symtable; // intentional leak
+  }
+
+  TEST(destroy, DEPENDS_ON(construct))
+  {
+    symtable s;
+  }
 }
 
-TEST(in_swedish_locale)
+TESTSUITE(normal_access, DEPENDS_ON(ALL_TESTS(construct_and_destroy)))
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
+  TEST(insert_one)
+  {
+    symtable s;
+    s.add("one", 1);
+  }
+  TEST(insert_several, DEPENDS_ON(insert_one))
+  {
+    symtable s;
+    s.add("one", 1);
+    s.add("two", 2);
+    s.add("three", 3);
+  }
+  TEST(lookup, DEPENDS_ON(insert_several))
+  {
+    symtable s;
+    s.add("one", 1);
+    s.add("two", 2);
+    int v = s.lookup("one");
+    ASSERT_EQ(v, 1);
+    v = s.lookup("two");
+    ASSERT_EQ(v, 2);
+  }
+}
+
+TESTSUITE(abnormal, DEPENDS_ON(ALL_TESTS(normal_access)))
+{
+  TEST(lookup_nonexisting, EXPECT_EXCEPTION(std::out_of_range))
+   {
+     symtable s;
+     s.add("one", 1);
+     int v = s.lookup("two");
+   }
+
+  TEST(add_null, EXPECT_SIGNAL_DEATH(SIGABRT), NO_CORE_FILE)
+  {
+    symtable s;
+    s.add(0, 1);
+  }
+
+  TEST(lookup_null, EXPECT_SIGNAL_DEATH(SIGABRT), NO_CORE_FILE)
+  {
+    symtable s;
+    s.add("one", 1);
+    int v = s.lookup(0);
+  }
 }
 
 int main(int argc, char *argv[])

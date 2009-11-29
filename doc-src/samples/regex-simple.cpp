@@ -26,22 +26,47 @@
 
 
 #include <crpcut.hpp>
+#include <string>
+#include <list>
+#include <sstream>
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+class event_list
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+public:
+  event_list() : num(0) {}
+  void push(std::string text)
+  {
+    event_text.push_back(text);
+  }
+  std::string pop()
+  {
+    std::ostringstream os;
+    os << num++ << " " << event_text.front();
+    event_text.pop_front();
+    return os.str();
+  }
+private:
+  std::list<std::string> event_text;
+  size_t num;
+};
+
+const char fmt[]
+= "^(\\+)?[[:digit:]]+" "[[:space:]]+" "[[:alnum:]]([[:alnum:]|[:space:]])*$";
+
+// i.e. LINE_FMT is a positive integer followed by at least one space and
+// then a string of at least one alphanumerical character and spaces.
+
+TEST(verify_output_format)
+{
+  event_list el;
+  el.push("something happened");
+  el.push("what else happened?");
+  ASSERT_PRED(crpcut::match<crpcut::regex>(fmt, crpcut::regex::e),
+              el.pop());
+  ASSERT_PRED(crpcut::match<crpcut::regex>(fmt, crpcut::regex::e),
+              el.pop());
 }
 
-TEST(in_swedish_locale)
-{
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
-}
 
 int main(int argc, char *argv[])
 {

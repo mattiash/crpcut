@@ -24,23 +24,36 @@
  * SUCH DAMAGE.
  */
 
-
+#include "symtable.hpp"
 #include <crpcut.hpp>
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+TEST(insert_and_lookup)
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+  symtable s;
+  s.add("one", 1);
+  s.add("two", 2);
+  ASSERT_EQ(s.lookup("one"), 1);
+  ASSERT_EQ(s.lookup("two"), 2);
 }
 
-TEST(in_swedish_locale)
+TEST(lookup_nonexisting, EXPECT_EXCEPTION(std::out_of_range))
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
+  symtable s;
+  s.add("one", 1);
+  int v = s.lookup("two");
+}
+
+TEST(add_null, EXPECT_SIGNAL_DEATH(SIGABRT), NO_CORE_FILE)
+{
+  symtable s;
+  s.add(0, 1);
+}
+
+TEST(lookup_null, EXPECT_SIGNAL_DEATH(SIGABRT), NO_CORE_FILE)
+{
+  symtable s;
+  s.add("one", 1);
+  int v = s.lookup(0);
 }
 
 int main(int argc, char *argv[])

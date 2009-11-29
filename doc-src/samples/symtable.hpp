@@ -24,26 +24,23 @@
  * SUCH DAMAGE.
  */
 
+#include <map>
+#include <string>
+#include <cassert>
 
-#include <crpcut.hpp>
-
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+class symtable
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
-}
-
-TEST(in_swedish_locale)
-{
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
-}
-
-int main(int argc, char *argv[])
-{
-  return crpcut::run(argc, argv);
-}
+public:
+  void add(const char *name, int val)
+  {
+    assert(name);
+    table[name] = val;
+  }
+  int lookup(const char *name)
+  {
+    assert(name);
+    return table.at(name);
+  }
+private:
+  std::map<std::string, int> table;
+};

@@ -27,20 +27,69 @@
 
 #include <crpcut.hpp>
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+extern "C"
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+#include <unistd.h>
 }
 
-TEST(in_swedish_locale)
+class raw_dump
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
+public:
+  raw_dump(const char *filename) : fd(::open(filename, O_CREAT | O_EXCL))
+  {
+    if (fd < 0) throw std::exception("fail");
+  }
+  ~raw_dump()
+  {
+    int rv = ::close(fd);
+    if (rv < 0) throw std::exception("close");
+  }
+  void dump(const void *buffer, size_t len)
+  {
+    const char *p = static_cast<const char*>(buffer);
+    size_t bytes_written = 0;
+    while (bytes_written < len)
+      {
+        int rv = ::write(fd, p + bytes_written, len - bytes_written);
+        if (rv < 0) throw std::exception("write");
+        if (rv == 0) return;
+        bytes_written+= rv;
+      }
+  }
+private:
+  raw_dump(const raw_dump&);
+  raw_dump& operator=(const raw_dump&);
+  int fd;
+};
+
+namespace original {
+  CRPCUT_WRAP_FUNC(libc, close, int, (int fd), (fd));
+}
+
+int *set_errno = 0;
+int close(int fd)
+{
+  int rv = original::close(fd);
+  return set_errno ? *set_errno : rv;
+}
+
+template <const char *(&fname)>
+struct cleaner
+{
+  ~cleaner() { ::unlink(&fname); }
+};
+
+const char *filename = "dump";
+
+TEST(failed_close, cleaner<filename>)
+{
+  (void)read_data("/dev/zero");
+}
+
+TEST(wrapped_with_wrong_expectations)
+{
+  expected_filename = "/dev/random";
+  (void)read_data("/dev/zero");
 }
 
 int main(int argc, char *argv[])

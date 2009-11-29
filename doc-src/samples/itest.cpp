@@ -24,23 +24,66 @@
  * SUCH DAMAGE.
  */
 
-
 #include <crpcut.hpp>
+#include "ilist_element.hpp"
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+struct elem : public ilist_element<elem>
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+  elem(int i) : n(i) {}
+  int n;
+};
+
+TEST(create_and_destroy_empty)
+{
+  ilist_element<elem> list;
+  ASSERT_TRUE(list.is_empty());
 }
 
-TEST(in_swedish_locale)
+TEST(insert_and_traverse_one_element)
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
+  ilist_element<elem> list;
+  elem obj(1);
+  list.insert_after(obj);
+  ASSERT_FALSE(list.is_empty());
+  ASSERT_TRUE(list.next()->n == 1);
+}
+
+TEST(several_elements)
+{
+  ilist_element<elem> list;
+
+  elem obj1(1);
+  list.insert_after(obj1);
+  elem *p2 = new elem(2);
+  list.insert_after(*p2);
+  elem obj3(3);
+  list.insert_after(obj3);
+
+  elem *i = list.next();
+  ASSERT_EQ(i->n, 3);
+  ASSERT_EQ((i=i->next())->n, 2);
+  ASSERT_EQ((i=i->next())->n, 1);
+  ASSERT_EQ(i, &list);
+  delete p2;
+  ASSERT_EQ((i=i->prev())->n, 1);
+  ASSERT_EQ((i=i->prev())->n, 3);
+  ASSERT_EQ(i->prev(), &list);
+}
+
+TEST(unlink)
+{
+  ilist_element<elem> list;
+  elem obj1(1);
+  list.insert_after(obj1);
+  elem obj2(2);
+  list.insert_after(obj2);
+  elem obj3(3);
+  list.insert_after(obj3);
+  obj2.unlink();
+  elem *i = list.prev();
+  ASSERT_EQ(i->n, 1);
+  i = i->prev();
+  ASSERT_EQ(i->n, 3);
 }
 
 int main(int argc, char *argv[])

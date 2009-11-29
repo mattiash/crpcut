@@ -26,21 +26,32 @@
 
 
 #include <crpcut.hpp>
+#include <string>
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+template <const char *(&str_param)>
+class fix
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+protected:
+  fix() : string(str_param) {}
+  std::string string;
+};
+
+void function_working_with_strings(const std::string &s)
+{
+  INFO << s;
 }
 
-TEST(in_swedish_locale)
+const char *hello = "Hello string fixture";
+const char *other = "Fresh out of cheddar";
+
+TEST(func_with_hello, fix<hello>)
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
+  function_working_with_strings(string);
+}
+
+TEST(func_with_other, fix<other>)
+{
+  function_working_with_strings(string);
 }
 
 int main(int argc, char *argv[])

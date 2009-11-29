@@ -27,20 +27,23 @@
 
 #include <crpcut.hpp>
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
-
-
-TEST(in_german_locale)
+bool has_substring_in(const std::string &needle, const std::string &haystack)
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("de_DE.utf8")) > str2_utf8);
+  return haystack.find(needle) != std::string::npos;
 }
 
-TEST(in_swedish_locale)
+TEST(using_assert_pred)
 {
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) < str2_utf8);
-  ASSERT_PRED(crpcut::collate(str1_utf8, std::locale("sv_SE.utf8")) > str2_utf8);
+  const char needle[]   = "pqr";
+  const char haystack[] = "a mountain of hay";
+  ASSERT_PRED(has_substring_in, needle, haystack);
+}
+
+TEST(using_assert_true)
+{
+  const char needle[]   = "pqr";
+  const char haystack[] = "a mountain of hay";
+  ASSERT_TRUE(has_substring_in(needle, haystack));
 }
 
 int main(int argc, char *argv[])

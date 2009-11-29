@@ -359,6 +359,16 @@
       <xref linkend="regex"  xrefstyle="select:title"/>,) and
       for string collation (<xref linkend="collate" xrefstyle="select:title"/>.)
       </para>
+    <tip>If you have a compiler that supports C++0x
+      <ulink url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda</ulink>
+      expressions, lambdas make excellent predicates.
+      <programlisting language="C++">
+
+    const char *refstr = get_from_a_function();
+    ASSERT_PRED([](const char *p) { return ::strcmp(p, "key") == 0; }, refstr);
+
+</programlisting>
+    </tip>
   </section>
   <section id="ASSERT_THROW">
     <title><function>ASSERT_THROW(expr, exc_type)</function></title>

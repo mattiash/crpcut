@@ -1,0 +1,960 @@
+<?xml version="1.0"?>
+<!DOCTYPE book
+          [
+          <!ENTITY crpcut "<productname xmlns='http://docbook.org/ns/docbook'>crpcut</productname>">
+]>
+<book version="5.0" encoding="ascii"  xml:lang="en"
+      id="users-guide"
+      xmlns="http://docbook.org/ns/docbook"
+      xmlns:xi='http://www.w3.org/2001/XInclude'
+      xmlns:xlink='http://www.w3.org/1999/xlink'>
+  <title>&crpcut; User's Guide</title>
+  <chapter id="writing-tests">
+    <title>Writing tests</title>
+    <section id="test-basics">
+      <title>Test basics</title>
+      <para>
+        With &crpcut; it is easy to write tests. All that is required is
+        to write test bodies following the
+        <xref linkend="TEST" xrefstyle="select:title"/> macro, and a
+        <function>main()</function> function that runs the tests by calling
+        <xref linkend="run" xrefstyle="select:title"/>.
+      </para>
+      <para>By writing:
+        <programlisting language="c++">
+<xi:include href="../stripped-src/bare-minimum.cpp" parse="text"/>
+</programlisting>
+        you define three tests named <type>bare_minimum</type>,
+        <type>print_a_message</type>, and <type>information</type>, and also
+        ask &crpcut; to run the tests from the <function>main()</function>
+        function. All three tests will succeed, since they do nothing
+        wrong.
+      </para>
+      <para>To build the program, make sure you have the correct
+        include path to reach <symbol>&lt;crpcut.hpp&gt;</symbol>.
+        Link your test program with <symbol>-lcrpcut</symbol>,
+        and make sure <symbol>libcrpcut.so</symbol> can be found
+        when starting the program.</para>
+      <para>Running the test program with the
+        <xref linkend="list-tests" xrefstyle="select:title"/> (list)
+        command line flag, will list all tests:
+        <screen>
+
+<xi:include href="../sample-output/bare-minimum-list.out" parse="text"/>
+</screen>
+      </para>
+      <para>Running the test program with an empty parameter list
+        runs all tests:
+        <screen>
+
+<xi:include href="../sample-output/bare-minimum.out" parse="text"/>
+</screen>
+        which isn't too exciting in this case.
+      </para>
+      <para>Running the test program with the
+        <xref linkend="verbose" xrefstyle="select:title"/> (verbose) command
+        line flag, will list the output of all tests, including those that
+        pass:
+        <screen>
+
+<xi:include href="../sample-output/bare-minimum-verbose.out" parse="text"/>
+</screen>
+      As can be seen, &crpcut; captures <symbol>stdout</symbol> and adds
+      as a log item for the test. It does the same for <symbol>stderr</symbol>.
+      The log items are only shown if the test fails, or when run in
+      verbose mode with the <xref linkend="verbose" xrefstyle="select:title"/>
+      command line flag.</para>
+      <para>The <xref linkend="INFO" xrefstyle="select:title"/> macro is
+        used like an output stream to print information that can be useful
+        for understanding what happens in a test. Each
+        <xref linkend="INFO" xrefstyle="select:title"/> statement
+        will always give a separate log item for the test, unlike
+        <symbol>stdout</symbol> and <symbol>stderr</symbol> which can behave
+        differently from run to run, depending on buffering and
+        scheduling.</para>
+      <para>A test is a class, and the test body is the body of the
+        member function <function>test()</function>. A test succeeds
+        if it returns from the function body without having
+        explicitly failed, or if it has left files behind in its working
+        directory (for example a core dump.) Each test process runs in its
+        own working directory.</para>
+      <para>Another macro that can be useful is
+        <xref linkend="DISABLED_TEST" xrefstyle="select:title"/>. A disabled
+        test will never be listed, and never a candidate for running, but
+        it will be compiled. If a test for some reason can't be used right
+        now, but it is intended to be,
+        <xref linkend="DISABLED_TEST" xrefstyle="select:title"/> will
+        keep the error reports clean, and will prevent code-rot in the
+        test code, since it will be compiled.
+      </para>
+    </section>
+    <section id="asserts">
+      <title>Asserting correctness</title>
+      <para>A test isn't worth much if it isn't possible to assert the
+        correctness of the unit under test. Although you can use the
+        standard C/C++ <function>assert()</function> macro, &crpcut;
+        offers a wealth of its own assert macros with several benefits.
+      </para>
+      <para>Consider the C-style intrusive list class, written below:
+        <programlisting>
+<xi:include href="../stripped-src/ilist_element.hpp" parse="text"/>
+</programlisting>
+      </para>
+      <para>A few initial tests:
+        <programlisting>
+
+<xi:include href="../stripped-src/itest.cpp" parse="text"/>
+</programlisting>
+        Expressions with side effects are OK in &crpcut;
+        <function>ASSERT_*()</function> macros. They are carefully
+        designed to evaluate each parameter only once.
+      </para>
+      <para>The result of running this test program is:</para>
+        <screen>
+
+<xi:include href="../sample-output/itest.out" parse="text"/>
+</screen>
+        <para>In <type>several_elements</type> an assertion fails.
+          If the parameters to an assertion are output streamable, the
+          values are printed in the report, otherwise &crpcut; displays a
+          hex-dump of the objects memory. When an assertion fails, the test
+          process is terminated. Is it the test or the list
+          implementation that is wrong?
+        </para>
+        <para>Another way to fail a test is to use the
+          <xref linkend="FAIL" xrefstyle="select:title"/> macro. It is
+          used like the <xref linkend="INFO" xrefstyle="select:title"/>
+          macro described in <xref linkend="test-basics"
+                                   xrefstyle="select:quotedtitle"/> on the
+          previous page, but instead
+          of just printing the message, the test is terminated as a
+          failure.
+        </para>
+        <para>The second error, in <type>unlink</type>, is more interesting.
+          The expected way to leave the test function body defaults to a
+          return (or run off the end.) Leaving by exception or, as in this
+          case, by crashing, is failing. Since each test runs in its own
+          process and its own working directory, the crash is not fatal to
+          the &crpcut; execution, and the information in the core dump can
+          be used when debugging the  code. Can you spot the bug?</para>
+        <para>The full list of <function>ASSERT_*()</function> macros are:
+        <variablelist><title><function>ASSERT_*()</function> macros</title>
+          <varlistentry><term><xref linkend="ASSERT_EQ" xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert equality between two expressions.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry><term><xref linkend="ASSERT_FALSE"
+                                    xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert non-truth value of an expression.</para>
+            </listitem>
+          </varlistentry>
+
+
+          <varlistentry><term><xref linkend="ASSERT_GE"
+                                    xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert greater-than or equal relation between
+                two expressions.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry><term><xref linkend="ASSERT_GT"
+                                    xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert greater-than relation between two expressions.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry><term><xref linkend="ASSERT_LE"
+                                    xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert less-than or equal relation between two
+                expressions.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry><term><xref linkend="ASSERT_LT"
+                                    xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert less-than relation between two expressions.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry><term><xref linkend="ASSERT_NE"
+                                    xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert not-equal relation between two expressions.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry><term><xref linkend="ASSERT_NO_THROW"
+                                    xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert that an expression/statement does not throw
+                any exception.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry><term><xref linkend="ASSERT_PRED"
+                                    xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert that a predicate evaluates to true. A predicate is
+                something that looks like a function and returns a boolean.
+                For example:
+                <programlisting language="C++">
+
+    ASSERT_PRED(std::is_sorted&lt;std::vector&lt;type&gt;::iterator&gt;,
+                v.begin(), v.end());
+
+</programlisting>
+              </para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry><term><xref linkend="ASSERT_THROW"
+                                    xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert that an expression/statement throws the correct
+                exception.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry><term><xref linkend="ASSERT_TRUE"
+                                    xrefstyle="select:title"/></term>
+            <listitem>
+              <para>Assert truth value of an expression.</para>
+            </listitem>
+          </varlistentry>
+
+        </variablelist>
+      </para>
+    </section>
+    <section id="changing_expectations">
+      <title>Changing expectations</title>
+      <para>A test can fail by trapping an assertion, by leaving the
+        test function body in an unexpected way, or by leaving files
+        in the working directory. Normally, the expected way to leave
+        the test body is to return from it, or run off the end. A
+        few test <link linkend="modifiers">modifiers</link>
+        can change that, however. Consider this simple class:
+        <programlisting>
+
+<xi:include href="../stripped-src/symtable.hpp" parse="text"/>
+</programlisting>
+      </para>
+      <para>Clearly the author of the class intended to differentiate
+        between unusual situations (a name doesn't exist when looking
+        it up,) and a programming error (a NULL pointer.) A test of the
+        class should reflect that and provoke both situations. The
+        exception can be tested using
+        <xref linkend="ASSERT_THROW" xrefstyle="select:title"/>,
+        but we can also use the
+        <xref linkend="EXPECT_EXCEPTION" xrefstyle="select:title"/>
+        modifier. The assert can likewise be tested with the
+        <xref linkend="EXPECT_SIGNAL_DEATH" xrefstyle="select:title"/>
+        modifier.
+        <programlisting>
+
+<xi:include href="../stripped-src/symtable-test.cpp" parse="text"/>
+</programlisting>
+      </para>
+      <para>The <xref linkend="NO_CORE_FILE" xrefstyle="select:title"/>
+        modifier prevents a trapped assertion from dumping core. After all,
+        we expect it to crash and the core dump would be unnecessary
+        clutter.</para>
+      <para>Running this test program with the
+        <xref linkend="verbose" xrefstyle="select:title"/> (verbose)
+        command line flag, yields:
+        <screen>
+
+<xi:include href="../sample-output/symtable-test.out" parse="text"/>
+</screen>
+      </para>
+      <para>Of course, had either of the tests <type>lookup_nonexisting</type>,
+        <type>add_null</type> or <type>lookup_null</type> returned, the
+        test would've failed.
+      </para>
+    </section>
+  </chapter>
+  <chapter id="dependencies">
+    <title>Expressing dependencies</title>
+    <para>
+      With &crpcut; you can express dependencies between tests, so that a
+      test that builds on a fundamental functionality, can state a dependency
+      on a test that covers the basics. If a bug is found in the basic
+      test, the more advanced tests won't even run. This reduces clutter in
+      the test report, and help you focus on the important errors.
+    </para>
+    <para>
+      Dependencies are expressed using the
+      <xref linkend="DEPENDS_ON" xrefstyle="select:title"/> test modifier.
+      It is used as in the below program:
+      <programlisting>
+
+<xi:include href="../stripped-src/simple-depend.cpp" parse="text"/>
+      </programlisting>
+    </para>
+    <para>Running this test program yields:
+      <screen>
+
+<xi:include href="../sample-output/simple-depend.out" parse="text"/>
+</screen>
+      Instead of each test failing for the same reason, a clean
+      test report is shown with full reports from the test(s) that failed,
+      and a list of the names of the tests that were blocked from
+      running.
+    </para>
+    <para>The <xref linkend="DEPENDS_ON" xrefstyle="select:title"/>
+      modifier can only be used once for each test, but it accepts many
+      parameters. Just add as many tests as are necessary in the parameter
+      list of <xref linkend="DEPENDS_ON" xrefstyle="select:title"/>.
+    </para>
+  </chapter>
+  <chapter id="testsuites">
+    <title>Grouping tests into testsuites</title>
+    <para>It is often a good idea to group tests that verify similar
+      parts of the functionality into testsuites. In &crpcut; a
+      testsuite is a list of tests and enclosed testsuites. At the
+      out most level, tests are included in the unnamed testsuite.
+    </para>
+    <para>Testsuites are declared using the
+      <xref linkend="TESTSUITE" xrefstyle="select:title"/>
+      macro. A testsuite is a <symbol>C++</symbol> namespace with some
+      decorations attached. For example it is possible to express
+      dependencies on testsuites (i.e. the requirement that all tests
+      in a testsuite pass,) and it is possible for testsuites to depend
+      on tests and other testsuites.
+    </para>
+    <tip>Experience has shown that it is a good idea to let testsuites
+      depend on testsuites, and tests in testsuites depend on other tests
+      in the same testsuite</tip>
+    <para>Consider the simple <type>symtable</type> class from earlier:
+      <programlisting language="c++">
+
+<xi:include href="../stripped-src/symtable.hpp" parse="text"/>
+</programlisting>
+    </para>
+    <para>The following longish test program follows the recommended
+      form for testsuites with dependencies:
+      <programlisting language="c++">
+
+<xi:include href="../stripped-src/suite-example.cpp" parse="text"/>
+</programlisting>
+    </para>
+    <para>Testsuites are also useful when there is a desire to run a
+      subset of the tests. Running the above test program with
+      <xref linkend="verbose" xrefstyle="select:title"/>
+      <xref linkend="nodepend" xrefstyle="select:title"/>
+      "<type>normal_access</type>" yields:
+      <screen>
+
+<xi:include href="../sample-output/suite-example.out" parse="text"/>
+</screen>
+      (the <xref linkend="nodepend" xrefstyle="select:title"/> command
+      line flag tells &crpcut; to ignore dependencies, and
+      the <xref linkend="verbose" xrefstyle="select:title"/> command line
+      flag makes &crpcut; list also the tests that succeeds.)
+    </para>
+  </chapter>
+  <chapter id="test_fixtures">
+    <title>Fixtures for common test setups</title>
+    <para>
+      It is not uncommon for several tests to work from a configuration
+      that is common to all of them. Duplicating the same setup in each
+      test is not only boring, it is a hallmark sign of poor software
+      implementation, and also in itself error prone. A convenient way
+      of doing away with the repetition is to use test fixtures.
+    </para>
+    <para>
+      A fixture is in itself nothing but a class (or struct,) which does
+      all the configuration in the default constructor and, if necessary,
+      does cleanup in the destructor. By adding the name of the fixture
+      class (or struct) after the test name in the
+      <xref linkend="TEST" xrefstyle="select:title"/> definition, the
+      fixture is inherited by the test class. Public or protected
+      data and member functions in the fixture are available directly
+      in the test body. It is possible to list several fixtures
+      in the same <xref linkend="TEST" xrefstyle="select:title"/> definition,
+      in which case multiple inheritance is used.
+      <link linkend="fixtures">Fixtures</link> and
+      <link linkend="modifiers">modifiers</link> can be mixed in any order.
+    </para>
+    <para>The simple <type>symtable</type>, below, was introduced on previous
+      page on <xref linkend="testsuites" xrefstyle="select:quotedtitle"/>:
+      <programlisting language="c++">
+
+<xi:include href="../stripped-src/symtable.hpp" parse="text"/>
+</programlisting>
+    </para>
+    <para>
+      Some of the tests can be rewritten with fixtures to avoid
+      duplication:
+      <programlisting language="c++">
+
+<xi:include href="../stripped-src/symtable-test2.cpp" parse="text"/>
+</programlisting>
+      </para>
+    <para>Running this alternative test program yields:
+      <screen>
+
+<xi:include href="../sample-output/symtable-test2.out" parse="text"/>
+</screen>
+    </para>
+    <para>Something new here is the
+      <symbol>phase</symbol>=<constant>creating</constant> on
+      the error report for <type>add_null</type>. The <symbol>phase</symbol>
+      can take the values:
+      <variablelist>
+        <varlistentry>
+          <term><constant>creating</constant></term>
+          <listitem><para>The error was detected when running the fixture
+              constructors.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><constant>running</constant></term>
+          <listitem><para>The error was detected when running the test
+              function body.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><constant>destroying</constant></term>
+          <listitem><para>The error was detected when running the fixture
+              destructors.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><constant>post_mortem</constant></term>
+          <listitem><para>The error was detected after the death of the test
+              process.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </para>
+    <tip>Use fixtures templated on type to express parametrized tests
+      and fixtures templated on references to globals to fake passing
+      values to fixture constructors.
+      <programlisting language="c++">
+
+<xi:include href="../stripped-src/string-template-fix.cpp" parse="text"/>
+      </programlisting>
+      Running the program with the
+      <xref linkend="verbose" xrefstyle="select:title"/> (verbose) command
+      line flag yields:
+<screen>
+
+<xi:include href="../sample-output/string-template-fix.out" parse="text"/>
+</screen>
+    </tip>
+  </chapter>
+  <chapter id="floating-point">
+    <title>Comparing floating point values</title>
+    <para>
+      Rounding errors makes equality comparisons for floating point
+      values interesting. Usually a comparison with some chosen
+      precision is preferable over a direct equality comparison.
+    </para>
+    <para>
+      &crpcut; offers three different ways of making near-equality
+      comparisons for floating point values, each with its own
+      pros and cons.
+    </para>
+    <variablelist>
+      <varlistentry>
+        <term><xref linkend="abs_diff" xrefstyle="select:title"/></term>
+        <listitem>
+          <para>Verify that the difference between two floating point
+            numbers is not greater than a defined maximum. This works
+            well when comparing numbers near zero, but is not very
+            useful otherwise</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><xref linkend="relative_diff" xrefstyle="select:title"/></term>
+        <listitem>
+          <para>Verify that the quotient between two floating point
+            numbers does not differ by more than a defined maximum. This works
+            very well for large numbers, but is very unsuitable for
+            numbers near zero.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><xref linkend="ulps_diff" xrefstyle="select:title"/></term>
+        <listitem>
+          <para>Verify that two floating point numbers do not differ
+            by more than a maximum defined number of possible floating
+            point number representations. This works very well over the
+            entire range of floating point value, but is unfortunately
+            only supported on <ulink url="http://www.intel.com">intel</ulink>
+            x86 compatibles, and only for 32-bit <type>float</type> and
+            64-bit <type>double</type>.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+    <para>All three near-equality comparators are used in the same way,
+      using <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> and
+      <xref linkend="match" xrefstyle="select:title"/>. An example using
+      <xref linkend="ulps_diff" xrefstyle="select:title"/>:
+      <programlisting language="c++">
+
+<xi:include href="../stripped-src/ulps_diff.cpp" parse="text"/>
+</programlisting>
+    </para>
+    <para>
+      Running this test program yields:
+      <screen>
+
+<xi:include href="../sample-output/ulps_diff.out" parse="text"/>
+</screen>
+    </para>
+    <para>If you are not confident with the details of floating point
+      calculations, David Goldberg's
+      <ulink url="http://docs.sun.com/source/806-3568/ncg_goldberg.html">What
+        Every Computer Scientist Should Know About Floating-Point
+        Arithmetic</ulink> is a must read. More information about
+      comparing equality between floating point numbers, including a
+      detailed description of the ULPS notion is available from
+      <ulink url="http://www.cygnus.com">Cygnus</ulink> in the paper on
+      <ulink url="http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm">comparing
+        floating point numbers</ulink>.
+    </para>
+    <caution>If you use calculations with <type>long double</type> 80-bit
+      floating point numbers, and run in
+      <ulink url="www.valgrind.org">valgrind</ulink>, your results may
+      disappoint, since <ulink url="www.valgrind.org">valgrind</ulink>
+      uses 64-bit precision for the 80-bit floating point arithmetic
+      operations.
+    </caution>
+  </chapter>
+  <chapter id="strings">
+    <title>Comparing strings</title>
+    <section id="matching_regex">
+      <title>Matching strings with regular expressions</title>
+      <para>
+        Regular expression matching is used with
+        <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> and
+        <xref linkend="match" xrefstyle="select:title"/> instantiated
+        with <xref linkend="regex" xrefstyle="select:title"/>. This is
+        easiest to show with an example:
+        <programlisting language="c++">
+
+<xi:include href="../stripped-src/regex-simple.cpp" parse="text"/>
+        </programlisting>
+      </para>
+      <para>
+        The flag <type>crpcut::regex::</type><constant>e</constant>
+        matches the string against an extended regular expression. Other
+        flags are <type>crpcut::regex::</type><constant>i</constant> for
+        ignoring case, and <type>crpcut::regex::</type><constant>m</constant>
+        for multi line patterns.
+      <note>Careful with patterns containing <quote>\</quote>, since
+        C/C++ interprets them as character escapes.</note>
+ The output from the short test program is:
+        <screen>
+
+<xi:include href="../sample-output/regex-simple.out" parse="text"/>
+</screen>
+      </para>
+      <note>With <type>crpcut::regex</type> you can only assert that strings
+        match a regular expression. If you need more advanced functionality,
+        for example picking substrings for decisions, you have to use
+        either <function>regcomp()</function> and <function>regexec()</function>,
+        or <symbol>C++</symbol> <type>std::regex</type> if your compiler
+        supports it.</note>
+      <tip>The site
+        <ulink url="http://www.regular-expressions.info">http://www.regular-expressions.info</ulink>
+        contains a wealth of info on regular expressions, if you feel
+        rusty.</tip>
+    </section>
+    <section id="collating_strings">
+      <title>Collating strings using a locale</title>
+      <para>
+        Collating strings is to compare their sort order, according to the
+        rules of a locale. The result of a comparison may be different
+        depending on the locale used.
+      </para>
+      <para>With &crpcut; it is easy to make the comparison.
+        The result of <type>crpcut::</type><function>collate</function>
+        can be compared against a string using the comparison operators
+        &lt;, &lt;=, !=, ==, &gt;=, and &gt; using the
+        <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> or the
+        <xref linkend="ASSERT_TRUE" xrefstyle="select:title"/> macro.
+        <note>Operator == in a collation check does not mean strict
+          equality, but rather that the left hand side and right hand
+          side are equitable in the sort order of by the locale.
+        </note>
+        Consider this class that can represent a range of names
+        sorted in a desired locale:
+        <programlisting language="c++">
+<xi:include href="../stripped-src/sorted-names.hpp" parse="text"/>
+</programlisting>
+      </para>
+      <para>Working with locales in C++ is a headache, but writing
+        the test program with &crpcut; isn't too bad:
+        <programlisting language="c++">
+<xi:include href="../stripped-src/collate_example.cpp" parse="text"/>
+</programlisting>
+      </para>
+      <para>
+        See <xref linkend="test_fixtures" xrefstyle="select:quotedtitle"/>
+        for more information on using fixtures to reduce code repetition
+        in tests.</para>
+      <para>The result of the run is:
+        <screen>
+
+<xi:include href="../sample-output/collate_example.out" parse="text"/>
+</screen>
+        </para>
+      <para>
+        Collations can be tested after translation to upper- or lower-case
+        using a templated version of <type>crpcut::collate</type>. Please
+        see <xref linkend="collate" xrefstyle="select:title"/> in the
+        reference manual for details.
+      </para>
+    </section>
+  </chapter>
+  <chapter id="using-gmock">
+    <title>Using google mock</title>
+    <para>
+    Using <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
+    with &crpcut; is straight forward. The only important thing to keep in
+    mind is to always <symbol>#include &lt;gmock/gmock.h&gt;</symbol>
+    before <symbol>#include &lt;crpcut.hpp&gt;</symbol>, and to link
+    your test program with <symbol>-lgmock</symbol>, <symbol>-lgtest</symbol>
+    and, of course also <symbol>-lcrpcut</symbol>
+    </para>
+    <tip>
+      Experience has shown that it's beneficial to use fixtures to set up
+      common mock sequences. See
+      <xref linkend="test_fixtures" xrefstyle="select:quotedtitle"/> for
+      information on writing fixtures.
+    </tip>
+    <para>A simple example using mock objects:
+        <programlisting language="c++">
+<xi:include href="../stripped-src/gmock-example.cpp" parse="text"/>
+</programlisting>
+    </para>
+    <para>The result from running the test program is:
+        <screen>
+
+<xi:include href="../sample-output/gmock-example.out" parse="text"/>
+</screen>
+    </para>
+    <para>As expected,
+      <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
+      finds and reports errors, both directly when being called with the
+      wrong values, and during fixture destruction time if
+      required calls haven't been made. Please refer to the documentation
+      on <ulink url="http://code.google.com/p/googlemock">http://code.google.com/p/googlemock</ulink>
+      for information about how to use google-mock.
+    </para>
+  </chapter>
+  <chapter id="heap-management">
+    <title>Heap Management</title>
+    <para>Finding memory leaks can be tricky, and testing behavior under
+      out of memory situations even trickier still. With &crpcut; both
+      are easy, since &crpcut; provides simple access to query and limit
+      the heap.
+    </para>
+    <para>
+      The function
+      <type>size_t</type> <type>crpcut::heap::</type><function>allocated_bytes</function>()
+      is used to ask the heap how much memory is allocated on the heap.
+      The number returned is the sum of bytes allocated, sans any overhead,
+      i.e. it is the sum of the size arguments to all calls to
+      <function>malloc</function>(),  <function>calloc</function>(),
+      <function>realloc</function>(), <function>operator new</function> and
+      <function>operator new[]</function>.
+    </para>
+    <tip>Use a fixture that compares allocated bytes at destruction time
+      with allocated bytes at construction time. If they aren't equal,
+      the test has leaked.</tip>
+    <para>The heap can also be limited with the function
+      <type>size_t</type> <type>crpcut::heap::</type><function>set_limit</function>(<type>size_t</type> <parameter>bytes</parameter>).
+    </para>
+    <para>The parameter <parameter>bytes</parameter> is the maximum number of
+      bytes that is allowed to allocate from the heap. The return value is the
+      previous limit. There is a special value
+      <type>crpcut::heap::</type><constant>system</constant>, which removes
+      any artificial limitations.
+    </para>
+    <para>Here's a function and helper class that casts between types by means
+      of interpreting the stream representation.
+      <programlisting language="c++">
+
+<xi:include href="../stripped-src/stream-cast.hpp" parse="text"/>
+</programlisting>
+
+      </para>
+    <para>Below is a small test program to verify its correctness. It
+      includes a memory leak check and a low memory situation:
+      <programlisting language="c++">
+
+<xi:include href="../stripped-src/heap-check.cpp" parse="text"/>
+</programlisting>
+
+      </para>
+    <para>Running the test yields:
+      <screen>
+
+<xi:include href="../sample-output/heap-check.out" parse="text"/>
+</screen>
+    </para>
+    <para>No memory leaks, that's the good news, but that it silently
+      provides the wrong answer under low-memory situations, that is
+      very bad. Can you see why?
+    </para>
+  </chapter>
+  <chapter id="lib-stubs">
+    <title>Stubbing library functions</title>
+    <para>You can safely roll your own versions of functions like
+      <function>fork</function>() and <function>clock_gettime</function>().
+      &crpcut; make all library calls through <function>dlopen</function>() and
+      <function>dlsym</function>(), and will not be affected by your
+      versions<footnote><para>You can't easily provide your own
+        <function>dlopen</function>(), <function>dlsym</function>() or
+        <function>dlclose</function>()
+        however.</para></footnote><footnote><para>Rolling
+        your own <function>malloc</function>(), <function>calloc</function>(),
+        <function>realloc</function>(), <function>free</function>(),
+        <function>operator new</function>(),
+        <function>operator delete</function>(),
+        <function>operator new</function>[]() and
+        <function>operator delete</function>[]() is not only hard work,
+        but largely unnecessary since &crpcut; provides functions you
+        can control. See the chapter on
+        <xref linkend="heap-management"
+              xrefstyle="select:quotedtitle"/>.</para></footnote>
+    </para>
+    <para>
+      Sometimes, however, replacing a library function is not what you want,
+      but rather to enclose it inside a wrapper that does filtering and
+      error injection. You can do that with the help of the macros
+      <xref linkend="CRPCUT_WRAP_FUNC" xrefstyle="select:title"/> and
+      <xref linkend="CRPCUT_WRAP_V_FUNC" xrefstyle="select:title"/>. Here's
+      classic difficult situation, with a process that spawns a child and
+      interacts with it:
+      <programlisting lanuage="c++">
+
+<xi:include href="../stripped-src/process-example.hpp" parse="text"/>
+</programlisting>
+    </para>
+    <para>In this case, simple stubs are used to provide preprogrammed
+      behaviour, and fall back to the normal library function when nothing
+      preprogrammed exists.</para>
+    <para>The test program is a bit long, but take some time to read
+      it through. For each wrapped library function, there is a
+      configuration in the shape of a list. If the list is
+      empty, the normal function applies, otherwise the behaviour mandated
+      by the list-item is carried out. <function>pipe</function>()
+      calls the library function, unless explicitly instructed to fail,
+      but stores the allocated file descriptors for later use.
+      <function>close</function>() always calls the library function,
+      but if the file descriptors are allocated with <function>pipe</function>,
+      they are verified to be in valid state.</para>
+    <caution>
+      Your versions of the library functions are in effect for all tests
+      in the entire program. Make sure they have a decent default behaviour
+      to save yourself from debugging headaches.
+    </caution>
+    <para>A short walkthrough of the tests:
+      <variablelist>
+        <varlistentry>
+          <term><type>fork_fails</type></term>
+          <listitem>
+            <para>Only one configuration which ensures that
+              <function>fork</function>() fails with
+              <constant>ENOMEM</constant>.
+              Verify that <type>work::fork_exception</type> is thrown.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><type>pipe_fails</type></term>
+          <listitem>
+            <para>Onfy one configuration which ensures that
+              <function>pipe</function>() fails with
+              <constant>EMFILE</constant>.
+              Verify that the constructor throws
+              <type>work::pipe_exception</type>
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><type>read_one_string</type></term>
+          <listitem>
+            <para>The complex one, where all library function wrappers
+              are strictly controlled. <function>fork</function>() will
+              return a <type>pid</type>, thus testing the parent process
+              behaviour.</para>
+            <para>
+              The <function>pipe</function>() wrapper lets the calls
+              to the library function through, but it stores the
+             allocated file descriptors for use by the
+              <function>read</function>(), <function>write</function>()
+              and <function>close</function> stubs.
+            </para>
+            <para>The <function>read</function>() and
+              <function>write</function>() functions are stubbed
+              completely to verify the correct file descriptor, provide
+              predefined data from the faked child process, and
+              verify that the data written back is correct.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><type>signal_on_read</type></term>
+          <listitem>
+            <para>Similar to <type>read_one_string</type> above, but
+              the second read is set to return -1 and set
+              <parameter>errno</parameter> to <constant>EINTR</constant>,
+              to indicate that the call was interrupted by a signal.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><type>normal_work</type></term>
+          <listitem>
+            <para>
+              It doesn't set up any configurations for any of the wrapped
+              library functions, so for this test, the normal libc
+              implementations are run unconstrained. It will, in other
+              words, behave as in a real program.
+            </para>
+          </listitem>
+        </varlistentry>
+
+      </variablelist>
+
+      <programlisting lanuage="c++">
+
+<xi:include href="../stripped-src/process-test.cpp" parse="text"/>
+</programlisting>
+    </para>
+    <para>The result of running the test program is:
+      <screen>
+
+<xi:include href="../sample-output/process-test.out" parse="text"/>
+</screen>
+    </para>
+    <para>The stubbed tests worked out well, except for
+      <type>signal_on_read</type>, but that was pretty obvious
+      from reading the code. But why did the test with the real
+      library functions fail?</para>
+    <para>There are so many things wrong with this case, it's actually a
+      race for several failures:
+      <itemizedlist>
+        <listitem><para>The parent process expects to read, but the
+            child process doesn't produce any data, so the parent hangs.</para>
+        </listitem>
+        <listitem>
+          <para>The constructor returns also in the child process, making the
+            child process continue in its copy of the test, calling
+            <parameter>obj</parameter>.<function>get_data</function>()
+            and thus <function>read</function>(), which fails
+            because the read file descriptor is closed. The error report
+            from the failed <function>ASSERT_EQ</function> discovers that
+            it's a runaway child and kills the whole process group.
+          </para>
+        </listitem>
+        <listitem><para>Had the child exited instead of returned from
+            the constructor, the parent would've received a
+            <constant>SIGCHLD</constant>. Since it ignores that signal,
+            nothing would have been gained, and that might be lucky.
+            With the nonexisting return value check, it would've failed to
+            notice the signal, and might've returned an empty string,
+            as expected by the test.
+          </para>
+        </listitem>
+      </itemizedlist>
+      Fortunately &crpcut; is robust against this kind of abuse, so no
+      harm is done. Unfortunately the details of the report aren't too
+      impressive, but death on <constant>SIGKILL</constant> is a hint
+      on where to look.
+    </para>
+  </chapter>
+  <chapter id="predicates">
+    <title>Writing predicates</title>
+    <para>A predicate is anything that can be called as if it was a
+      function, and that returns something that can be used as a
+      <type>bool</type>. Examples of predicates are functions (of course,)
+      pointers to functions, instances of classes that implement
+      <function>operator ()()</function>.
+    </para>
+    <para>Predicates are used with
+      <xref linkend="ASSERT_PRED" xrefstyle="select:title"/>. Logically
+      <function>ASSERT_PRED</function>(<constant>predicate</constant>,
+      <parameter>param1</parameter>, <parameter>param2</parameter>,
+      ...<parameter>paramN</parameter>) is identical with
+      <function>ASSERT_TRUE</function>(<function>predicate</function>(<parameter>param1</parameter>, <parameter>param2</parameter>,
+      ...<parameter>paramN</parameter>)). The difference lies in error
+      reporting. <xref linkend="ASSERT_PRED" xrefstyle="select:title"/>
+      will list the value of each of the parameters in a violation
+      report, whereas
+      <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> will only
+      include the result.
+    </para>
+    <para>The below example uses both versions:
+      <programlisting>
+
+<xi:include href="../stripped-src/simple-pred.cpp" parse="text"/>
+</programlisting>
+    </para>
+    <para>The result shows the difference clearly
+      <screen>
+
+<xi:include href="../sample-output/simple-pred.out" parse="text"/>
+</screen>
+      </para>
+    <para>
+      If a predicate has an output-stream operator defined,
+      it will be called when making violation reports.
+    </para>
+    <para>
+      Sometimes you may want the type of the predicate object to be
+      determined by the types of one or several expressions.
+      &crpcut; solves that  with the function template
+      <type>crpcut::</type><function>match</function>&lt;pred_type&gt;(),
+      together with the traits class template <type>crpcut::match_traits</type>.
+      By default, the type returned from
+      <type>crpcut::</type><function>match</function>&lt;<type>pred_type</type>&gt;()
+      is <type>pred_type</type>, and the object constructor is called
+      with the parameters to
+      <type>crpcut::</type><function>match</function>&lt;pred_type&gt;().
+      However, you can override the traits class template
+      <type>crpcut::match_traits</type> for your predicate class, to provide
+      a better suitable type, for example a specialization on the
+      parameters.
+    </para>
+    <para>The above example now generalized, is unsurprisingly longer, and
+      slightly different:
+      <programlisting>
+
+<xi:include href="../stripped-src/template-pred.cpp" parse="text"/>
+</programlisting>
+    </para>
+    <para>The result from running the test program is:
+      <screen>
+
+<xi:include href="../sample-output/template-pred.out" parse="text"/>
+</screen>
+    </para>
+    <para>
+      What may be less obvious is that the above three tests instantiated
+      <type>is_substring::implementation&lt;const char*&gt;</type>
+      for the first two versions, and
+      <type>is_substring::implementation&lt;std::string&gt;</type>
+      for the last.
+    </para>
+  </chapter>
+</book>
