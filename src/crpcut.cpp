@@ -56,29 +56,31 @@ namespace crpcut {
   }
 
   void test_case_factory
-  ::do_set_deadline(implementation::test_case_registrator *i)
+  ::do_set_deadline(implementation::crpcut_test_case_registrator *i)
   {
-    assert(i->deadline_is_set());
+    assert(i->crpcut_deadline_is_set());
     deadlines.push_back(i);
     std::push_heap(deadlines.begin(), deadlines.end(),
-                   &implementation::test_case_registrator::timeout_compare);
+                   &implementation::crpcut_test_case_registrator
+                   ::crpcut_timeout_compare);
   }
 
   void test_case_factory
-  ::do_clear_deadline(implementation::test_case_registrator *i)
+  ::do_clear_deadline(implementation::crpcut_test_case_registrator *i)
   {
-    assert(i->deadline_is_set());
+    assert(i->crpcut_deadline_is_set());
     for (size_t n = 0; n < deadlines.size(); ++n)
       {
         if (deadlines[n] == i)
           {
-            using implementation::test_case_registrator;
+            using implementation::crpcut_test_case_registrator;
             for (;;)
               {
                 size_t m = (n+1)*2-1;
                 if (m >= deadlines.size() - 1) break;
-                if (test_case_registrator::timeout_compare(deadlines[m+1],
-                                                           deadlines[m]))
+                if (crpcut_test_case_registrator
+                    ::crpcut_timeout_compare(deadlines[m+1],
+                                             deadlines[m]))
                   {
                     deadlines[n] = deadlines[m];
                   }
@@ -614,18 +616,19 @@ namespace crpcut {
         using namespace implementation;
 
         int timeout_ms = deadlines.size()
-          ? int(deadlines.front()->ms_until_deadline())
+          ? int(deadlines.front()->crpcut_ms_until_deadline())
           : -1;
         polltype::descriptor desc = poller.wait(timeout_ms);
 
         if (desc.timeout())
           {
             assert(deadlines.size());
-            test_case_registrator *i = deadlines.front();
+            crpcut_test_case_registrator *i = deadlines.front();
             std::pop_heap(deadlines.begin(), deadlines.end(),
-                          &test_case_registrator::timeout_compare);
+                          &crpcut_test_case_registrator
+                          ::crpcut_timeout_compare);
             deadlines.pop_back();
-            i->kill();
+            i->crpcut_kill();
             continue;
           }
         bool read_failed = false;
@@ -636,18 +639,17 @@ namespace crpcut {
         if (read_failed || desc.hup())
           {
             desc->unregister();
-            test_case_registrator *r = desc->get_registrator();
-            if (!r->has_active_readers())
+            crpcut_test_case_registrator *r = desc->get_registrator();
+            if (!r->crpcut_has_active_readers())
               {
-                r->manage_death();
-                //   ++num_tests_run;
+                r->crpcut_manage_death();
                 --pending_children;
               }
           }
       }
   }
 
-  void test_case_factory::start_test(implementation::test_case_registrator *i)
+  void test_case_factory::start_test(implementation::crpcut_test_case_registrator *i)
   {
     ++num_tests_run;
     if (!tests_as_child_procs())
@@ -665,7 +667,7 @@ namespace crpcut {
 
     int wd = first_free_working_dir;
     first_free_working_dir = working_dirs[wd];
-    i->set_wd(wd);
+    i->crpcut_set_wd(wd);
 
     ::pid_t pid;
     for (;;)
@@ -688,18 +690,18 @@ namespace crpcut {
         stderr.close();
         p2c.close();
         c2p.close();
-        i->goto_wd();
+        i->crpcut_goto_wd();
         i->crpcut_run_test_case();
         wrapped::exit(0);
       }
 
     // parent
     ++pending_children;
-    i->setup(pid,
-             c2p.for_reading(pipe_pair::release_ownership),
-             p2c.for_writing(pipe_pair::release_ownership),
-             stdout.for_reading(pipe_pair::release_ownership),
-             stderr.for_reading(pipe_pair::release_ownership));
+    i->crpcut_setup(pid,
+                    c2p.for_reading(pipe_pair::release_ownership),
+                    p2c.for_writing(pipe_pair::release_ownership),
+                    stdout.for_reading(pipe_pair::release_ownership),
+                    stderr.for_reading(pipe_pair::release_ownership));
     manage_children(num_parallel);
   }
 
@@ -822,14 +824,15 @@ namespace crpcut {
                   "-l must be followed by a (possibly empty) test case list\n";
                 return -1;
               }
-            for (implementation::test_case_registrator *i = reg.get_next();
+            for (implementation::crpcut_test_case_registrator *i
+                   = reg.crpcut_get_next();
                  i != &reg;
-                 i = i->get_next())
+                 i = i->crpcut_get_next())
               {
                 bool matched = !*names;
                 for (const char **name = names; !matched && *name; ++name)
                   {
-                    matched = i->match_name(*name);
+                    matched = i->crpcut_match_name(*name);
                   }
                 if (matched) std::cout << *i << '\n';
               }
@@ -909,7 +912,7 @@ namespace crpcut {
         }
       const char **names = p;
         {
-          implementation::test_case_registrator *i = reg.get_next();
+          implementation::crpcut_test_case_registrator *i = reg.crpcut_get_next();
           while (i != &reg)
             {
               ++num_registered_tests;
@@ -917,30 +920,30 @@ namespace crpcut {
                 {
                   for (const char **name = names; *name; ++name)
                     {
-                      if (i->match_name(*name)) goto found;
+                      if (i->crpcut_match_name(*name)) goto found;
                     }
-                  i = i->unlink();
+                  i = i->crpcut_unlink();
                   continue;
                 }
             found:
               ++num_selected_tests;
-              i = i->get_next();
+              i = i->crpcut_get_next();
             }
         }
       for (;;)
         {
           bool progress = false;
-          implementation::test_case_registrator *i = reg.get_next();
+          implementation::crpcut_test_case_registrator *i = reg.crpcut_get_next();
           while (i != &reg)
             {
               if (!nodeps && !i->crpcut_can_run())
                 {
-                  i = i->get_next();
+                  i = i->crpcut_get_next();
                   continue;
                 }
               progress = true;
               start_test(i);
-              i = i->unlink();
+              i = i->crpcut_unlink();
               if (!tests_as_child_procs())
                 {
                   return 0;
@@ -987,15 +990,16 @@ namespace crpcut {
             }
         }
 
-      if (reg.get_next() != &reg)
+      if (reg.crpcut_get_next() != &reg)
         {
           if (output_fd != 1 && !quiet)
             {
               std::cout << "Blocked tests:\n";
             }
-          for (implementation::test_case_registrator *i = reg.get_next();
+          for (implementation::crpcut_test_case_registrator *i
+                 = reg.crpcut_get_next();
                i != &reg;
-               i = i->get_next())
+               i = i->crpcut_get_next())
             {
               out.blocked_test(i);
               if (output_fd != 1 && !quiet)

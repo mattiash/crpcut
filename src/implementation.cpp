@@ -107,14 +107,14 @@ namespace crpcut {
       assert(reg != 0);
       fd_ = fd;
       poller.add_fd(fd_, this);
-      reg->activate_reader();
+      reg->crpcut_activate_reader();
     }
 
     void fdreader::unregister()
     {
       assert(fd_ != 0);
       assert(reg != 0);
-      reg->deactivate_reader();
+      reg->crpcut_deactivate_reader();
       poller.del_fd(fd_);
       fd_ = 0;
     }
@@ -141,8 +141,8 @@ namespace crpcut {
       size_t bytes_read = 0;
       if (t == comm::set_timeout)
         {
-          assert(len == sizeof(reg->absolute_deadline_ms));
-          assert(!reg->deadline_is_set());
+          assert(len == sizeof(reg->crpcut_absolute_deadline_ms));
+          assert(!reg->crpcut_deadline_is_set());
           clocks::monotonic::timestamp ts;
           char *p = static_cast<char*>(static_cast<void*>(&ts));
           while (bytes_read < len)
@@ -153,19 +153,19 @@ namespace crpcut {
               bytes_read += rv;
             }
           ts+= clocks::monotonic::timestamp_ms_absolute();
-          reg->absolute_deadline_ms = ts;
-          reg->deadline_set = true;
+          reg->crpcut_absolute_deadline_ms = ts;
+          reg->crpcut_deadline_set = true;
           do {
             rv = wrapped::write(response_fd, &len, sizeof(len));
           } while (rv == -1 && errno == EINTR);
-          assert(reg->deadline_is_set());
+          assert(reg->crpcut_deadline_is_set());
           test_case_factory::set_deadline(reg);
           return true;
         }
       if (t == comm::cancel_timeout)
         {
           assert(len == 0);
-          reg->clear_deadline();
+          reg->crpcut_clear_deadline();
           do {
             rv = wrapped::write(response_fd, &len, sizeof(len));
           } while (rv == -1 && errno == EINTR);
@@ -186,47 +186,50 @@ namespace crpcut {
       switch (t)
         {
         case comm::begin_test:
-          reg->phase = running;
+          reg->crpcut_phase = running;
           return true;
         case comm::end_test:
-          reg->phase = destroying;
+          reg->crpcut_phase = destroying;
           return true;
         default:
           ; // silence warning
         }
-      test_case_factory::present(reg->get_pid(), t, reg->phase, len, buff);
+      test_case_factory::present(reg->crpcut_get_pid(), t, reg->crpcut_phase,
+                                 len, buff);
       if (t == comm::exit_ok || t == comm::exit_fail)
         {
-          if (!reg->death_note && reg->deadline_is_set())
+          if (!reg->crpcut_death_note && reg->crpcut_deadline_is_set())
             {
-              reg->clear_deadline();
+              reg->crpcut_clear_deadline();
             }
-          reg->death_note = true;
+          reg->crpcut_death_note = true;
         }
       return true;
     }
 
 
-    test_case_registrator
-    ::test_case_registrator(const char *name,
-                            const namespace_info &ns)
-      : name_(name),
-        ns_info(&ns),
-        next(&test_case_factory::obj().reg),
-        prev(test_case_factory::obj().reg.prev),
-        death_note(false),
-        rep_reader(this),
-        stdout_reader(this),
-        stderr_reader(this),
-        phase(creating)
+    crpcut_test_case_registrator
+    ::crpcut_test_case_registrator(const char *name,
+                                   const namespace_info &ns)
+      : crpcut_name_(name),
+        crpcut_ns_info(&ns),
+        crpcut_next(&test_case_factory::obj().reg),
+        crpcut_prev(test_case_factory::obj().reg.crpcut_prev),
+        crpcut_death_note(false),
+        crpcut_rep_reader(this),
+        crpcut_stdout_reader(this),
+        crpcut_stderr_reader(this),
+        crpcut_phase(creating)
     {
-      test_case_factory::obj().reg.prev = this;
-      prev->next = this;
+      test_case_factory::obj().reg.crpcut_prev = this;
+      crpcut_prev->crpcut_next = this;
     }
 
-    bool test_case_registrator::match_name(const char *name_param) const
+    bool
+    crpcut_test_case_registrator
+    ::crpcut_match_name(const char *name_param) const
     {
-      const char *p = ns_info->match_name(name_param);
+      const char *p = crpcut_ns_info->match_name(name_param);
       if (p)
         {
           if (p != name_param || *p == ':')
@@ -240,21 +243,29 @@ namespace crpcut {
         {
           p = name_param;
         }
-      return crpcut::wrapped::strcmp(p, name_) == 0;
+      return crpcut::wrapped::strcmp(p, crpcut_name_) == 0;
     }
 
-    std::size_t test_case_registrator::full_name_len() const
+    std::size_t
+    crpcut_test_case_registrator
+    ::crpcut_full_name_len() const
     {
-      return ns_info->full_name_len() + 2 + wrapped::strlen(name_);
+      return crpcut_ns_info->full_name_len()
+        + 2
+        + wrapped::strlen(crpcut_name_);
     }
 
-    std::ostream &test_case_registrator::print_name(std::ostream &os) const
+    std::ostream &
+    crpcut_test_case_registrator
+    ::crpcut_print_name(std::ostream &os) const
     {
-      os << *ns_info;
-      return os << name_;
+      os << *crpcut_ns_info;
+      return os << crpcut_name_;
     }
 
-    void test_case_registrator::manage_test_case_execution(test_case_base* p)
+    void
+    crpcut_test_case_registrator
+    ::crpcut_manage_test_case_execution(test_case_base* p)
     {
       comm::report(comm::begin_test, 0, 0);
 
@@ -285,52 +296,61 @@ namespace crpcut {
         }
     }
 
-    void test_case_registrator::kill()
+    void
+    crpcut_test_case_registrator
+    ::crpcut_kill()
     {
-      wrapped::kill(pid_, SIGKILL);
-      death_note = true;
-      deadline_set = false;
+      wrapped::kill(crpcut_pid_, SIGKILL);
+      crpcut_death_note = true;
+      crpcut_deadline_set = false;
       static const char msg[] = "Timed out - killed";
       crpcut_register_success(false);
-      test_case_factory::present(pid_,
+      test_case_factory::present(crpcut_pid_,
                                  comm::exit_fail,
-                                 phase,
+                                 crpcut_phase,
                                  sizeof(msg) - 1,
                                  msg);
     }
 
-    unsigned long test_case_registrator::ms_until_deadline() const
+    unsigned long
+    crpcut_test_case_registrator
+    ::crpcut_ms_until_deadline() const
     {
       clocks::monotonic::timestamp now
         = clocks::monotonic::timestamp_ms_absolute();
-      long diff = absolute_deadline_ms - now;
+      long diff = crpcut_absolute_deadline_ms - now;
       return diff < 0 ? 0UL : diff;
     }
 
-    void test_case_registrator::clear_deadline()
+    void
+    crpcut_test_case_registrator
+    ::crpcut_clear_deadline()
     {
-      assert(deadline_is_set());
+      assert(crpcut_deadline_is_set());
       test_case_factory::clear_deadline(this);
-      deadline_set = false;
+      crpcut_deadline_set = false;
     }
 
-    void test_case_registrator::setup(pid_t pid,
-                                      int in_fd, int out_fd,
-                                      int stdout_fd,
-                                      int stderr_fd)
+    void
+    crpcut_test_case_registrator
+    ::crpcut_setup(pid_t pid,
+                   int in_fd, int out_fd,
+                   int stdout_fd,
+                   int stderr_fd)
     {
-      pid_ = pid;
-      stdout_reader.set_fd(stdout_fd);
-      stderr_reader.set_fd(stderr_fd);
-      rep_reader.set_fds(in_fd, out_fd);
+      crpcut_pid_ = pid;
+      crpcut_stdout_reader.set_fd(stdout_fd);
+      crpcut_stderr_reader.set_fd(stderr_fd);
+      crpcut_rep_reader.set_fds(in_fd, out_fd);
       stream::toastream<1024> os;
       os << *this;
       test_case_factory::introduce_name(pid, os.begin(), os.size());
     }
 
-    void test_case_registrator::set_wd(int n)
+    void
+    crpcut_test_case_registrator::crpcut_set_wd(int n)
     {
-      dirnum = n;
+      crpcut_dirnum = n;
       stream::toastream<std::numeric_limits<int>::digits/3+1> name;
       name << n << '\0';
       if (wrapped::mkdir(name.begin(), 0700) != 0)
@@ -339,10 +359,12 @@ namespace crpcut {
         }
     }
 
-    void test_case_registrator::goto_wd() const
+    void
+    crpcut_test_case_registrator
+    ::crpcut_goto_wd() const
     {
       stream::toastream<std::numeric_limits<int>::digits/3+1> name;
-      name << dirnum << '\0';
+      name << crpcut_dirnum << '\0';
       if (wrapped::chdir(name.begin()) != 0)
         {
           comm::report(comm::exit_fail, "Couldn't chdir working dir");
@@ -351,89 +373,93 @@ namespace crpcut {
     }
 
 
-    void test_case_registrator::manage_death()
+    void
+    crpcut_test_case_registrator
+    ::crpcut_manage_death()
     {
       ::siginfo_t info;
       for (;;)
         {
-          int rv = wrapped::waitid(P_PID, pid_, &info, WEXITED);
+          int rv = wrapped::waitid(P_PID, crpcut_pid_, &info, WEXITED);
           int n = errno;
           if (rv == -1 && n == EINTR) continue;
           assert(rv == 0);
           break;
         }
       assert(!crpcut_succeeded());
-      if (!death_note && deadline_is_set())
+      if (!crpcut_death_note && crpcut_deadline_is_set())
         {
-          clear_deadline();
+          crpcut_clear_deadline();
         }
       comm::type t = comm::exit_ok;
       {
         stream::toastream<std::numeric_limits<int>::digits/3+1> dirname;
-        dirname << dirnum << '\0';
+        dirname << crpcut_dirnum << '\0';
         if (!is_dir_empty(dirname.begin()))
           {
             stream::toastream<1024> tcname;
             tcname << *this << '\0';
-            test_case_factory::present(pid_, comm::dir, phase, 0, 0);
+            test_case_factory::present(crpcut_pid_, comm::dir, crpcut_phase,
+                                       0, 0);
             wrapped::rename(dirname.begin(), tcname.begin());
             t = comm::exit_fail;
             crpcut_register_success(false);
           }
       }
 
-      if (!death_note)
+      if (!crpcut_death_note)
         {
           stream::toastream<1024> out;
-            {
-
-              switch (info.si_code)
+          {
+            switch (info.si_code)
+              {
+              case CLD_EXITED:
                 {
-                case CLD_EXITED:
-                  {
-                    if (!crpcut_failed())
-                      {
-                        if (!crpcut_is_expected_exit(info.si_status))
-                          {
-                            phase = post_mortem;
-                            out << "Exited with code "
-                                << info.si_status << "\nExpected ";
-                            crpcut_expected_death(out);
-                            t = comm::exit_fail;
-                          }
-                      }
-                  }
-                  break;
-                case CLD_KILLED:
-                  {
-                    if (!crpcut_failed())
-                      {
-                        if (!crpcut_is_expected_signal(info.si_status))
-                          {
-                            phase = post_mortem;
-                            out << "Died on signal "
-                                << info.si_status << "\nExpected ";
-                            crpcut_expected_death(out);
-                            t = comm::exit_fail;
-                          }
-                      }
-                  }
-                  break;
-                case CLD_DUMPED:
-                  out << "Died with core dump";
-                  t = comm::exit_fail;
-                  break;
-                default:
-                  out << "Died for unknown reason, code=" << info.si_code;
-                  t = comm::exit_fail;
+                  if (!crpcut_failed())
+                    {
+                      if (!crpcut_is_expected_exit(info.si_status))
+                        {
+                          crpcut_phase = post_mortem;
+                          out << "Exited with code "
+                              << info.si_status << "\nExpected ";
+                          crpcut_expected_death(out);
+                          t = comm::exit_fail;
+                        }
+                    }
                 }
-            }
-          death_note = true;
-          test_case_factory::present(pid_, t, phase, out.size(), out.begin());
+                break;
+              case CLD_KILLED:
+                {
+                  if (!crpcut_failed())
+                    {
+                      if (!crpcut_is_expected_signal(info.si_status))
+                        {
+                          crpcut_phase = post_mortem;
+                          out << "Died on signal "
+                              << info.si_status << "\nExpected ";
+                          crpcut_expected_death(out);
+                          t = comm::exit_fail;
+                        }
+                    }
+                }
+                break;
+              case CLD_DUMPED:
+                out << "Died with core dump";
+                t = comm::exit_fail;
+                break;
+              default:
+                out << "Died for unknown reason, code=" << info.si_code;
+                t = comm::exit_fail;
+              }
+          }
+          crpcut_death_note = true;
+          test_case_factory::present(crpcut_pid_, t, crpcut_phase,
+                                     out.size(), out.begin());
         }
       crpcut_register_success(t == comm::exit_ok);
-      test_case_factory::return_dir(dirnum);
-      test_case_factory::present(pid_, comm::end_test, phase, 0, 0);
+      test_case_factory::return_dir(crpcut_dirnum);
+      test_case_factory::present(crpcut_pid_, comm::end_test, crpcut_phase,
+                                 0, 0);
       assert(crpcut_succeeded() || crpcut_failed());
       if (crpcut_succeeded())
         {

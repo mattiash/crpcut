@@ -53,8 +53,6 @@ namespace crpcut
   namespace output
   {
 
-    using implementation::test_case_registrator;
-
     size_t formatter::write(const char *str, size_t len, type t) const
     {
       if (t == verbatim)
@@ -252,14 +250,14 @@ namespace crpcut
     }
 
     void
-    xml_formatter::blocked_test(const test_case_registrator *i)
+    xml_formatter::blocked_test(const test_case_reg *i)
     {
       if (!blocked_tests)
         {
           write("  <blocked_tests>\n");
           blocked_tests = true;
         }
-      const size_t len = i->full_name_len() + 1;
+      const size_t len = i->crpcut_full_name_len() + 1;
       char *name = static_cast<char*>(alloca(len));
       stream::oastream os(name, name + len);
       write("    <test name=\"");
@@ -377,14 +375,14 @@ namespace crpcut {
       write("\n");
     }
 
-    void text_formatter::blocked_test(const test_case_registrator *i)
+    void text_formatter::blocked_test(const test_case_reg *i)
     {
       if (!blocked_tests)
         {
           write("The following tests were blocked from running:\n");
           blocked_tests = true;
         }
-      const size_t len = i->full_name_len()+1;
+      const size_t len = i->crpcut_full_name_len() + 1;
       char * name = static_cast<char*>(alloca(len));
       stream::oastream os(name, name+len+2);
       os << "  " << *i << '\n';

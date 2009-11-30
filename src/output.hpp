@@ -42,6 +42,7 @@ namespace crpcut
     {
 
     public:
+      typedef implementation::crpcut_test_case_registrator test_case_reg;
       typedef enum { escaped, verbatim } type;
       virtual void begin_case(const char *name, size_t name_len, bool result) = 0;
       virtual void end_case()  = 0;
@@ -56,7 +57,7 @@ namespace crpcut
                               unsigned num_run,
                               unsigned num_failed) = 0;
       virtual void nonempty_dir(const  char*)  = 0;
-      virtual void blocked_test(const implementation::test_case_registrator *)  = 0;
+      virtual void blocked_test(const test_case_reg *)  = 0;
       virtual ~formatter() {} // keeps compilers happy. Not needed for this use.
     protected:
       formatter(int fd) : fd_(fd) {}
@@ -106,7 +107,7 @@ namespace crpcut
                               unsigned num_run,
                               unsigned num_failed);
       virtual void nonempty_dir(const char *s);
-      virtual void blocked_test(const implementation::test_case_registrator*);
+      virtual void blocked_test(const test_case_reg*);
     private:
       void make_closed();
 
@@ -135,7 +136,7 @@ namespace crpcut
                               unsigned num_run,
                               unsigned num_failed);
       virtual void nonempty_dir(const char *s);
-      virtual void blocked_test(const implementation::test_case_registrator *i);
+      virtual void blocked_test(const test_case_reg *i);
     private:
       bool did_output;
       bool blocked_tests;

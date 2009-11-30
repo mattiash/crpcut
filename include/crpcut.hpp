@@ -1098,19 +1098,19 @@ namespace crpcut {
       namespace_info *parent;
     };
 
-    class test_case_registrator;
+    class crpcut_test_case_registrator;
     class fdreader
     {
     public:
       bool read();
-      test_case_registrator *get_registrator() const;
+      crpcut_test_case_registrator *get_registrator() const;
       void close();
       void unregister();
       virtual ~fdreader() {} // silence gcc, it's really not needed
     protected:
-      fdreader(test_case_registrator *r, int fd = 0);
+      fdreader(crpcut_test_case_registrator *r, int fd = 0);
       void set_fd(int fd);
-      test_case_registrator *const reg;
+      crpcut_test_case_registrator *const reg;
     private:
       virtual bool do_read(int fd) = 0;
       int fd_;
@@ -1120,7 +1120,7 @@ namespace crpcut {
     class reader : public fdreader
     {
     public:
-      reader(test_case_registrator *r, int fd = 0);
+      reader(crpcut_test_case_registrator *r, int fd = 0);
       void set_fd(int fd);
     private:
       virtual bool do_read(int fd);
@@ -1129,7 +1129,7 @@ namespace crpcut {
     class report_reader : public fdreader
     {
     public:
-      report_reader(test_case_registrator *r);
+      report_reader(crpcut_test_case_registrator *r);
       void set_fds(int in_fd, int out_fd);
     private:
       virtual bool do_read(int fd);
@@ -1137,65 +1137,65 @@ namespace crpcut {
     };
 
     class test_suite_base;
-    class test_case_registrator
+    class crpcut_test_case_registrator
       : public virtual policies::deaths::crpcut_none,
         public virtual policies::dependencies::crpcut_base
     {
       friend class test_suite_base;
     public:
-      test_case_registrator(const char *name, const namespace_info &ns);
+      crpcut_test_case_registrator(const char *name, const namespace_info &ns);
       friend std::ostream &operator<<(std::ostream &os,
-                                      const test_case_registrator &t)
+                                      const crpcut_test_case_registrator &t)
       {
-        return t.print_name(os);
+        return t.crpcut_print_name(os);
       }
-      std::size_t full_name_len() const;
-      bool match_name(const char *name) const;
-      void setup(pid_t pid,
-                 int in_fd, int out_fd,
-                 int stdout_fd,
-                 int stderr_fd);
-      void manage_death();
-      test_case_registrator *unlink();
-      void kill();
-      unsigned long ms_until_deadline() const;
-      void clear_deadline();
-      bool deadline_is_set() const;
-      static bool timeout_compare(const test_case_registrator *lh,
-                                  const test_case_registrator *rh);
-      void unregister_fds();
-      test_case_registrator *get_next() const;
-      void set_wd(int n);
-      void goto_wd() const;
-      pid_t get_pid() const;
-      test_phase get_phase() const;
-      bool has_active_readers() const;
-      void deactivate_reader();
-      void activate_reader();
+      std::size_t crpcut_full_name_len() const;
+      bool crpcut_match_name(const char *name) const;
+      void crpcut_setup(pid_t pid,
+                        int in_fd, int out_fd,
+                        int stdout_fd,
+                        int stderr_fd);
+      void crpcut_manage_death();
+      crpcut_test_case_registrator *crpcut_unlink();
+      void crpcut_kill();
+      unsigned long crpcut_ms_until_deadline() const;
+      void crpcut_clear_deadline();
+      bool crpcut_deadline_is_set() const;
+      static bool crpcut_timeout_compare(const crpcut_test_case_registrator *lh,
+                                         const crpcut_test_case_registrator *rh);
+      void crpcut_unregister_fds();
+      crpcut_test_case_registrator *crpcut_get_next() const;
+      void crpcut_set_wd(int n);
+      void crpcut_goto_wd() const;
+      pid_t crpcut_get_pid() const;
+      test_phase crpcut_get_phase() const;
+      bool crpcut_has_active_readers() const;
+      void crpcut_deactivate_reader();
+      void crpcut_activate_reader();
       virtual void crpcut_run_test_case() = 0;
     protected:
       template <typename T>
       void crpcut_run_test_case();
-      test_case_registrator();
+      crpcut_test_case_registrator();
     private:
-      void manage_test_case_execution(test_case_base*);
-      std::ostream &print_name(std::ostream &) const ;
+      void crpcut_manage_test_case_execution(test_case_base*);
+      std::ostream &crpcut_print_name(std::ostream &) const ;
 
-      const char            *name_;
-      const namespace_info  *ns_info;
-      test_case_registrator *next;
-      test_case_registrator *prev;
-      test_case_registrator *suite_list;
-      unsigned               active_readers;
-      bool                   death_note;
-      bool                   deadline_set;
-      pid_t                  pid_;
-      unsigned long          absolute_deadline_ms;
-      int                    dirnum;
-      report_reader          rep_reader;
-      reader<comm::stdout>   stdout_reader;
-      reader<comm::stderr>   stderr_reader;
-      test_phase             phase;
+      const char                   *crpcut_name_;
+      const namespace_info         *crpcut_ns_info;
+      crpcut_test_case_registrator *crpcut_next;
+      crpcut_test_case_registrator *crpcut_prev;
+      crpcut_test_case_registrator *crpcut_suite_list;
+      unsigned                      crpcut_active_readers;
+      bool                          crpcut_death_note;
+      bool                          crpcut_deadline_set;
+      pid_t                         crpcut_pid_;
+      unsigned long                 crpcut_absolute_deadline_ms;
+      int                           crpcut_dirnum;
+      report_reader                 crpcut_rep_reader;
+      reader<comm::stdout>          crpcut_stdout_reader;
+      reader<comm::stderr>          crpcut_stderr_reader;
+      test_phase                    crpcut_phase;
       friend class report_reader;
     };
 
@@ -1214,11 +1214,11 @@ namespace crpcut {
     static void present(pid_t pid, comm::type t, test_phase phase,
                         size_t len, const char *buff);
     static bool tests_as_child_procs();
-    static void set_deadline(implementation::test_case_registrator *i);
-    static void clear_deadline(implementation::test_case_registrator *i);
+    static void set_deadline(implementation::crpcut_test_case_registrator *i);
+    static void clear_deadline(implementation::crpcut_test_case_registrator *i);
     static void return_dir(int num);
     static const char *get_working_dir();
-    static void test_succeeded(implementation::test_case_registrator*);
+    static void test_succeeded(implementation::crpcut_test_case_registrator*);
     static const char *get_start_dir();
     static const char *get_parameter(const char *name);
     template <typename T>
@@ -1260,28 +1260,28 @@ namespace crpcut {
     test_case_factory();
     void kill_presenter_process();
     void manage_children(unsigned max_pending_children);
-    void start_test(implementation::test_case_registrator *i);
+    void start_test(implementation::crpcut_test_case_registrator *i);
 
     int do_run(int argc, const char *argv[], std::ostream &os);
     void do_present(pid_t pid, comm::type t, test_phase phase,
                     size_t len, const char *buff);
     void do_introduce_name(pid_t pid, const char *name, size_t len);
-    void do_set_deadline(implementation::test_case_registrator *i);
-    void do_clear_deadline(implementation::test_case_registrator *i);
+    void do_set_deadline(implementation::crpcut_test_case_registrator *i);
+    void do_clear_deadline(implementation::crpcut_test_case_registrator *i);
     void do_return_dir(int num);
     const char *do_get_working_dir() const;
     const char *do_get_start_dir() const;
     const char *do_get_parameter(const char *name) const;
-    friend class implementation::test_case_registrator;
+    friend class implementation::crpcut_test_case_registrator;
 
-    class registrator_list : public implementation::test_case_registrator
+    class registrator_list : public implementation::crpcut_test_case_registrator
     {
       virtual bool match_name(const char *) const { return false; }
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
       virtual void crpcut_run_test_case() {}
     };
 
-    typedef datatypes::array_v<implementation::test_case_registrator*,
+    typedef datatypes::array_v<implementation::crpcut_test_case_registrator*,
                                max_parallel> timeout_queue;
 
 
@@ -1321,8 +1321,8 @@ namespace crpcut {
               (void)n; // silence warning
             }
 
-          test_case_factory::present(reg->get_pid(), t,
-                                     reg->get_phase(),
+          test_case_factory::present(reg->crpcut_get_pid(), t,
+                                     reg->crpcut_get_phase(),
                                      rv, buff);
           return true;
         }
@@ -2771,7 +2771,7 @@ namespace crpcut {
       return do_read(fd_);
     }
 
-    inline test_case_registrator *
+    inline crpcut_test_case_registrator *
     fdreader::get_registrator() const
     {
       return reg;
@@ -2788,7 +2788,7 @@ namespace crpcut {
     }
 
     inline
-    fdreader::fdreader(test_case_registrator *r, int fd)
+    fdreader::fdreader(crpcut_test_case_registrator *r, int fd)
       : reg(r),
         fd_(fd)
     {
@@ -2796,7 +2796,7 @@ namespace crpcut {
 
     template <comm::type t>
     inline
-    reader<t>::reader(test_case_registrator *r, int fd)
+    reader<t>::reader(crpcut_test_case_registrator *r, int fd)
       : fdreader(r, fd)
     {
     }
@@ -2809,7 +2809,7 @@ namespace crpcut {
     }
 
     inline
-    report_reader::report_reader(test_case_registrator *r)
+    report_reader::report_reader(crpcut_test_case_registrator *r)
       : fdreader(r)
     {
     }
@@ -2823,13 +2823,13 @@ namespace crpcut {
 
     template <typename T>
     inline
-    void test_case_registrator::crpcut_run_test_case()
+    void crpcut_test_case_registrator::crpcut_run_test_case()
     {
       const char *msg = 0;
       const char *type = 0;
       try {
         T obj;
-        manage_test_case_execution(&obj);
+        crpcut_manage_test_case_execution(&obj);
       }
       CATCH_BLOCK(std::exception &e,{ type = "std::exception"; msg = e.what();})
       CATCH_BLOCK(..., { type = "..."; } )
@@ -2846,77 +2846,88 @@ namespace crpcut {
         }
     }
 
-    inline test_case_registrator *
-    test_case_registrator::unlink()
+    inline crpcut_test_case_registrator *
+    crpcut_test_case_registrator::crpcut_unlink()
     {
-      next->prev = prev;
-      prev->next = next;
-      return next;
+      crpcut_next->crpcut_prev = crpcut_prev;
+      crpcut_prev->crpcut_next = crpcut_next;
+      return crpcut_next;
     }
 
     inline bool
-    test_case_registrator::deadline_is_set() const
+    crpcut_test_case_registrator
+    ::crpcut_deadline_is_set() const
     {
-      return deadline_set;
+      return crpcut_deadline_set;
     }
 
     inline bool
-    test_case_registrator::timeout_compare(const test_case_registrator *lh,
-                                           const test_case_registrator *rh)
+    crpcut_test_case_registrator
+    ::crpcut_timeout_compare(const crpcut_test_case_registrator *lh,
+                             const crpcut_test_case_registrator *rh)
     {
-      assert(lh->deadline_set);
-      assert(rh->deadline_set);
+      assert(lh->crpcut_deadline_set);
+      assert(rh->crpcut_deadline_set);
 
-      long diff = lh->absolute_deadline_ms - rh->absolute_deadline_ms;
+      long diff
+        = lh->crpcut_absolute_deadline_ms
+        - rh->crpcut_absolute_deadline_ms;
       return diff > 0;
     }
 
-    inline test_case_registrator *
-    test_case_registrator::get_next() const
+    inline crpcut_test_case_registrator *
+    crpcut_test_case_registrator
+    ::crpcut_get_next() const
     {
-      return next;
+      return crpcut_next;
     }
 
     inline pid_t
-    test_case_registrator::get_pid() const
+    crpcut_test_case_registrator
+    ::crpcut_get_pid() const
     {
-      return pid_;
+      return crpcut_pid_;
     }
 
     inline test_phase
-    test_case_registrator::get_phase() const
+    crpcut_test_case_registrator
+    ::crpcut_get_phase() const
     {
-      return phase;
+      return crpcut_phase;
     }
 
     inline bool
-    test_case_registrator::has_active_readers() const
+    crpcut_test_case_registrator
+    ::crpcut_has_active_readers() const
     {
-      return active_readers > 0U;
+      return crpcut_active_readers > 0U;
     }
 
     inline void
-    test_case_registrator::deactivate_reader()
+    crpcut_test_case_registrator
+    ::crpcut_deactivate_reader()
     {
-      --active_readers;
+      --crpcut_active_readers;
     }
 
     inline void
-    test_case_registrator::activate_reader()
+    crpcut_test_case_registrator
+    ::crpcut_activate_reader()
     {
-      ++active_readers;
+      ++crpcut_active_readers;
     }
 
     inline
-    test_case_registrator::test_case_registrator()
-      : next(this),
-        prev(this),
-        active_readers(0),
-        death_note(false),
-        deadline_set(false),
-        rep_reader(0),
-        stdout_reader(0),
-        stderr_reader(0)
+    crpcut_test_case_registrator
+    ::crpcut_test_case_registrator()
+      : crpcut_next(this),
+        crpcut_prev(this),
+        crpcut_active_readers(0),
+        crpcut_death_note(false),
+        crpcut_deadline_set(false),
+        crpcut_rep_reader(0),
+        crpcut_stdout_reader(0),
+        crpcut_stderr_reader(0)
     {
     }
 
@@ -2994,13 +3005,13 @@ namespace crpcut {
   }
 
   inline void
-  test_case_factory::set_deadline(implementation::test_case_registrator *i)
+  test_case_factory::set_deadline(implementation::crpcut_test_case_registrator *i)
   {
     obj().do_set_deadline(i);
   }
 
   inline void
-  test_case_factory::clear_deadline(implementation::test_case_registrator *i)
+  test_case_factory::clear_deadline(implementation::crpcut_test_case_registrator *i)
   {
     obj().do_clear_deadline(i);
   }
@@ -3030,7 +3041,7 @@ namespace crpcut {
   }
 
   inline void
-  test_case_factory::test_succeeded(implementation::test_case_registrator*)
+  test_case_factory::test_succeeded(implementation::crpcut_test_case_registrator*)
   {
     ++obj().num_successful_tests;
   }
@@ -3409,10 +3420,10 @@ namespace crpcut {
     protected:
       test_suite_base() : num_containing_cases(0), list(0) {}
     public:
-      void add_case(test_case_registrator* r)
+      void add_case(crpcut_test_case_registrator* r)
       {
         ++num_containing_cases;
-        r->suite_list = list;
+        r->crpcut_suite_list = list;
         list = r;
         r->crpcut_add(this);
       }
@@ -3426,7 +3437,7 @@ namespace crpcut {
       }
     private:
       unsigned num_containing_cases;
-      test_case_registrator *list;
+      crpcut_test_case_registrator *list;
     };
 
     template <typename T>
@@ -3502,7 +3513,7 @@ extern crpcut::implementation::namespace_info current_namespace;
     friend class crpcut::implementation::test_wrapper<crpcut_run_wrapper, \
       test_case_name>;                                                  \
     friend class crpcut::policies::dependencies::enforcer<test_case_name>; \
-    friend class crpcut::implementation::test_case_registrator;         \
+    friend class crpcut::implementation::crpcut_test_case_registrator;  \
     virtual void crpcut_run_test()                                      \
     {                                                                   \
       crpcut_timeout_enforcer obj;                                      \
@@ -3516,13 +3527,13 @@ extern crpcut::implementation::namespace_info current_namespace;
     }                                                                   \
     void test();                                                        \
     class crpcut_registrator                                            \
-      : public crpcut::implementation::test_case_registrator,           \
+      : public crpcut::implementation::crpcut_test_case_registrator,           \
         private virtual crpcut::policies::dependencies::crpcut_base,    \
         public virtual test_case_name::crpcut_expected_death_cause,     \
         private virtual test_case_name::crpcut_dependency,              \
         public virtual crpcut_testsuite_dep                             \
     {                                                                   \
-       typedef crpcut::implementation::test_case_registrator            \
+       typedef crpcut::implementation::crpcut_test_case_registrator            \
          crpcut_registrator_base;                                       \
     public:                                                             \
        crpcut_registrator()                                             \
