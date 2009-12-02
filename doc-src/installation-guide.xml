@@ -1,0 +1,258 @@
+<?xml version="1.0"?>
+<!DOCTYPE book
+          [
+          <!ENTITY crpcut "<productname xmlns='http://docbook.org/ns/docbook'>crpcut</productname>">
+]>
+<book version="5.0" encoding="ascii"  xml:lang="en"
+      id="install-guide"
+      xmlns="http://docbook.org/ns/docbook"
+      xmlns:xi='http://www.w3.org/2001/XInclude'
+      xmlns:xlink='http://www.w3.org/1999/xlink'>
+<title>&crpcut; Installation Guide</title>
+<chapter id="requirements">
+  <title>&crpcut; Requirements</title>
+  <para>The minimum requirement for installing and using &crpcut; is
+    a modern <symbol>C++</symbol> compiler, a highly POSIX compliant
+    operating system and <ulink url="http://www.cmake.org">CMake</ulink>.
+    The short version is that any modern Linux will do fine.
+  </para>
+  <para>
+    In addition to the minimum, you are encouraged to build on a machine
+    with <ulink url="http://valgrind.org">valgrind</ulink> and
+    <ulink url="http://www.ruby-lang.org">Ruby</ulink>.
+  </para>
+  <simplesect>
+    <title>Compiler requirements</title>
+    <para>Your C++ compiler must support:
+      <variablelist>
+        <varlistentry><term>Variadic macros</term>
+          <listitem>
+            <para>
+              Variadic macros are required by C99, and are available on
+              most C++ compilers. They will be required by C++ compilers
+              soon.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><symbol>decltype</symbol> or <symbol>typeof</symbol></term>
+          <listitem>
+            <para>
+              decltype is a new keyword coming to C++ that gives the type of an
+              expression, similarly to how sizeof gives the size of the type
+              of an expression. GCC has since long had another extension,
+              typeof, which doesn't quite do the same thing,
+              but it's close enough to work.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><function>_Exit()</function></term>
+          <listitem>
+            <para>
+              A function standardized for C99, and coming to C++. It is
+              similar to <function>exit()</function> except that it
+              exits immediately, without running any at-exit handlers
+              or static destructors.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><type>uint64_t and uint32_t</type></term>
+          <listitem>
+            typedef's mandated by C99 and coming to C++.
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </para>
+    <para><ulink url="http://gcc.gnu.org">GCC</ulink> supports these
+      since long, and &crpcut; has been verified to work with versions
+      4.1.2, 4.3.2, 4.3.4, 4.4.1 and 4.4.2.
+    </para>
+    <para><ulink url="http://www.intel.com">Intel</ulink>
+      <ulink url="http://software.intel.com/en-us/intel-compilers">ICC</ulink>
+      version 1.11 is also verified to work, but requires the
+      <ulink url="http://www.boost.org">boost</ulink> library to get
+      access to tr1/type_traits and tr1/array. It has not received as
+      extensive testing.</para>
+  </simplesect>
+  <simplesect>
+    <title>Operating system requirements</title>
+    <simplesect>
+      <title>POSIX.1</title>
+      <itemizedlist>
+        <listitem><constant>EEXIST</constant></listitem>
+        <listitem><constant>EINTR</constant></listitem>
+      </itemizedlist>
+    </simplesect>
+    <simplesect>
+      <title>POSIX.1-2001</title>
+      <itemizedlist>
+        <listitem><function>alloca</function>()</listitem>
+        <listitem><function>chdir</function>()</listitem>
+        <listitem><function>clock_gettime</function>(<constant>CLOCK_MONOTONIC</constant>)<footnote>
+            <para>Otherwise,
+              <function>mach_timebase_info</function>() and
+              <function>mach_absolute_time</function>() will be
+              used.</para><para> If those too are unavailable,
+              <function>setitimer</function>(<constant>ITIMER_REAL</constant>)
+              and
+              <function>getitimer</function>(<constant>ITIMER_REAL</constant>)
+              will be used.</para><para> If even that fails,
+              <function>gettimeofday</function>() will be
+              used.</para></footnote></listitem>
+        <listitem><function>clock_gettime</function>(<constant>CLOCK_PROCESS_CPUTIME_ID</constant>)<footnote>
+            <para>If unavailable,
+              <function>setitimer</function>(<constant>ITIMER_PROF</constant>)
+              and
+              <function>getitimer</function>(<constant>ITIMER_PROF</constant>)
+              will be used.</para><para> If even that fails,
+              <function>setitimer</function>(<constant>ITIMER_VIRT</constant>)
+              and
+              <function>getitimer</function>(<constant>ITIMER_VIRT</constant>)
+              will be used.
+            </para>
+          </footnote>
+        </listitem>
+        <listitem><function>close</function>()</listitem>
+        <listitem><function>closedir</function>()</listitem>
+        <listitem><function>dup2</function>()</listitem>
+        <listitem><function>fork</function>()</listitem>
+        <listitem><function>getcwd</function>()</listitem>
+        <listitem><function>gethostname</function>()</listitem>
+        <listitem><function>getpgid</function>()</listitem>
+        <listitem><function>killpg</function>()</listitem>
+        <listitem><function>mkdir</function>()</listitem>
+        <listitem><function>open</function>()</listitem>
+        <listitem><function>opendir</function>()</listitem>
+        <listitem><function>pipe</function>()</listitem>
+        <listitem><function>read</function>()</listitem>
+        <listitem><function>readdir_r</function>()</listitem>
+        <listitem><function>regcomp</function>(),
+          <function>regexec</function>(),
+          <function>regerror</function>() and
+          <function>regfree</function>()<footnote><para>A
+            runtime dependency that is only required when
+            actually using the supported match functionality
+            for regular expressions.</para></footnote></listitem>
+        <listitem><function>rmdir</function>()</listitem>
+        <listitem><function>select</function>()<footnote><para>If available,
+              <function>epoll_create</function>(),
+              <function>epoll_ctl</function>() and
+              <function>epoll_wait</function>() will be used instead.</para>
+        </footnote></listitem>
+        <listitem><function>setpgid</function>()</listitem>
+        <listitem><function>waitid</function>()</listitem>
+        <listitem><function>write</function>()</listitem>
+      </itemizedlist>
+    </simplesect>
+    <simplesect>
+      <title>POSIX.1-2008</title>
+      <itemizedlist>
+        <listitem><function>mkdtemp</function>()</listitem>
+      </itemizedlist>
+    </simplesect>
+  </simplesect>
+</chapter>
+<chapter id="decisions">
+  <title>Decisions</title>
+  <simplesect><title>Where to install to</title>
+    <para>&crpcut; defaults to install under /usr/{lib,include,share}.
+      If you want to use another destination, add the command line
+      parameter <constant>-DCMAKE_INSTALL_PREFIX=&lt;path&gt;</constant>
+      to the CMake line when <link xref="building">building</link>.
+    </para>
+  </simplesect>
+  <simplesect>
+    <title>Support for
+      <ulink url="http://valgrind.org">valgrind</ulink></title>
+    <para>You are highly encouraged to build &crpcut; on a machine
+      that has <ulink url="http://valgrind.org">valgrind</ulink> installed.
+    </para>
+    <para>
+      If &lt;valgrind/valgrind.h&gt; can be found when running CMake,
+      &crpcut; will add instrumentation instructions for valgrind. These
+      instrumentation instructions are no-ops when running natively,
+      or on a machine that doesn't have valgrind, but can help immensly
+      in finding memory access errors when running tests undir valgrind.
+    </para>
+    <para>If you build &crpcut; for a binary distribution, you should
+      definitely build with valgrind.
+    </para>
+  </simplesect>
+  <simplesect><title>Which compiler to use</title>
+    <para>
+    If you want to use another compiler than the default for CMake,
+    or if CMake is unable to find one, prefix the CMake line with
+    <constant>CXX="&lt;compilername&gt;"</constant>, for example:
+    <screen>
+
+     bash &gt; CXX="g++-4.1.2" cmake /tmp/download/crpcut
+
+</screen>
+    </para>
+  </simplesect>
+  <simplesect><title>Debug compiled lib</title>
+    <para>Compiling &crpcut; with debugging enabled may make it easier
+      to debug your tests, or analyze core dumps, since the tests are
+      started from &crpcut;</para>
+    <para>To enable debug builds, add the command line parameter
+      <constant>-DCMAKE_BUILD_TYPE="debug"</constant> to the CMake
+      line when <link xref="building">building</link>.
+    </para>
+  </simplesect>
+  <simplesect><title>Self test after build?</title>
+    <para>Running a self test after build is a good way to verify
+      that &crpcut; functions correctly. To run a self test, you
+      need <ulink url="http://www.ruby-lang.org">ruby</ulink>,
+      and you must enable core-dumps as "core" in the current working
+      directory (since the self test verifies that certain crashes do
+      dump core as expected.) If you run Linux, enure that
+      <symbol>/proc/sys/kernel/core_pattern</symbol> contains only the
+      word <symbol>core</symbol>.
+    </para>
+    <para>If you have
+      <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
+      installed, you can add a few test cases that verify google-mock
+      interaction with &crpcut; by adding the command line parameter
+      <constant>-DWITH_GOOGLE_MOCK=yes</constant> to the CMake line
+      when <link xref="building">building</link>. Should CMake be unable
+      to find your google-mock installation, you can help it by further
+      adding the command line parameter
+      <constant>-DGOOGLE_MOCK_DIR=&lt;path-to-google-mock&gt;</constant>.
+    </para>
+  </simplesect>
+  <simplesect><title>Build documentation</title>
+    <para>You are not encouraged to build the documentation yourself,
+      but rather download it from sourceforge. However, should you
+      choose to build it anyway, you will need
+      <itemizedlist>
+        <listitem><ulink url="http://www.docbook.org">docbook</ulink>
+          XSL NS version 1.75.2 or later.
+        </listitem>
+        <listitem>
+          <ulink url="http://xmlsoft.org/XSLT/xsltproc2.html">xsltproc</ulink>
+        </listitem>
+        <listitem><ulink url="http://www.gnu.org/software/sed">GNU sed</ulink>
+        </listitem>
+        <listitem><ulink url="http://www.gnu.org/software/gdb">Thu GNU
+            Project Debugger</ulink>
+        </listitem>
+        <listitem><ulink url="http://code.google.com/p/googlemock">google-mock</ulink> version 1.4.0 or later.</listitem>
+        <listitem>to allow processes do dump core</listitem>
+        <listitem>the locales <symbol>sv_SE.utf8</symbol> and
+          <symbol>de_DE.utf8</symbol></listitem>
+      </itemizedlist>
+    </para>
+  </simplesect>
+</chapter>
+<chapter id="building">
+  <title>Building</title>
+</chapter>
+<chapter id="installation">
+  <title>Installing</title>
+</chapter>
+</book>

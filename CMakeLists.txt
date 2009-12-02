@@ -289,12 +289,16 @@ else (NOT XSLTPROC)
     else(NOT GDB)
       if (NOT SED)
         message("sed not found, can't build docs")
+      else (NOT SED)
+        if (NOT HAVE_GMOCK)
+          message("google-mock not found, can't build docs")
+        endif(NOT HAVE_GMOCK)
       endif(NOT SED)
     endif (NOT GDB)
   endif(NOT HTML_CHUNK_XSL)
 endif(NOT XSLTPROC)
 
-if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
+if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED AND HAVE_GMOCK)
   file(GLOB DOC_SRC_LIB "doc-src")
   file(GLOB DOC_SOURCES "${DOC_SRC_LIB}/*.xml")
   file(GLOB TOP_DOC_SOURCE "${DOC_SRC_LIB}/docs.xml")
@@ -1342,6 +1346,25 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
     VERBATIM)
 
   #
+  # gmock-example
+  #
+  file(GLOB GMOCK-EXAMPLE "${DOC_SRC_LIB}/samples/gmock-example.cpp")
+  add_custom_target(
+    gmock-example.cpp
+    ${STRIP_SOURCES} < ${GMOCK-EXAMPLE} > gmock-example.cpp
+    DEPENDS stripped-src ${GMOCK-EXAMPLE}
+    WORKING_DIRECTORY stripped-src
+    VERBATIM)
+  add_executable(gmock-example EXCLUDE_FROM_ALL ${GMOCK-EXAMPLE})
+  target_link_libraries(gmock-example crpcut ${GMOCK_LIBS})
+  add_custom_target(
+    gmock-example.out
+    gmock-example  | sed "s/\\(.*\\)/     \\1/g" > gmock-example.out
+    DEPENDS gmock-example sample-output
+    WORKING_DIRECTORY sample-output
+    VERBATIM)
+
+  #
   # simple-depend
   #
   file(GLOB SIMPLE-DEPEND "${DOC_SRC_LIB}/samples/simple-depend.cpp")
@@ -1480,6 +1503,7 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
     sample-output/process-test.out
     stripped-src/simple-pred.cpp sample-output/simple-pred.out
     stripped-src/template-pred.cpp sample-output/template-pred.out
+    stripped-src/gmock-example.cpp sample-output/gmock-example.out
     can_dump_core
     ${DOC_SOURCES} ${DOC_SRC_LIB}/crpcut-doc.css
     WORKING_DIRECTORY html)
@@ -1497,7 +1521,7 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
     FILES ${DOC_SRC_LIB}/crpcut-doc.css
     DESTINATION "${SHAREDIR}/doc/html"
     )
-endif(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED)
+endif(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED AND HAVE_GMOCK)
 
 find_program(RUBY "ruby")
 if(RUBY)
