@@ -2551,8 +2551,8 @@ namespace crpcut {
       typedef x type;                           \
     }
 
-    CRPCUT_MAKE_FP_REP(u_int32_t);
-    CRPCUT_MAKE_FP_REP(u_int64_t);
+    CRPCUT_MAKE_FP_REP(uint32_t);
+    CRPCUT_MAKE_FP_REP(uint64_t);
 
 #undef CRPCUT_MAKE_FP_REP
 
@@ -3359,9 +3359,9 @@ namespace crpcut {
       return t | neg_bit;
     }
 
-    unsigned         max_diff;
+    uint64_t         max_diff;
     inf_in_ulps_diff inf;
-    unsigned         diff;
+    uint64_t         diff;
   };
   template <typename T>
   struct match_traits<relative_diff, T>
