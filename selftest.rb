@@ -617,12 +617,12 @@ TESTS = {
   'collate::should_fail_collation_string' =>
   Test.new('FAILED').
   log('violation',
-      /right hand value = \"apa\"/me),
+      /left hand value = \"app\"\n\s+.*right hand value = \"apa\"/me),
 
   'collate::should_fail_collation_char_array' =>
   Test.new('FAILED').
   log('violation',
-      /right hand value = \"APA\"/me),
+      /left hand value = \"APP\"\n\s+.*right hand value = \"APA\"/me),
 
   'collate::should_succeed_equal_upcase' =>
   Test.new('PASSED'),

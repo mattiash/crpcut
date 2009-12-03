@@ -1816,15 +1816,18 @@ namespace crpcut {
     {
       class comparator;
       const char *r;
+      const std::string intl;
       std::locale locale;
-      const char *side;
-      collate_result(const char *refstr, const std::locale& l)
+      enum { left, right } side;
+      collate_result(const char *refstr, std::string comp, const std::locale& l)
         : r(refstr),
+          intl(comp),
           locale(l),
-          side("right") {}
+          side(right) {}
     public:
       collate_result(const collate_result& o)
         : r(o.r),
+          intl(o.intl),
           locale(o.locale),
           side(o.side)
       {}
@@ -1836,11 +1839,21 @@ namespace crpcut {
       {
         return reinterpret_cast<const comparator*>(r ? 0 : this);
       }
-      collate_result& set_lh() { side = "left"; return *this;}
+      collate_result& set_lh() { side = left; return *this;}
       friend std::ostream &operator<<(std::ostream& os, const collate_result &r)
       {
-        os << "Failed in locale \"" << r.locale.name() << "\" with " << r.side
-           << " hand value = \"" << r.r << "\"";
+        static const char rs[] = "\"\n"
+          "  and right hand value = \"";
+        os << "Failed in locale \"" << r.locale.name() << "\"\n"
+          "  with left hand value = \"";
+        if (r.side == right)
+          {
+            os << r.intl << rs << r.r << "\"";
+          }
+        else
+          {
+            os << r.r << rs << r.intl << "\"";
+          }
         return os;
       }
       template <case_convert_type>
@@ -2291,12 +2304,20 @@ namespace crpcut {
 
     implementation::collate_result operator<(const std::string &s) const
     {
-      implementation::collate_result rv(compare(s) < 0 ? 0 : s.c_str(), locale);
+      implementation::collate_result rv(compare(s) < 0
+                                        ? 0
+                                        : s.c_str(),
+                                        ref,
+                                        locale);
       return rv;
     }
     implementation::collate_result operator<(const char *r) const
     {
-      implementation::collate_result rv(compare(r) < 0 ? 0 : r, locale);
+      implementation::collate_result rv(compare(r) < 0
+                                        ? 0
+                                        : r,
+                                        ref,
+                                        locale);
       return rv;
     }
 
@@ -2304,23 +2325,37 @@ namespace crpcut {
     {
       implementation::collate_result rv(compare(s) <= 0
                                         ? 0
-                                        : s.c_str(), locale);
+                                        : s.c_str(),
+                                        ref,
+                                        locale);
       return rv;
     }
     implementation::collate_result operator<=(const char *r) const
     {
-      implementation::collate_result rv(compare(r) <= 0 ? 0 : r, locale);
+      implementation::collate_result rv(compare(r) <= 0
+                                        ? 0
+                                        : r,
+                                        ref,
+                                        locale);
       return rv;
     }
 
     implementation::collate_result operator>(const std::string &s) const
     {
-      implementation::collate_result rv(compare(s) > 0 ? 0 : s.c_str(), locale);
+      implementation::collate_result rv(compare(s) > 0
+                                        ? 0
+                                        : s.c_str(),
+                                        ref,
+                                        locale);
       return rv;
     }
     implementation::collate_result operator>(const char *r) const
     {
-      implementation::collate_result rv(compare(r) > 0 ? 0 : r, locale);
+      implementation::collate_result rv(compare(r) > 0
+                                        ? 0
+                                        : r,
+                                        ref,
+                                        locale);
       return rv;
     }
 
@@ -2328,12 +2363,18 @@ namespace crpcut {
     {
       implementation::collate_result rv(compare(s) >= 0
                                         ? 0
-                                        : s.c_str(), locale);
+                                        : s.c_str(),
+                                        ref,
+                                        locale);
       return rv;
     }
     implementation::collate_result operator>=(const char *r) const
     {
-      implementation::collate_result rv(compare(r) >= 0 ? 0 : r, locale);
+      implementation::collate_result rv(compare(r) >= 0
+                                        ? 0
+                                        : r,
+                                        ref,
+                                        locale);
       return rv;
     }
 
@@ -2341,12 +2382,18 @@ namespace crpcut {
     {
       implementation::collate_result rv(compare(s) == 0
                                         ? 0
-                                        : s.c_str(), locale);
+                                        : s.c_str(),
+                                        ref,
+                                        locale);
       return rv;
     }
     implementation::collate_result operator==(const char *r) const
     {
-      implementation::collate_result rv(compare(r) == 0 ? 0 : r, locale);
+      implementation::collate_result rv(compare(r) == 0
+                                        ? 0
+                                        : r,
+                                        ref,
+                                        locale);
       return rv;
     }
 
@@ -2354,12 +2401,18 @@ namespace crpcut {
     {
       implementation::collate_result rv(compare(s) != 0
                                         ? 0
-                                        : s.c_str(), locale);
+                                        : s.c_str(),
+                                        ref,
+                                        locale);
       return rv;
     }
     implementation::collate_result operator!=(const char *r) const
     {
-      implementation::collate_result rv(compare(r) != 0 ? 0 : r, locale);
+      implementation::collate_result rv(compare(r) != 0
+                                        ? 0
+                                        : r,
+                                        ref,
+                                        locale);
       return rv;
     }
   private:
