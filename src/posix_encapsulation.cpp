@@ -85,13 +85,16 @@ namespace crpcut {
     CRPCUT_WRAP_FUNC(libc, getcwd, char*, (char *buf, size_t size), (buf, size))
     CRPCUT_WRAP_FUNC(libc, gethostname, int, (char *n, size_t s), (n, s))
     CRPCUT_WRAP_FUNC(libc, getitimer, int, (int i, struct itimerval *v), (i, v))
+    CRPCUT_WRAP_FUNC(libc, getpgid, pid_t, (pid_t p), (p))
     CRPCUT_WRAP_FUNC(libc, getpid, int, (void), ())
     CRPCUT_WRAP_FUNC(libc, gettimeofday,
                      int,
                      (struct timeval *tv, struct timezone *tz),
                      (tv, tz))
     CRPCUT_WRAP_FUNC(libc, gmtime, struct tm*, (const time_t *t), (t))
-    CRPCUT_WRAP_FUNC(libc, kill, int, (pid_t p, int s), (p, s))
+    CRPCUT_WRAP_FUNC(libc, killpg, int, (int p, int s), (p, s))
+    CRPCUT_WRAP_FUNC(libc, memcpy, void*,
+                     (void *d, const void *s, size_t n), (d, s, n))
     CRPCUT_WRAP_FUNC(libc, mkdir, int, (const char *n, mode_t m), (n, m))
     CRPCUT_WRAP_FUNC(libc, mkdtemp, char*, (char *n), (n))
     CRPCUT_WRAP_FUNC(libc, open, int,
@@ -129,6 +132,7 @@ namespace crpcut {
                      int,
                      (int n, const struct itimerval *i, struct itimerval *o),
                      (n, i, o))
+    CRPCUT_WRAP_FUNC(libc, setpgid, int, (pid_t pid, pid_t pgid), (pid, pgid))
     CRPCUT_WRAP_FUNC(libc, setrlimit,
                      int,
                      (int n, const struct rlimit *r),

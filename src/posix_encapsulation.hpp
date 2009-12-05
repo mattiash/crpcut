@@ -45,9 +45,12 @@ namespace crpcut {
     void                 free(const void*);
     char *               getcwd(char *buf, size_t size);
     int                  gethostname(char *n, size_t l);
+    pid_t                getpgid(pid_t);
+    pid_t                getpid();
     struct tm *          gmtime(const time_t *t);
-    int                  kill(pid_t p, int s);
+    int                  killpg(int p, int s);
     void *               malloc(size_t);
+    void *               memcpy(void *d, const void *s, size_t n);
     int                  mkdir(const char *n, mode_t m);
     char *               mkdtemp(char *t);
     DIR*                 opendir(const char *n);
@@ -58,6 +61,7 @@ namespace crpcut {
     int                  rename(const char *o, const char *n);
     int                  rmdir(const char *n);
     int                  select(int, fd_set*, fd_set*, fd_set*, timeval *);
+    int                  setpgid(pid_t pid, pid_t pgid);
     int                  setrlimit(int, const struct rlimit*);
     int                  snprintf(char *s, size_t si, const char *f, ...);
     time_t               time(time_t *t);

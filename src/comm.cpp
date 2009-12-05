@@ -34,6 +34,12 @@ namespace crpcut {
 
     void reporter::operator()(type t, const char *msg, size_t len) const
     {
+      if (wrapped::getpid() != wrapped::getpgid(0))
+        {
+          // naughty test forked and returned
+          wrapped::killpg(0, SIGKILL); 
+        }
+
       if (!test_case_factory::tests_as_child_procs())
         {
           if (len)
@@ -46,10 +52,18 @@ namespace crpcut {
             }
           return;
         }
-      write(t);
-      write(len);
-      const char *p = msg;
+
+      static const size_t header_size = sizeof(t) + sizeof(len);
+      void *report_addr = alloca(len + header_size);
+      *static_cast<type*>(report_addr) = t;
+      char *p = static_cast<char *>(report_addr);
+      p+= sizeof(type);
+      *static_cast<size_t*>(static_cast<void*>(p)) = len;
+      p+= sizeof(len);
+      wrapped::memcpy(p, msg, len);
+      len+= header_size;
       size_t bytes_written = 0;
+      p = static_cast<char*>(report_addr);
       while (bytes_written < len)
         {
           ssize_t rv = wrapped::write(write_fd,
@@ -60,7 +74,7 @@ namespace crpcut {
           bytes_written += rv;
         }
       read(bytes_written);
-      assert(len == bytes_written);
+      assert(len - header_size == bytes_written);
       if (t == comm::exit_fail)
         {
           wrapped::_Exit(0);

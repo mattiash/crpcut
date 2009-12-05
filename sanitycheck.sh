@@ -27,9 +27,9 @@ AWK=$1
 DIR=$2
 
 BLOCKED=7
-R=190
+R=192
 RN=$(($R+$BLOCKED))
-F=94
+F=95
 [ "$3" == "gmock" ] && {
   GR=11
   GF=7
@@ -70,7 +70,7 @@ tests=(
     "-n -c 8"                  "run=$RN failed=$F blocked=0 nodeps=1"
     "-n -c 8 -v"               "run=$RN failed=$F blocked=0 nodeps=1 verbose=1"
     )
-echo "sanity check takes about 30 seconds to complete"
+echo "sanity check takes about 50 seconds to complete"
 n=0
 echo apa > apafil
 while [ $n -lt ${#tests[*]} ]

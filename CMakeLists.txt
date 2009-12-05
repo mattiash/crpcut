@@ -251,6 +251,7 @@ file(GLOB TEST_SRCS
      test-src/suite_deps1.cpp
      test-src/suite_deps2.cpp
      test-src/heap.cpp
+     test-src/bad_forks.cpp
      ${GMOCK_TEST_SRCS}
 )
 

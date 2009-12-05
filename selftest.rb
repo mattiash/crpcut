@@ -903,7 +903,15 @@ TESTS = {
   'heap::should_fail_cross_new_array_delete' =>
   Test.new('FAILED').
   log('violation',
-      /DEALLOC FAIL\ndelete.*using new\[\]/me)
+      /DEALLOC FAIL\ndelete.*using new\[\]/me),
+
+  'bad_forks::fork_and_let_child_hang_should_fail' =>
+  Test.new('FAILED').
+  log('violation',
+      /Timed out - killed/),
+
+  'bad_forks::fork_and_let_child_run_test_code_should_succeed' =>
+  Test.new('PASSED')
 }
 
 GMOCK_TESTS = {
@@ -1139,7 +1147,7 @@ if ulimit != "unlimited" && ulimit.to_i == 0  then
   puts "> ulimit -c 100000"
   exit 1
 end
-puts "Self test takes approximately 30 seconds to complete"
+puts "Self test takes nearly a minute to complete"
 RUNS.each do | params, expects |
   print "%-70s: " % "./test/testprog -x -p apa=katt#{params}"
   STDOUT.flush

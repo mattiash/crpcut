@@ -279,6 +279,7 @@ extern "C"
 #include <sys/wait.h>
 #include <dirent.h>
 #include <regex.h>
+#include <stdint.h>
 }
 
 namespace std {
@@ -1102,7 +1103,7 @@ namespace crpcut {
     class fdreader
     {
     public:
-      bool read();
+      bool read(bool do_reply);
       crpcut_test_case_registrator *get_registrator() const;
       void close();
       void unregister();
@@ -1112,7 +1113,7 @@ namespace crpcut {
       void set_fd(int fd);
       crpcut_test_case_registrator *const reg;
     private:
-      virtual bool do_read(int fd) = 0;
+      virtual bool do_read(int fd, bool do_reply) = 0;
       int fd_;
     };
 
@@ -1123,7 +1124,7 @@ namespace crpcut {
       reader(crpcut_test_case_registrator *r, int fd = 0);
       void set_fd(int fd);
     private:
-      virtual bool do_read(int fd);
+      virtual bool do_read(int fd, bool do_reply);
     };
 
     class report_reader : public fdreader
@@ -1132,7 +1133,7 @@ namespace crpcut {
       report_reader(crpcut_test_case_registrator *r);
       void set_fds(int in_fd, int out_fd);
     private:
-      virtual bool do_read(int fd);
+      virtual bool do_read(int fd, bool do_reply);
       int response_fd;
     };
 
@@ -1307,7 +1308,7 @@ namespace crpcut {
   namespace implementation {
 
     template <comm::type t>
-    bool reader<t>::do_read(int fd)
+    bool reader<t>::do_read(int fd, bool)
     {
       static char buff[1024];
       for (;;)
@@ -2819,9 +2820,9 @@ namespace crpcut {
 
 
     inline bool
-    fdreader::read()
+    fdreader::read(bool do_reply)
     {
-      return do_read(fd_);
+      return do_read(fd_, do_reply);
     }
 
     inline crpcut_test_case_registrator *

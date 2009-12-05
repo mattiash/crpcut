@@ -634,7 +634,7 @@ namespace crpcut {
         bool read_failed = false;
         if (desc.read())
           {
-            read_failed = !desc->read();
+            read_failed = !desc->read(!desc.hup());
           }
         if (read_failed || desc.hup())
           {
@@ -681,6 +681,7 @@ namespace crpcut {
     if (pid < 0) return;
     if (pid == 0) // child
       {
+        wrapped::setpgid(0, 0);
         heap::control::enabled = true;
         comm::report.set_fds(p2c.for_reading(pipe_pair::release_ownership),
                              c2p.for_writing(pipe_pair::release_ownership));

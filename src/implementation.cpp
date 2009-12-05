@@ -119,23 +119,26 @@ namespace crpcut {
       fd_ = 0;
     }
 
-    bool report_reader::do_read(int fd)
+
+    bool report_reader::do_read(int fd, bool do_reply)
     {
       comm::type t;
       ssize_t rv;
       do {
         rv = wrapped::read(fd, &t, sizeof(t));
       } while (rv == -1 && errno == EINTR);
-      if (rv == 0) return false; // eof
+      if (rv == 0) return false;
       assert(rv == sizeof(t));
       if (t == comm::exit_fail)
         {
           reg->crpcut_register_success(false);
         }
       size_t len = 0;
+
       do {
         rv = wrapped::read(fd, &len, sizeof(len));
       } while (rv == -1 && errno == EINTR);
+      if (rv == 0) return false;
       assert(rv == sizeof(len));
 
       size_t bytes_read = 0;
@@ -155,9 +158,14 @@ namespace crpcut {
           ts+= clocks::monotonic::timestamp_ms_absolute();
           reg->crpcut_absolute_deadline_ms = ts;
           reg->crpcut_deadline_set = true;
-          do {
-            rv = wrapped::write(response_fd, &len, sizeof(len));
-          } while (rv == -1 && errno == EINTR);
+          if (do_reply)
+            {
+              do {
+                rv = wrapped::write(response_fd, &len, sizeof(len));
+                if (rv == 0 || (rv == -1 && errno == EPIPE)) return false;
+              } while (rv == -1 && errno == EINTR);
+              if (rv == 0) return false; // eof
+            }
           assert(reg->crpcut_deadline_is_set());
           test_case_factory::set_deadline(reg);
           return true;
@@ -165,24 +173,38 @@ namespace crpcut {
       if (t == comm::cancel_timeout)
         {
           assert(len == 0);
-          reg->crpcut_clear_deadline();
-          do {
-            rv = wrapped::write(response_fd, &len, sizeof(len));
-          } while (rv == -1 && errno == EINTR);
+          if (!reg->crpcut_death_note)
+            {
+              reg->crpcut_clear_deadline();
+              if (do_reply)
+                {
+                  do {
+                    rv = wrapped::write(response_fd, &len, sizeof(len));
+                    if (rv == 0 || (rv == -1 && errno == EPIPE)) return false;
+                  } while (rv == -1 && errno == EINTR);
+                }
+            }
+
           return true;
         }
       char *buff = static_cast<char *>(::alloca(len));
+      int err;
+      errno = 0;
       while (bytes_read < len)
         {
           rv = wrapped::read(fd, buff + bytes_read, len - bytes_read);
-          if (rv == 0) break;
+          err=errno;
           if (rv == -1 && errno == EINTR) continue;
-          assert(rv > 0);
+          assert(rv > 0 && err == 0);
           bytes_read += rv;
         }
-      do {
-        rv = wrapped::write(response_fd, &len, sizeof(len));
-      } while (rv == -1 && errno == EINTR);
+      if (do_reply)
+        {
+          do {
+            rv = wrapped::write(response_fd, &len, sizeof(len));
+            if (rv == 0 || (rv == -1 && errno == EPIPE)) return false;
+          } while (rv == -1 && errno == EINTR);
+        }
       switch (t)
         {
         case comm::begin_test:
@@ -300,7 +322,8 @@ namespace crpcut {
     crpcut_test_case_registrator
     ::crpcut_kill()
     {
-      wrapped::kill(crpcut_pid_, SIGKILL);
+      assert(crpcut_pid_);
+      wrapped::killpg(crpcut_pid_, SIGKILL);
       crpcut_death_note = true;
       crpcut_deadline_set = false;
       static const char msg[] = "Timed out - killed";
@@ -380,10 +403,12 @@ namespace crpcut {
       ::siginfo_t info;
       for (;;)
         {
-          int rv = wrapped::waitid(P_PID, crpcut_pid_, &info, WEXITED);
+          ::siginfo_t local;
+          int rv = wrapped::waitid(P_PGID, crpcut_pid_, &local, WEXITED);
           int n = errno;
           if (rv == -1 && n == EINTR) continue;
-          assert(rv == 0);
+          if (local.si_pid == crpcut_pid_) info = local;
+          if (rv == 0) continue;
           break;
         }
       assert(!crpcut_succeeded());
