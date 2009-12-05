@@ -3135,7 +3135,7 @@ namespace crpcut {
   typename match_traits<D, T1, T2>::type
   match(T1 t1, T2 t2)
   {
-    typedef match_traits<D, T1> traits;
+    typedef match_traits<D, T1, T2> traits;
     typename traits::type rv(t1, t2);
     return rv;
   }
