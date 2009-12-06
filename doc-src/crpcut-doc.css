@@ -38,6 +38,9 @@ span.productname {
 span.type {
     font-family: monospace ;
 }
+span.symbol {
+    font-family: monospace ;
+}
 a img {
     border: none;
 }

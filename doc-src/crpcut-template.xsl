@@ -25,6 +25,12 @@
   <xsl:template match="print_version">
     <span>PVERSION</span>
   </xsl:template>
+  <xsl:template match="src_download_link">
+    <a href="https://sourceforge.net/projects/crpcut/files/crpcut/VERSION/crpcut-VERSION.tar.bz2/download">https://sourceforge.net/projects/crpcut/files/crpcut/VERSION/crpcut-VERSION.tar.bz2/download</a>
+  </xsl:template>
+  <xsl:template match="doc_download_link">
+    <a href="https://sourceforge.net/projects/crpcut/files/crpcut/VERSION/crpcut-docs-VERSION.tar.bz2/download">https://sourceforge.net/projects/crpcut/files/crpcut/VERSION/crpcut-docs-VERSION.tar.bz2/download</a>
+  </xsl:template>
   <xsl:template name="user.header.navigation">
     <table width="100%">
       <tr><th class="slogan" width="50%" align="left">the <b>Compartmented Robust Posix C++ Unit Test</b> system</th><th></th>

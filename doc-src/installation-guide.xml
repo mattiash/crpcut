@@ -4,15 +4,17 @@
           <!ENTITY crpcut "<productname xmlns='http://docbook.org/ns/docbook'>crpcut</productname>">
           <!ENTITY vcrpcut "<productname xmlns='http://docbook.org/ns/docbook'>crpcut-<print_version xmlns=''/></productname>">
           <!ENTITY version      "<version/>">
+          <!ENTITY src_download_link "<src_download_link/>">
+          <!ENTITY doc_download_link "<doc_download_link/>">
 ]>
 <book version="5.0" encoding="ascii"  xml:lang="en"
       id="install-guide"
       xmlns="http://docbook.org/ns/docbook"
       xmlns:xi='http://www.w3.org/2001/XInclude'
       xmlns:xlink='http://www.w3.org/1999/xlink'>
-<title>&crpcut; Installation Guide</title>
+<title>&vcrpcut; Installation Guide</title>
 <chapter id="requirements">
-  <title>&vcrpcut; Requirements</title>
+  <title>&crpcut; Requirements</title>
   <para>The minimum requirement for installing and using &crpcut; is
     a modern <symbol>C++</symbol> compiler, a highly POSIX compliant
     operating system and <ulink url="http://www.cmake.org">CMake</ulink>.
@@ -159,13 +161,24 @@
     </simplesect>
   </simplesect>
 </chapter>
-<chapter id="decisions">
-  <title>Decisions</title>
+<chapter id="preparation">
+  <title>Preparation</title>
+  <simplesect><title>Download &crpcut;</title>
+    <para>
+      If you haven't alread done so, download the &crpcut; sources
+      from &src_download_link;. The directory you unpack
+      the sources to will be called <symbol>&lt;source-dir&gt;</symbol>
+      in the rest of this guide. You may also want to download the
+      documentation from &doc_download_link;.
+    </para>
+  </simplesect>
   <simplesect><title>Where to install to</title>
     <para>&crpcut; defaults to install under /usr/{lib,include,share}.
       If you want to use another destination, add the command line
-      parameter <constant>-DCMAKE_INSTALL_PREFIX=&lt;path&gt;</constant>
-      to the CMake line when <link xref="building">building</link>.
+      parameter
+      <constant>-DCMAKE_INSTALL_PREFIX</constant>=<symbol>&lt;path&gt;</symbol>
+      to the CMake line. The directory you want to install to will be called
+      <symbol>&lt;prefix-dir&gt;</symbol> in the rest of this guide.
     </para>
   </simplesect>
   <simplesect>
@@ -175,21 +188,23 @@
       that has <ulink url="http://valgrind.org">valgrind</ulink> installed.
     </para>
     <para>
-      If &lt;valgrind/valgrind.h&gt; can be found when running CMake,
-      &crpcut; will add instrumentation instructions for valgrind. These
-      instrumentation instructions are no-ops when running natively,
-      or on a machine that doesn't have valgrind, but can help immensly
-      in finding memory access errors when running tests undir valgrind.
+      If <symbol>&lt;valgrind/valgrind.h&gt;</symbol> can be found when
+      running CMake, &crpcut; will add instrumentation instructions for
+      valgrind. These instrumentation instructions are no-ops when running
+      natively, or on a machine that doesn't have valgrind, but can help
+      immensly in finding memory access errors when running tests undir
+      valgrind.
     </para>
     <para>If you build &crpcut; for a binary distribution, you should
-      definitely build with valgrind.
+      definitely build on a machine with valgrind.
     </para>
   </simplesect>
   <simplesect><title>Which compiler to use</title>
     <para>
     If you want to use another compiler than the default for CMake,
     or if CMake is unable to find one, prefix the CMake line with
-    <constant>CXX="&lt;compilername&gt;"</constant>, for example:
+    <constant>CXX</constant>="<symbol>&lt;compilername&gt;</symbol>",
+    for example:
     <screen>
 
      bash &gt; CXX="g++-4.1.2" cmake /tmp/download/crpcut
@@ -202,7 +217,7 @@
       to debug your tests, or analyze core dumps, since the tests are
       started from &crpcut;</para>
     <para>To enable debug builds, add the command line parameter
-      <constant>-DCMAKE_BUILD_TYPE="debug"</constant> to the CMake
+      <constant>-DCMAKE_BUILD_TYPE</constant>="debug" to the CMake
       line when <link xref="building">building</link>.
     </para>
   </simplesect>
@@ -214,23 +229,22 @@
       directory (since the self test verifies that certain crashes do
       dump core as expected.) If you run Linux, enure that
       <symbol>/proc/sys/kernel/core_pattern</symbol> contains only the
-      word <symbol>core</symbol>.
+      word "<symbol>core</symbol>".
     </para>
     <para>If you have
       <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
       installed, you can add a few test cases that verify google-mock
       interaction with &crpcut; by adding the command line parameter
-      <constant>-DWITH_GOOGLE_MOCK=yes</constant> to the CMake line
-      when <link xref="building">building</link>. Should CMake be unable
-      to find your google-mock installation, you can help it by further
-      adding the command line parameter
-      <constant>-DGOOGLE_MOCK_DIR=&lt;path-to-google-mock&gt;</constant>.
+      <constant>-DWITH_GOOGLE_MOCK</constant>=yes to the CMake.
+      Should CMake be unable to find your google-mock installation,
+      you can help it by adding the command line parameter
+      <constant>-DGOOGLE_MOCK_DIR</constant>=<symbol>&lt;path-to-google-mock&gt;</symbol>.
     </para>
   </simplesect>
   <simplesect><title>Build documentation</title>
     <para>You are not encouraged to build the documentation yourself,
-      but rather download it from sourceforge. However, should you
-      choose to build it anyway, you will need
+      but rather download it from sourceforge via &doc_download_link;.
+      However, should you choose to build it anyway, you will need
       <itemizedlist>
         <listitem><ulink url="http://www.docbook.org">docbook</ulink>
           XSL NS version 1.75.2 or later.
@@ -243,18 +257,135 @@
         <listitem><ulink url="http://www.gnu.org/software/gdb">Thu GNU
             Project Debugger</ulink>
         </listitem>
+        <listitem><ulink url="http://www.gnu.org/software/make/">GNU Make</ulink></listitem>
         <listitem><ulink url="http://code.google.com/p/googlemock">google-mock</ulink> version 1.4.0 or later.</listitem>
         <listitem>to allow processes do dump core</listitem>
         <listitem>the locales <symbol>sv_SE.utf8</symbol> and
-          <symbol>de_DE.utf8</symbol></listitem>
+          <symbol>de_DE.utf8</symbol>
+        </listitem>
       </itemizedlist>
+    </para>
+    <para>
+      You will also need to add
+      <symbol>-DWITH_HTML_DOCS</symbol>=<constant>yes</constant>
+      to the CMake command line.
     </para>
   </simplesect>
 </chapter>
-<chapter id="building">
-  <title>Building</title>
-</chapter>
-<chapter id="installation">
-  <title>Installing</title>
+<chapter id="building and installing">
+  <title>Building and Installing</title>
+  <simplesect id="cmake">
+    <title>Running cmake</title>
+    <para>Before going on with the actual building, you need to run
+      <ulink url="http://www.cmake.org">CMake</ulink>. Create a temporary
+      directory, which will be referred to as the
+      <symbol>&lt;build-directory&gt;</symbol>.
+    </para>
+    <para>Now, step by step
+      <orderedlist>
+        <listitem>
+          <para>
+            <screen>
+
+     bash &gt; cd &lt;build-directory&gt;
+
+</screen>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Run CMake with the parameters mentioned above. For example, with
+            <symbol>&lt;build-directory&gt;</symbol>=<symbol>/tmp/crpcut-&version;</symbol>,
+            support for
+            <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
+            installed in a directory not known to CMake, and with
+            &lt;prefix-dir&gt; just next to google-mock.
+            <screen>
+
+     bash &gt; cmake -DCMAKE_BUILD_TYPE=debug -DWITH_GOOGLE_MOCK \
+     &gt; -DGOOGLE_MOCK_DIR=/usr/local/development-tools/gmock \
+     &gt; -DCMAKE_INSTALL_PREFIX=/usr/local/development-tools/crpcut \
+     &gt; /tmp/crpcut-&version;
+            </screen>
+          </para>
+          <para>The output should look something like:
+            <screen>
+
+-- The C compiler identification is GNU
+-- The CXX compiler identification is GNU
+-- Check for working C compiler: /usr/bin/gcc
+-- Check for working C compiler: /usr/bin/gcc -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Performing Test HAVE_CXX0X
+-- Performing Test HAVE_CXX0X - Success
+-- Looking for clock_gettime()
+-- Looking for clock_gettime() - not found
+-- Looking for clock_gettime in rt
+-- Looking for clock_gettime in rt - found
+-- Looking for mach_absolute_time
+-- Looking for mach_absolute_time - not found
+-- Looking for getitimer
+-- Looking for getitimer - found
+-- Looking for gettimeofday
+-- Looking for gettimeofday - found
+-- Looking for epoll_ctl
+-- Looking for epoll_ctl - found
+*** compiling with support for valgrind
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /tmp/crpcut-&version;
+
+</screen>
+          </para>
+        </listitem>
+        <listitem>
+          <para>
+            Now you are ready to build &crpcut; All it takes is to run
+            <symbol>make</symbol>.
+            <screen>
+
+     bash &gt; make
+
+</screen>
+          </para>
+          <para>The output from <symbol>make</symbol> is too much to list
+            here.</para>
+        </listitem>
+        <listitem>
+          <para>
+          Run the self test, if you can. Before you start it, make sure the
+          machine is lightly loaded. The self test includes a lot of
+          timeout tests, which can be affected by the load on the host.
+          The self test takes about a minute to run, with all those timeout
+          tests under many different configurations.
+          <screen>
+
+     bash &gt; make selftest
+
+</screen>
+          </para>
+          <para>Again, the output is a bit much to list here.</para>
+        </listitem>
+        <listitem>
+          <para>You are now ready to install &crpcut; Installation is done
+            by running <symbol>make install</symbol>. Make sure you have
+            write permission to <symbol>&lt;prefix-dir&gt;</symbol>.</para>
+        </listitem>
+      </orderedlist>
+    </para>
+    <para>
+      The file <symbol>&lt;build-directory&gt;/install_manifest</symbol>
+      contains a list of every file installed, should you want to remove
+      them.
+    </para>
+    <para>Now that the installation is done, you may want to get on with
+      <link linkend="writing-tests">writing tests</link>.
+    </para>
+  </simplesect>
 </chapter>
 </book>
