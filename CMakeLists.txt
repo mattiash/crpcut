@@ -1507,6 +1507,15 @@ if (WITH_HTML_DOCS)
       ${DOC_SOURCES} ${DOC_SRC_LIB}/crpcut-doc.css crpcut.xsl
       WORKING_DIRECTORY html)
 
+   add_custom_target(
+     homepage.html ALL
+     sed "s:PVERSION:${CRPCUT_PRINT_VERSION}:g\;s:VERSION:${CRPCUT_LIB_VERSION}:g" < ${DOC_SRC_LIB}/homepage.html > homepage.html
+     DEPENDS ${DOC_SRC_LIB}/homepage.html
+     )
+   add_custom_target(
+     homepage.css ALL
+     test -L homepage.css || ln -s ${DOC_SRC_LIB}/homepage.css .
+     )
   endif(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED AND HAVE_GMOCK)
 endif(WITH_HTML_DOCS)
 
@@ -1563,7 +1572,7 @@ install(
   DESTINATION "${SHAREDIR}/example_source"
 )
 install(
-  FILES crpcut.xsd FAQ TODO
+  FILES crpcut.xsd TODO
   DESTINATION "${SHAREDIR}"
   )
 

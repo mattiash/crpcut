@@ -1,0 +1,65 @@
+pre.programlisting {
+    font-size: 80%;
+    background-color: #f0f0ff ;
+    color: #000040 ;
+    border: 1px solid #000066 ;
+}
+pre.screen {
+    font-size: 80%;
+    background-color: #f0f0ff ;
+    color: #000040 ;
+    border: 1px solid #000066 ;
+}
+tr.content {
+    background-color: #ffffe0 ;
+}
+tr.header {
+    background-color: #f0f0f0 ;
+}
+tr.slogan {
+    line-height : 120 % ;
+    font-style: oblique ;
+    font-weight : normal ;
+    font-size : 85% ;
+    vertical-align : center ;
+    background-color : #f0f0f0 ;
+}
+td.navbar {
+    vertical-align : center ;
+    font-family : sans-serif ;
+    font-size : 85% ;
+}
+td.sflogo {
+    font-size : 80% ;
+    font-weight : normal ;
+    vertical-align : top ;
+}
+tr.question {
+    font-weight: bold ;
+}
+tr.question td {
+    vertical-align: baseline;
+}
+div.qandaset dt {
+    line-height: 180% ;
+}
+li {
+    line-height : 130% ;
+}
+span.productname {
+    color: #404040 ;
+    font-style: oblique ;
+}
+span.type {
+    font-family: monospace ;
+}
+span.symbol {
+    font-family: monospace ;
+}
+a img {
+    border: none;
+}
+
+table {
+    border : none ;
+}

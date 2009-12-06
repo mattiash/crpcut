@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>crpcut - the Compartmented Robust Posix C++ Unit Test system</title>
+
+<link href="homepage.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+<table width="100%" cellspacing="0">
+<tr class="header" valign="top"><td class="sflogo" align="left" width="25%">
+hosted by<br/><a href="http://sourceforge.net/projects/crpcut"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=251473&amp;type=9" width="80" height="15" alt="Get crpcut at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a>
+</td><td width="50%" align="center"><span class="productname">crpcut</span> (pronounced "crap cut") is<br>
+the <b>Compartmented Robust Posix C++ Unit Test</b> system<br>
+version PVERSION</td><td width="25%"></td></tr>
+<tr></tr>
+<tr class="slogan" valign="bottom"><td colspan="3" align="center"><br/>With <span class="productname">crpcut</span> it is easy to write tests that other unit-test systems cannot manage.<p/></td></tr>
+<tr class="content"><td class="navbar">
+  <a href="VERSION/FAQ.html">FAQ</a><p/>
+  <a href="VERSION/users-guide.html">User's Guide</a><p/>
+  <a href="VERSION/refman.html">Reference Manual</a><p/>
+  <a href="VERSION/install-guide.html">Installation Guide</a><p/>
+  <a href="VERSION/license.html">LICENSE</a><p/>
+  <a href="http://lists.sourceforge.net/mailman/listinfo/crpcut-users">Support mailing list</p/>
+  <a href="http://crpcut.git.sourceforge.net">GIT repo</a><p/>
+  <a href="http://sourceforge.net/tracker/?group_id=251473">Issue Tracker</a><p/>
+  <a href="http://www.sourceforge.net/projects/crpcut">Project Page</a><p/>
+  <a href="https://sourceforge.net/projects/crpcut/files/crpcut/VERSION/crpcut-VERSION.tar.bz2/download">Source download</a><p/>
+  <a href="https://sourceforge.net/projects/crpcut/files/crpcut/VERSION/crpcut-docs-VERSION.tar.bz2/download">Documentation download</a><p/>
+
+</td><td colspan="2" valign="top">
+  <h4 align="left">Why <span class="productname">crpcut</span>?</h4>
+  <ul>
+    <li>
+      With <span class="productname">crpcut</span> it is easy to write tests.
+      You focus on test structure and test logic, rather than the frames
+      imposed by your test system.<p/>
+    </li>
+    <li>
+      With <span class="productname">crpcut</span> every test runs in its
+      own process and its own working directory. If a test fails,
+      the process is killed before it does further harm. This means that
+      every test starts from a clean slate, unaffected by other tests.<p/>
+    </li>
+    <li>
+      With <span class="productname">crpcut</span> a test can crash or
+      enter an infinite loop, without ill effects to the other tests.<p/>
+    </li>
+    <li>
+      With <span class="productname">crpcut</span> you can set real-time
+      and cpu-time constraints on tests. If they're severely overdrawn,
+      the test case process is killed.<p/>
+    </li>
+    <li>
+      With <span class="productname">crpcut</span> you can stub
+      almost any system library function, or add filters that affects their
+      result.<p/>
+    </li>
+    <li>
+      With <span class="productname">crpcut</span> you can limit
+      heap availability to a test case, and test for memory leaks.<p/>
+    </li>
+    <li>
+      With <span class="productname">crpcut</span> you can define
+      dependencies between tests and between testsuites, so that
+      if a fundamental test fails, those depending on it need not
+      clutter the test report.
+    </li>
+  </ul>
+</td>
+</table>
+</body>
