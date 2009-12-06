@@ -10,6 +10,18 @@ pre.screen {
     color: #000040 ;
     border: 1px solid #000066 ;
 }
+th.slogan {
+    line-height : 20 % ;
+    font-style: oblique ;
+    font-weight : normal ;
+    font-size : 70% ;
+    vertical-align : center ;
+}
+th.sflogo {
+    font-size : 70% ;
+    font-weight : normal ;
+    vertical-align : top ;
+}
 tr.question {
     font-weight: bold ;
 }
@@ -22,6 +34,9 @@ div.qandaset dt {
 span.productname {
     color: #404040 ;
     font-style: oblique ;
+}
+span.type {
+    font-family: monospace ;
 }
 a img {
     border: none;

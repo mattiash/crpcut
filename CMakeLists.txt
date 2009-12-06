@@ -35,15 +35,16 @@ set(CRPCUT_LIB_MAJOR_VERSION "0")
 set(CRPCUT_LIB_MINOR_VERSION "8")
 set(CRPCUT_LIB_PATCH_VERSION "2")
 set(CRPCUT_LIB_ALIAS_VERSION "1.0-beta3")
-set(CRPCUT_VERSION "${CRPCUT_MAJOR_VERSION}.${CRPCUT_MINOR_VERSION}.{CRPCUT_PATCH_VERSION}")
-if (CRPCUT_LIB_ALIAS_VERSION)
-  set(CRPCUT_VERSION "${CRPCUT_VERSION} (${CRPCUT_LIB_ALIAS_VERSION})")
-endif (CRPCUT_LIB_ALIAS_VERSION)
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "-O")
 set(CMAKE_CXX_FLAGS_MAINT "-ggdb -Wall -Wextra -Wcast-qual -Wconversion -Wshadow -Wunused-parameter -Wwrite-strings -pedantic -Wno-variadic-macros -D_GLIBCXX_DEBUG=1")
 set(CRPCUT_LIB_VERSION "${CRPCUT_LIB_MAJOR_VERSION}.${CRPCUT_LIB_MINOR_VERSION}.${CRPCUT_LIB_PATCH_VERSION}")
 set(CRPCUT_LIB_SOVERSION ${CRPCUT_LIB_MAJOR_VERSION})
+if (CRPCUT_LIB_ALIAS_VERSION)
+  set(CRPCUT_PRINT_VERSION "${CRPCUT_LIB_VERSION} \\(a.k.a ${CRPCUT_LIB_ALIAS_VERSION}\\)")
+else (CRPCUT_LIB_ALIAS_VERSION)
+  set(CRPCUT_PRINT_VERSION "${CRPCUT_LIB_VERSION}")
+endif (CRPCUT_LIB_ALIAS_VERSION)
 set(SHAREDIR "share/crpcut-${CRPCUT_LIB_VERSION}")
 file(GLOB LIB_SRCS
      src/clocks.cpp
@@ -272,10 +273,10 @@ add_custom_target(can_dump_core
 find_program(XSLTPROC "xsltproc")
 find_program(SED "sed")
 file(GLOB HTML_CHUNK_XSL
-  "/usr/share/xml/docbook/stylesheet/docbook-xsl-ns/html/chunk.xsl")
+  /usr/share/xml/docbook/stylesheet/docbook-xsl-ns/html/chunk.xsl)
 if (NOT HTML_CHUNK_XSL)
   file(GLOB HTML_CHUNK_XSL
-    "/usr/share/sgml/docbook/xsl-ns-stylesheets/html/chunk.xsl")
+    /usr/share/sgml/docbook/xsl-ns-stylesheets/html/chunk.xsl)
 endif(NOT HTML_CHUNK_XSL)
 find_program(GDB "gdb")
 if (NOT XSLTPROC)
@@ -1415,30 +1416,18 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED AND HAVE_GMOCK)
     test -L doc-src || ln -s ${DOC_SRC_LIB} doc-src
     )
 
+  add_custom_target(
+    crpcut.xsl
+    cat ${DOC_SRC_LIB}/crpcut-template.xsl | sed "s?CHUNK?${HTML_CHUNK_XSL}?g\;s?PVERSION?${CRPCUT_PRINT_VERSION}?g\;s?VERSION?${CRPCUT_LIB_VERSION}?g" > crpcut.xsl
+    )
   #
   # refman
   #
   add_custom_target(
     html_docs
     ${XSLTPROC}
-    --stringparam chunk.first.sections 1
-    --stringparam navig.graphics 1
-    --stringparam navig.graphics.extension .png
-    --stringparam navig.graphics.path images/
-    --stringparam admon.graphics 1
-    --stringparam admon.graphics.extension .png
-    --stringparam admon.graphics.path images/
-    --stringparam admon.graphic.width 57
-    --stringparam html.stylesheet crpcut-doc.css
-    --stringparam highlight.source 1
-    --stringparam use.id.as.filename 1
-    --stringparam use.extensions 1
-    --stringparam textinsert.extension 1
-    --stringparam toc.section.depth 1
-    --stringparam toc.max.depth 2
-    --stringparam callout.graphics 0
     --xinclude
-    ${HTML_CHUNK_XSL} - < ${TOP_DOC_SOURCE}
+    ${CMAKE_BINARY_DIR}/crpcut.xsl - < ${TOP_DOC_SOURCE}
     DEPENDS html
     doc-src
     stripped-src/all_tests.cpp sample-output/all_tests.out
@@ -1505,7 +1494,7 @@ if(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED AND HAVE_GMOCK)
     stripped-src/template-pred.cpp sample-output/template-pred.out
     stripped-src/gmock-example.cpp sample-output/gmock-example.out
     can_dump_core
-    ${DOC_SOURCES} ${DOC_SRC_LIB}/crpcut-doc.css
+    ${DOC_SOURCES} ${DOC_SRC_LIB}/crpcut-doc.css crpcut.xsl
     WORKING_DIRECTORY html)
 
   install(

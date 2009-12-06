@@ -2,6 +2,8 @@
 <!DOCTYPE book
           [
           <!ENTITY crpcut "<productname xmlns='http://docbook.org/ns/docbook'>crpcut</productname>">
+          <!ENTITY vcrpcut "<productname xmlns='http://docbook.org/ns/docbook'>crpcut-<print_version xmlns=''/></productname>">
+          <!ENTITY version      "<version/>">
 ]>
 <book version="5.0" encoding="ascii"  xml:lang="en"
       id="install-guide"
@@ -10,7 +12,7 @@
       xmlns:xlink='http://www.w3.org/1999/xlink'>
 <title>&crpcut; Installation Guide</title>
 <chapter id="requirements">
-  <title>&crpcut; Requirements</title>
+  <title>&vcrpcut; Requirements</title>
   <para>The minimum requirement for installing and using &crpcut; is
     a modern <symbol>C++</symbol> compiler, a highly POSIX compliant
     operating system and <ulink url="http://www.cmake.org">CMake</ulink>.
