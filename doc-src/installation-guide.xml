@@ -165,7 +165,7 @@
   <title>Preparation</title>
   <simplesect><title>Download &crpcut;</title>
     <para>
-      If you haven't alread done so, download the &crpcut; sources
+      If you haven't already done so, download the &crpcut; sources
       from &src_download_link;. The directory you unpack
       the sources to will be called <symbol>&lt;source-dir&gt;</symbol>
       in the rest of this guide. You may also want to download the
@@ -192,7 +192,7 @@
       running CMake, &crpcut; will add instrumentation instructions for
       valgrind. These instrumentation instructions are no-ops when running
       natively, or on a machine that doesn't have valgrind, but can help
-      immensly in finding memory access errors when running tests undir
+      immensely in finding memory access errors when running tests under
       valgrind.
     </para>
     <para>If you build &crpcut; for a binary distribution, you should
@@ -227,7 +227,7 @@
       need <ulink url="http://www.ruby-lang.org">ruby</ulink>,
       and you must enable core-dumps as "core" in the current working
       directory (since the self test verifies that certain crashes do
-      dump core as expected.) If you run Linux, enure that
+      dump core as expected.) If you run Linux, ensure that
       <symbol>/proc/sys/kernel/core_pattern</symbol> contains only the
       word "<symbol>core</symbol>".
     </para>

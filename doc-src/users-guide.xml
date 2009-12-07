@@ -566,7 +566,7 @@
       </para>
       <note>With <type>crpcut::regex</type> you can only assert that strings
         match a regular expression. If you need more advanced functionality,
-        for example picking substrings for decisions, you have to use
+        for example picking sub strings for decisions, you have to use
         either <function>regcomp()</function> and <function>regexec()</function>,
         or <symbol>C++</symbol> <type>std::regex</type> if your compiler
         supports it.</note>
@@ -749,12 +749,12 @@
 </programlisting>
     </para>
     <para>In this case, simple stubs are used to provide preprogrammed
-      behaviour, and fall back to the normal library function when nothing
+      behavior, and fall back to the normal library function when nothing
       preprogrammed exists.</para>
     <para>The test program is a bit long, but take some time to read
       it through. For each wrapped library function, there is a
       configuration in the shape of a list. If the list is
-      empty, the normal function applies, otherwise the behaviour mandated
+      empty, the normal function applies, otherwise the behavior mandated
       by the list-item is carried out. <function>pipe</function>()
       calls the library function, unless explicitly instructed to fail,
       but stores the allocated file descriptors for later use.
@@ -763,10 +763,10 @@
       they are verified to be in valid state.</para>
     <caution>
       Your versions of the library functions are in effect for all tests
-      in the entire program. Make sure they have a decent default behaviour
+      in the entire program. Make sure they have a decent default behavior
       to save yourself from debugging headaches.
     </caution>
-    <para>A short walkthrough of the tests:
+    <para>A short walk-through of the tests:
       <variablelist>
         <varlistentry>
           <term><type>fork_fails</type></term>
@@ -782,7 +782,7 @@
         <varlistentry>
           <term><type>pipe_fails</type></term>
           <listitem>
-            <para>Onfy one configuration which ensures that
+            <para>Only one configuration which ensures that
               <function>pipe</function>() fails with
               <constant>EMFILE</constant>.
               Verify that the constructor throws
@@ -797,7 +797,7 @@
             <para>The complex one, where all library function wrappers
               are strictly controlled. <function>fork</function>() will
               return a <type>pid</type>, thus testing the parent process
-              behaviour.</para>
+              behavior.</para>
             <para>
               The <function>pipe</function>() wrapper lets the calls
               to the library function through, but it stores the
@@ -873,7 +873,7 @@
             the constructor, the parent would've received a
             <constant>SIGCHLD</constant>. Since it ignores that signal,
             nothing would have been gained, and that might be lucky.
-            With the nonexisting return value check, it would've failed to
+            With the non-existing return value check, it would've failed to
             notice the signal, and might've returned an empty string,
             as expected by the test.
           </para>

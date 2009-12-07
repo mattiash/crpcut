@@ -1969,7 +1969,7 @@ int main(int argc, char *argv[])
       <xref linkend="single-shot" xrefstyle="select:title"/>
       command line parameter, which prevents it from being spawned as
       a separate process.</para>
-    <para>A breakpoint can then be set on
+    <para>A break point can then be set on
       <type>testcasename::</type><function>test()</function>
     </para>
     <para>Example: To debug the test case <type>assert_eq_fails</type> in
