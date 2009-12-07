@@ -1984,7 +1984,7 @@ int main(int argc, char *argv[])
     </para>
   </section>
 </chapter>
-<chapter id="license">
+<appendix id="license">
   <title>LICENSE</title>
   <screen>
 
@@ -2012,5 +2012,43 @@ int main(int argc, char *argv[])
  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  SUCH DAMAGE.
   </screen>
-</chapter>
+</appendix>
+<appendix id="support">
+  <title>Support</title>
+  <variablelist>
+    <varlistentry><term>Questions, suggestions and pleas for help</term>
+      <listitem>
+        <para>
+          The <ulink url="http://lists.sourceforge.net/mailman/listinfo/crpcut-users">support mailing list</ulink> is the place to go.
+        </para>
+      </listitem>
+    </varlistentry>
+    <varlistentry>
+      <term>Bug reports</term>
+      <listitem>
+        <para>
+          Use the
+          <ulink url="http://sourceforge.net/tracker/?group_id=251473">Issue
+            tracker</ulink>.
+        </para>
+      </listitem>
+    </varlistentry>
+    <varlistentry>
+      <term>Homepage</term>
+      <listitem>
+        <para>
+          <ulink url="http://crpcut.sourceforge.net">http://crpcut.sourceforge.net</ulink>
+        </para>
+      </listitem>
+    </varlistentry>
+    <varlistentry>
+      <term>Sourceforge project page</term>
+      <listitem>
+        <para>
+          <ulink url="http://www.sourceforge.net/projects/crpcut">http://www.sourceforge.net/projects/crpcut</ulink>
+        </para>
+      </listitem>
+    </varlistentry>
+  </variablelist>
+</appendix>
 </book>
