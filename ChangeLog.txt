@@ -1,3 +1,31 @@
+2009-10-07 0.8.3 (a.k.a. 1.0-RC1)
+
+         * The most visible update is the documentation, which received
+           a total remake. Read online on http://crpcut.sourceforge.net,
+           or download it separately (link on the homepage.)
+
+         * You no longer need to access crpcut functions through
+           the crpcut::test_case_factory singleton. Functions exist
+           directly under namespace crpcut.
+
+         * Fixed a bug with regular expression which wrongly reported
+           out of memory on some patterns.
+
+         * Fixed a bug when a test case forked a child process, and
+           misbehaved. If the child never died, the test case became
+           a zombie and would hold up crpcut indefinitely. If the
+           child executed crpcut macros, the engine got confused
+           beyond all hope of recovery.
+
+         * Yet a namespace pollution was cleaned up.
+
+         * Adding new descriptions to libraries when creating wrapper
+           functions is simplified. Please see the documentation for
+           details. Unfortunately this change breaks existing code,
+           but it does fortunately not require much editing.
+
+         * Minor improvements to some error reports.
+
 2009-11-15 0.8.2 (a.k.a. 1.0-beta-3)
 
          * Fixed accidental namespace pollution that unfortunately

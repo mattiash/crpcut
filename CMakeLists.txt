@@ -33,8 +33,8 @@ include(CheckLibraryExists)
 
 set(CRPCUT_LIB_MAJOR_VERSION "0")
 set(CRPCUT_LIB_MINOR_VERSION "8")
-set(CRPCUT_LIB_PATCH_VERSION "2")
-set(CRPCUT_LIB_ALIAS_VERSION "1.0-beta3")
+set(CRPCUT_LIB_PATCH_VERSION "3")
+set(CRPCUT_LIB_ALIAS_VERSION "1.0-RC1")
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "-O")
 set(CMAKE_CXX_FLAGS_MAINT "-ggdb -Wall -Wextra -Wcast-qual -Wconversion -Wshadow -Wunused-parameter -Wwrite-strings -pedantic -Wno-variadic-macros -D_GLIBCXX_DEBUG=1")
@@ -1509,13 +1509,18 @@ if (WITH_HTML_DOCS)
       WORKING_DIRECTORY html)
 
    add_custom_target(
-     homepage.html ALL
-     sed "s:PVERSION:${CRPCUT_PRINT_VERSION}:g\;s:VERSION:${CRPCUT_LIB_VERSION}:g" < ${DOC_SRC_LIB}/homepage.html > homepage.html
+     homepage-${CRPCUT_LIB_VERSION}.html ALL
+     sed "s:PVERSION:${CRPCUT_PRINT_VERSION}:g\;s:VERSION:${CRPCUT_LIB_VERSION}:g" < ${DOC_SRC_LIB}/homepage.html > homepage-${CRPCUT_LIB_VERSION}.html
      DEPENDS ${DOC_SRC_LIB}/homepage.html
      )
    add_custom_target(
-     homepage.css ALL
-     test -L homepage.css || ln -s ${DOC_SRC_LIB}/homepage.css .
+     homepage-${CRPCUT_LIB_VERSION}.css ALL
+     test -L homepage-${CRPCUT_LIB_VERSION}.css || ln -s ${DOC_SRC_LIB}/homepage.css ./homepage-${CRPCUT_LIB_VERSION}.css
+     )
+
+   add_custom_target(
+     sourceforge-release
+     ${DOC_SRC_LIB}/make-release-archives "${CMAKE_SOURCE_DIR}" "${CRPCUT_LIB_VERSION}" "${CMAKE_INSTALL_PREFIX}"
      )
   endif(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED AND HAVE_GMOCK)
 endif(WITH_HTML_DOCS)

@@ -1,0 +1,48 @@
+#!/bin/bash
+
+src_path="$1"
+version="$2"
+prefix="$3"
+tag="release-${version}"
+bindir=$(pwd)
+share_dir="${prefix}/share/crpcut-${version}"
+tmpdir=$(mktemp -d)
+
+src_tar="crpcut-${version}.tar.bz2"
+doc_tar="crpcut-doc-${version}.tar.bz2"
+sf_tar="crpcut-sf-${version}.tar.bz2"
+[ -e "$src_tar" ] && rm "$src_tar"
+[ -e "$doc_tar" ] && rm "$doc_tar"
+[ -e "$sf_tar"  ] && rm "$sf_tar"
+
+pushd "$src_path"
+grep -q "$version" ChangeLog.txt || {
+    echo "$version is missing in changelog"
+    exit 1
+}
+grep -q "$version" INSTALL || {
+    echo "Wrong URL in INSTALL"
+    exit 1
+}
+
+git tag -l "$tag" --contains HEAD | grep -q "$tag" || {
+  echo $tag is not HEAD
+  exit 1
+}
+
+git archive --prefix="crpcut-${version}"/ "$tag" | bzip2 > "${bindir}/${src_tar}" || exit 1
+popd
+pushd "$tmpdir" || exit 1
+ln -s "${share_dir}/doc/html" "crpcut-doc-${version}" || exit 1
+tar cfjh "${bindir}/${doc_tar}" "crpcut-doc-${version}" || exit 1
+rm "crpcut-doc-${version}" || exit 1
+ln -s "${share_dir}/doc/html" "${version}" || exit 1
+ln -s "${bindir}/homepage-${version}.html" .
+ln -s "${bindir}/homepage-${version}.css" .
+tar cfjh "${bindir}/${sf_tar}" * || exit 1
+rm "./homepage-${version}.html"
+rm "./homepage-${version}.css"
+rm "$version" || exit 1
+popd
+rmdir "$tmpdir" || exit 1
+
