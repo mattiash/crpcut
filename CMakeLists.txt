@@ -392,6 +392,7 @@ if (WITH_HTML_DOCS)
     add_custom_target(
       debug_assert_eq_fails.out
       ${GDB} ../test/assert_eq_fails  < ${DEBUG_CMD} | sed "1,1s/^.*\\(GNU.*\\)/bash > gdb .\\/test\\/assert_eq_fails\\n\\1/g;s/\\((gdb).*\\)(gdb) \\(.*\\)$/\\1\\n\\2/g;s/^\\(..\\)\\((gdb).*\\)/\\1\\n\\2/g;s/\\[answered.*//g"  > debug_assert_eq_fails.out
+      DEPENDS sample-output assert_eq_fails
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
