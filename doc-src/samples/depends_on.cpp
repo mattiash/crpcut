@@ -38,7 +38,7 @@ TESTSUITE(basics)
 {
   TEST(construct)
   {
-    A *p = new A(); // leak
+    (void)new A(); // intentionally leak
   }
 
   TEST(destroy, DEPENDS_ON(construct))

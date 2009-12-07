@@ -50,7 +50,8 @@ TEST(first_test, fixture_string, fixture_int)
 
 TEST(second_test, fixture_string, fixture_int)
 {
-  ASSERT_EQ(fixture_string::val.length(), fixture_int::val);
+  ASSERT_EQ(fixture_string::val.length(),
+            std::string::size_type(fixture_int::val));
 }
 
 int main(int argc, char *argv[])

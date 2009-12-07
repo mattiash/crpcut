@@ -31,7 +31,7 @@ class type {};
 
 TEST(assert_no_throw_succeeds)
 {
-  int n;
+  int n = 0;
   ASSERT_NO_THROW(n+=3);
 }
 

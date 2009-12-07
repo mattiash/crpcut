@@ -33,12 +33,12 @@ template <typename T>
 class moving_avg
 {
 public:
-  moving_avg() : avg(T()), n(0) {}
+  moving_avg() : avg(T()), n(T()) {}
   moving_avg& operator+=(T t) { ++n; avg-= (avg - t)/n; return *this; }
   operator T() const { return avg; }
 private:
   T avg;
-  int n;
+  T n;
 };
 
 static const unsigned count = 300;
@@ -49,8 +49,8 @@ TEST(too_narrow)
   float sum = 0.0;
   for (unsigned n = 0; n < count; ++n)
     {
-      mavg+= 1.0/3 + n;
-      sum+= 1.0/3 + n;
+      mavg+= 1.0f/3 + float(n);
+      sum+= 1.0f/3 + float(n);
    }
   float avg = sum/count;
   ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(2), float(mavg), avg);
@@ -62,8 +62,8 @@ TEST(close_enough)
   float sum = 0.0;
   for (unsigned n = 0; n < count; ++n)
     {
-      mavg+= 1.0/3 + n;
-      sum+= 1.0/3 + n;
+      mavg+= 1.0f/3 + float(n);
+      sum+= 1.0f/3 + float(n);
     }
   float avg = sum/count;
   ASSERT_PRED(crpcut::match<crpcut::ulps_diff>(10), float(mavg), avg);

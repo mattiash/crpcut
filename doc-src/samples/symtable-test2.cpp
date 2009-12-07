@@ -60,7 +60,7 @@ TEST(insert_and_lookup, stdinsert)
 
 TEST(lookup_nonexisting, stdinsert, EXPECT_EXCEPTION(std::out_of_range))
 {
-  int v = s.lookup("three");
+  s.lookup("three");
 }
 
 TEST(add_null, nullinsert)
@@ -69,7 +69,7 @@ TEST(add_null, nullinsert)
 
 TEST(lookup_null, stdinsert, EXPECT_SIGNAL_DEATH(SIGABRT), NO_CORE_FILE)
 {
-  int v = s.lookup(0);
+  s.lookup(0);
 }
 
 int main(int argc, char *argv[])

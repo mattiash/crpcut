@@ -39,7 +39,7 @@ private:
 
 TEST(create)
 {
-  to_be_tested *p = new to_be_tested;
+  (void)new to_be_tested; // intentional leak
 }
 
 TEST(destroy, DEPENDS_ON(create))

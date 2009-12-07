@@ -57,8 +57,8 @@ public:
   T *prev() { return p_prev; }
   bool is_empty() const { return p_next == p_prev && p_next == this; }
 private:
-  T *p_next;
   T *p_prev;
+  T *p_next;
 };
 
 

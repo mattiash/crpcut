@@ -32,12 +32,12 @@ template <typename T>
 class moving_avg
 {
 public:
-  moving_avg() : avg(T()), n(0) {}
+  moving_avg() : avg(T()), n(T()) {}
   moving_avg& operator+=(T t) { ++n; avg-= (avg - t)/n; return *this;}
   operator T() const { return avg; }
 private:
   T avg;
-  int n;
+  T n;
 };
 
 static const int count = 10;
@@ -48,8 +48,8 @@ TEST(too_narrow)
   float sum = 0.0;
   for (int n = -count; n < count; ++n)
     {
-      sum+= 1.0/3000 + n;
-      mavg += 1.0/3000 + n;
+      sum+= 1.0f/3000 + float(n);
+      mavg += 1.0f/3000 + float(n);
     }
   float avg = sum / (2*count);
   float slack = std::numeric_limits<float>::min();
@@ -62,8 +62,8 @@ TEST(close_enough)
   float sum = 0.0;
   for (int n = -count; n <= count; ++n)
     {
-      sum+= n;
-      mavg += n;
+      sum+= float(n);
+      mavg += float(n);
     }
   float avg = sum / (2*count + 1);
   ASSERT_PRED(crpcut::match<crpcut::abs_diff>(1e-6F), float(mavg), avg);

@@ -31,7 +31,7 @@ TESTSUITE(construct_and_destroy)
 {
   TEST(construct)
   {
-    symtable *s = new symtable; // intentional leak
+    (void)new symtable; // intentional leak
   }
 
   TEST(destroy, DEPENDS_ON(construct))
@@ -72,7 +72,7 @@ TESTSUITE(abnormal, DEPENDS_ON(ALL_TESTS(normal_access)))
    {
      symtable s;
      s.add("one", 1);
-     int v = s.lookup("two");
+     s.lookup("two");
    }
 
   TEST(add_null, EXPECT_SIGNAL_DEATH(SIGABRT), NO_CORE_FILE)
@@ -85,7 +85,7 @@ TESTSUITE(abnormal, DEPENDS_ON(ALL_TESTS(normal_access)))
   {
     symtable s;
     s.add("one", 1);
-    int v = s.lookup(0);
+    s.lookup(0);
   }
 }
 

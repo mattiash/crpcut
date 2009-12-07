@@ -42,7 +42,7 @@ TEST(first_test, fixture)
 
 TEST(second_test, fixture)
 {
-  ASSERT_EQ(str.length(), 11);
+  ASSERT_EQ(str.length(), std::string::size_type(11));
 }
 
 int main(int argc, char *argv[])

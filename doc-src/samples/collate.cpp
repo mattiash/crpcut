@@ -27,8 +27,8 @@
 
 #include <crpcut.hpp>
 
-char str1_utf8[] = { 0xc3, 0xb6, 'z', 0 };
-char str2_utf8[] = { 'z', 0xc3, 0xb6, 0};
+char str1_utf8[] = { '\xc3', '\xb6', 'z', 0 };
+char str2_utf8[] = { 'z', '\xc3', '\xb6', 0};
 
 
 TEST(in_german_locale)

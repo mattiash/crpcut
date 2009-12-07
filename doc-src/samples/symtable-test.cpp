@@ -40,7 +40,7 @@ TEST(lookup_nonexisting, EXPECT_EXCEPTION(std::out_of_range))
 {
   symtable s;
   s.add("one", 1);
-  int v = s.lookup("two");
+  s.lookup("two");
 }
 
 TEST(add_null, EXPECT_SIGNAL_DEATH(SIGABRT), NO_CORE_FILE)
@@ -53,7 +53,7 @@ TEST(lookup_null, EXPECT_SIGNAL_DEATH(SIGABRT), NO_CORE_FILE)
 {
   symtable s;
   s.add("one", 1);
-  int v = s.lookup(0);
+  s.lookup(0);
 }
 
 int main(int argc, char *argv[])
