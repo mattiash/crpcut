@@ -26,10 +26,10 @@
     <span>PVERSION</span>
   </xsl:template>
   <xsl:template match="src_download_link">
-    <a href="https://sourceforge.net/projects/crpcut/files/crpcut/VERSION/crpcut-VERSION.tar.bz2/download">https://sourceforge.net/projects/crpcut/files/crpcut/VERSION/crpcut-VERSION.tar.bz2/download</a>
+    <a href="http://downloads.sourceforge.net/crpcut/crpcut-VERSION.tar.bz2">http://downloads.sourceforge.net/crpcut/crpcut-VERSION.tar.bz2</a>
   </xsl:template>
   <xsl:template match="doc_download_link">
-    <a href="https://sourceforge.net/projects/crpcut/files/crpcut/VERSION/crpcut-docs-VERSION.tar.bz2/download">https://sourceforge.net/projects/crpcut/files/crpcut/VERSION/crpcut-docs-VERSION.tar.bz2/download</a>
+    <a href="http://downloads.sourceforge.net/crpcut/crpcut-doc-VERSION.tar.bz2">http://downloads.sourceforge.net/crpcut/crpcut-doc-VERSION.tar.bz2</a>
   </xsl:template>
   <xsl:template name="user.header.navigation">
     <table width="100%">
