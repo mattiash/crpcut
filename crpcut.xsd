@@ -58,6 +58,8 @@
   <xs:complexType name="statistics">
     <xs:sequence>
       <xs:element name="registered_test_cases" type="xs:unsignedInt"/>
+      <xs:element name="selected_test_cases" type="xs:unsignedInt"/>
+      <xs:element name="untested_test_cases" type="xs:unsignedInt"/>
       <xs:element name="run_test_cases" type="xs:unsignedInt"/>
       <xs:element name="failed_test_cases" type="xs:unsignedInt"/>
     </xs:sequence>
