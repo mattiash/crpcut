@@ -75,4 +75,14 @@ TESTSUITE(output)
   {
     INFO << "apa" << std::endl << "katt";
   }
+
+  struct S {
+    double d[2];
+    float  f;
+  };
+  TEST(should_succeed_with_big_unstreamable_obj)
+  {
+    S s = { { 1.3, 3.14 }, 1.1f };
+    INFO << s;
+  }
 }

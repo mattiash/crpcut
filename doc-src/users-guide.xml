@@ -73,7 +73,9 @@
         will always give a separate log item for the test, unlike
         <symbol>stdout</symbol> and <symbol>stderr</symbol> which can behave
         differently from run to run, depending on buffering and
-        scheduling.</para>
+        scheduling. <xref linkend="INFO" xrefstyle="select:title"/> can be
+        used also for types that has no output stream operator. For those,
+        a hex dump will be displayed for the object's memory region.</para>
       <para>A test is a class, and the test body is the body of the
         member function <function>test()</function>. A test succeeds
         if it returns from the function body without having

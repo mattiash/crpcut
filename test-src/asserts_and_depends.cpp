@@ -346,7 +346,7 @@ TEST(should_succeed_reading_file_in_start_dir)
   std::ifstream in(s.c_str());
   std::string content;
   in >> content;
-  INFO << "in.rdstate()=" << std::hex << in.rdstate();
+  INFO << "in.rdstate()=" <<  in.rdstate();
   ASSERT_EQ(content, "apa");
 }
 

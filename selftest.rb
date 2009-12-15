@@ -695,7 +695,7 @@ TESTS = {
 
   'should_succeed_reading_file_in_start_dir' =>
   Test.new('PASSED').
-  log('info', /in.rdstate\(\)=(0x)?0+/),
+  log('info', /in.rdstate\(\)=\d-byte object <[ 0-9A-Fa-f]+>/),
 
  'should_not_run_due_to_failed_left_behind_files_success_otherwise' =>
   Test.new('PASSED'),
@@ -743,6 +743,11 @@ TESTS = {
   'output::should_succeed_with_stdout' =>
   Test.new('PASSED').
   log('stdout', /hello/),
+
+  'output::should_succeed_with_big_unstreamable_obj' =>
+  Test.new('PASSED').
+  log('info',
+      /byte object <(\n[ a-fA-F0-9]+){2}\s*\n\s+>/me),
 
   'suite_deps::simple_all_ok::should_succeed' =>
   Test.new('PASSED'),

@@ -1097,9 +1097,10 @@ namespace crpcut {
     {
     public:
       direct_reporter() : heap_limit(heap::set_limit(heap::system)) {}
-      direct_reporter& operator<<(const void *v) { os << v; return *this; }
       template <typename V>
-      direct_reporter& operator<<(const V& v) { os << v;  return *this;  }
+      direct_reporter& operator<<(V& v);
+      template <typename V>
+      direct_reporter& operator<<(const V& v);
       template <typename V>
       direct_reporter& operator<<(V (&p)(V)){ os << p; return *this; }
       template <typename V>
@@ -1599,16 +1600,35 @@ namespace crpcut {
     {
       static void stream(std::ostream &os, const T& t)
       {
-        os << sizeof(T) << "-byte object <";
+        static const char lf[] = "\n    ";
+        const size_t bytes = sizeof(T);
+        os << bytes << "-byte object <";
+        if (bytes > 8) os << lf;
         const char *p = static_cast<const char *>(static_cast<const void*>(&t));
         char old_fill = os.fill();
         std::ios_base::fmtflags old_flags = os.flags();
         os   << std::setfill('0') ;
-        for (size_t n = 0; n < sizeof(T); ++n)
+        size_t n = 0;
+        for (; n < sizeof(T); ++n)
           {
-            if (n > 0U && ((n & 1) == 0)) os << ' ';
             os << std::hex << std::setw(2)
                << (static_cast<unsigned>(p[n]) & 0xff);
+            if ((n & 15) == 15)
+              {
+                os << lf;
+              }
+            else if ((n & 3) == 3 && n != bytes - 1)
+              {
+                os << "  ";
+              }
+            else if ((n & 1) == 1 && n != bytes - 1)
+              {
+                os << ' ';
+              }
+          }
+        if (bytes > 8 && (n & 15) != 0)
+          {
+            os << lf;
           }
         os.flags(old_flags);
         os.fill(old_fill);
@@ -2420,6 +2440,7 @@ namespace crpcut {
 
   } // namespace implementation
 
+
   template <case_convert_type converter>
   class collate_t
   {
@@ -2872,6 +2893,7 @@ namespace crpcut {
 
   namespace comm {
 
+
     inline
     reporter::reporter()
       : write_fd(0),
@@ -2949,6 +2971,21 @@ namespace crpcut {
           bytes_read += rv;
         }
     }
+
+    template <comm::type t> template <typename V>
+    direct_reporter<t>& direct_reporter<t>::operator<<(const V& v)
+    {
+      implementation::conditionally_stream(os, v);
+      return *this;
+    }
+
+    template <comm::type t> template <typename V>
+    direct_reporter<t>& direct_reporter<t>::operator<<(V& v)
+    {
+      implementation::conditionally_stream(os, v);
+      return *this;
+    }
+
   } // namespace comm
 
   namespace implementation {

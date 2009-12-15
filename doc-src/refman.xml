@@ -868,6 +868,13 @@
       <function>FAIL</function> macro as any output stream. All information
       desired in the error report must fit in one single statement.
     </para>
+    <para>If the data to be printed has an output stream operator, it will
+      be used for the formatting, otherwise a hex-dump of the object memory
+      will be shown.
+      <note>Since <function>FAIL</function> uses a templated
+        <function>operator&lt;&lt;</function>, it only works with
+        types defined in global/namespace scope.</note>
+    </para>
       <para>Example: The test program
         <programlisting language="c++">
 <xi:include href="../stripped-src/fail.cpp" parse="text"/>
@@ -898,7 +905,13 @@
       (or if the test is runs in verbose mode, see the
       <xref linkend="verbose" xrefstyle="select:title"/> command line flag.)
     </para>
-
+    <para>If the data to be printed has an output stream operator, it will
+      be used for the formatting, otherwise a hex-dump of the object memory
+      will be shown.
+      <note>Since <function>INFO</function> uses a templated
+        <function>operator&lt;&lt;</function>, it only works with
+        types defined in global/namespace scope.</note>
+    </para>
       <para>Example: The test program
         <programlisting language="c++">
 <xi:include href="../stripped-src/info.cpp" parse="text"/>
