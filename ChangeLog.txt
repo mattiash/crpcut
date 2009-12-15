@@ -1,4 +1,24 @@
-2009-10-07 0.8.3 (a.k.a. 1.0-RC1)
+2009-12-15 0.8.4 (a.k.a. 1.0-RC2)
+
+         * Improved error reporting when a test case spawns a
+           child process which runs crpcut code.
+
+         * Allow the use of INFO and FAIL streamers also for
+           objects which lacks output stream operator (by printing
+           a hex dump of the memory region.)
+
+         * Improved readability of hex-dumps for large objects.
+
+         * Complemented the XML version of the statistics block
+           to include selected_test_cases and untested_test_cases
+           (both as unsigned integers.) Since this is purely an
+           addition, the XML-schema change is not expected to
+           break any XSLT processing of the result.
+
+         * Fixed an internal bug that caused a pipe to be
+           double-closed.
+
+2009-12-07 0.8.3 (a.k.a. 1.0-RC1)
 
          * The most visible update is the documentation, which received
            a total remake. Read online on http://crpcut.sourceforge.net,
