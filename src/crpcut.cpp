@@ -391,19 +391,23 @@ namespace crpcut {
       }
       void close()
       {
-        if (fds[0] >= 0) { wrapped::close(fds[0]); fds[0] = -1; }
-        if (fds[1] >= 0) { wrapped::close(fds[1]); fds[1] = -1; }
+        if (fds[0] >= 0) { int rv = wrapped::close(fds[0]); assert(rv == 0); fds[0] = -1;}
+        if (fds[1] >= 0) { int rv = wrapped::close(fds[1]); assert(rv == 0); fds[1] = -1; }
       }
       int for_reading(purpose p = keep_ownership)
       {
-        wrapped::close(fds[1]);
+        int rv = wrapped::close(fds[1]);
+        assert(rv == 0);
+        fds[1] = -1;
         int n = fds[0];
         if (p == release_ownership) fds[0] = -1;
         return n;
       }
       int for_writing(purpose p = keep_ownership)
       {
-        wrapped::close(fds[0]);
+        int rv = wrapped::close(fds[0]);
+        assert(rv == 0);
+        fds[0] = -1;
         int n = fds[1];
         if (p == release_ownership) fds[1] = -1;
         return n;
@@ -598,7 +602,8 @@ namespace crpcut {
 
   void test_case_factory::kill_presenter_process()
   {
-    wrapped::close(presenter_pipe);
+    int rc = wrapped::close(presenter_pipe);
+    assert(rc == 0);
     ::siginfo_t info;
     for (;;)
       {
