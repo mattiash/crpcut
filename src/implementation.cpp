@@ -127,9 +127,12 @@ namespace crpcut {
       do {
         rv = wrapped::read(fd, &t, sizeof(t));
       } while (rv == -1 && errno == EINTR);
+      int kill_mask = t & comm::kill_me;
+      if (kill_mask) do_reply = false; // unconditionally
+      t = static_cast < comm::type >(t & ~kill_mask);
       if (rv == 0) return false;
       assert(rv == sizeof(t));
-      if (t == comm::exit_fail)
+      if (t == comm::exit_fail || kill_mask)
         {
           reg->crpcut_register_success(false);
         }
@@ -138,11 +141,15 @@ namespace crpcut {
       do {
         rv = wrapped::read(fd, &len, sizeof(len));
       } while (rv == -1 && errno == EINTR);
-      if (rv == 0) return false;
+      if (rv == 0)
+        {
+          return false;
+        }
       assert(rv == sizeof(len));
 
       size_t bytes_read = 0;
-      if (t == comm::set_timeout)
+
+      if (t == comm::set_timeout && !kill_mask)
         {
           assert(len == sizeof(reg->crpcut_absolute_deadline_ms));
           assert(!reg->crpcut_deadline_is_set());
@@ -162,16 +169,29 @@ namespace crpcut {
             {
               do {
                 rv = wrapped::write(response_fd, &len, sizeof(len));
-                if (rv == 0 || (rv == -1 && errno == EPIPE)) return false;
+                if (rv == 0 || (rv == -1 && errno == EPIPE))
+                  {
+                    return false;
+                  }
               } while (rv == -1 && errno == EINTR);
-              if (rv == 0) return false; // eof
+              if (rv == 0)
+                {
+                  return false; // eof
+                }
             }
           assert(reg->crpcut_deadline_is_set());
           test_case_factory::set_deadline(reg);
           return true;
         }
-      if (t == comm::cancel_timeout)
+      if (t == comm::cancel_timeout && !kill_mask)
         {
+          if (kill_mask)
+            {
+              reg->crpcut_clear_deadline();
+              reg->crpcut_phase = child;
+              wrapped::killpg(reg->crpcut_get_pid(), SIGKILL);
+              return false;
+            }
           assert(len == 0);
           if (!reg->crpcut_death_note)
             {
@@ -180,13 +200,16 @@ namespace crpcut {
                 {
                   do {
                     rv = wrapped::write(response_fd, &len, sizeof(len));
-                    if (rv == 0 || (rv == -1 && errno == EPIPE)) return false;
+                    if (rv == 0 || (rv == -1 && errno == EPIPE))
+                      {
+                        return false;
+                      }
                   } while (rv == -1 && errno == EINTR);
                 }
             }
-
           return true;
         }
+
       char *buff = static_cast<char *>(::alloca(len));
       int err;
       errno = 0;
@@ -198,11 +221,26 @@ namespace crpcut {
           assert(rv > 0 && err == 0);
           bytes_read += rv;
         }
+      if (kill_mask)
+        {
+          if (len == 0)
+            {
+              static char msg[] = "A child process spawned from the test has misbehaved. Process group killed";
+              buff = msg;
+              len = sizeof(msg) - 1;
+            }
+          t = comm::exit_fail;
+          reg->crpcut_phase = child;
+          wrapped::killpg(reg->crpcut_get_pid(), SIGKILL); // now
+        }
       if (do_reply)
         {
           do {
             rv = wrapped::write(response_fd, &len, sizeof(len));
-            if (rv == 0 || (rv == -1 && errno == EPIPE)) return false;
+            if (rv == 0 || (rv == -1 && errno == EPIPE))
+              {
+                return false;
+              }
           } while (rv == -1 && errno == EINTR);
         }
       switch (t)
@@ -216,7 +254,10 @@ namespace crpcut {
         default:
           ; // silence warning
         }
-      test_case_factory::present(reg->crpcut_get_pid(), t, reg->crpcut_phase,
+
+      test_case_factory::present(reg->crpcut_get_pid(),
+                                 t,
+                                 reg->crpcut_phase,
                                  len, buff);
       if (t == comm::exit_ok || t == comm::exit_fail)
         {
@@ -226,7 +267,7 @@ namespace crpcut {
             }
           reg->crpcut_death_note = true;
         }
-      return true;
+    return !kill_mask;
     }
 
 

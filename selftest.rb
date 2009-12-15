@@ -910,8 +910,10 @@ TESTS = {
   log('violation',
       /Timed out - killed/),
 
-  'bad_forks::fork_and_let_child_run_test_code_should_succeed' =>
-  Test.new('PASSED')
+  'bad_forks::fork_and_let_child_run_test_code_should_fail' =>
+  Test.new('FAILED').
+  log('violation',
+      /I am child/)
 }
 
 GMOCK_TESTS = {

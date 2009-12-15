@@ -1062,7 +1062,8 @@ namespace crpcut {
       exit_ok, exit_fail, dir,
       set_timeout, cancel_timeout,
       begin_test,
-      end_test
+      end_test,
+      kill_me = 0x100
     } type;
 
 
@@ -1218,7 +1219,7 @@ namespace crpcut {
 
   } // stream
 
-  typedef enum { creating, running,  destroying,  post_mortem } test_phase;
+  typedef enum { creating, running,  destroying,  post_mortem, child } test_phase;
 
   namespace implementation {
 
@@ -1360,6 +1361,7 @@ namespace crpcut {
     static void test_succeeded(implementation::crpcut_test_case_registrator*);
     static const char *get_start_dir();
     static const char *get_parameter(const char *name);
+    static bool is_naughty_child();
     template <typename T>
     static void get_parameter(const char *name, T& t)
     {
@@ -1424,6 +1426,7 @@ namespace crpcut {
                                max_parallel> timeout_queue;
 
 
+    pid_t            current_pid;
     registrator_list reg;
     unsigned         pending_children;
     bool             verbose_mode;

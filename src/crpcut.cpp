@@ -104,6 +104,11 @@ namespace crpcut {
     first_free_working_dir = num;
   }
 
+  bool test_case_factory::is_naughty_child()
+  {
+    return obj().current_pid != wrapped::getpid();
+  }
+
   void test_case_factory::do_introduce_name(pid_t pid, const char *name, size_t len)
   {
     int pipe = presenter_pipe;
@@ -472,7 +477,8 @@ namespace crpcut {
           test_phase phase;
           rv = wrapped::read(presenter_pipe, &phase, sizeof(phase));
           assert(rv == sizeof(phase));
-
+          int mask = t & comm::kill_me;
+          t = static_cast<comm::type>(t & ~mask);
           switch (t)
             {
             case comm::begin_test:
@@ -696,6 +702,7 @@ namespace crpcut {
         stderr.close();
         p2c.close();
         c2p.close();
+        current_pid = wrapped::getpid();
         i->crpcut_goto_wd();
         i->crpcut_run_test_case();
         wrapped::exit(0);

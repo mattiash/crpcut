@@ -1921,6 +1921,12 @@ int main(int argc, char *argv[])
           <listitem>The test failure was detected by the main process
             after the test process died</listitem>
         </varlistentry>
+        <varlistentry><term><constant>child</constant></term>
+          <listitem>The test has spawned a child process, which has
+            executed &crpcut; code. The entire process group is killed
+            by &crpcut;
+          </listitem>
+        </varlistentry>
       </variablelist>
     </para>
     <para>

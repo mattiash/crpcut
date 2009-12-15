@@ -39,7 +39,7 @@ TESTSUITE(bad_forks)
       ;
   }
 
-  TEST(fork_and_let_child_run_test_code_should_succeed,
+  TEST(fork_and_let_child_run_test_code_should_fail,
        EXPECT_SIGNAL_DEATH(SIGKILL), NO_CORE_FILE)
   {
     pid_t pid = fork();

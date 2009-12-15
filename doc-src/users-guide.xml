@@ -436,6 +436,13 @@
               process.</para>
           </listitem>
         </varlistentry>
+
+        <varlistentry>
+          <term><constant>child</constant></term>
+          <listitem><para>The error was detected in a child process spawned
+              from the test case. The entire process group is killed.
+          </para></listitem>
+        </varlistentry>
       </variablelist>
     </para>
     <tip>Use fixtures templated on type to express parametrized tests
@@ -864,25 +871,27 @@
             child process continue in its copy of the test, calling
             <parameter>obj</parameter>.<function>get_data</function>()
             and thus <function>read</function>(), which fails
-            because the read file descriptor is closed. The error report
-            from the failed <function>ASSERT_EQ</function> discovers that
-            it's a runaway child and kills the whole process group.
+            because the read file descriptor is closed. When
+            <function>INFO</function> is called, &crpcut; discovers that
+            it's a runaway child and kills the whole process group. That's
+            what the error message is all about.
           </para>
         </listitem>
         <listitem><para>Had the child exited instead of returned from
             the constructor, the parent would've received a
             <constant>SIGCHLD</constant>. Since it ignores that signal,
-            nothing would have been gained, and that might be lucky.
-            With the non-existing return value check, it would've failed to
-            notice the signal, and might've returned an empty string,
-            as expected by the test.
+            nothing would have been gained. Depending on luck, the
+            uninitialized variable <parameter>len</parameter> might
+            contain a value large enough for the string allocation to
+            throw <type>std::bad_alloc</type>, but it might also contain
+            zero, which would've made the function return an empty string
+            as expected by the test, causing a false pass.
           </para>
         </listitem>
       </itemizedlist>
       Fortunately &crpcut; is robust against this kind of abuse, so no
       harm is done. Unfortunately the details of the report aren't too
-      impressive, but death on <constant>SIGKILL</constant> is a hint
-      on where to look.
+      impressive, but they at least hint about the cause of the error.
     </para>
   </chapter>
   <chapter id="predicates">

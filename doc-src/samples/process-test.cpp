@@ -262,7 +262,7 @@ TEST(read_one_string, read_fixture)
 TEST(signal_on_string_read, read_fixture)
 {
   read_actions.insert(++read_actions.begin(),
-                      read_data(-1,           &rfd,  0,           EINTR));
+                      read_data(-1, &rfd, 0, EINTR));
 
   {
     work obj;
@@ -280,6 +280,7 @@ TEST(normal_work)
 {
   work obj;
   std::string s = obj.get_data();
+  INFO << "s=\"" << s << "\"";
   ASSERT_EQ(s, "");
   obj.wait();
 }

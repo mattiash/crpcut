@@ -41,7 +41,8 @@ namespace {
     STR(creating),
     STR(running),
     STR(destroying),
-    STR(post_mortem)
+    STR(post_mortem),
+    STR(child)
   };
 }
 

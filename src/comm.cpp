@@ -34,12 +34,12 @@ namespace crpcut {
 
     void reporter::operator()(type t, const char *msg, size_t len) const
     {
-      if (wrapped::getpid() != wrapped::getpgid(0))
+      int mask = 0;
+      if (test_case_factory::is_naughty_child())
         {
-          // naughty test forked and returned
-          wrapped::killpg(0, SIGKILL); 
+          mask = kill_me;
         }
-
+      t = static_cast<type>(mask | t);
       if (!test_case_factory::tests_as_child_procs())
         {
           if (len)
@@ -72,6 +72,10 @@ namespace crpcut {
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) throw "report failed";
           bytes_written += rv;
+        }
+      while (mask) // infinite
+        {
+          wrapped::select(0, 0, 0, 0, 0);
         }
       read(bytes_written);
       assert(len - header_size == bytes_written);

@@ -53,7 +53,6 @@ public:
     pid = rv;
   }
   ~work() {
-    assert(pid == -1 && "Hmm, child still alive, I think");
     if (fd[0] != -1) close(fd[0]);
     if (fd[1] != -1) close(fd[1]);
   }
