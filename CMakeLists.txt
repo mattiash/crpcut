@@ -1517,7 +1517,11 @@ if (WITH_HTML_DOCS)
      homepage-${CRPCUT_LIB_VERSION}.css ALL
      test -L homepage-${CRPCUT_LIB_VERSION}.css || ln -s ${DOC_SRC_LIB}/homepage.css ./homepage-${CRPCUT_LIB_VERSION}.css
      )
-
+   add_custom_target(
+     changelog-${CRPCUT_LIB_VERSION}.html ALL
+     ${DOC_SRC_LIB}/mkchangelog.awk -v version=${CRPCUT_LIB_VERSION} < ${CMAKE_SOURCE_DIR}/ChangeLog.txt > changelog-${CRPCUT_LIB_VERSION}.html
+     DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog.txt ${DOC_SRC_LIB}/mkchangelog.awk
+     )
    add_custom_target(
      sourceforge-release
      ${DOC_SRC_LIB}/make-release-archives "${CMAKE_SOURCE_DIR}" "${CRPCUT_LIB_VERSION}" "${CMAKE_INSTALL_PREFIX}"

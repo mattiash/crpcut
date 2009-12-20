@@ -39,9 +39,11 @@ rm "crpcut-doc-${version}" || exit 1
 ln -s "${share_dir}/doc/html" "${version}" || exit 1
 ln -s "${bindir}/homepage-${version}.html" .
 ln -s "${bindir}/homepage-${version}.css" .
+ln -s "${bindir}/changelog-${version}.html" .
 tar cfjh "${bindir}/${sf_tar}" * || exit 1
 rm "./homepage-${version}.html"
 rm "./homepage-${version}.css"
+rm "./changelog-${version}.html"
 rm "$version" || exit 1
 popd
 rmdir "$tmpdir" || exit 1
