@@ -159,89 +159,7 @@
     </qandaentry>
 
 
-    <qandaentry>
-      <question>
-        <para>Why doesn't &crpcut; support parametrized tests?</para>
-      </question>
-      <answer>
-        <para>Parametrized tests, the way they are implemented in
-          other unit test systems, are convenient, but also makes it
-          a bit difficult to find what was in error and what wasn't.
-        </para>
-        <para>The &crpcut; way of doing parametrized tests, is to
-          express more or less the entire test functionality in a
-          fixture using templates, and add several tests, each
-          using different parameters for the test. Example:
-          <programlisting>
 
-    class parameter_base
-    {
-    protected:
-      template &lt;typename T1, typename T2&gt;
-      void my_test(T1 t1, T2 t2) {
-        ASSERT_GT(t1, t2);
-      }
-    };
-
-    TEST(gt_int_4_int_3, parameter_base)
-    {
-      my_test(4, 3);
-    }
-
-    TEST(gt_double_pi_int_3, parameter_base)
-    {
-      my_test(3.141592, 3);
-    }
-
-</programlisting>
-</para>
-      </answer>
-    </qandaentry>
-
-    <qandaentry>
-      <question>
-        <para>
-          How do I share a test setup that is expensive to initialize? I don't
-          want to do it over for every test.
-        </para>
-      </question>
-      <answer>
-        <para>
-          You initialize your setup once, outside the tests. It is probably
-          a good idea to use a singleton, which you initialize from the
-          <function>main()</function> function. The tests will get copies
-          of the state when the processes are forked.
-        </para>
-      </answer>
-    </qandaentry>
-    <qandaentry>
-      <question>
-        <para>How do I pass state from one test to another, to chain them,
-          if they run in isolated processes, or even in parallel?</para>
-      </question>
-      <answer>
-        <para>You really don't want to do that for a software unit
-          test. If you were running a hardware production test, it might be
-          interesting, in order to shorten the time to find defective units,
-          but for a software unit test you want to pinpoint logical errors,
-          and fix bugs. To do that effectively, you want to be able to run
-          each test case individually.</para>
-      </answer>
-    </qandaentry>
-    <qandaentry>
-      <question>
-        <para>But I really really really want to chain the result of tests.
-          How do I pass state from one test to another?</para>
-      </question>
-      <answer>
-        <para>Sigh, if you insist on making like difficult for yourself,
-        then so be it. What you do is that you set up a shared memory
-        region from the <function>main()</function> function, and use that
-          region to pass state. Do not forget to use the
-          <xref linkend="DEPENDS_ON" xrefstyle="select:title"/> modifier
-          to impose a strict order.</para>
-      </answer>
-    </qandaentry>
     <qandaentry>
       <question>
         <para>Why the macros and template trickery,
@@ -404,6 +322,105 @@
         </para>
       </answer>
     </qandaentry>
+
+    <qandaentry>
+      <question>
+        <para>How do I parametrize tests?</para>
+      </question>
+      <answer>
+        <para>Parametrized tests, the way they are implemented in
+          other unit test systems, are convenient, but also makes it
+          a bit difficult to find what was in error and what wasn't.
+        </para>
+        <para>The &crpcut; way of doing parametrized tests, is to
+          express more or less the entire test functionality in a
+          fixture using templates, and add several tests, each
+          using different parameters for the test. Example:
+          <programlisting>
+
+    class parameter_base
+    {
+    protected:
+      template &lt;typename T1, typename T2&gt;
+      void my_test(T1 t1, T2 t2) {
+        ASSERT_GT(t1, t2);
+      }
+    };
+
+    TEST(gt_int_4_int_3, parameter_base)
+    {
+      my_test(4, 3);
+    }
+
+    TEST(gt_double_pi_int_3, parameter_base)
+    {
+      my_test(3.141592, 3);
+    }
+
+</programlisting>
+        </para>
+      </answer>
+    </qandaentry>
+
+    <qandaentry>
+      <question>
+        <para>How do I pass information from the command line to a test?</para>
+      </question>
+      <answer><para>
+        In your test, use any of the available forms of
+        <xref linkend="get_parameter" xrefstyle="select:title"/> to pick up
+        the value of a parameter passed with the
+        <xref linkend="cli-param" xrefstyle="select:title"/> command line
+        parameter. <xref linkend="cli-param" xrefstyle="select:title"/>
+        can be used several times on the command line, to define several
+        named parameters.</para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>
+          How do I share a test setup that is expensive to initialize? I don't
+          want to do it over for every test.
+        </para>
+      </question>
+      <answer>
+        <para>
+          You initialize your setup once, outside the tests. It is probably
+          a good idea to use a singleton, which you initialize from the
+          <function>main()</function> function. The tests will get copies
+          of the state when the processes are forked.
+        </para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>How do I pass state from one test to another, to chain them,
+          if they run in isolated processes, or even in parallel?</para>
+      </question>
+      <answer>
+        <para>You really don't want to do that for a software unit
+          test. If you were running a hardware production test, it might be
+          interesting, in order to shorten the time to find defective units,
+          but for a software unit test you want to pinpoint logical errors,
+          and fix bugs. To do that effectively, you want to be able to run
+          each test case individually.</para>
+      </answer>
+    </qandaentry>
+    <qandaentry>
+      <question>
+        <para>But I really really really want to chain the result of tests.
+          How do I pass state from one test to another?</para>
+      </question>
+      <answer>
+        <para>Sigh, if you insist on making like difficult for yourself,
+        then so be it. What you do is that you set up a shared memory
+        region from the <function>main()</function> function, and use that
+          region to pass state. Do not forget to use the
+          <xref linkend="DEPENDS_ON" xrefstyle="select:title"/> modifier
+          to impose a strict order.</para>
+      </answer>
+    </qandaentry>
+
   </qandaset>
 </chapter>
 <chapter id="google-mock">
