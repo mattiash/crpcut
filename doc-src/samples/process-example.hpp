@@ -58,7 +58,7 @@ public:
   }
   std::string get_data() // empty data signals that child is done
   {
-    size_t len;
+    size_t len = 0;
     ::read(fd[0], &len, sizeof(len));
     std::string data(len > 0 ? len : 0, '_');
     if (len > 0)

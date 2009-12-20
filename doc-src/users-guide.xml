@@ -882,10 +882,8 @@
         <listitem><para>Had the child exited instead of returned from
             the constructor, the parent would've received a
             <constant>SIGCHLD</constant>. Since it ignores that signal,
-            nothing would have been gained. Depending on luck, the
-            uninitialized variable <parameter>len</parameter> might
-            contain a value large enough for the string allocation to
-            throw <type>std::bad_alloc</type>, but it might also contain
+            nothing would have been gained. The
+            variable <parameter>len</parameter> would probably still contain
             zero, which would've made the function return an empty string
             as expected by the test, causing a false pass.
           </para>
