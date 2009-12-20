@@ -21,7 +21,7 @@ BEGIN {
     }
     print "<tr><td>" $1 "</td><td width=\"10px\"></td><td><b>";
     gsub(/^[^[:space:]]+/, "");
-    gsub(/http:[^[:space:],)]*/, "<a href=\"&\">&</a>");
+    gsub(/http:[^[:space:],\)]*/, "<a href=\"&\">&</a>");
     print $0 "</b></td></tr><tr><td></td><td></td><td><ul>";
     in_row=1;
     next;
@@ -34,7 +34,7 @@ BEGIN {
     }
     paragraph = 0;
     gsub(/^[[:space:]]*[^[:space:]]+/, "");
-    gsub(/http:[^[:space:],)]*/, "<a href=\"&\">&</a>");
+    gsub(/http:[^[:space:],\)]*/, "<a href=\"&\">&</a>");
     print "<li>" $0
     in_bullet = 1;
     next;
@@ -49,7 +49,7 @@ BEGIN {
          print "<p/>";
          paragraph=0;
      }
-     gsub(/http:[^[:space:],)]*/, "<a href=\"&\">&</a>");
+     gsub(/http:[^[:space:],\)]*/, "<a href=\"&\">&</a>");
      print $0;
  }
  END {

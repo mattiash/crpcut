@@ -269,6 +269,10 @@ else (GMOCK_LIBS)
   target_link_libraries(testprog crpcut)
 endif (GMOCK_LIBS)
 
+find_program(AWK "awk")
+find_program(BASH "bash")
+find_program(XMLLINT "xmllint")
+
 if (WITH_HTML_DOCS)
 
   add_custom_target(can_dump_core
@@ -1509,22 +1513,27 @@ if (WITH_HTML_DOCS)
       WORKING_DIRECTORY html)
 
    add_custom_target(
-     homepage-${CRPCUT_LIB_VERSION}.html ALL
+     homepage-${CRPCUT_LIB_VERSION}.html
      sed "s:PVERSION:${CRPCUT_PRINT_VERSION}:g\;s:VERSION:${CRPCUT_LIB_VERSION}:g" < ${DOC_SRC_LIB}/homepage.html > homepage-${CRPCUT_LIB_VERSION}.html
      DEPENDS ${DOC_SRC_LIB}/homepage.html
      )
    add_custom_target(
-     homepage-${CRPCUT_LIB_VERSION}.css ALL
+     homepage-${CRPCUT_LIB_VERSION}.css
      test -L homepage-${CRPCUT_LIB_VERSION}.css || ln -s ${DOC_SRC_LIB}/homepage.css ./homepage-${CRPCUT_LIB_VERSION}.css
      )
    add_custom_target(
-     changelog-${CRPCUT_LIB_VERSION}.html ALL
-     ${DOC_SRC_LIB}/mkchangelog.awk -v version=${CRPCUT_LIB_VERSION} < ${CMAKE_SOURCE_DIR}/ChangeLog.txt > changelog-${CRPCUT_LIB_VERSION}.html
+     changelog-${CRPCUT_LIB_VERSION}.html
+     ${AWK} "-f" ${DOC_SRC_LIB}/mkchangelog.awk "-v" version=${CRPCUT_LIB_VERSION} < ${CMAKE_SOURCE_DIR}/ChangeLog.txt > changelog-${CRPCUT_LIB_VERSION}.html
      DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog.txt ${DOC_SRC_LIB}/mkchangelog.awk
      )
    add_custom_target(
      sourceforge-release
      ${DOC_SRC_LIB}/make-release-archives "${CMAKE_SOURCE_DIR}" "${CRPCUT_LIB_VERSION}" "${CMAKE_INSTALL_PREFIX}"
+     DEPENDS
+     changelog-${CRPCUT_LIB_VERSION}.html
+     homepage-${CRPCUT_LIB_VERSION}.html
+     homepage-${CRPCUT_LIB_VERSION}.css
+
      )
   endif(XSLTPROC AND HTML_CHUNK_XSL AND GDB AND SED AND HAVE_GMOCK)
 endif(WITH_HTML_DOCS)
@@ -1535,9 +1544,7 @@ if(RUBY)
 else(RUBY)
   message("ruby is not found - selftest target not available")
 endif(RUBY)
-find_program(AWK "awk")
-find_program(BASH "bash")
-find_program(XMLLINT "xmllint")
+
 if (AWK AND BASH AND XMLLINT)
    add_custom_target(sanitycheck ${BASH} ${CMAKE_SOURCE_DIR}/sanitycheck.sh ${AWK} ${CMAKE_SOURCE_DIR} ${SELFTEST_PARAM} DEPENDS testprog VERBATIM)
 endif (AWK AND BASH AND XMLLINT)
