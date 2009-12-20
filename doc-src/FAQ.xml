@@ -376,6 +376,31 @@
         named parameters.</para>
       </answer>
     </qandaentry>
+
+    <qandaentry>
+      <question>
+        <para>
+          Why doesn't
+          <ulink url="http://gcc.gnu.org/onlinedocs/gcc/Gcov.html">gcov</ulink>
+          give me meaningful information from my test runs?
+        </para>
+      </question>
+      <answer>
+        <para>It does, but it only reports values for tests that exit normally,
+          i.e. tests that return from (or run through) the test function
+          body, tests that call <function>exit</function>() themselves, and
+          tests that leave the test function body by throwing an exception.
+        </para>
+        <para>
+          Tests that fail, however, or tests that themselves choose to exit
+          abnormally, for example by calling <function>_Exit</function>() or
+          <function>abort</function>(), will not reliably get the collected
+          <ulink url="http://gcc.gnu.org/onlinedocs/gcc/Gcov.html">gcov</ulink>
+          data flushed, even when that is the expected behaviour of the
+          test.
+        </para>
+      </answer>
+    </qandaentry>
     <qandaentry>
       <question>
         <para>
