@@ -241,6 +241,9 @@
 #    ifdef __GXX_EXPERIMENTAL_CXX0X__
 #      define CRPCUT_DECLTYPE decltype
 #      define CRPCUT_EXPERIMENTAL_CXX0X
+#      if (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
+#        define CRPCUT_SUPPORTS_VTEMPLATES
+#      endif
 #    else
 #      define CRPCUT_DECLTYPE typeof
 #    endif
@@ -685,7 +688,6 @@ namespace crpcut {
 
     class crpcut_none {};
 
-
     template <typename T1 = crpcut_none, typename T2 = crpcut_none>
     class tlist : public T1,
                   public T2
@@ -696,12 +698,32 @@ namespace crpcut {
     };
 
     template <typename T>
-    struct tlist<crpcut_none, T>
+    class tlist<crpcut_none, T>
     {
       typedef crpcut_none head;
+      typedef crpcut_none tail;
     };
 
-    // Man, I'm longing for variadic templates... this is insanity
+#ifdef CRPCUT_SUPPORTS_VTEMPLATES
+
+
+    template <typename... Ts>
+    struct tlist_maker;
+
+
+    template <typename T>
+    struct tlist_maker<T>
+    {
+      typedef tlist<T, tlist<> >    type;
+    };
+
+    template <typename T, typename ... Tail>
+    struct tlist_maker<T, Tail...>
+    {
+      typedef tlist<T, typename tlist_maker<Tail...>::type> type;
+    };
+#else
+
     template <typename T1 = crpcut_none, typename T2 = crpcut_none,
               typename T3 = crpcut_none, typename T4 = crpcut_none,
               typename T5 = crpcut_none, typename T6 = crpcut_none,
@@ -767,7 +789,7 @@ namespace crpcut {
         >
       type;
     };
-
+#endif
     template <template <typename> class envelope, typename T>
     class wrap
     {
@@ -783,6 +805,7 @@ namespace crpcut {
     public:
       typedef datatypes::tlist<> type;
     };
+
 
 
     template <typename T>
@@ -808,7 +831,13 @@ namespace crpcut {
 
   } // namespace datatypes
 
-
+#ifdef CRPCUT_SUPPORTS_VTEMPLATES
+  template <typename D, typename ...T>
+  struct match_traits
+  {
+    typedef D type;
+  };
+#else
   template <typename D,
             typename T1,                typename T2 = crpcut_none,
             typename T3 = crpcut_none,  typename T4 = crpcut_none,
@@ -819,7 +848,7 @@ namespace crpcut {
   {
     typedef D type;
   };
-
+#endif
   namespace policies {
     namespace deaths {
       class crpcut_none;
@@ -2022,6 +2051,50 @@ namespace crpcut {
       friend class crpcut::collate_t;
     };
 
+#ifdef CRPCUT_SUPPORTS_VTEMPLATES
+    template <int N, typename ...T>
+    class param_holder;
+
+    template <int N>
+    class param_holder<N>
+    {
+    public:
+      param_holder() {}
+      template <typename P, typename ...V>
+      bool apply(P& func, const V &...v) const {
+        return func(v...);
+      }
+      void print_to(std::ostream &) const { }
+    };
+
+    template <int N, typename T, typename ...Tail>
+    class param_holder<N, T, Tail...> : public param_holder<N+1, Tail...>
+    {
+    public:
+      param_holder(const T& v, const Tail&...tail)
+        : param_holder<N+1,Tail...>(tail...),
+          val(v)
+      {
+      }
+      template <typename P, typename ...V>
+      bool apply(P& func, const V&...v) const {
+        return param_holder<N+1,Tail...>::apply(func, v..., val);
+      }
+      void print_to(std::ostream &os) const {
+        os << "  param" << N << " = " << val << '\n';
+        param_holder<N+1, Tail...>::print_to(os);
+      }
+    private:
+      const T& val;
+    };
+
+    template <typename ...T>
+    inline param_holder<1, T...> params(const T&... v)
+    {
+      return param_holder<1, T...>(v...);
+    }
+
+#else
 
     template <int N, typename T>
     class holder
@@ -2363,7 +2436,7 @@ namespace crpcut {
     {
       return param_holder<crpcut_none>(crpcut_none());
     }
-
+#endif
     template <typename P,
               bool streamable = stream_checker::is_output_streamable<P>::value>
     struct predicate_streamer
@@ -3298,7 +3371,14 @@ namespace crpcut {
     return homedir;
   }
 
-
+#ifdef CRPCUT_SUPPORTS_VTEMPLATES
+  template <typename D, typename ...T>
+  inline typename match_traits<D, T...>::type
+  match(T... t)
+  {
+    return typename match_traits<D, T...>::type(t...);
+  }
+#else
   template <typename D, typename T>
   inline
   typename match_traits<D, T>::type
@@ -3404,7 +3484,7 @@ namespace crpcut {
     typename traits::type rv(t1, t2, t3, t4, t5, t6, t7, t8, t9);
     return rv;
   }
-
+#endif
   class abs_diff
   {
   public:
