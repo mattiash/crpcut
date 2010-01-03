@@ -214,6 +214,14 @@
                 v.begin(), v.end());
 
 </programlisting>
+                <note>
+                  If you use <ulink url="http://gcc.gnu.org">GCC</ulink>
+                  version 4.3 or higher, and compile your test sources with
+                  <symbol>-std=c++0x</symbol>, there is no limit to the number
+                  of parameters, otherwise a predicate cannot have more than
+                  9 parameters.
+                </note>
+
               </para>
             </listitem>
           </varlistentry>
@@ -315,6 +323,13 @@
       modifier can only be used once for each test, but it accepts many
       parameters. Just add as many tests as are necessary in the parameter
       list of <xref linkend="DEPENDS_ON" xrefstyle="select:title"/>.
+      <note>
+        If you use <ulink url="http://gcc.gnu.org">GCC</ulink> version 4.3 or
+        higher, and compile your test sources with <symbol>-std=c++0x</symbol>,
+        there is no limit to the number of parameters, otherwise you can
+        list maximum 17 tests or <link linkend="testsuites">testsuites</link> in
+        the parameter list.
+      </note>
     </para>
   </chapter>
   <chapter id="testsuites">
@@ -946,6 +961,14 @@
       <type>crpcut::match_traits</type> for your predicate class, to provide
       a better suitable type, for example a specialization on the
       parameters.
+      <note>
+        If you use <ulink url="http://gcc.gnu.org">GCC</ulink> version 4.3 or
+        higher, and compile your test sources with <symbol>-std=c++0x</symbol>,
+        there is no limit to the number of parameters to the
+        <function>match</function>&lt;<type>pred_type</type>&gt;()
+        function nor the <type>crpcut::match_traits</type> specialization,
+        otherwise there is a maximum limit of 9 parameters.
+      </note>
     </para>
     <para>The above example now generalized, is unsurprisingly longer, and
       slightly different:

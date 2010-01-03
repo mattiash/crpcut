@@ -328,6 +328,12 @@
       <para><function>pred</function> is callable with
       <parameter>...</parameter> as its parameter list, and returns a value
       that can be evaluated as a bool.</para>
+      <note>
+        If you use <ulink url="http://gcc.gnu.org">GCC</ulink> version 4.3 or
+        higher, and compile your test sources with <symbol>-std=c++0x</symbol>,
+        there is no limit to the number of parameters, otherwise
+        <function>pred</function> is limited to a maximum of 9 parameters.
+      </note>
       </formalpara>
     <para><parameter>...</parameter> may be <literal>0</literal> to
       <literal>9</literal> expressions.</para>
@@ -710,6 +716,12 @@
       <xref linkend="TEST" xrefstyle="select:title"/> or
       <xref linkend="TESTSUITE" xrefstyle="select:title"/>.
     </note>
+      <note>
+        If you use <ulink url="http://gcc.gnu.org">GCC</ulink> version 4.3 or
+        higher, and compile your test sources with <symbol>-std=c++0x</symbol>,
+        there is no limit to the number of parameters, otherwise you can
+        list maximum 17 names in the parameter list.
+      </note>
     <para>Example: The test program</para>
       <programlisting language="c++">
 <xi:include href="../stripped-src/depends_on.cpp" parse="text"/>
@@ -1514,10 +1526,12 @@
 </programlisting>
       where, of course, <type>crpcut::abs_diff::type&lt;T&gt;</type> is the
       actual predicate used in comparisons.</para>
-    <para>
-      <type>match_traits</type> can be specialized with up to <literal>10</literal>
-      template parameters.
-    </para>
+    <note>
+      If you use <ulink url="http://gcc.gnu.org">GCC</ulink> version 4.3 or
+      higher, and compile your test sources with <symbol>-std=c++0x</symbol>,
+      there is no limit to the number of parameters, otherwise
+      there is a maximum limit of 9 parameters.
+    </note>
   </section>
   <section id="match_traits">
     <title><type>crpcut::match_traits</type></title>
