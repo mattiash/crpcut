@@ -502,7 +502,7 @@
           </para>
       </question>
       <answer>
-        <para>Call <ulink url="http://code.google.com/p/googletest/wiki/GoogleTestPrimer#Writing_the_main()_Function"><symbol>::testing::InitGoogleTest(&amp;argc, argv)</symbol></ulink>
+        <para>Call <ulink url="http://code.google.com/p/googletest/wiki/GoogleTestPrimer#Writing_the_main()_Function"><symbol>::testing::InitGoogleMock(&amp;argc, argv)</symbol></ulink>
           before the call to
           <link linkend="run"><symbol>crpcut::run(argc, argv)</symbol></link>.
           For example like:
@@ -513,7 +513,7 @@
 
     int main(int argc, char *argv[])
     {
-      ::testing::InitGoogleTest(&amp;argc, argv);
+      ::testing::InitGoogleMock(&amp;argc, argv);
       return crpcut::run(argc, argv);
     }
 
