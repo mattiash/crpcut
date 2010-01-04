@@ -24,6 +24,10 @@ grep -q "$version" INSTALL || {
     echo "Wrong URL in INSTALL"
     exit 1
 }
+grep -q "$version" DOCUMENTATION || {
+    echo "Wrong URL in DOCUMENTATION"
+    exit 1
+}
 
 git tag -l "$tag" --contains HEAD | grep -q "$tag" || {
   echo $tag is not HEAD

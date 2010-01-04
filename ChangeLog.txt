@@ -1,3 +1,14 @@
+2010-01-04 1.0.1
+
+         * Lift arbitrary parameter number limits with the use of variadic
+           templates, for compilers that supports it.
+
+         * Document the parameter number limits where applicable.
+
+         * Fix a documentation bug in the FAQ, so it recommends
+           calling InitGoogleMock to pass command line parameters to
+           google-mock.
+
 2009-12-20 1.0.0
 
          * Small documentation changes
