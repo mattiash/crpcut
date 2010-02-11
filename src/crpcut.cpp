@@ -987,6 +987,16 @@ namespace crpcut {
           err_os << "Single shot requires exactly one test selected\n";
           return -1;
         }
+      {
+        using implementation::crpcut_test_case_registrator;
+        crpcut_test_case_registrator *i = tentative.crpcut_get_next();
+        unsigned matches = 0;
+        while (i != &tentative)
+          {
+            i->crpcut_uninhibit_dependants();
+            i = i->crpcut_get_next();
+          }
+      }
       for (;;)
         {
           bool progress = false;

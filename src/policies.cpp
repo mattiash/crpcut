@@ -53,19 +53,24 @@ namespace crpcut {
       {
       }
 
+      void crpcut_base::crpcut_uninhibit_dependants()
+      {
+        for (basic_enforcer *p = crpcut_dependants; p; p = p->next)
+          {
+            if (--p->crpcut_num == 0)
+              {
+                p->crpcut_dec_action();
+              };
+          }
+      }
+
       void crpcut_base::crpcut_register_success(bool value)
       {
         if (value)
           {
             if (crpcut_state != crpcut_not_run) return;
             crpcut_state = crpcut_success;
-            for (basic_enforcer *p = crpcut_dependants; p; p = p->next)
-              {
-                if (--p->crpcut_num == 0)
-                  {
-                    p->crpcut_dec_action();
-                  };
-              }
+            crpcut_uninhibit_dependants();
           }
         else
           {

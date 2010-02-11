@@ -966,6 +966,7 @@ namespace crpcut {
         bool crpcut_can_run() const;
         bool crpcut_failed() const;
         bool crpcut_succeeded() const;
+        void crpcut_uninhibit_dependants();
         void crpcut_register_success(bool value = true);
       private:
         virtual void crpcut_add_action(basic_enforcer *other);
