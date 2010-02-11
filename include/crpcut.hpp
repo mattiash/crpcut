@@ -1327,6 +1327,7 @@ namespace crpcut {
                         int stderr_fd);
       void crpcut_manage_death();
       crpcut_test_case_registrator *crpcut_unlink();
+      void crpcut_link_after(crpcut_test_case_registrator*);
       void crpcut_kill();
       unsigned long crpcut_ms_until_deadline() const;
       void crpcut_clear_deadline();
@@ -3160,6 +3161,15 @@ namespace crpcut {
       return crpcut_next;
     }
 
+    inline void
+    crpcut_test_case_registrator::
+    crpcut_link_after(crpcut_test_case_registrator *r)
+    {
+      crpcut_next = r->crpcut_next;
+      crpcut_prev = r;
+      crpcut_next->crpcut_prev = this;
+      r->crpcut_next = this;
+    }
     inline bool
     crpcut_test_case_registrator
     ::crpcut_deadline_is_set() const

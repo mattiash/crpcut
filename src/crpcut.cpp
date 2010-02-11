@@ -923,30 +923,75 @@ namespace crpcut {
             }
           presenter_pipe = start_presenter_process(out, verbose_mode);
         }
-      const char **names = p;
+      registrator_list tentative;
+      {
+        using implementation::crpcut_test_case_registrator;
+        crpcut_test_case_registrator *i = reg.crpcut_get_next();
+        while (i != &reg)
+          {
+            ++num_registered_tests;
+            crpcut_test_case_registrator *next = i->crpcut_get_next();
+            if (*p)
+              {
+                i->crpcut_unlink();
+                i->crpcut_link_after(&tentative);
+              }
+            i = next;
+          }
+      }
+      unsigned mismatches = 0;
+      if (*p == 0)
         {
-          implementation::crpcut_test_case_registrator *i = reg.crpcut_get_next();
-          while (i != &reg)
+          num_selected_tests = num_registered_tests;
+        }
+      else
+        {
+          using implementation::crpcut_test_case_registrator;
+          for (const char **name = p; *name; ++name)
             {
-              ++num_registered_tests;
-              if (*names)
+              crpcut_test_case_registrator *i = tentative.crpcut_get_next();
+              unsigned matches = 0;
+              while (i != &tentative)
                 {
-                  for (const char **name = names; *name; ++name)
+                  if (i->crpcut_match_name(*name))
                     {
-                      if (i->crpcut_match_name(*name)) goto found;
+                      ++matches;
+                      ++num_selected_tests;
+                      crpcut_test_case_registrator *next = i->crpcut_unlink();
+                      i->crpcut_link_after(&reg);
+                      i = next;
                     }
-                  i = i->crpcut_unlink();
-                  continue;
+                  else
+                    {
+                      i = i->crpcut_get_next();
+                    }
                 }
-            found:
-              ++num_selected_tests;
-              i = i->crpcut_get_next();
+              if (matches == 0)
+                {
+                  if (mismatches++)
+                    {
+                      err_os << ", ";
+                    }
+                  err_os << *name;
+                }
             }
+        }
+      if (mismatches)
+        {
+          err_os << (mismatches == 1 ? " does" : " do")
+                 << " not match any test names\n";
+          return -1;
+        }
+      if (num_parallel == 0 && num_selected_tests != 1)
+        {
+          err_os << "Single shot requires exactly one test selected\n";
+          return -1;
         }
       for (;;)
         {
           bool progress = false;
-          implementation::crpcut_test_case_registrator *i = reg.crpcut_get_next();
+          using implementation::crpcut_test_case_registrator;
+          crpcut_test_case_registrator *i = reg.crpcut_get_next();
           while (i != &reg)
             {
               if (!nodeps && !i->crpcut_can_run())

@@ -1851,9 +1851,10 @@ int main(int argc, char *argv[])
         </varlistentry>
         <varlistentry id="single-shot"><term><parameter>-s</parameter></term>
           <listitem>
-            <para>Run only one the first test that matches
+            <para>Run the one test that matches
               <parameter>{names}</parameter>, without spawning a separate test
-              process. This is useful for running a test in a debugger.</para>
+              process. Only one single test can be selected.
+              This is useful for running a test in a debugger.</para>
             <caution>This is a markedly different environment where many of the
               &crpcut; features are unavailable. <literal>stdout</literal> and
               <literal>stderr</literal> have their normal functions, instead of
