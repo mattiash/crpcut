@@ -1,3 +1,17 @@
+2010-02-22 1.0.2
+
+         * Added long-name command line parameters for improved readability.
+
+         * Dependencies are only in effect between tests selected
+           on the command line (all tests, in case none are explicitly
+           selected.) This is to avoid the need of the '-n'/'--nodeps' command
+           line flag when running individual tests with stated
+           dependencies.
+
+         * Improved information when test selection from the command
+           line doesn't match or is incompatible with command line
+           flags.
+
 2010-01-04 1.0.1
 
          * Lift arbitrary parameter number limits with the use of variadic
