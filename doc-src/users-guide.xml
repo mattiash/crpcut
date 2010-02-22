@@ -54,7 +54,7 @@
         which isn't too exciting in this case.
       </para>
       <para>Running the test program with the
-        <xref linkend="verbose" xrefstyle="select:title"/> (verbose) command
+        <xref linkend="verbose" xrefstyle="select:title"/> command
         line flag, will list the output of all tests, including those that
         pass:
         <screen>
@@ -278,7 +278,7 @@
         we expect it to crash and the core dump would be unnecessary
         clutter.</para>
       <para>Running this test program with the
-        <xref linkend="verbose" xrefstyle="select:title"/> (verbose)
+        <xref linkend="verbose" xrefstyle="select:title"/>
         command line flag, yields:
         <screen>
 
@@ -365,17 +365,19 @@
     </para>
     <para>Testsuites are also useful when there is a desire to run a
       subset of the tests. Running the above test program with
-      <xref linkend="verbose" xrefstyle="select:title"/>
-      <xref linkend="nodepend" xrefstyle="select:title"/>
-      "<type>normal_access</type>" yields:
+      "<type>--verbose normal_access</type>" yields:
       <screen>
 
 <xi:include href="../sample-output/suite-example.out" parse="text"/>
 </screen>
-      (the <xref linkend="nodepend" xrefstyle="select:title"/> command
-      line flag tells &crpcut; to ignore dependencies, and
-      the <xref linkend="verbose" xrefstyle="select:title"/> command line
-      flag makes &crpcut; list also the tests that succeeds.)
+      (the <xref linkend="verbose" xrefstyle="select:title"/> command line
+      flag makes &crpcut; list output also from the tests that succeeds./)
+      <note>
+        The command line flag
+        <xref linkend="nodepend" xrefstyle="select:title"/> is not necessary
+        since dependencies are only calculated on tests selected to run, in
+        this case the tests in the testsuite <type>normal_access</type>.
+      </note>
     </para>
   </chapter>
   <chapter id="test_fixtures">
@@ -470,7 +472,7 @@
 <xi:include href="../stripped-src/string-template-fix.cpp" parse="text"/>
       </programlisting>
       Running the program with the
-      <xref linkend="verbose" xrefstyle="select:title"/> (verbose) command
+      <xref linkend="verbose" xrefstyle="select:title"/> command
       line flag yields:
 <screen>
 

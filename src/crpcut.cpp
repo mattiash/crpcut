@@ -732,15 +732,39 @@ namespace crpcut {
       static output::text_formatter to(fd, argc, argv);
       return to;
     }
+
+    const char *nullindex(const char* str, char needle)
+    {
+      while (*str && *str != needle)
+        ++str;
+      return str;
+    }
   }
 
   const char *test_case_factory::do_get_parameter(const char *name) const
   {
     for (const char** p = argv; *p; ++p)
       {
-        if ((*p)[0] == '-' && (*p)[1] == 'p')
+        const char *pstart = 0;
+        if ((*p)[0] == '-')
           {
-            const char *v = *++p;
+            if ((*p)[1] == 'p')
+              {
+                pstart = *++p;
+              }
+            else if ((*p)[1] == '-')
+              {
+                const char *pb = (*p)+2;
+                const char *n = nullindex(pb, '=');
+                if (wrapped::strncmp("param", pb, n - pb) == 0)
+                  {
+                    pstart = n + 1;
+                  }
+              }
+          }
+        if (pstart)
+          {
+            const char *v = pstart;
             const char *n = name;
             while (*n && *v == *n)
               {
@@ -756,6 +780,7 @@ namespace crpcut {
     return 0;
   }
 
+
   int test_case_factory::do_run(int argc, const char *argv_[],
                                 std::ostream &err_os)
   {
@@ -769,27 +794,88 @@ namespace crpcut {
     while (const char *param = *p)
       {
         if (param[0] != '-') break;
-        switch (param[1]) {
+
+        const char *value = *(p+1);
+        char       cmd    = param[1];
+        unsigned   pcount = 2;
+
+        if (cmd == '-')
+          {
+            pcount = 1;
+            param += 2;
+            value = nullindex(param, '=');
+            size_t len = value - param;
+            if (*value)
+              {
+                ++value;
+              }
+            else
+              {
+                value = 0;
+              }
+            if (wrapped::strncmp("verbose", param, len) == 0)
+              {
+                cmd = 'v';
+              }
+            else if (wrapped::strncmp("children", param, len) == 0)
+              {
+                cmd = 'c';
+              }
+            else if (wrapped::strncmp("xml", param, len) == 0)
+              {
+                cmd = 'x';
+              }
+            else if (wrapped::strncmp("nodeps", param, len) == 0)
+              {
+                cmd = 'n';
+              }
+            else if (wrapped::strncmp("quiet", param, len) == 0)
+              {
+                cmd = 'q';
+              }
+            else if (wrapped::strncmp("output", param, len) == 0)
+              {
+                cmd = 'o';
+              }
+            else if (wrapped::strncmp("single-shot", param, len) == 0)
+              {
+                cmd = 's';
+              }
+            else if (wrapped::strncmp("list", param, len) == 0)
+              {
+                cmd = 'l';
+              }
+            else if (wrapped::strncmp("working-dir", param, len) == 0)
+              {
+                cmd = 'd';
+              }
+            else if (wrapped::strncmp("param", param, len) == 0)
+              {
+                cmd = 'p';
+              }
+          }
+        switch (cmd) {
         case 'q':
           quiet = true;
+          pcount = 1;
           break;
         case 'o':
-          ++p;
-          if (!*p)
+          if (!value)
             {
               err_os << "-o must be followed by a filename\n";
               return -1;
             }
-          output_fd = wrapped::open(*p, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+          output_fd = wrapped::open(value, O_CREAT | O_WRONLY | O_TRUNC, 0666);
           if (output_fd < 0)
             {
-              err_os << "Failed to open " << *p << " for writing\n";
+              err_os << "Failed to open " << value << " for writing\n";
               return -1;
             }
           xml = !xml;
           break;
         case 'v':
           verbose_mode = true;
+          pcount = 1;
           break;
         case 'c':
           if (process_limit_set)
@@ -799,15 +885,15 @@ namespace crpcut {
                      << process_limit_set << "flag\n";
               return -1;
             }
-          ++p;
-          if (*p)
+          if (value)
             {
-              stream::iastream i(*p);
+              stream::iastream i(value);
               unsigned l;
               if ((i >> l) && l <= max_parallel && l > 0)
                 {
                   num_parallel = l;
                   process_limit_set = 'c';
+                  pcount = 2;
                   break;
                 }
             }
@@ -824,6 +910,7 @@ namespace crpcut {
                      << process_limit_set << "flag\n";
               return -1;
             }
+          pcount = 1;
           num_parallel = 0;
           nodeps = true;
           process_limit_set = 's';
@@ -852,7 +939,7 @@ namespace crpcut {
             return 0;
           }
         case 'd':
-          working_dir = *++p;
+          working_dir = value;
           if (!working_dir)
             {
               err_os << "-d must be followed by a directory name\n";
@@ -862,18 +949,40 @@ namespace crpcut {
           break;
         case 'n':
           nodeps = true;
+          pcount = 1;
           break;
         case 'x':
-          xml = !xml;
+          if (value && value[0] != '-')
+            {
+              if (wrapped::strcmp(value, "yes") == 0 ||
+                  wrapped::strcmp(value, "Yes") == 0 ||
+                  wrapped::strcmp(value, "YES") == 0)
+                {
+                  xml = true;
+                }
+              else if (wrapped::strcmp(value, "no") == 0 ||
+                       wrapped::strcmp(value, "No") == 0 ||
+                       wrapped::strcmp(value, "NO") == 0)
+                {
+                  xml = false;
+                }
+              else
+                {
+                  err_os << "expected boolean value for --xml\n";
+                  return -1;
+                }
+            }
+          else
+            {
+              pcount = 1;
+              xml = !xml;
+            }
+
           break;
         case 'p':
           // just make a syntax check here. What follows must be a name=value.
           {
-            const char *n = *++p;
-            while (*n && *n != '=')
-              {
-                ++n;
-              }
+            const char *n = nullindex(value, '=');
             if (*n == 0)
               {
                 err_os << "-p must be followed by a name and =\n";
@@ -885,28 +994,110 @@ namespace crpcut {
           err_os <<
             "Usage: " << argv[0] << " [flags] {testcases}\n"
             "  where flags can be:\n"
-            "   -c number  - Control number of spawned test case processes\n"
-            "                number must be >= 1 and <= "
-                      << max_parallel << "\n"
-            "   -d dir     - specify working directory (must exist)\n"
-            "   -l         - list test cases\n"
-            "   -n         - ignore dependencies\n"
-            "   -o file    - Direct XML output to named file. Brief result\n"
-            "                will be displayed on stdout\n"
-            "   -p var=val - Define a named variable for the test cases to\n"
-            "                pick up\n"
-            "   -q         - Don't display the -o brief\n"
-            "   -s         - single shot. Run only one test case, and run it in\n"
-            "                the main process\n"
-            "   -v         - verbose mode\n"
-            "   -x         - XML output on std-out or non-XML output on file\n";
+            "   -c number, --children=number\n"
+            "        control number of concurrently running test processes\n"
+            "        number must be >= 1 and <= "
+                      << max_parallel << "\n\n"
+            "   -d dir, --working-dir=dir\n"
+            "        specify working directory (must exist)\n\n"
+            "   -l, --list\n"
+            "        list test cases\n\n"
+            "   -n, --nodeps\n"
+            "        ignore dependencies\n\n"
+            "   -o file, --output=file\n"
+            "        direct XML output to named file. A brief summary will be\n"
+            "        displayed on stdout\n\n"
+            "   -p name=val, --param=name=val\n"
+            "        define a named variable for the test cases to pick up\n\n"
+            "   -q, --quiet\n"
+            "        don't display the -o brief summary\n\n"
+            "   -s, --single-shot\n"
+            "        run only one test case, and run it in the main process\n\n"
+            "   -v, --verbose\n"
+            "        verbose mode, print result from passed tests\n\n"
+            "   -x, --xml\n"
+            "        XML output on std-out or non-XML output on file\n";
 
           return -1;
         }
-        ++p;
+        p += pcount;
       }
-    output::formatter &out = output_formatter(xml, output_fd, argc, argv);
     wrapped::getcwd(homedir, sizeof(homedir));
+    registrator_list tentative;
+    {
+      using implementation::crpcut_test_case_registrator;
+      crpcut_test_case_registrator *i = reg.crpcut_get_next();
+      while (i != &reg)
+        {
+          ++num_registered_tests;
+          crpcut_test_case_registrator *next = i->crpcut_get_next();
+          if (*p)
+            {
+              i->crpcut_unlink();
+              i->crpcut_link_after(&tentative);
+            }
+          i = next;
+        }
+    }
+    unsigned mismatches = 0;
+    if (*p == 0)
+      {
+        num_selected_tests = num_registered_tests;
+      }
+    else
+      {
+        using implementation::crpcut_test_case_registrator;
+        for (const char **name = p; *name; ++name)
+          {
+            crpcut_test_case_registrator *i = tentative.crpcut_get_next();
+            unsigned matches = 0;
+            while (i != &tentative)
+              {
+                if (i->crpcut_match_name(*name))
+                  {
+                    ++matches;
+                    ++num_selected_tests;
+                    crpcut_test_case_registrator *next = i->crpcut_unlink();
+                    i->crpcut_link_after(&reg);
+                    i = next;
+                  }
+                else
+                  {
+                    i = i->crpcut_get_next();
+                  }
+              }
+            if (matches == 0)
+              {
+                if (mismatches++)
+                  {
+                    err_os << ", ";
+                  }
+                err_os << *name;
+              }
+          }
+      }
+    if (mismatches)
+      {
+        err_os << (mismatches == 1 ? " does" : " do")
+               << " not match any test names\n";
+        return -1;
+      }
+    if (num_parallel == 0 && num_selected_tests != 1)
+      {
+        err_os << "Single shot requires exactly one test selected\n";
+        return -1;
+      }
+
+    {
+      using implementation::crpcut_test_case_registrator;
+      crpcut_test_case_registrator *i = tentative.crpcut_get_next();
+      while (i != &tentative)
+        {
+          i->crpcut_uninhibit_dependants();
+          i = i->crpcut_get_next();
+        }
+    }
+    output::formatter &out = output_formatter(xml, output_fd, argc, argv);
     try {
       if (tests_as_child_procs())
         {
@@ -923,80 +1114,6 @@ namespace crpcut {
             }
           presenter_pipe = start_presenter_process(out, verbose_mode);
         }
-      registrator_list tentative;
-      {
-        using implementation::crpcut_test_case_registrator;
-        crpcut_test_case_registrator *i = reg.crpcut_get_next();
-        while (i != &reg)
-          {
-            ++num_registered_tests;
-            crpcut_test_case_registrator *next = i->crpcut_get_next();
-            if (*p)
-              {
-                i->crpcut_unlink();
-                i->crpcut_link_after(&tentative);
-              }
-            i = next;
-          }
-      }
-      unsigned mismatches = 0;
-      if (*p == 0)
-        {
-          num_selected_tests = num_registered_tests;
-        }
-      else
-        {
-          using implementation::crpcut_test_case_registrator;
-          for (const char **name = p; *name; ++name)
-            {
-              crpcut_test_case_registrator *i = tentative.crpcut_get_next();
-              unsigned matches = 0;
-              while (i != &tentative)
-                {
-                  if (i->crpcut_match_name(*name))
-                    {
-                      ++matches;
-                      ++num_selected_tests;
-                      crpcut_test_case_registrator *next = i->crpcut_unlink();
-                      i->crpcut_link_after(&reg);
-                      i = next;
-                    }
-                  else
-                    {
-                      i = i->crpcut_get_next();
-                    }
-                }
-              if (matches == 0)
-                {
-                  if (mismatches++)
-                    {
-                      err_os << ", ";
-                    }
-                  err_os << *name;
-                }
-            }
-        }
-      if (mismatches)
-        {
-          err_os << (mismatches == 1 ? " does" : " do")
-                 << " not match any test names\n";
-          return -1;
-        }
-      if (num_parallel == 0 && num_selected_tests != 1)
-        {
-          err_os << "Single shot requires exactly one test selected\n";
-          return -1;
-        }
-      {
-        using implementation::crpcut_test_case_registrator;
-        crpcut_test_case_registrator *i = tentative.crpcut_get_next();
-        unsigned matches = 0;
-        while (i != &tentative)
-          {
-            i->crpcut_uninhibit_dependants();
-            i = i->crpcut_get_next();
-          }
-      }
       for (;;)
         {
           bool progress = false;

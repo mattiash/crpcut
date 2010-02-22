@@ -1760,10 +1760,10 @@ int main(int argc, char *argv[])
       <parameter>{flags}</parameter> are zero or more of:
       <variablelist><title>flag</title>
         <varlistentry id="child-processes"><term><parameter>-c</parameter>
-            <parameter>number</parameter></term>
+            <constant>number</constant> / <parameter>--children</parameter>=<constant>number</constant></term>
           <listitem>
             <para>Set number of parallel test case processes to
-              <parameter>number</parameter>. <parameter>number</parameter>
+              <constant>number</constant>. <constant>number</constant>
               must be a value in the range <literal>1</literal> to
               <literal>8</literal> inclusively.
             </para>
@@ -1771,49 +1771,52 @@ int main(int argc, char *argv[])
             <para>With a multi-core CPU, or with tests that spend a lot
               of time waiting, using many parallel test case processes
               can considerably shorten the run time of a test program.</para>
-            <note><parameter>-c</parameter> cannot be combined with
+            <note><parameter>-c</parameter> / <parameter>--children</parameter>
+              cannot be combined with
               <xref linkend="single-shot" xrefstyle="select:title"/>
             </note>
           </listitem>
         </varlistentry>
         <varlistentry  id="working-dir"><term><parameter>-d</parameter>
-            <parameter>dirname</parameter></term>
+            <constant>dirname</constant> / <parameter>--working-dir</parameter>=<constant>dirname</constant></term>
           <listitem>
             <para>Set the working directory for &crpcut; to
-              <parameter>dirname</parameter>. <parameter>dirname</parameter>
-              may be a relative path. The name <parameter>dirname</parameter>
+              <constant>dirname</constant>. <constant>dirname</constant>
+              may be a relative path. The name <constant>dirname</constant>
               must refer to an existing directory that &crpcut; has write
               access to. The tests will run in child directories created by
               &crpcut;
             </para>
           </listitem>
         </varlistentry>
-        <varlistentry id="list-tests"><term><parameter>-l</parameter></term>
+        <varlistentry id="list-tests"><term><parameter>-l</parameter> / <parameter>--list</parameter></term>
           <listitem>
-            <para><xref linkend="run" xrefstyle="select:title"/> prints the names
-                of all tests matching any in <parameter>{names}</parameter>
-                (or all tests if <parameter>{names}</parameter> is empty) to
-                the output stream and return <literal>-1</literal>.
+            <para><xref linkend="run" xrefstyle="select:title"/> prints
+              the names of all tests matching any in
+              <parameter>{names}</parameter> (or all tests if
+              <parameter>{names}</parameter> is empty) to the output stream
+              and return <literal>-1</literal>.
             </para>
             <note>
-              <parameter>-l</parameter> cannot be combined with any other
-              option.
+              <parameter>-l</parameter> / <parameter>--list</parameter>
+              cannot be combined with any other option.
             </note>
           </listitem>
         </varlistentry>
-        <varlistentry id="nodepend"><term><parameter>-n</parameter></term>
+        <varlistentry id="nodepend"><term><parameter>-n</parameter> / <parameter>--nodeps</parameter></term>
           <listitem>
             <para>Ignore all dependencies and consider all tests available
               for running.</para>
-            <note><parameter>-n</parameter> is implied by
+            <note><parameter>-n</parameter> / <parameter>--nodeps</parameter>
+              is implied by
               <xref linkend="single-shot" xrefstyle="select:title"/>
             </note>
           </listitem>
         </varlistentry>
         <varlistentry id="output-file"><term><parameter>-o</parameter>
-            <parameter>filename</parameter></term>
+            <constant>filename</constant> / <parameter>--output</parameter>=<constant>filename</constant></term>
           <listitem>
-            <para>Direct the test report to <parameter>filename</parameter>.
+            <para>Direct the test report to <constant>filename</constant>.
               By default the test report will be in XML format. Combine with
               <xref linkend="xml" xrefstyle="select:title"/> to get a
               human readable report to <parameter>filename</parameter>. A
@@ -1821,35 +1824,39 @@ int main(int argc, char *argv[])
               unless suppressed with the
               <xref linkend="quiet" xrefstyle="select:title"/>.
             </para>
-            <note><parameter>-o</parameter> cannot be combined with
-              <parameter>-s</parameter></note>
+            <note><parameter>-o</parameter> / <parameter>--output</parameter>
+              cannot be combined with
+              <parameter>-s</parameter><parameter>--single-shot</parameter></note>
           </listitem>
         </varlistentry>
         <varlistentry id="cli-param"><term><parameter>-p</parameter>
-                <parameter>name</parameter>=<constant>value</constant></term>
+                <constant>name</constant>=<literal>value</literal> / <parameter>--param</parameter>=<constant>name</constant>=<literal>value</literal></term>
           <listitem>
             <para>Define a named parameter for the tests to use. The syntax is
               <parameter>-p</parameter>
-              <parameter>name</parameter>=<constant>value</constant>.
+              <constant>name</constant>=<literal>value</literal> or
+              <parameter>--param</parameter>=<constant>name</constant>=<literal>value</literal>.
               Several named parameters can be defined with multiple
-              <parameter>-p</parameter> options on the command line, each
-              defining a different named parameter.</para>
+              <parameter>-p</parameter> / <parameter>--param</parameter>
+              options on the command line, each defining a different named
+              parameter.</para>
             <para>Tests pick up the values
               with <xref linkend="get_parameter" xrefstyle="select:title"/>.
             </para>
           </listitem>
         </varlistentry>
-        <varlistentry id="quiet"><term><parameter>-q</parameter></term>
+        <varlistentry id="quiet"><term><parameter>-q</parameter> / <parameter>--quiet</parameter></term>
           <listitem>
-            <para>Suppress the printing of a report summary, resulting from
-              the <xref linkend="output-file" xrefstyle="select:title"/>
+            <para>Suppress the printing of a brief report summary, resulting
+              from the <xref linkend="output-file" xrefstyle="select:title"/>
               option.
             </para>
-            <note><parameter>-q</parameter> is implied by
-              <parameter>-s</parameter></note>
+            <note><parameter>-q</parameter> / <parameter>--quiet</parameter>
+              is implied by
+              <parameter>-s</parameter> / <parameter>--single-shot</parameter></note>
           </listitem>
         </varlistentry>
-        <varlistentry id="single-shot"><term><parameter>-s</parameter></term>
+        <varlistentry id="single-shot"><term><parameter>-s</parameter> / <parameter>--single-shot</parameter></term>
           <listitem>
             <para>Run the one test that matches
               <parameter>{names}</parameter>, without spawning a separate test
@@ -1865,36 +1872,39 @@ int main(int argc, char *argv[])
             </caution>
           </listitem>
         </varlistentry>
-        <varlistentry id="verbose"><term><parameter>-v</parameter></term>
+        <varlistentry id="verbose"><term><parameter>-v</parameter> / <parameter>--verbose</parameter></term>
           <listitem>
             <para>Include the output from passed tests in the report.</para>
-            <note><parameter>-v</parameter> is implied by
-              <parameter>-s</parameter></note>
+            <note><parameter>-v</parameter> / <parameter>--verbose</parameter>
+              is implied by
+              <parameter>-s</parameter> / <parameter>--single-shot</parameter></note>
           </listitem>
         </varlistentry>
-        <varlistentry id="xml"><term><parameter>-x</parameter></term>
+        <varlistentry id="xml"><term><parameter>-x</parameter> / <parameter>--xml</parameter></term>
           <listitem>
             <para>Switch between XML and human readable test report format.
               A test report to stdout defaults to human readable, but is
-              changed to XML using <parameter>-x</parameter>. A test report
-              to a named file, using
+              changed to XML using
+              <parameter>-x</parameter> / <parameter>--xml</parameter>.
+              A test report  to a named file, using
               <xref linkend="output-file" xrefstyle="select:title"/>, defaults
               to XML but is changed to human readable using
-              <parameter>-x</parameter>.
+              <parameter>-x</parameter> / <parameter>--xml</parameter>.
             </para>
-            <note><parameter>-x</parameter> cannot be combined with
-              <parameter>-s</parameter></note>
+            <note><parameter>-x</parameter> / <parameter>--xml</parameter>
+              cannot be combined with
+              <parameter>-s</parameter> / <parameter>--single-shot</parameter></note>
           </listitem>
         </varlistentry>
       </variablelist>
     </para>
     <para>Example:
       <programlisting>
-    testprog -n -p pwd=`pwd` -x suite_1</programlisting>
-      Will run all tests in the testsuite <parameter>suite_1</parameter>
+    testprog --nodeps --parameter=pwd=`pwd` --xml suite_1</programlisting>
+      Will run all tests in the testsuite <literal>suite_1</literal>
       regardless of dependencies, and will provide the
       <link linkend="get_parameter">named parameter</link>
-      <parameter>pwd</parameter> the name of the current working directory.
+      <constant>pwd</constant> the name of the current working directory.
     </para>
   </section>
   <section id="test_reports">

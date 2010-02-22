@@ -137,7 +137,6 @@ namespace crpcut {
                      int,
                      (int n, const struct rlimit *r),
                      (n, r))
-
     CRPCUT_WRAP_FUNC(libc, vsnprintf,
                      int,
                      (char *d, size_t s, const char *f, va_list ap),
@@ -157,6 +156,10 @@ namespace crpcut {
     CRPCUT_WRAP_FUNC(libc, strcpy, char *, (char *l, const char *r), (l, r))
     CRPCUT_WRAP_FUNC(libc, strerror, char *, (int n), (n))
     CRPCUT_WRAP_FUNC(libc, strlen, size_t, (const char *p), (p))
+    CRPCUT_WRAP_FUNC(libc, strncmp,
+                     int,
+                     (const char *s1, const char *s2, size_t n),
+                     (s1, s2, n))
     CRPCUT_WRAP_FUNC(libc, time, time_t, (time_t *p), (p))
     CRPCUT_WRAP_FUNC(libc, waitid,
                      int,
