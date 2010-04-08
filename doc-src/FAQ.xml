@@ -446,6 +446,40 @@
       </answer>
     </qandaentry>
 
+    <qandaentry>
+      <question>
+        <para>Why does my &crpcut; test program say there are
+          no tests? I've written plenty!
+        </para>
+      </question>
+      <answer>
+        <para>
+          &crpcut; relies on constructors for global objects having executed
+          before
+          <link linkend="run"><symbol>crpcut::run(argc, argv)</symbol></link>
+          is called. There are a number of reasons why this may fail:
+          <itemizedlist>
+            <listitem>
+              <function>main</function>() is not compiled by a C++ compiler.
+            </listitem>
+            <listitem>
+              The object file containing <function>main</function>() and the
+              object files containing the tests are not linked with the C++
+              runtime.
+            </listitem>
+            <listitem>
+              Your tests are in a shared library.
+            </listitem>
+          </itemizedlist>
+        </para>
+        <para>
+          All the above, and yet some, can be worked around, but it's not for
+          the faint of heart.
+          <ulink url="http://gcc.gnu.org/onlinedocs/gccint/Initialization.html">This</ulink>
+          may be of help.
+        </para>
+      </answer>
+    </qandaentry>
   </qandaset>
 </chapter>
 <chapter id="google-mock">
