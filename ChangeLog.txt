@@ -1,3 +1,7 @@
+
+         * Call the registered new_handler (if any) when new/new[] fails,
+           as per 18.4.2 and 18.4.2 in C++ 2003 (ISO/IEC 14882:2003.)
+
 2010-02-22 1.0.2
 
          * Added long-name command line parameters for improved readability.

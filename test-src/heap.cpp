@@ -183,5 +183,57 @@ TESTSUITE(heap)
     int *p = new int[1];
     delete p;
   }
+
+  char *ballast;
+
+
+  void stupid_new_handler()
+  {
+    if (!ballast) throw std::bad_alloc();
+    delete[] ballast;
+    ballast = 0;
+  }
+
+  TEST(should_succeed_new_handler)
+  {
+    const size_t bytes = crpcut::heap::allocated_bytes();
+    crpcut::heap::set_limit(bytes + 120);
+    std::set_new_handler(stupid_new_handler);
+    ballast = new char[100];
+    char *p = new char[50];
+    ASSERT_EQ(crpcut::heap::allocated_bytes(), bytes + 50);
+    ASSERT_EQ(ballast, 0);
+    delete[] p;
+    ASSERT_EQ(crpcut::heap::allocated_bytes(), bytes);
+  }
+
+  TEST(should_succeed_new_handler_no_ballast)
+  {
+    crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 99);
+    std::set_new_handler(stupid_new_handler);
+    ASSERT_THROW((void)new char[100], std::bad_alloc); // leak if alloc succeeds
+  }
+
+  TEST(should_succeed_nothrow_new_handler)
+  {
+    const size_t bytes = crpcut::heap::allocated_bytes();
+    crpcut::heap::set_limit(bytes + 120);
+    std::set_new_handler(stupid_new_handler);
+    ballast = new char[100];
+    char *p = new (std::nothrow) char[50];
+    ASSERT_EQ(crpcut::heap::allocated_bytes(), bytes + 50);
+    ASSERT_EQ(ballast, 0);
+    ASSERT_NE(p, 0);
+    delete[] p;
+    ASSERT_EQ(crpcut::heap::allocated_bytes(), bytes);
+  }
+
+  TEST(should_succeed_nothrow_new_handler_no_ballast)
+  {
+    crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 99);
+    std::set_new_handler(stupid_new_handler);
+    void *p = new (std::nothrow) char[100];
+    ASSERT_EQ(p, 0);
+  }
 }
 

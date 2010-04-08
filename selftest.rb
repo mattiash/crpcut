@@ -910,6 +910,18 @@ TESTS = {
   log('violation',
       /DEALLOC FAIL\ndelete.*using new\[\]/me),
 
+  'heap::should_succeed_new_handler' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_new_handler_no_ballast' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_nothrow_new_handler' =>
+  Test.new('PASSED'),
+
+  'heap::should_succeed_nothrow_new_handler_no_ballast' =>
+  Test.new('PASSED'),
+
   'bad_forks::fork_and_let_child_hang_should_fail' =>
   Test.new('FAILED').
   log('violation',

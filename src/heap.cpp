@@ -76,6 +76,18 @@ namespace crpcut
 
   namespace heap
   {
+    class new_handler_caller
+    {
+      typedef void (*bool_type)();
+    public:
+      new_handler_caller() throw () : handler(std::set_new_handler(0)) {}
+      ~new_handler_caller() throw () { std::set_new_handler(handler); }
+      void operator()() const { handler(); }
+      operator bool_type () const throw () { return handler; }
+    private:
+      std::new_handler handler;
+    };
+
     namespace {
 
       struct stats {
@@ -162,6 +174,20 @@ namespace crpcut
       crpcut::wrapped::free(p - 1);
     }
 
+
+    void *alloc_new_mem(size_t s, alloc_type type) throw (std::bad_alloc)
+    {
+      static std::bad_alloc exc;
+      for (;;)
+        {
+          new_handler_caller handler;
+          void *p = crpcut::heap::alloc_mem(s, type);
+          if (p) return p;
+          if (!handler) throw exc;
+          handler();
+        }
+    }
+
     size_t set_limit(size_t n)
     {
       if (n < bytes)
@@ -235,39 +261,38 @@ extern "C"
       }
     return new_addr;
   }
+
 }
 
 
 void *operator new(size_t s) throw (std::bad_alloc)
 {
-  void *p = crpcut::heap::alloc_mem(s, by_new_elem);
-  if (!p)
-    {
-      static std::bad_alloc exc;
-      throw exc;
-    }
-  return p;
+  return crpcut::heap::alloc_new_mem(s, by_new_elem);
 }
 
 void *operator new(size_t s, const std::nothrow_t&) throw ()
 {
-  return crpcut::heap::alloc_mem(s, by_new_elem);
+  try {
+    return crpcut::heap::alloc_new_mem(s, by_new_elem);
+  }
+  catch (std::bad_alloc&)  {
+  }
+  return 0;
 }
 
 void *operator new[](size_t s) throw (std::bad_alloc)
 {
-  void *p = crpcut::heap::alloc_mem(s, by_new_array);
-  if (!p)
-    {
-      static std::bad_alloc exc;
-      throw exc;
-    }
-  return p;
+  return crpcut::heap::alloc_new_mem(s, by_new_array);
 }
 
 void *operator new[](size_t s, const std::nothrow_t&) throw ()
 {
-  return crpcut::heap::alloc_mem(s, by_new_array);
+  try {
+    return crpcut::heap::alloc_new_mem(s, by_new_array);
+  }
+  catch (std::bad_alloc&)  {
+  }
+  return 0;
 }
 
 void operator delete(void *p) throw ()
