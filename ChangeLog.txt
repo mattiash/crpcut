@@ -1,3 +1,6 @@
+         * Fixed an error in the valgrind instrumentation of the heap,
+           which prevented detection of overrun and underrun errors
+           on heap objects.
 
          * Call the registered new_handler (if any) when new/new[] fails,
            as per 18.4.2 and 18.4.2 in C++ 2003 (ISO/IEC 14882:2003.)

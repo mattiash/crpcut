@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
 
  * Redistribution and use in source and binary forms, with or without
@@ -27,11 +27,16 @@
 #include <crpcut.hpp>
 #ifdef HAVE_VALGRIND
 #include <valgrind/valgrind.h>
-#define ALLOCATED_MEM(p, s) VALGRIND_MALLOCLIKE_BLOCK(p, s, 0UL, 0)
-#define FREED_MEM(p) VALGRIND_FREELIKE_BLOCK(p, 0UL)
+#include <valgrind/memcheck.h>
 #else
-#define ALLOCATED_MEM(p, s) do { } while (0)
-#define FREED_MEM(p) do { } while (0)
+#  define VALGRIND_CREATE_MEMPOOL(a,b,c)        do {} while (0)
+#  define VALGRIND_MAKE_MEM_NOACCESS(a, b)      do {} while (0)
+#  define VALGRIND_MAKE_MEM_UNDEFINED(a, b)     do {} while (0)
+#  define VALGRIND_MALLOCLIKE_BLOCK(a, b, c, d) do {} while (0)
+#  define VALGRIND_MAKE_MEM_DEFINED(a, b)       do {} while (0)
+#  define VALGRIND_FREELIKE_BLOCK(a, b)         do {} while (0)
+#  define VALGRIND_MEMPOOL_FREE(a, b)           do {} while (0)
+#  define VALGRIND_MEMPOOL_ALLOC(a, b, c)       do {} while (0)
 #endif
 
 namespace {
@@ -138,19 +143,37 @@ namespace crpcut
 
       if (current_offset + blocks < num_elems)
         {
+          if (current_offset == 0)
+            {
+              VALGRIND_CREATE_MEMPOOL(vector, sizeof(stats), 0);
+              VALGRIND_MAKE_MEM_NOACCESS(vector, sizeof(vector));
+            }
           stats *p = &vector[current_offset];
-          current_offset += blocks;
+          current_offset += blocks + 1;
           bytes += s;
+          VALGRIND_MAKE_MEM_UNDEFINED(p, sizeof(stats));
           p->mem = s;
           p->type = type;
+          VALGRIND_MAKE_MEM_NOACCESS(p, sizeof(stats));
           ++p;
-          ALLOCATED_MEM((void*)p, s);
+          VALGRIND_MEMPOOL_ALLOC(vector, p, s);
+          VALGRIND_MALLOCLIKE_BLOCK(p, s, sizeof(stats), 0);
           ++objects;
           return p;
         }
-      void *addr = crpcut::wrapped::malloc(s + sizeof(stats));
+      const size_t size = s + 2*sizeof(stats);
+      void *addr = crpcut::wrapped::malloc(size);
       stats *p = static_cast<stats*>(addr);
-      if (p) { p->mem = s; p->type = type; ++p; bytes+= s; ++objects; }
+      if (p)
+        {
+          p->mem = s;
+          p->type = type;
+          VALGRIND_MAKE_MEM_NOACCESS(p, size);
+          ++p;
+          VALGRIND_MALLOCLIKE_BLOCK(p, s, sizeof(stats), 0);
+          bytes+= s;
+          ++objects;
+        }
       return p;
     }
 
@@ -162,12 +185,14 @@ namespace crpcut
       using namespace crpcut::heap;
 
       stats *p = static_cast<stats*>(addr);
+      VALGRIND_MAKE_MEM_DEFINED(p-1, sizeof(stats));
       alloc_type_check(p-1, expected);
       bytes-= p[-1].mem;
+      VALGRIND_FREELIKE_BLOCK(p, sizeof(stats));
       --objects;
-      if (addr >= vector && addr < &vector[num_elems])
+      if (p >= vector && p < &vector[num_elems])
         {
-          FREED_MEM(addr);
+          VALGRIND_MEMPOOL_FREE(vector, addr);
           return;
         }
 
@@ -250,13 +275,16 @@ extern "C"
         return 0;
       }
     crpcut::heap::stats *p = static_cast<crpcut::heap::stats*>(addr);
+    VALGRIND_MAKE_MEM_DEFINED(p - 1, sizeof(crpcut::heap::stats));
     crpcut::heap::alloc_type_check(p-1, by_malloc);
-    if (s <= p[-1].mem) return addr;
+    const size_t block_size = p[-1].mem;
+    VALGRIND_MAKE_MEM_NOACCESS(p - 1, sizeof(crpcut::heap::stats));
+    if (s <= block_size) return addr;
 
     void *new_addr = malloc(s);
     if (new_addr)
       {
-        copymem(new_addr, p, p[-1].mem);
+        copymem(new_addr, p, block_size);
         free(addr);
       }
     return new_addr;
