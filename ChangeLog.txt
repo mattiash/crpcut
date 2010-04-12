@@ -1,3 +1,5 @@
+2010-04-12 1.0.3
+
          * Fixed an error in the valgrind instrumentation of the heap,
            which prevented detection of overrun and underrun errors
            on heap objects.
