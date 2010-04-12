@@ -2032,7 +2032,7 @@ int main(int argc, char *argv[])
   <title>LICENSE</title>
   <screen>
 
- Copyright 2009 Bjorn Fahller &lt;bjorn@fahller.se&gt;
+ Copyright 2009-2010 Bjorn Fahller &lt;bjorn@fahller.se&gt;
  All rights reserved
 
  Redistribution and use in source and binary forms, with or without
