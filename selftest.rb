@@ -950,7 +950,7 @@ GMOCK_TESTS = {
   'google_mock::should_fail_by_not_calling' =>
   Test.new('FAILED').
   log('violation',
-      /call count doesn't match this expectation.*Actual: never called/me),
+      /call count doesn't match.*Actual: never called/me),
 
   'google_mock::sequence_success_1' =>
   Test.new('PASSED'),
@@ -961,7 +961,7 @@ GMOCK_TESTS = {
   'google_mock::sequence_should_fail_incomplete' =>
   Test.new('FAILED').
   log('violation',
-      /call count doesn't match this expectation.*Actual: never called/me),
+      /call count doesn't match.*Actual: never called/me),
 
   'google_mock::sequence_should_fail_one_too_many' =>
   Test.new('FAILED').

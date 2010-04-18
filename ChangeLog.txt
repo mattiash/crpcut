@@ -1,3 +1,6 @@
+         * Adaptations for google-mock 1.5.0 (check if pthreads is
+           required and change a pattern matching string in selftest)
+
 2010-04-12 1.0.3
 
          * Fixed an error in the valgrind instrumentation of the heap,

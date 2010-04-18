@@ -222,8 +222,19 @@ if (WITH_GOOGLE_MOCK)
     -DLINK_DIRECTORIES=${GOOGLE_MOCK_DIR}/lib
     -DLINK_LIBRARIES=gtest)
   if (NOT HAVE_GMOCK)
-    message(FATAL_ERROR "Unknown version of Google Mock")
+    set(TMPLIBS "gtest -lpthread") # isn't this weird?
+    try_compile(HAVE_GMOCK ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/CMakeTmp/gmock.cpp
+    CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${GOOGLE_MOCK_DIR}/include
+    -DLINK_DIRECTORIES=${GOOGLE_MOCK_DIR}/lib
+    -DLINK_LIBRARIES=${TMPLIBS})
+    if (NOT HAVE_GMOCK)
+      message(FATAL_ERROR "Unknown version of Google Mock")
+    endif (NOT HAVE_GMOCK)
+    set(GMOCK_LIBS "${GMOCK_LIBS} -lpthread")
+    unset(TMTPLIBS)
   endif (NOT HAVE_GMOCK)
+
 endif (WITH_GOOGLE_MOCK)
 
 include_directories(include)
