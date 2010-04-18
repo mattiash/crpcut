@@ -1174,7 +1174,8 @@ RUNS.each do | params, expects |
 end
 dirname = "/tmp/crpcut_selftest_dir_#{$$}"
 Dir.mkdir(dirname)
-prog="./test/testprog -o /dev/null -q -d #{dirname} should_fail_due_to_left_behind_files"
+testname="should_fail_due_to_left_behind_files"
+prog="./test/testprog -o /dev/null -q -d #{dirname} #{testname}"
 print "%-70s: " % prog
 file = open("|#{prog}")
 s = file.read
@@ -1187,7 +1188,7 @@ if !s.empty? then
 end
 file_found = nil
 begin
-file_found = File.stat("#{dirname}/should_fail_due_to_left_behind_files/apa").file?
+  file_found = File.stat("#{dirname}/#{testname}/apa").file?
 rescue
 end
 if !file_found then
@@ -1196,8 +1197,8 @@ if !file_found then
   is_error = true
 end
 begin
-  File.unlink "#{dirname}/should_fail_due_to_left_behind_files/apa"
-  Dir.rmdir "#{dirname}/should_fail_due_to_left_behind_files"
+  File.unlink "#{dirname}/#{testname}/apa"
+  Dir.rmdir "#{dirname}/#{testname}"
   Dir.rmdir dirname
 rescue
   puts if !is_error
@@ -1206,3 +1207,35 @@ rescue
 end
 puts "PASSED" if !is_error
 File.unlink "./apafil"
+
+begin
+  File.unlink "./core"
+rescue
+  # do nothing, we don't care. Just as long as it's not there
+end
+testname="asserts::should_fail_void_ptr_eq_ptr"
+prog="./test/testprog -s #{testname}"
+print "%-70s: " % prog
+file = open("|#{prog}")
+s = file.read
+file.close
+is_error=false
+file_found = nil
+begin
+  file_found = File.stat("./core").file?
+rescue
+end
+if !file_found then
+  puts if !is_error
+  puts "File was not created"
+  is_error = true
+end
+begin
+  File.unlink "./core"
+rescue
+  puts if !is_error
+  puts "Couldn't remove created files"
+  is_error = true
+end
+puts "PASSED" if !is_error
+

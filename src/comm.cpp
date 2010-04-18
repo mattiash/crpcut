@@ -34,12 +34,6 @@ namespace crpcut {
 
     void reporter::operator()(type t, const char *msg, size_t len) const
     {
-      int mask = 0;
-      if (test_case_factory::is_naughty_child())
-        {
-          mask = kill_me;
-        }
-      t = static_cast<type>(mask | t);
       if (!test_case_factory::tests_as_child_procs())
         {
           if (len)
@@ -52,6 +46,12 @@ namespace crpcut {
             }
           return;
         }
+      int mask = 0;
+      if (test_case_factory::is_naughty_child())
+        {
+          mask = kill_me;
+        }
+      t = static_cast<type>(mask | t);
 
       static const size_t header_size = sizeof(t) + sizeof(len);
       void *report_addr = alloca(len + header_size);
