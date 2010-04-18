@@ -656,7 +656,9 @@
     mind is to always <symbol>#include &lt;gmock/gmock.h&gt;</symbol>
     before <symbol>#include &lt;crpcut.hpp&gt;</symbol>, and to link
     your test program with <symbol>-lgmock</symbol>, <symbol>-lgtest</symbol>
-    and, of course also <symbol>-lcrpcut</symbol>
+    and, of course also <symbol>-lcrpcut</symbol>. Depending on your version
+    of <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
+    you may also need <symbol>-lpthread</symbol>.
     </para>
     <tip>
       Experience has shown that it's beneficial to use fixtures to set up

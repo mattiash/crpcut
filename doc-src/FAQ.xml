@@ -581,6 +581,29 @@
 
     <qandaentry>
       <question>
+        <para>Why do I get a lot of link errors with undefined references from libgmock.so?</para>
+      </question>
+      <answer>
+        <para>Does it look something like the below?
+          <screen>
+
+/tmp/usr/lib/libgmock.so: undefined reference to `pthread_key_create'
+/tmp/usr/lib/libgmock.so: undefined reference to `pthread_getspecific'
+/tmp/usr/lib/libgmock.so: undefined reference to `pthread_key_delete'
+/tmp/usr/lib/libgmock.so: undefined reference to `pthread_setspecific'
+collect2: ld returned 1 exit status
+
+</screen>
+          It seems like
+          <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
+          version 1.5.0 requires pthreads. Add <symbol>-lpthread</symbol> to
+          your link command and it will be all right.
+        </para>
+      </answer>
+    </qandaentry>
+
+    <qandaentry>
+      <question>
         <para>
           Will a mocking framework, similar to
           <ulink url="http://code.google.com/p/googlemock">google-mock</ulink>
