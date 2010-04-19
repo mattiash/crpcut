@@ -221,7 +221,14 @@
                   of parameters, otherwise a predicate cannot have more than
                   9 parameters.
                 </note>
-
+                <tip>
+                  If you use <ulink url="http://gcc.gnu.org">GCC</ulink>
+                  version 4.5.0 or higher, and compile your test sources with
+                  <symbol>-std=c++0x</symbol>, you can use <ulink
+url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
+                    expressions</ulink>
+                  with <xref linkend="ASSERT_PRED" xrefstyle="select:title"/>.
+                </tip>
               </para>
             </listitem>
           </varlistentry>
