@@ -1,7 +1,7 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
-
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -90,12 +90,17 @@ namespace crpcut {
         : duration_ms(timeout_ms),
           start_timestamp_ms(clocks::cputime::timestamp_ms_absolute())
       {
-        rlimit r = { (duration_ms + 1500) / 1000, (duration_ms + 2500) / 1000 };
-        wrapped::setrlimit(RLIMIT_CPU, &r);
+        if (test_case_factory::tests_as_child_procs())
+          {
+            rlimit r = { (duration_ms + 1500) / 1000, (duration_ms + 2500) / 1000 };
+            wrapped::setrlimit(RLIMIT_CPU, &r);
+          }
       }
 
       cputime_enforcer::~cputime_enforcer()
       {
+        if (!test_case_factory::tests_as_child_procs()) return;
+
         clocks::cputime::timestamp now
           = clocks::cputime::timestamp_ms_absolute();
         long diff = now - start_timestamp_ms;
@@ -114,22 +119,20 @@ namespace crpcut {
           start_timestamp_ms(clocks::monotonic::timestamp_ms_absolute())
       {
 
-        // calculated deadline + 1 sec should give plenty of slack
-        clocks::monotonic::timestamp deadline = duration_ms + 1000;
         if (test_case_factory::tests_as_child_procs())
           {
+            // calculated deadline + 1 sec should give plenty of slack
+            clocks::monotonic::timestamp deadline = duration_ms + 1000;
             comm::report(comm::set_timeout, deadline);
           }
       }
 
       monotonic_enforcer::~monotonic_enforcer()
       {
-        clocks::monotonic::timestamp now
-          = clocks::monotonic::timestamp_ms_absolute();
-        if (test_case_factory::tests_as_child_procs())
-          {
-            comm::report(comm::cancel_timeout, 0, 0);
-          }
+        if (!test_case_factory::tests_as_child_procs()) return;
+        typedef clocks::monotonic mono;
+        mono::timestamp now  = mono::timestamp_ms_absolute();
+        comm::report(comm::cancel_timeout, 0, 0);
         long diff = now - start_timestamp_ms;
         if (diff > int(duration_ms))
           {

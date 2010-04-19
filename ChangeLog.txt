@@ -1,3 +1,7 @@
+         * Removed monitoring of deadlines when run with -s (--single-shot).
+           This mode is almost exclusively used when running a test in a
+           debugger, and information about missed deadlines is just noise.
+
          * Fixed long standing bug in -s (--single-shot) which allowed
            a test to continue despite failed asserts.
 

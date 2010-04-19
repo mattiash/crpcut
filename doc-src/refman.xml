@@ -1869,6 +1869,7 @@ int main(int argc, char *argv[])
               <xref linkend="INFO" xrefstyle="select:title"/> is sent to stdout.
               It is not possible for &crpcut; to monitor time consumed by the
               test case, and neither is it possible to monitor abnormal exits.
+              Any failed assertion results in a call to <function>abort</function>().
             </caution>
           </listitem>
         </varlistentry>
@@ -2025,6 +2026,13 @@ int main(int argc, char *argv[])
 
 <xi:include href="../sample-output/debug_assert_eq_fails.out" parse="text"/>
       </screen>
+    </para>
+    <para>When run with <xref linkend="single-shot" xrefstyle="select:title"/>,
+      failed assertions leads to a call to <function>abort</function>.
+      <note>Deadlines are neither asserted, nor even monitored, when
+        a test is run with
+        <xref linkend="single-shot" xrefstyle="select:title"/>.
+      </note>
     </para>
   </section>
 </chapter>
