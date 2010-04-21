@@ -1558,7 +1558,12 @@ endif(RUBY)
 if (AWK AND BASH AND XMLLINT)
    add_custom_target(sanitycheck ${BASH} ${CMAKE_SOURCE_DIR}/sanitycheck.sh ${AWK} ${CMAKE_SOURCE_DIR} ${SELFTEST_PARAM} DEPENDS testprog VERBATIM)
 endif (AWK AND BASH AND XMLLINT)
-set(LIBRARY_OUTPUT_PATH lib)
+
+if ("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+  set(LIB_SUFFIX 64)
+endif ("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+message("void*=${CMAKE_SIZEOF_VOID_P}")
+set(LIBRARY_OUTPUT_PATH "lib${LIB_SUFFIX}")
 set(EXECUTABLE_OUTPUT_PATH test)
 
 if(HAVE_CXX0X AND NOT HAVE_TYPEOF)
@@ -1592,7 +1597,7 @@ install(
   DESTINATION include
 )
 
-install(TARGETS crpcut DESTINATION lib)
+install(TARGETS crpcut DESTINATION lib${LIB_SUFFIX})
 
 install(
   FILES ${TEST_SRCS}
