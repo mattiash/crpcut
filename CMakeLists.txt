@@ -135,7 +135,7 @@ try_compile(HAVE_VALGRIND ${CMAKE_BINARY_DIR}
 
 # check for clock_gettime()
 
-set(EXTRA_LIBS "${EXTRA_LIBS} -ldl")
+set(EXTRA_LIBS "${EXTRA_LIBS} -l${CMAKE_DL_LIBS}")
 check_function_exists("clock_gettime()" HAVE_CLOCK_GETTIME)
 if(HAVE_CLOCK_GETTIME)
   add_definitions(-DHAVE_CLOCK_GETTIME=libc)
@@ -1562,7 +1562,6 @@ endif (AWK AND BASH AND XMLLINT)
 if ("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
   set(LIB_SUFFIX 64)
 endif ("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-message("void*=${CMAKE_SIZEOF_VOID_P}")
 set(LIBRARY_OUTPUT_PATH "lib${LIB_SUFFIX}")
 set(EXECUTABLE_OUTPUT_PATH test)
 
