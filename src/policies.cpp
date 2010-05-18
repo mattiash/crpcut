@@ -92,7 +92,8 @@ namespace crpcut {
       {
         if (test_case_factory::tests_as_child_procs())
           {
-            rlimit r = { (duration_ms + 1500) / 1000, (duration_ms + 2500) / 1000 };
+            rlimit r = { (duration_ms + 1500) / 1000,
+                         (duration_ms + 2500) / 1000 };
             wrapped::setrlimit(RLIMIT_CPU, &r);
           }
       }
