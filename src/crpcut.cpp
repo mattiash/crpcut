@@ -173,19 +173,7 @@ namespace crpcut {
 
     struct info { size_t len; const char *str; };
 #define ESTR(s) { sizeof(#s)-1, #s }
-    static const info tag_info[] =
-      {
-        ESTR(stdout),
-        ESTR(stderr),
-        ESTR(info),
-        ESTR(exit_ok),
-        ESTR(exit_fail),
-        ESTR(dir),
-        ESTR(set_timeout),
-        ESTR(cancel_timeout),
-        ESTR(begin_test),
-        ESTR(end_test)
-      };
+    static const info tag_info[] =  { CRPCUT_COMM_MSGS(ESTR) };
 #undef ESTR
 
     template <typename T>

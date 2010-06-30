@@ -28,7 +28,6 @@
 #include "output.hpp"
 #include "posix_encapsulation.hpp"
 
-#define STR(s) { "\"" #s "\"", sizeof(#s) + 1 }
 
 namespace {
   struct phase_tag
@@ -37,13 +36,14 @@ namespace {
     size_t      len;
   };
 
+#define STR(s) { "\"" #s "\"", sizeof(#s) + 1 }
+
   phase_tag phase_str[] = {
-    STR(creating),
-    STR(running),
-    STR(destroying),
-    STR(post_mortem),
-    STR(child)
+    CRPCUT_TEST_PHASES(STR)
   };
+
+#undef STR
+
 }
 
 

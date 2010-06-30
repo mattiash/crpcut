@@ -305,6 +305,7 @@ namespace std {
 #endif
 
 #define ANY_CODE -1
+#define CRPCUT_VERBATIM(x) x
 
 namespace crpcut {
   class test_case_factory;
@@ -1087,12 +1088,20 @@ namespace crpcut {
 
   namespace comm {
 
+#define CRPCUT_COMM_MSGS(translator)             \
+    translator(stdout),                          \
+      translator(stderr),                        \
+      translator(info),                          \
+      translator(exit_ok),                       \
+      translator(exit_fail),                     \
+      translator(dir),                           \
+      translator(set_timeout),                   \
+      translator(cancel_timeout),                \
+      translator(begin_test),                    \
+      translator(end_test)
+
     typedef enum {
-      stdout, stderr, info,
-      exit_ok, exit_fail, dir,
-      set_timeout, cancel_timeout,
-      begin_test,
-      end_test,
+      CRPCUT_COMM_MSGS(CRPCUT_VERBATIM),
       kill_me = 0x100
     } type;
 
@@ -1250,7 +1259,15 @@ namespace crpcut {
 
   } // stream
 
-  typedef enum { creating, running,  destroying,  post_mortem, child } test_phase;
+#define CRPCUT_TEST_PHASES(translator)   \
+  translator(creating),                  \
+  translator(running),                   \
+  translator(destroying),                \
+  translator(post_mortem),               \
+  translator(child)
+
+
+  typedef enum { CRPCUT_TEST_PHASES(CRPCUT_VERBATIM) } test_phase;
 
   namespace implementation {
 
