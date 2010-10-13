@@ -905,6 +905,16 @@ namespace crpcut {
         virtual void crpcut_expected_death(std::ostream &os);
       };
 
+      class timeout : public virtual crpcut_none
+      {
+      public:
+        virtual void crpcut_expected_death(std::ostream &os);
+        virtual unsigned long crpcut_calc_deadline(unsigned long ts) const
+        {
+          return ts;
+        }
+      };
+
       class wrapper;
 
     } // namespace deaths
@@ -925,6 +935,14 @@ namespace crpcut {
       typedef deaths::exit<N>  crpcut_expected_death_cause;
     };
 
+    template <int N>
+    class realtime_timeout_death : protected virtual default_policy
+    {
+    public:
+      typedef deaths::wrapper crpcut_run_wrapper;
+      typedef deaths::timeout crpcut_expected_death_cause;
+      typedef timeout::enforcer<timeout::realtime, N> crpcut_timeout_enforcer;
+    };
     class any_exception_wrapper;
 
     template <typename exc>
@@ -1361,12 +1379,14 @@ namespace crpcut {
       bool crpcut_has_active_readers() const;
       void crpcut_deactivate_reader();
       void crpcut_activate_reader();
+      void crpcut_set_timeout(unsigned long);
       virtual void crpcut_run_test_case() = 0;
     protected:
       template <typename T>
       void crpcut_run_test_case();
       crpcut_test_case_registrator();
     private:
+      virtual unsigned long crpcut_calc_deadline(unsigned long ts) const;
       void crpcut_manage_test_case_execution(test_case_base*);
       std::ostream &crpcut_print_name(std::ostream &) const ;
 
@@ -3251,6 +3271,15 @@ namespace crpcut {
       ++crpcut_active_readers;
     }
 
+    inline void
+    crpcut_test_case_registrator
+    ::crpcut_set_timeout(unsigned long ts)
+    {
+      // calculated deadline + 1 sec should give plenty of slack
+      crpcut_absolute_deadline_ms = crpcut_calc_deadline(ts);
+      crpcut_deadline_set = true;
+    }
+
     inline
     crpcut_test_case_registrator
     ::crpcut_test_case_registrator()
@@ -3941,6 +3970,9 @@ namespace crpcut {
 
 #define EXPECT_EXIT(num) \
   protected virtual crpcut::policies::exit_death<num>
+
+#define EXPECT_REALTIME_TIMEOUT_MS(time) \
+  protected virtual crpcut::policies::realtime_timeout_death<time>
 
 #define EXPECT_SIGNAL_DEATH(num) \
   protected virtual crpcut::policies::signal_death<num>

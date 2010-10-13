@@ -163,8 +163,7 @@ namespace crpcut {
               bytes_read += rv;
             }
           ts+= clocks::monotonic::timestamp_ms_absolute();
-          reg->crpcut_absolute_deadline_ms = ts;
-          reg->crpcut_deadline_set = true;
+          reg->crpcut_set_timeout(ts);
           if (do_reply)
             {
               do {
@@ -532,6 +531,13 @@ namespace crpcut {
         {
           test_case_factory::test_succeeded(this);
         }
+    }
+
+    unsigned long
+    crpcut_test_case_registrator
+    ::crpcut_calc_deadline(unsigned long ts) const
+    {
+      return ts + 1000;
     }
 
   } // namespace implementation

@@ -122,8 +122,7 @@ namespace crpcut {
 
         if (test_case_factory::tests_as_child_procs())
           {
-            // calculated deadline + 1 sec should give plenty of slack
-            clocks::monotonic::timestamp deadline = duration_ms + 1000;
+            clocks::monotonic::timestamp deadline = duration_ms;
             comm::report(comm::set_timeout, deadline);
           }
       }
