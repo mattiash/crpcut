@@ -1,7 +1,7 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
-
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -28,6 +28,7 @@
 #ifndef POLL_HPP
 #define POLL_HPP
 
+extern "C" void perror(const char*);
 #include <cassert>
 
 namespace crpcut {
@@ -35,25 +36,6 @@ namespace crpcut {
     int close(int fd);
   }
 }
-#ifdef HAVE_EPOLL
-extern "C"
-{
-#include <sys/epoll.h>
-}
-namespace crpcut {
-  namespace wrapped {
-    int epoll_create(int s);
-    int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev);
-    int epoll_wait(int epfd, struct epoll_event *ev, int m, int t);
-  }
-
-  template <size_t N>
-  struct polldata
-  {
-    int epoll_fd;
-  };
-}
-#else
 
 extern "C"
 {
@@ -73,31 +55,50 @@ namespace crpcut {
         pending_fds(0U)
     {
       FD_ZERO(&rset);
+      FD_ZERO(&wset);
       FD_ZERO(&xset);
     }
-    std::pair<int, void*> access[N];
+    struct fdinfo
+    {
+      fdinfo(int fd_ = 0, int mode_ = 0, void *ptr_ = 0)
+        : fd(fd_), mode(mode_), ptr(ptr_)
+      {
+      }
+      int   fd;
+      int   mode;
+      void *ptr;
+    };
+    fdinfo access[N];
     size_t num_subscribers;
     size_t pending_fds;
     fd_set rset;
+    fd_set wset;
     fd_set xset;
 
-    static const int readbit = 1;
-    static const int hupbit = 2;
+
+    static const int readbit  = 1;
+    static const int writebit = 2;
+    static const int hupbit   = 4;
   };
 }
-#endif
+
 
 namespace crpcut {
   template <typename T, size_t N>
-  class poll
+  class poll : private polldata<N>
   {
   public:
+    struct polltype
+    {
+      typedef enum { r = 1, w = 2, rw = 3 } type;
+    };
     class descriptor
     {
     public:
       T* operator->() const { return data; }
       T* get() const { return data; }
       bool read() const;
+      bool write() const;
       bool hup() const;
       bool timeout() const { return mode == 0; }
     private:
@@ -105,92 +106,28 @@ namespace crpcut {
 
       T* data;
       int mode;
-
       friend class poll<T, N>;
     };
     poll();
     ~poll();
-    void add_fd(int fd, T* data);
+    void add_fd(int fd, T* data, int flags = polltype::r);
     void del_fd(int fd);
     descriptor wait(int timeout_ms = -1);
-  private:
-    polldata<N> data;
+    size_t num_fds() const;
   };
 }
-#ifdef HAVE_EPOLL
-
-namespace crpcut {
-  template <typename T, size_t N>
-  inline bool poll<T, N>::descriptor::read() const
-  {
-    return mode & EPOLLIN;
-  }
-
-  template <typename T, size_t N>
-  inline bool poll<T, N>::descriptor::hup() const
-  {
-    return mode & EPOLLHUP;
-  }
-
-  template <typename T, size_t N>
-  inline poll<T, N>::poll()
-  {
-    data.epoll_fd = wrapped::epoll_create(N);
-    assert(data.epoll_fd != -1);
-  }
-
-  template <typename T, size_t N>
-  inline poll<T, N>::~poll()
-  {
-    wrapped::close(data.epoll_fd);
-  }
-
-  template <typename T, size_t N>
-  inline void poll<T, N>::add_fd(int fd, T* data_)
-  {
-    epoll_event ev;
-    ev.events = EPOLLIN | EPOLLHUP;
-    ev.data.u64 = 0; // Unnecessary, but silences valgrind msg about uninit mem
-    ev.data.ptr = data_;
-    int rv = wrapped::epoll_ctl(this->data.epoll_fd, EPOLL_CTL_ADD, fd, &ev);
-    assert(rv == 0);
-    (void)rv; // silence warning
-  }
-
-  template <typename T, size_t N>
-  inline void poll<T, N>::del_fd(int fd)
-  {
-    int rv = wrapped::epoll_ctl(data.epoll_fd, EPOLL_CTL_DEL, fd, 0);
-    assert(rv == 0);
-    (void)rv; // silence warning
-  }
-
-  template <typename T, size_t N>
-  inline typename poll<T, N>::descriptor poll<T, N>::wait(int timeout_ms)
-  {
-    epoll_event ev;
-    for (;;)
-      {
-        int rv = wrapped::epoll_wait(data.epoll_fd, &ev, 1, timeout_ms);
-        if (rv == 0)
-          {
-            return descriptor(0,0); // timeout
-          }
-        if (rv == 1)
-          {
-            return descriptor(static_cast<T*>(ev.data.ptr), ev.events);
-          }
-      }
-  }
-}
-
-#else
 
 namespace crpcut {
   template <typename T, size_t N>
   inline bool poll<T, N>::descriptor::read() const
   {
     return mode & polldata<N>::readbit;
+  }
+
+  template <typename T, size_t N>
+  inline bool poll<T, N>::descriptor::write() const
+  {
+    return mode & polldata<N>::writebit;
   }
 
   template <typename T, size_t N>
@@ -210,24 +147,25 @@ namespace crpcut {
   }
 
   template <typename T, size_t N>
-  inline void poll<T, N>::add_fd(int fd, T* data)
+  inline void poll<T, N>::add_fd(int fd, T* data, int flags)
   {
-    this->data.access[this->data.num_subscribers++] = std::make_pair(fd, data);
+    this->access[this->num_subscribers++] = typename polldata<N>::fdinfo(fd, flags, data);
   }
 
   template <typename T, size_t N>
   inline void poll<T, N>::del_fd(int fd)
   {
-    for (size_t i = 0; i < data.num_subscribers; ++i)
+    for (size_t i = 0; i < this->num_subscribers; ++i)
       {
-        if (data.access[i].first == fd)
+        if (this->access[i].fd == fd)
           {
-            data.access[i] = data.access[--data.num_subscribers];
-            if (FD_ISSET(fd, &data.rset) || FD_ISSET(fd, &data.xset))
+            this->access[i] = this->access[--this->num_subscribers];
+            if (FD_ISSET(fd, &this->xset) || FD_ISSET(fd, &this->rset) || FD_ISSET(fd, &this->wset))
               {
-                FD_CLR(fd, &data.rset);
-                FD_CLR(fd, &data.xset);
-                --data.pending_fds;
+                FD_CLR(fd, &this->rset);
+                FD_CLR(fd, &this->wset);
+                FD_CLR(fd, &this->xset);
+                --this->pending_fds;
               }
             return;
           }
@@ -238,55 +176,66 @@ namespace crpcut {
   template <typename T, size_t N>
   inline typename poll<T, N>::descriptor poll<T, N>::wait(int timeout_ms)
   {
-    if (data.pending_fds == 0)
+    if (this->pending_fds == 0)
       {
         int maxfd = 0;
-        for (size_t i = 0; i < data.num_subscribers; ++i)
+        for (size_t i = 0; i < this->num_subscribers; ++i)
           {
-            int fd = data.access[i].first;
+            int fd = this->access[i].fd;
             if (fd > maxfd) maxfd = fd;
-            FD_SET(fd, &data.rset);
-            FD_SET(fd, &data.xset);
+            if (this->access[i].mode & polltype::r) FD_SET(fd, &this->rset);
+            if (this->access[i].mode & polltype::w) FD_SET(fd, &this->wset);
+            FD_SET(fd, &this->xset);
           }
         struct timeval tv = { timeout_ms / 1000, (timeout_ms % 1000) * 1000 };
         for (;;)
           {
             int rv = wrapped::select(maxfd + 1,
-                                     &data.rset,
-                                     0,
-                                     &data.xset,
+                                     &this->rset,
+                                     &this->wset,
+                                     &this->xset,
                                      timeout_ms == -1 ? 0 : &tv);
             if (rv == -1 && errno == EINTR) continue;
             assert(rv != -1);
             if (rv == 0) return descriptor(0,0); // timeout
-            data.pending_fds = rv;
+            this->pending_fds = rv;
             break;
           }
       }
-    for (size_t j = 0; j < data.num_subscribers; ++j)
+    for (size_t j = 0; j < this->num_subscribers; ++j)
       {
-        int fd = data.access[j].first;
+        int fd = this->access[j].fd;
         int mode = 0;
-        if (FD_ISSET(fd, &data.rset))
+        if (FD_ISSET(fd, &this->rset))
           {
             mode|= polldata<N>::readbit;
-            FD_CLR(fd, &data.rset);
+            FD_CLR(fd, &this->rset);
           }
-        if (FD_ISSET(fd, &data.xset))
+        if (FD_ISSET(fd, &this->wset))
+          {
+            mode|= polldata<N>::writebit;
+            FD_CLR(fd, &this->wset);
+          }
+        if (FD_ISSET(fd, &this->xset))
           {
             mode|= polldata<N>::hupbit;
-            FD_CLR(fd, &data.xset);
+            FD_CLR(fd, &this->xset);
           }
         if (mode)
           {
-            --data.pending_fds;
-            return descriptor(static_cast<T*>(data.access[j].second),
-                              mode);
+            --this->pending_fds;
+            return descriptor(static_cast<T*>(this->access[j].ptr), mode);
           }
       }
     assert("no matching fd" == 0);
+    return descriptor(0, 0);
+  }
+
+  template <typename T, size_t N>
+  inline size_t poll<T, N>::num_fds() const
+  {
+    return this->num_subscribers;
   }
 }
-#endif
 
 #endif // POLL_HPP

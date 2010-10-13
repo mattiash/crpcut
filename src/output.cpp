@@ -1,7 +1,7 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
-
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -53,6 +53,54 @@ namespace crpcut
 {
   namespace output
   {
+    ssize_t buffer::do_write(const char *buff, size_t len)
+    {
+      if (!*current)
+        {
+          *current = new block;
+        }
+      size_t size = len < block::size - (*current)->len
+        ? len
+        : block::size - (*current)->len;
+      wrapped::memcpy((*current)->mem + (*current)->len, buff, size);
+      (*current)->len += size;
+      if ((*current)->len == block::size)
+        {
+          current = &(*current)->next;
+        }
+      return size;
+    }
+
+    buffer::~buffer()
+    {
+      while (head)
+        {
+          block *tmp = head;
+          head = head->next;
+          delete tmp;
+        }
+    }
+
+    std::pair<const char *, size_t> buffer::do_get_buffer() const
+    {
+      static const char *null = 0;
+      static const size_t zero = 0;
+
+      if (!head) return std::make_pair(null, zero);
+
+      return std::make_pair(head->mem, head->len);
+    }
+
+    void buffer::do_advance()
+    {
+      if (head)
+        {
+          block *tmp = head;
+          head = tmp->next;
+          delete tmp;
+        }
+      if (!head) current=&head;
+    }
 
     size_t formatter::write(const char *str, size_t len, type t) const
     {
@@ -89,18 +137,16 @@ namespace crpcut
       size_t bytes_written = 0;
       while (bytes_written < len)
         {
-          ssize_t rv = wrapped::write(fd_, p, len);
+          ssize_t rv = buffer::write(p + bytes_written, len - bytes_written);
           assert(rv >= 0);
           bytes_written += rv;
         }
       return bytes_written;
     }
 
-    xml_formatter::xml_formatter(int fd, int argc_, const char *argv_[])
-      : formatter(fd),
-        last_closed(false),
+    xml_formatter::xml_formatter(int argc_, const char *argv_[])
+      : last_closed(false),
         blocked_tests(false),
-        statistics_printed(false),
         argc(argc_),
         argv(argv_)
     {
@@ -144,10 +190,6 @@ namespace crpcut
 
     xml_formatter::~xml_formatter()
     {
-      if (statistics_printed)
-        {
-          write("</crpcut>\n");
-        }
     }
 
     void xml_formatter::begin_case(const char *name,
@@ -245,8 +287,8 @@ namespace crpcut
             "    <failed_test_cases>");
       write(num_failed);
       write("</failed_test_cases>\n"
-            "  </statistics>\n");
-      statistics_printed = true;
+            "  </statistics>\n"
+            "</crpcut>\n");
     }
 
     void xml_formatter::nonempty_dir(const char *s)

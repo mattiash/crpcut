@@ -191,12 +191,6 @@ if (NOT MAY_HAVE_MONO)
   message("Monotonic time source unavailable - using realtime clocks!")
 endif (NOT MAY_HAVE_MONO)
 
-# check for epoll_*
-
-check_function_exists("epoll_ctl" HAVE_EPOLL)
-if(HAVE_EPOLL)
-  add_definitions(-DHAVE_EPOLL)
-endif(HAVE_EPOLL)
 
 # check google-mock
 if (WITH_GOOGLE_MOCK)

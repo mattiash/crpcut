@@ -1,7 +1,7 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
-
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -423,7 +423,286 @@ namespace crpcut {
       int fds[2];
     };
 
-    int start_presenter_process(output::formatter& out, int verbose)
+    struct io
+    {
+      virtual ~io() {}
+      virtual bool read()      = 0;
+      virtual bool write()     = 0;
+      virtual void exception() = 0;
+    };
+
+    class presentation_output : public io
+    {
+    public:
+      presentation_output(poll<io, 2> &poller_, int fd_);
+      virtual ~presentation_output() { }
+      virtual bool read();
+      virtual bool write();
+      virtual void exception() { enable(false); }
+      virtual void enable(bool val)
+      {
+	if (val != is_enabled)
+	{
+	   if (val)
+	   {
+	     poller.add_fd(fd, this, poll<io, 2>::polltype::w);
+	   }
+	   else
+	   {
+	     poller.del_fd(fd);
+	   }
+	   is_enabled = val;
+	}
+      }
+      bool         enabled() const { return is_enabled; }
+    private:
+      poll<io, 2> &poller;
+      int          fd;
+      size_t       pos;
+      bool         is_enabled;
+    };
+
+    presentation_output::presentation_output(poll<io, 2> &poller_, int fd_)
+      : poller(poller_),
+        fd(fd_),
+        pos(0),
+        is_enabled(false)
+    {
+    }
+
+    bool presentation_output::read()
+    {
+      assert("Shan't ever read output" == 0);
+      return true;
+    }
+
+    bool presentation_output::write()
+    {
+      assert(enabled());
+      assert(!output::buffer::is_empty());
+      while (!output::buffer::is_empty())
+        {
+          std::pair<const char *, size_t> data = output::buffer::get_buffer();
+          const char *buff = data.first;
+          size_t      len  = data.second;
+
+          assert(buff);
+          assert(len);
+
+          ssize_t n = wrapped::write(fd, buff + pos, len - pos);
+          assert(n >= 0);
+          pos+= n;
+          if (pos == len)
+            {
+              pos = 0;
+              output::buffer::advance();
+            }
+        }
+      return false;
+    }
+
+    class presentation_reader : public io
+    {
+    public:
+      presentation_reader(poll<io, 2>       &poller_,
+			  int                fd_,
+			  output::formatter &fmt_,
+			  bool               verbose_);
+      virtual ~presentation_reader() { assert(fd >= 0); }
+      virtual bool read();
+      virtual bool write();
+      virtual void exception() { poller.del_fd(fd); fd = -1; }
+    private:
+      list_elem<test_case_result>  messages;
+      poll<io, 2>                 &poller;
+      int                          fd;
+      output::formatter           &fmt;
+      bool                         verbose;
+
+      presentation_reader();
+      presentation_reader(const presentation_reader&);
+      presentation_reader& operator=(const presentation_reader&);
+    };
+
+    presentation_reader::presentation_reader(poll<io, 2>       &poller_,
+					     int                fd_,
+					     output::formatter &fmt_,
+					     bool               verbose_)
+      : poller(poller_),
+        fd(fd_),
+        fmt(fmt_),
+        verbose(verbose_)
+    {
+      poller.add_fd(fd_, this);
+    }
+
+    bool presentation_reader::read()
+    {
+      assert(fd >= 0);
+      pid_t test_case_id;
+
+      ssize_t rv = wrapped::read(fd, &test_case_id, sizeof(test_case_id));
+      if (rv == 0) return true;
+      assert(rv == sizeof(test_case_id));
+      test_case_result *s = 0;
+
+      // a linear search isn't that great, but the
+      // amount of data is small.
+      for (test_case_result *i = messages.next();
+           i != messages.next()->prev();
+           i = i->next())
+        {
+          if (i->id == test_case_id)
+            {
+              s = i;
+              break;
+            }
+        }
+      if (!s)
+        {
+          s = new test_case_result(test_case_id);
+          s->link_after(messages);
+        }
+      comm::type t;
+      rv = wrapped::read(fd, &t, sizeof(t));
+      assert(rv == sizeof(t));
+
+      test_phase phase;
+      rv = wrapped::read(fd, &phase, sizeof(phase));
+      assert(rv == sizeof(phase));
+      int mask = t & comm::kill_me;
+      t = static_cast<comm::type>(t & ~mask);
+      switch (t)
+        {
+        case comm::begin_test:
+          {
+            assert(s->name_len == 0);
+            assert(s->history.is_empty());
+            // introduction to test case, name follows
+
+            size_t len = 0;
+            char *ptr = static_cast<char*>(static_cast<void*>(&len));
+            size_t bytes_read = 0;
+            while (bytes_read < sizeof(len))
+              {
+                rv = wrapped::read(fd,
+                                   ptr + bytes_read,
+                                   sizeof(len) - bytes_read);
+                assert(rv > 0);
+                bytes_read += rv;
+              }
+            char *buff = static_cast<char *>(wrapped::malloc(len + 1));
+            bytes_read = 0;
+            while (bytes_read < len)
+              {
+                rv = wrapped::read(fd,
+                                   buff + bytes_read,
+                                   len - bytes_read);
+                assert(rv >= 0);
+                bytes_read += rv;
+              }
+            buff[len] = 0;
+            s->name = buff;
+            s->name_len = len;
+            s->success = true;
+            s->nonempty_dir = false;
+          }
+          break;
+        case comm::end_test:
+          {
+            size_t len;
+            rv = wrapped::read(fd, &len, sizeof(len));
+            assert(rv == sizeof(len));
+            assert(len == 0);
+
+            if (!s->success || verbose)
+              {
+                printer print(fmt, s->name, s->name_len, s->success);
+
+                for (event *i = s->history.next();
+                     i != static_cast<event*>(&s->history);
+                     i = i->next())
+                  {
+                    fmt.print(tag_info[i->tag].str, tag_info[i->tag].len,
+                              i->body, i->body_len);
+                  }
+                if (s->term_len || s->nonempty_dir)
+                  {
+                    if (s->nonempty_dir)
+                      {
+                        const char *wd  = test_case_factory::get_working_dir();
+                        const size_t dlen = wrapped::strlen(wd);
+                        len = dlen;
+                        len+= 1;
+                        len+= s->name_len;
+                        char *dn = static_cast<char*>(alloca(len + 1));
+                        lib::strcpy(lib::strcpy(lib::strcpy(dn,  wd),
+                                                "/"),
+                                    s->name);
+                        fmt.terminate(phase, s->termination, s->term_len, dn, len);
+                      }
+                    else
+                      {
+                        fmt.terminate(phase, s->termination, s->term_len);
+                      }
+                  }
+              }
+          }
+          delete s;
+          break;
+        case comm::dir:
+          {
+            size_t len;
+            rv = wrapped::read(fd, &len, sizeof(len));
+            assert(rv == sizeof(len));
+            assert(len == 0);
+            (void)len; // silense warning
+            s->success = false;
+            s->nonempty_dir = true;
+          }
+          break;
+        case comm::exit_ok:
+        case comm::exit_fail:
+          s->success &= t == comm::exit_ok; // fallthrough
+        case comm::stdout:
+        case comm::stderr:
+        case comm::info:
+          {
+            size_t len;
+            rv = wrapped::read(fd, &len, sizeof(len));
+            assert(rv == sizeof(len));
+            if (len)
+              {
+                char *buff = static_cast<char *>(wrapped::malloc(len));
+                rv = wrapped::read(fd, buff, len);
+                assert(size_t(rv) == len);
+
+                if (t == comm::exit_ok || t == comm::exit_fail)
+                  {
+                    s->termination = buff;
+                    s->term_len = len;
+                  }
+                else
+                  {
+                    event *e = new event(t, buff, len);
+                    e->link_before(s->history);
+                  }
+              }
+          }
+          break;
+        default:
+          assert("unreachable code reached" == 0);
+        }
+      return false;
+    }
+
+    bool presentation_reader::write()
+    {
+      assert("Shan't ever write back" == 0);
+      return true;
+    }
+
+    int start_presenter_process(int fd, output::formatter& fmt, int verbose)
     {
       pipe_pair p("communication pipe for presenter process");
 
@@ -438,171 +717,21 @@ namespace crpcut {
         }
       int presenter_pipe = p.for_reading();
 
-      list_elem<test_case_result> messages;
-      for (;;)
+      poll<io, 2> poller;
+      presentation_reader r(poller, presenter_pipe, fmt, verbose);
+      presentation_output o(poller, fd);
+      while (poller.num_fds() > 0)
         {
-          pid_t test_case_id;
-          ssize_t rv = wrapped::read(presenter_pipe,
-                                     &test_case_id,
-                                     sizeof(test_case_id));
-          if (rv == 0)
-            {
-              assert(messages.is_empty());
-              wrapped::exit(0);
-            }
-          assert(rv == sizeof(test_case_id));
-          test_case_result *s = 0;
-
-          // a linear search isn't that great, but the
-          // amount of data is small.
-          for (test_case_result *i = messages.next();
-               i != messages.next()->prev();
-               i = i->next())
-            {
-              if (i->id == test_case_id)
-                {
-                  s = i;
-                  break;
-                }
-            }
-          if (!s)
-            {
-              s = new test_case_result(test_case_id);
-              s->link_after(messages);
-            }
-          comm::type t;
-          rv = wrapped::read(presenter_pipe, &t, sizeof(t));
-          assert(rv == sizeof(t));
-
-          test_phase phase;
-          rv = wrapped::read(presenter_pipe, &phase, sizeof(phase));
-          assert(rv == sizeof(phase));
-          int mask = t & comm::kill_me;
-          t = static_cast<comm::type>(t & ~mask);
-          switch (t)
-            {
-            case comm::begin_test:
-              {
-                assert(s->name_len == 0);
-                assert(s->history.is_empty());
-                // introduction to test case, name follows
-
-                size_t len = 0;
-                char *ptr = static_cast<char*>(static_cast<void*>(&len));
-                size_t bytes_read = 0;
-                while (bytes_read < sizeof(len))
-                  {
-                    rv = wrapped::read(presenter_pipe,
-                                      ptr + bytes_read,
-                                      sizeof(len) - bytes_read);
-                    assert(rv > 0);
-                    bytes_read += rv;
-                  }
-                char *buff = static_cast<char *>(wrapped::malloc(len + 1));
-                bytes_read = 0;
-                while (bytes_read < len)
-                  {
-                    rv = wrapped::read(presenter_pipe,
-                                      buff + bytes_read,
-                                      len - bytes_read);
-                    assert(rv >= 0);
-                    bytes_read += rv;
-                  }
-                buff[len] = 0;
-                s->name = buff;
-                s->name_len = len;
-                s->success = true;
-                s->nonempty_dir = false;
-              }
-              break;
-            case comm::end_test:
-              {
-                size_t len;
-                rv = wrapped::read(presenter_pipe, &len, sizeof(len));
-                assert(rv == sizeof(len));
-                assert(len == 0);
-
-                if (!s->success || verbose)
-                  {
-                    printer print(out, s->name, s->name_len, s->success);
-
-                    for (event *i = s->history.next();
-                         i != static_cast<event*>(&s->history);
-                         i = i->next())
-                      {
-                        out.print(tag_info[i->tag].str, tag_info[i->tag].len,
-                                  i->body, i->body_len);
-                      }
-                    if (s->term_len || s->nonempty_dir)
-                      {
-                        if (s->nonempty_dir)
-                          {
-                            const char *wd
-                              = test_case_factory::get_working_dir();
-                            const size_t dlen = wrapped::strlen(wd);
-                            len = dlen;
-                            len+= 1;
-                            len+= s->name_len;
-                            char *dn = static_cast<char*>(alloca(len + 1));
-                            lib::strcpy(lib::strcpy(lib::strcpy(dn,  wd),
-                                                    "/"),
-                                        s->name);
-                            out.terminate(phase, s->termination, s->term_len, dn, len);
-                          }
-                        else
-                          {
-                            out.terminate(phase, s->termination, s->term_len);
-                          }
-                      }
-                  }
-              }
-              delete s;
-              break;
-            case comm::dir:
-              {
-                size_t len;
-                rv = wrapped::read(presenter_pipe, &len, sizeof(len));
-                assert(rv == sizeof(len));
-                assert(len == 0);
-                (void)len; // silense warning
-                s->success = false;
-                s->nonempty_dir = true;
-              }
-              break;
-            case comm::exit_ok:
-            case comm::exit_fail:
-              s->success &= t == comm::exit_ok; // fallthrough
-            case comm::stdout:
-            case comm::stderr:
-            case comm::info:
-              {
-                size_t len;
-                rv = wrapped::read(presenter_pipe, &len, sizeof(len));
-                assert(rv == sizeof(len));
-                if (len)
-                  {
-                    char *buff = static_cast<char *>(wrapped::malloc(len));
-                    rv = wrapped::read(presenter_pipe, buff, len);
-                    assert(size_t(rv) == len);
-
-                    if (t == comm::exit_ok || t == comm::exit_fail)
-                      {
-                        s->termination = buff;
-                        s->term_len = len;
-                      }
-                    else
-                      {
-                        event *e = new event(t, buff, len);
-                        e->link_before(s->history);
-                      }
-                  }
-              }
-              break;
-            default:
-              assert("unreachable code reached" == 0);
-            }
+          poll<io, 2>::descriptor desc = poller.wait();
+          bool exc = false;
+          if (desc.read())  exc |= desc->read();
+          if (desc.write()) exc |= desc->write();
+          if (desc.hup() || exc)   desc->exception();
+	  bool output_change = o.enabled() == output::buffer::is_empty();
+	  if (output_change) o.enable(!o.enabled());
         }
-      assert("unreachable code reached" == 0);
+      wrapped::exit(0);
+      return 0;
     }
   }
 
@@ -721,15 +850,14 @@ namespace crpcut {
   namespace {
 
     output::formatter &output_formatter(bool use_xml,
-                                        int fd,
                                         int argc, const char *argv[])
     {
       if (use_xml)
         {
-          static output::xml_formatter xo(fd, argc, argv);
+          static output::xml_formatter xo(argc, argv);
           return xo;
         }
-      static output::text_formatter to(fd, argc, argv);
+      static output::text_formatter to(argc, argv);
       return to;
     }
 
@@ -1097,7 +1225,7 @@ namespace crpcut {
           i = i->crpcut_get_next();
         }
     }
-    output::formatter &out = output_formatter(xml, output_fd, argc, argv);
+    output::formatter &fmt = output_formatter(xml, argc, argv);
     try {
       if (tests_as_child_procs())
         {
@@ -1112,7 +1240,19 @@ namespace crpcut {
               wrapped::rmdir(dirbase);
               return 1;
             }
-          presenter_pipe = start_presenter_process(out, verbose_mode);
+          while (!output::buffer::is_empty())
+            {
+              std::pair<const char *, size_t> data = output::buffer::get_buffer();
+              size_t bytes_written = 0;
+              while (bytes_written < data.second)
+                {
+                  ssize_t n = wrapped::write(output_fd, data.first + bytes_written, data.second - bytes_written);
+                  assert(n >= 0);
+                  bytes_written+= n;
+                }
+              output::buffer::advance();
+            }
+          presenter_pipe = start_presenter_process(output_fd, fmt, verbose_mode);
         }
       for (;;)
         {
@@ -1157,7 +1297,7 @@ namespace crpcut {
 
           if (!implementation::is_dir_empty("."))
             {
-              out.nonempty_dir(dirbase);
+              fmt.nonempty_dir(dirbase);
               if (output_fd != 1 && !quiet)
                 {
                   std::cout << "Files remain in " << dirbase << '\n';
@@ -1186,29 +1326,43 @@ namespace crpcut {
                i != &reg;
                i = i->crpcut_get_next())
             {
-              out.blocked_test(i);
+              fmt.blocked_test(i);
               if (output_fd != 1 && !quiet)
                 {
                   std::cout << "  " << *i << '\n';
                 }
             }
         }
-          out.statistics(num_registered_tests,
-                         num_selected_tests,
-                         num_tests_run,
-                         num_tests_run - num_successful_tests);
-          if (output_fd != 1 && !quiet)
+      fmt.statistics(num_registered_tests,
+                     num_selected_tests,
+                     num_tests_run,
+                     num_tests_run - num_successful_tests);
+      if (output_fd != 1 && !quiet)
+        {
+          std::cout << "Total " << num_selected_tests
+                    << " test cases selected"
+                    << "\nUNTESTED : "
+                    << num_selected_tests - num_tests_run
+                    << "\nPASSED   : " << num_successful_tests
+                    << "\nFAILED   : "
+                    << num_tests_run - num_successful_tests;
+          std::cout << std::endl;
+        }
+      while (!output::buffer::is_empty())
+        {
+          std::pair<const char *, size_t> data = output::buffer::get_buffer();
+          const char *buff = data.first;
+          const size_t len = data.second;
+          size_t bytes_written = 0;
+          while (bytes_written < len)
             {
-              std::cout << "Total " << num_selected_tests
-                        << " test cases selected"
-                        << "\nUNTESTED : "
-                        << num_selected_tests - num_tests_run
-                        << "\nPASSED   : " << num_successful_tests
-                        << "\nFAILED   : "
-                        << num_tests_run - num_successful_tests;
-              std::cout << std::endl;
+              ssize_t n = wrapped::write(output_fd, buff + bytes_written, len - bytes_written);
+              assert(n >= 0);
+              bytes_written += n;
             }
-          return num_tests_run - num_successful_tests;
+          output::buffer::advance();
+        }
+      return num_tests_run - num_successful_tests;
     }
     catch (datatypes::posix_error &e)
       {

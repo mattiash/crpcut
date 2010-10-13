@@ -143,11 +143,7 @@
             actually using the supported match functionality
             for regular expressions.</para></footnote></listitem>
         <listitem><function>rmdir</function>()</listitem>
-        <listitem><function>select</function>()<footnote><para>If available,
-              <function>epoll_create</function>(),
-              <function>epoll_ctl</function>() and
-              <function>epoll_wait</function>() will be used instead.</para>
-        </footnote></listitem>
+        <listitem><function>select</function>()</listitem>
         <listitem><function>setpgid</function>()</listitem>
         <listitem><function>waitid</function>()</listitem>
         <listitem><function>write</function>()</listitem>
@@ -333,8 +329,6 @@
 -- Looking for getitimer - found
 -- Looking for gettimeofday
 -- Looking for gettimeofday - found
--- Looking for epoll_ctl
--- Looking for epoll_ctl - found
 *** compiling with support for valgrind
 -- Configuring done
 -- Generating done

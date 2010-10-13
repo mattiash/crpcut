@@ -1,7 +1,7 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
-
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -31,6 +31,74 @@ namespace crpcut
 {
   namespace output
   {
+    class buffer
+    {
+    public:
+      static std::pair<const char*, size_t> get_buffer();
+      static void advance();
+      static ssize_t write(const char *buff, size_t len);
+      static bool is_empty();
+    private:
+      buffer();
+      ~buffer();
+
+      static buffer& obj();
+      std::pair<const char*, size_t> do_get_buffer() const;
+      void do_advance();
+      ssize_t do_write(const char *buff, size_t len);
+      bool do_is_empty() const;
+      struct block
+      {
+        block() :next(0), len(0) {}
+        static const size_t size = 128;
+
+        block *next;
+        char    mem[size];
+        size_t  len;
+      };
+
+
+      block  *head;
+      block **current;
+    };
+
+    inline std::pair<const char*, size_t> buffer::get_buffer()
+    {
+      return obj().do_get_buffer();
+    }
+
+    inline void buffer::advance()
+    {
+      obj().do_advance();
+    }
+
+    inline ssize_t buffer::write(const char *buff, size_t len)
+    {
+      return obj().do_write(buff, len);
+    }
+
+    inline bool buffer::is_empty()
+    {
+      return obj().do_is_empty();
+    }
+
+    inline buffer::buffer()
+      : head(0),
+        current(&head)
+    {
+    }
+
+    inline buffer& buffer::obj()
+    {
+      static buffer object;
+      return object;
+    }
+
+    inline bool buffer::do_is_empty() const
+    {
+      return !head;
+    }
+
     template <bool b>
     struct enable_if;
     template <>
@@ -60,7 +128,6 @@ namespace crpcut
       virtual void blocked_test(const test_case_reg *)  = 0;
       virtual ~formatter() {} // keeps compilers happy. Not needed for this use.
     protected:
-      formatter(int fd) : fd_(fd) {}
       size_t write(const char *s, type t = verbatim) const
       {
         return write(s, wrapped::strlen(s), t);
@@ -85,14 +152,13 @@ namespace crpcut
       }
     private:
       size_t do_write(const char *p, size_t len) const;
-      int fd_;
     };
 
 
     class xml_formatter : public formatter
     {
     public:
-      xml_formatter(int fd, int argc_, const char *argv_[]);
+      xml_formatter(int argc_, const char *argv_[]);
       virtual ~xml_formatter();
       virtual void begin_case(const char *name, size_t name_len, bool result);
       virtual void end_case();
@@ -113,7 +179,6 @@ namespace crpcut
 
       bool                      last_closed;
       bool                      blocked_tests;
-      bool                      statistics_printed;
       int                       argc;
       const char *const * const argv;
     };
@@ -122,7 +187,7 @@ namespace crpcut
     class text_formatter : public formatter
     {
     public:
-      text_formatter(int fd, int, const char**) : formatter(fd) {}
+      text_formatter(int, const char**)  {}
       virtual void begin_case(const char *name, size_t name_len, bool result);
       virtual void end_case();
       virtual void terminate(test_phase phase,
