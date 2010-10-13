@@ -850,6 +850,17 @@ namespace crpcut {
     typedef D type;
   };
 #endif
+
+#define CRPCUT_TEST_PHASES(translator)   \
+  translator(creating),                  \
+  translator(running),                   \
+  translator(destroying),                \
+  translator(post_mortem),               \
+  translator(child)
+
+
+  typedef enum { CRPCUT_TEST_PHASES(CRPCUT_VERBATIM) } test_phase;
+
   namespace policies {
     namespace deaths {
       class crpcut_none;
@@ -887,6 +898,8 @@ namespace crpcut {
         virtual bool crpcut_is_expected_exit(int) const;
         virtual bool crpcut_is_expected_signal(int) const;
         virtual void crpcut_expected_death(std::ostream &os);
+        virtual unsigned long crpcut_calc_deadline(unsigned long ts) const;
+        virtual bool crpcut_send_kill_report(pid_t, test_phase) const;
       };
 
       template <int N>
@@ -908,11 +921,9 @@ namespace crpcut {
       class timeout : public virtual crpcut_none
       {
       public:
-        virtual void crpcut_expected_death(std::ostream &os);
-        virtual unsigned long crpcut_calc_deadline(unsigned long ts) const
-        {
-          return ts;
-        }
+        virtual void          crpcut_expected_death(std::ostream &os);
+        virtual unsigned long crpcut_calc_deadline(unsigned long ts) const;
+        virtual bool          crpcut_send_kill_report(pid_t, test_phase) const;
       };
 
       class wrapper;
@@ -1277,15 +1288,6 @@ namespace crpcut {
 
   } // stream
 
-#define CRPCUT_TEST_PHASES(translator)   \
-  translator(creating),                  \
-  translator(running),                   \
-  translator(destroying),                \
-  translator(post_mortem),               \
-  translator(child)
-
-
-  typedef enum { CRPCUT_TEST_PHASES(CRPCUT_VERBATIM) } test_phase;
 
   namespace implementation {
 
@@ -1386,7 +1388,6 @@ namespace crpcut {
       void crpcut_run_test_case();
       crpcut_test_case_registrator();
     private:
-      virtual unsigned long crpcut_calc_deadline(unsigned long ts) const;
       void crpcut_manage_test_case_execution(test_case_base*);
       std::ostream &crpcut_print_name(std::ostream &) const ;
 

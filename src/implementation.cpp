@@ -367,13 +367,9 @@ namespace crpcut {
       wrapped::killpg(crpcut_pid_, SIGKILL);
       crpcut_death_note = true;
       crpcut_deadline_set = false;
-      static const char msg[] = "Timed out - killed";
-      crpcut_register_success(false);
-      test_case_factory::present(crpcut_pid_,
-                                 comm::exit_fail,
-                                 crpcut_phase,
-                                 sizeof(msg) - 1,
-                                 msg);
+      bool success = crpcut_send_kill_report(crpcut_pid_, crpcut_phase);
+      crpcut_register_success(success);
+      //      if (success) crpcut_succeeded();
     }
 
     unsigned long
@@ -452,7 +448,6 @@ namespace crpcut {
           if (rv == 0) continue;
           break;
         }
-      assert(!crpcut_succeeded());
       if (!crpcut_death_note && crpcut_deadline_is_set())
         {
           crpcut_clear_deadline();
@@ -533,12 +528,6 @@ namespace crpcut {
         }
     }
 
-    unsigned long
-    crpcut_test_case_registrator
-    ::crpcut_calc_deadline(unsigned long ts) const
-    {
-      return ts + 1000;
-    }
 
   } // namespace implementation
 

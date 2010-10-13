@@ -79,4 +79,38 @@ TESTSUITE(timeouts)
   {
     sleep(2);
   }
+
+  TESTSUITE(expected)
+  {
+    TEST(should_succeed_sleep,
+         EXPECT_REALTIME_TIMEOUT_MS(100),
+         NO_CORE_FILE)
+      {
+        sleep(2);
+      }
+
+    TEST(should_fail_early_return,
+         EXPECT_REALTIME_TIMEOUT_MS(100),
+         NO_CORE_FILE)
+      {
+      }
+    /*
+    TEST(should_fail_cputime,
+         EXPECT_REALTIME_TIMEOUT_MS(100),
+         DEADLINE_CPU_MS(3),
+         NO_CORE_FILE)
+    {
+      for (;;)
+        ;
+    }
+
+    TEST(should_succeed_cputime,
+         EXPECT_REALTIME_TIMEOUT_MS(100),
+         DEADLINE_CPU_MS(3),
+         NO_CORE_FILE)
+    {
+      sleep(3);
+    }
+    */
+  }
 }

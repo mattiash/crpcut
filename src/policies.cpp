@@ -35,6 +35,52 @@ namespace crpcut {
 
   namespace policies {
 
+    namespace deaths {
+      void
+      timeout::crpcut_expected_death(std::ostream &os)
+      {
+        os << "realtime timeout";
+      }
+      unsigned long
+      timeout::crpcut_calc_deadline(unsigned long ts) const
+      {
+        return ts;
+      }
+      bool
+      timeout::crpcut_send_kill_report(pid_t pid, test_phase phase) const
+      {
+        static const char msg[] = "Expectedly timed out - killed";
+        test_case_factory::present(pid,
+                                   comm::exit_ok,
+                                   phase,
+                                   sizeof(msg) - 1,
+                                   msg);
+        return true;
+      }
+
+      unsigned long
+      crpcut_none
+      ::crpcut_calc_deadline(unsigned long ts) const
+      {
+        return ts + 1000;
+      }
+
+      bool
+      crpcut_none
+      ::crpcut_send_kill_report(pid_t pid, test_phase phase) const
+      {
+        static const char msg[] = "Timed out - killed";
+        test_case_factory::present(pid,
+                                   comm::exit_fail,
+                                   phase,
+                                   sizeof(msg) - 1,
+                                   msg);
+        return false;
+      }
+
+    }
+
+
     no_core_file::no_core_file()
     {
       rlimit r = { 0, 0};
