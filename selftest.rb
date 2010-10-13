@@ -484,7 +484,7 @@ TESTS = {
   'fp::ulps::using_float::should_fail_nan' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(~unsigned\(\)\), f1, f2\)\n\s+param1 = [Nn][Aa][Nn]\n\s+param2 = 0/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(~unsigned\(\)\), f1, f2\)\n\s+param1 = -?[Nn][Aa][Nn]\n\s+param2 = 0/me),
 
   'fp::ulps::using_float::should_fail_max_inf_1_ulp' =>
   Test.new('FAILED').
@@ -533,7 +533,7 @@ TESTS = {
   'fp::ulps::using_double::should_fail_nan' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(~unsigned\(\)\), f1, f2\)\n\s+param1 = [Nn][Aa][Nn]\n\s+param2 = 0/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(~unsigned\(\)\), f1, f2\)\n\s+param1 = -?[Nn][Aa][Nn]\n\s+param2 = 0/me),
 
   'fp::ulps::using_double::should_fail_max_inf_1_ulp' =>
   Test.new('FAILED').
