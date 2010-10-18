@@ -1,7 +1,7 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
-
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -339,11 +339,12 @@ namespace crpcut {
         {
           heap::set_limit(heap::system);
           const size_t len = wrapped::strlen(e.what());
-#define TEMPLATE_HEAD "Unexpectedly caught std::exception\n  what()="
-          const size_t head_size = sizeof(TEMPLATE_HEAD) - 1;
+          static const char head[] =
+            "Unexpectedly caught std::exception\n"
+            " what()=";
+          static const size_t head_size = sizeof(head) - 1;
           char *msg = static_cast<char *>(alloca(head_size + len + 1));
-          lib::strcpy(lib::strcpy(msg, TEMPLATE_HEAD), e.what());
-#undef TEMPLATE_HEAD
+          lib::strcpy(lib::strcpy(msg, head), e.what());
           comm::report(comm::exit_fail, msg, head_size + len);
         }
       catch (...)
