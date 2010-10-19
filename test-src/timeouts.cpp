@@ -1,7 +1,7 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
-
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -94,7 +94,7 @@ TESTSUITE(timeouts)
          NO_CORE_FILE)
       {
       }
-    /*
+
     TEST(should_fail_cputime,
          EXPECT_REALTIME_TIMEOUT_MS(100),
          DEADLINE_CPU_MS(3),
@@ -111,6 +111,6 @@ TESTSUITE(timeouts)
     {
       sleep(3);
     }
-    */
+
   }
 }

@@ -886,7 +886,8 @@ namespace crpcut {
 
       typedef dependencies::crpcut_none crpcut_dependency;
 
-      typedef timeout::enforcer<timeout::realtime,2000> crpcut_timeout_enforcer;
+      typedef timeout::enforcer<timeout::realtime,2000> crpcut_realtime_enforcer;
+      typedef timeout::enforcer<timeout::cputime, 0> crpcut_cputime_enforcer;
     };
 
     namespace deaths {
@@ -952,7 +953,7 @@ namespace crpcut {
     public:
       typedef deaths::wrapper crpcut_run_wrapper;
       typedef deaths::timeout crpcut_expected_death_cause;
-      typedef timeout::enforcer<timeout::realtime, N> crpcut_timeout_enforcer;
+      typedef timeout::enforcer<timeout::realtime, N> crpcut_realtime_enforcer;
     };
     class any_exception_wrapper;
 
@@ -1071,6 +1072,11 @@ namespace crpcut {
         unsigned long start_timestamp_ms;
       };
 
+      template <>
+      class enforcer<cputime, 0>
+      {
+      };
+
       template <unsigned long timeout_ms>
       class enforcer<cputime, timeout_ms> : public cputime_enforcer
       {
@@ -1089,10 +1095,20 @@ namespace crpcut {
 
 
     template <timeout::type t, unsigned timeout_ms>
-    class timeout_policy : protected virtual default_policy
+    class timeout_policy;
+
+    template <unsigned timeout_ms>
+    class timeout_policy<timeout::realtime, timeout_ms> : protected virtual default_policy
     {
     public:
-      typedef timeout::enforcer<t, timeout_ms> crpcut_timeout_enforcer;
+      typedef timeout::enforcer<timeout::realtime, timeout_ms> crpcut_realtime_enforcer;
+    };
+
+    template <unsigned timeout_ms>
+    class timeout_policy<timeout::cputime, timeout_ms> : protected virtual default_policy
+    {
+    public:
+      typedef timeout::enforcer<timeout::cputime, timeout_ms> crpcut_cputime_enforcer;
     };
 
 
@@ -1397,6 +1413,7 @@ namespace crpcut {
       crpcut_test_case_registrator *crpcut_prev;
       crpcut_test_case_registrator *crpcut_suite_list;
       unsigned                      crpcut_active_readers;
+      bool                          crpcut_killed;
       bool                          crpcut_death_note;
       bool                          crpcut_deadline_set;
       pid_t                         crpcut_pid_;
@@ -3287,6 +3304,7 @@ namespace crpcut {
       : crpcut_next(this),
         crpcut_prev(this),
         crpcut_active_readers(0),
+        crpcut_killed(false),
         crpcut_death_note(false),
         crpcut_deadline_set(false),
         crpcut_rep_reader(0),
@@ -3885,6 +3903,10 @@ extern crpcut::implementation::namespace_info current_namespace;
       test_case_name>;                                                  \
     friend class crpcut::policies::dependencies::enforcer<test_case_name>; \
     friend class crpcut::implementation::crpcut_test_case_registrator;  \
+    struct crpcut_timeout_enforcer {                                    \
+      crpcut_realtime_enforcer rt;                                      \
+      crpcut_cputime_enforcer ct;                                       \
+    };                                                                  \
     virtual void crpcut_run_test()                                      \
     {                                                                   \
       crpcut_timeout_enforcer obj;                                      \

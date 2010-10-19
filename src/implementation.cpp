@@ -369,7 +369,6 @@ namespace crpcut {
       crpcut_deadline_set = false;
       bool success = crpcut_send_kill_report(crpcut_pid_, crpcut_phase);
       crpcut_register_success(success);
-      //      if (success) crpcut_succeeded();
     }
 
     unsigned long
@@ -437,6 +436,7 @@ namespace crpcut {
     crpcut_test_case_registrator
     ::crpcut_manage_death()
     {
+      typedef test_case_factory tcf;
       ::siginfo_t info;
       for (;;)
         {
@@ -460,8 +460,7 @@ namespace crpcut {
           {
             stream::toastream<1024> tcname;
             tcname << *this << '\0';
-            test_case_factory::present(crpcut_pid_, comm::dir, crpcut_phase,
-                                       0, 0);
+            tcf::present(crpcut_pid_, comm::dir, crpcut_phase, 0, 0);
             wrapped::rename(dirname.begin(), tcname.begin());
             t = comm::exit_fail;
             crpcut_register_success(false);
@@ -514,17 +513,15 @@ namespace crpcut {
               }
           }
           crpcut_death_note = true;
-          test_case_factory::present(crpcut_pid_, t, crpcut_phase,
-                                     out.size(), out.begin());
+          tcf::present(crpcut_pid_, t, crpcut_phase, out.size(), out.begin());
         }
       crpcut_register_success(t == comm::exit_ok);
-      test_case_factory::return_dir(crpcut_dirnum);
-      test_case_factory::present(crpcut_pid_, comm::end_test, crpcut_phase,
-                                 0, 0);
+      tcf::return_dir(crpcut_dirnum);
+      tcf::present(crpcut_pid_, comm::end_test, crpcut_phase, 0, 0);
       assert(crpcut_succeeded() || crpcut_failed());
       if (crpcut_succeeded())
         {
-          test_case_factory::test_succeeded(this);
+          tcf::test_succeeded(this);
         }
     }
 
