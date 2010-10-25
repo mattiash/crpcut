@@ -480,6 +480,24 @@
         </para>
       </answer>
     </qandaentry>
+
+    <qandaentry>
+      <question>
+        <para>How can I test that a function goes to sleep?
+        </para>
+      </question>
+      <answer>
+        <para>
+          Combine the modifiers
+          <xref linkend="DEADLINE_CPU_MS" xrefstyle="select:title"/> and
+          <xref linkend="EXPECT_REALTIME_TIMEOUT_MS" xrefstyle="select:title"/>.
+          The former imposes a limit on the maximum allowed CPU-time for the test,
+          so that it cannot busy-wait. The latter requires a minimum realtime
+          duration for the test, so if the test finishes earlier, it fails.
+        </para>
+      </answer>
+    </qandaentry>
+
   </qandaset>
 </chapter>
 <chapter id="google-mock">

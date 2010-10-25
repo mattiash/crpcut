@@ -813,6 +813,25 @@ if (WITH_HTML_DOCS)
 
 
     #
+    # expect_realtime_timeout
+    #
+    file(GLOB EXPECT_EXCEPTION "${DOC_SRC_LIB}/samples/expect_realtime_timeout.cpp")
+    add_custom_target(
+      expect_realtime_timeout.cpp
+      ${STRIP_SOURCES} < ${EXPECT_EXCEPTION} > expect_realtime_timeout.cpp
+      DEPENDS stripped-src ${EXPECT_EXCEPTION}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(expect_realtime_timeout EXCLUDE_FROM_ALL ${EXPECT_EXCEPTION})
+    target_link_libraries(expect_realtime_timeout crpcut)
+    add_custom_target(
+      expect_realtime_timeout.out
+      expect_realtime_timeout | sed "s/\\(.*\\)/     \\1/g" > expect_realtime_timeout.out
+      DEPENDS expect_realtime_timeout sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
     # fail
     #
     file(GLOB FAIL "${DOC_SRC_LIB}/samples/fail.cpp")
@@ -1474,6 +1493,7 @@ if (WITH_HTML_DOCS)
       stripped-src/expect_exception.cpp sample-output/expect_exception.out
       stripped-src/expect_exit.cpp sample-output/expect_exit.out
       stripped-src/expect_signal_death.cpp sample-output/expect_signal_death.out
+      stripped-src/expect_realtime_timeout.cpp sample-output/expect_realtime_timeout.out
       stripped-src/fail.cpp sample-output/fail.out
       stripped-src/info.cpp sample-output/info.out
       stripped-src/no_core.cpp sample-output/no_core.out

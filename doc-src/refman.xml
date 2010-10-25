@@ -627,8 +627,10 @@
     </formalpara>
     <note>The CPU-time consumption is enforced using
       <function>setrlimit()</function> with <constant>RLIMIT_CPU</constant>. If
-      set it to something else inside the test, &crpcut; may be unable
-      to enforce the limit.</note>
+      set it to something else inside the test, or if the
+      <constant>SIGXCPU</constant> signal is handled by the test, &crpcut; may
+      be unable to enforce the limit. &crpcut; will still be able to measure
+      the consumed CPU-time, however, and report violations.</note>
     <note>The time measured is the running of the test function only.
       Construction and destruction time are excluded (see
       <xref linkend="TEST" xrefstyle="select:title"/> for information
@@ -664,6 +666,10 @@
       Construction and destruction time for fixtures are excluded
       (see <xref linkend="TEST" xrefstyle="select:title"/> for
       information about fixtures.</note>
+      <note><function>DEADLINE_REALTIME_MS(ms)</function> cannot be
+      used together with
+      <xref linkend="EXPECT_REALTIME_TIMEOUT_MS" xrefstyle="select:title"/>.
+      </note>
     <para>By default, all tests have a read-time deadline of
       <literal>2</literal> seconds, to catch accidental infinite loops.
       Should your test require more, you can set it higher.</para>
@@ -824,6 +830,40 @@
 
 
   </section>
+  <section id="EXPECT_REALTIME_TIMEOUT_MS">
+    <title><function>EXPECT_REALTIME_TIMEOUT_MS(ms)</function></title>
+
+    <para>A modifier which states a minimum duration of the test function run
+    to pass.</para>
+    <formalpara><title>Used in:</title>
+    <para>The modifier list of a test.
+    See <xref linkend="TEST" xrefstyle="select:title"/></para>
+    </formalpara>
+    <para>The parameter to
+    <function>EXPECT_REALTIME_TIMEOUT_MS</function>(<parameter>ms</parameter>)
+    is the minimum duration in milliseconds.
+    </para>
+    <para>If the test finishes earlier it fails. If the test duration is longer
+    the test process is killed.</para>
+    <note>
+      <function>EXPECT_REALTIME_TIMEOUT_MS(ms)</function> cannot be
+      combined with
+      <xref linkend="DEADLINE_REALTIME_MS" xrefstyle="select:title"/>.
+    </note>
+    <tip>Combine <function>EXPECT_REALTIME_TIMEOUT_MS(ms)</function> with
+    <xref linkend="DEADLINE_CPU_MS" xrefstyle="select:title"/> to verify
+    that the test goes to sleep.</tip>
+    <para>Example: The test program</para>
+    <programlisting language="c++">
+<xi:include href="../stripped-src/expect_realtime_timeout.cpp" parse="text"/>
+</programlisting>
+    <para>reports 2 failed tests:</para>
+    <screen>
+
+<xi:include href="../sample-output/expect_realtime_timeout.out" parse="text"/>
+</screen>
+  </section>
+
   <section id="EXPECT_SIGNAL_DEATH">
     <title><function>EXPECT_SIGNAL_DEATH(signo)</function></title>
 
@@ -1147,7 +1187,15 @@
           <listitem>
             <para>Change the success expectation such that the function
               must leave through a call to the <function>exit()</function>
-              function in order  to pass.</para>
+              function in order to pass.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><xref linkend="EXPECT_REALTIME_TIMEOUT_MS" xrefstyle="select:title"/></term>
+          <listitem>
+            <para>Channge the success expectation such that the duration of
+            the test must meet or exceed a minimum amount of time in order to
+            pass.</para>
           </listitem>
         </varlistentry>
         <varlistentry>

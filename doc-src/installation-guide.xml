@@ -128,6 +128,7 @@
         <listitem><function>getcwd</function>()</listitem>
         <listitem><function>gethostname</function>()</listitem>
         <listitem><function>getpgid</function>()</listitem>
+        <listitem><function>getrusage</function>()</listitem>
         <listitem><function>killpg</function>()</listitem>
         <listitem><function>mkdir</function>()</listitem>
         <listitem><function>open</function>()</listitem>
