@@ -36,6 +36,7 @@ extern "C"
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <dirent.h>
 #include <stdarg.h>
 }
@@ -113,6 +114,7 @@ namespace crpcut {
     CRPCUT_WRAP_FUNC(libc, getitimer, int, (int i, struct itimerval *v), (i, v))
     CRPCUT_WRAP_FUNC(libc, getpgid, pid_t, (pid_t p), (p))
     CRPCUT_WRAP_FUNC(libc, getpid, int, (void), ())
+    CRPCUT_WRAP_FUNC(libc, getrusage, int, (int w, struct rusage *u), (w, u))
     CRPCUT_WRAP_FUNC(libc, gettimeofday,
                      int,
                      (struct timeval *tv, struct timezone *tz),

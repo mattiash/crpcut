@@ -47,6 +47,7 @@ namespace crpcut {
     int                  gethostname(char *n, size_t l);
     pid_t                getpgid(pid_t);
     pid_t                getpid();
+    int                  getrusage(int, struct rusage *);
     struct tm *          gmtime(const time_t *t);
     int                  killpg(int p, int s);
     void *               malloc(size_t);

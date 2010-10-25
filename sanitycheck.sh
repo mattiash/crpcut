@@ -27,9 +27,9 @@ AWK=$1
 DIR=$2
 
 BLOCKED=7
-R=197
+R=201
 RN=$(($R+$BLOCKED))
-F=96
+F=98
 [ "$3" == "gmock" ] && {
   GR=11
   GF=7

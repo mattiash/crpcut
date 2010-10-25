@@ -827,6 +827,22 @@ TESTS = {
   'timeouts::should_succeed_slow_realtime_deadline' =>
   Test.new('PASSED'),
 
+  'timeouts::expected::should_succeed_sleep' =>
+  Test.new('PASSED'),
+
+  'timeouts::expected::should_fail_early_return' =>
+  Test.new('FAILED').
+  log('violation',
+      /Unexpectedly survived\nExpected 100ms realtime timeout/),
+
+  'timeouts::expected::should_fail_cputime' =>
+  Test.new('FAILED').
+  log('violation',
+      /Test consumed \d{2,3}ms CPU-time\nLimit was 3ms/),
+
+  'timeouts::expected::should_succeed_cputime' =>
+  Test.new('PASSED'),
+
   'very_slow_success' =>
   Test.new('PASSED'),
 

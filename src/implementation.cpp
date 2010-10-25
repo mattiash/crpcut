@@ -33,6 +33,7 @@ extern "C" {
 #include <sys/stat.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 }
 
 #define POLL_USE_EPOLL
@@ -127,6 +128,7 @@ namespace crpcut {
       do {
         rv = wrapped::read(fd, &t, sizeof(t));
       } while (rv == -1 && errno == EINTR);
+      if (rv == 0) return false;
       int kill_mask = t & comm::kill_me;
       if (kill_mask) do_reply = false; // unconditionally
       t = static_cast < comm::type >(t & ~kill_mask);
@@ -148,7 +150,6 @@ namespace crpcut {
       assert(rv == sizeof(len));
 
       size_t bytes_read = 0;
-
       if (t == comm::set_timeout && !kill_mask)
         {
           assert(len == sizeof(reg->crpcut_absolute_deadline_ms));
@@ -184,13 +185,6 @@ namespace crpcut {
         }
       if (t == comm::cancel_timeout && !kill_mask)
         {
-          if (kill_mask)
-            {
-              reg->crpcut_clear_deadline();
-              reg->crpcut_phase = child;
-              wrapped::killpg(reg->crpcut_get_pid(), SIGKILL);
-              return false;
-            }
           assert(len == 0);
           if (!reg->crpcut_death_note)
             {
@@ -246,6 +240,18 @@ namespace crpcut {
         {
         case comm::begin_test:
           reg->crpcut_phase = running;
+          {
+            assert(len == sizeof(reg->crpcut_cpu_time_at_start));
+
+            while (bytes_read < len)
+              {
+                rv = wrapped::read(fd, buff + bytes_read, len - bytes_read);
+                if (rv == -1 && errno == EINTR) continue;
+                assert(rv > 0 && errno == 0);
+                bytes_read += rv;
+              }
+            wrapped::memcpy(&reg->crpcut_cpu_time_at_start, buff, len);
+          }
           return true;
         case comm::end_test:
           reg->crpcut_phase = destroying;
@@ -329,8 +335,15 @@ namespace crpcut {
     crpcut_test_case_registrator
     ::crpcut_manage_test_case_execution(test_case_base* p)
     {
-      comm::report(comm::begin_test, 0, 0);
-
+      if (test_case_factory::tests_as_child_procs())
+        {
+          struct rusage usage;
+          int rv = wrapped::getrusage(RUSAGE_SELF, &usage);
+          assert(rv == 0);
+          struct timeval cputime;
+          timeradd(&usage.ru_utime, &usage.ru_stime, &cputime);
+          comm::report(comm::begin_test, cputime);
+        }
       try {
         p->run();
       }
@@ -365,10 +378,7 @@ namespace crpcut {
     {
       assert(crpcut_pid_);
       wrapped::killpg(crpcut_pid_, SIGKILL);
-      crpcut_death_note = true;
-      crpcut_deadline_set = false;
-      bool success = crpcut_send_kill_report(crpcut_pid_, crpcut_phase);
-      crpcut_register_success(success);
+      crpcut_killed = true;
     }
 
     unsigned long
@@ -448,10 +458,11 @@ namespace crpcut {
           if (rv == 0) continue;
           break;
         }
-      if (!crpcut_death_note && crpcut_deadline_is_set())
+      if (!crpcut_killed && crpcut_deadline_is_set())
         {
           crpcut_clear_deadline();
         }
+      unsigned long cputime_ms = tcf::calc_cputime(crpcut_cpu_time_at_start);
       comm::type t = comm::exit_ok;
       {
         stream::toastream<std::numeric_limits<int>::digits/3+1> dirname;
@@ -495,9 +506,25 @@ namespace crpcut {
                       if (!crpcut_is_expected_signal(info.si_status))
                         {
                           crpcut_phase = post_mortem;
-                          out << "Died on signal "
-                              << info.si_status << "\nExpected ";
+                          if (crpcut_killed)
+                            {
+                              out << "Timed out - killed";
+                            }
+                          else
+                            {
+                              out << "Died on signal "
+                                  << info.si_status;
+                            }
+                          out << "\nExpected ";
                           crpcut_expected_death(out);
+                          t = comm::exit_fail;
+                        }
+                      else if (crpcut_cputime_timeout(cputime_ms))
+                        {
+                          crpcut_phase = running;
+                          out << "Test consumed "
+                              << cputime_ms << "ms CPU-time\nLimit was ";
+                          crpcut_cputime_limit(out);
                           t = comm::exit_fail;
                         }
                     }

@@ -31,6 +31,7 @@
 #include "output.hpp"
 extern "C" {
 #include <fcntl.h>
+#include <sys/time.h>
 }
 #include <queue>
 #include "posix_encapsulation.hpp"
@@ -63,6 +64,7 @@ namespace crpcut {
     std::push_heap(deadlines.begin(), deadlines.end(),
                    &implementation::crpcut_test_case_registrator
                    ::crpcut_timeout_compare);
+
   }
 
   void test_case_factory
@@ -73,14 +75,13 @@ namespace crpcut {
       {
         if (deadlines[n] == i)
           {
-            using implementation::crpcut_test_case_registrator;
+            typedef implementation::crpcut_test_case_registrator tcr;
             for (;;)
               {
                 size_t m = (n+1)*2-1;
                 if (m >= deadlines.size() - 1) break;
-                if (crpcut_test_case_registrator
-                    ::crpcut_timeout_compare(deadlines[m+1],
-                                             deadlines[m]))
+                if (tcr::crpcut_timeout_compare(deadlines[m+1],
+                                                deadlines[m]))
                   {
                     deadlines[n] = deadlines[m];
                   }
@@ -92,6 +93,15 @@ namespace crpcut {
               }
             deadlines[n] = deadlines.back();
             deadlines.pop_back();
+            if (n != deadlines.size())
+              {
+                while (n && !tcr::crpcut_timeout_compare(deadlines[n],
+                                                         deadlines[(n-1)/2]))
+                  {
+                    std::swap(deadlines[n], deadlines[(n-1)/2]);
+                    n=(n-1)/2;
+                  }
+              }
             return;
           }
       }
@@ -107,6 +117,25 @@ namespace crpcut {
   bool test_case_factory::is_naughty_child()
   {
     return obj().current_pid != wrapped::getpid();
+  }
+
+  unsigned long test_case_factory::calc_cputime(const struct timeval &t)
+  {
+    return obj().do_calc_cputime(t);
+  }
+
+  unsigned long test_case_factory::do_calc_cputime(const struct timeval &t)
+  {
+    struct rusage usage;
+    int rv = wrapped::getrusage(RUSAGE_CHILDREN, &usage);
+    assert(rv == 0);
+    struct timeval prev = accumulated_cputime;
+    timeradd(&usage.ru_utime, &usage.ru_stime, &accumulated_cputime);
+    struct timeval child_time;
+    timersub(&accumulated_cputime, &prev, &child_time);
+    struct timeval child_test_time;
+    timersub(&child_time, &t, &child_test_time);
+    return child_test_time.tv_sec * 1000 + child_test_time.tv_usec/1000;
   }
 
   void test_case_factory::do_introduce_name(pid_t pid, const char *name, size_t len)

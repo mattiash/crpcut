@@ -1,3 +1,8 @@
+         * It is now possible to expect realtime timeouts with the
+           EXPECT_REALTIME_TIMEOUT_MS() macro. This can be combined
+           with DEADLINE_CPU_MS() to effectively verify that a test
+           sleeps.
+
          * Buffers output internally to prevent "tee" and pagers from
            blocking crpcut.
 

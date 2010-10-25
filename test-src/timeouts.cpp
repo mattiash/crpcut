@@ -83,22 +83,19 @@ TESTSUITE(timeouts)
   TESTSUITE(expected)
   {
     TEST(should_succeed_sleep,
-         EXPECT_REALTIME_TIMEOUT_MS(100),
-         NO_CORE_FILE)
+         EXPECT_REALTIME_TIMEOUT_MS(100))
       {
         sleep(2);
       }
 
     TEST(should_fail_early_return,
-         EXPECT_REALTIME_TIMEOUT_MS(100),
-         NO_CORE_FILE)
+         EXPECT_REALTIME_TIMEOUT_MS(100))
       {
       }
 
     TEST(should_fail_cputime,
          EXPECT_REALTIME_TIMEOUT_MS(100),
-         DEADLINE_CPU_MS(3),
-         NO_CORE_FILE)
+         DEADLINE_CPU_MS(3))
     {
       for (;;)
         ;
@@ -106,11 +103,11 @@ TESTSUITE(timeouts)
 
     TEST(should_succeed_cputime,
          EXPECT_REALTIME_TIMEOUT_MS(100),
-         DEADLINE_CPU_MS(3),
-         NO_CORE_FILE)
+         DEADLINE_CPU_MS(3))
     {
       sleep(3);
     }
 
   }
+
 }
