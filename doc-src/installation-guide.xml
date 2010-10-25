@@ -74,7 +74,7 @@
     </para>
     <para><ulink url="http://gcc.gnu.org">GCC</ulink> supports these
       since long, and &crpcut; has been verified to work with versions
-      4.1.2, 4.3.2, 4.3.4, 4.4.1, 4.4.2 and 4.5.0.
+      4.1.2, 4.3.2, 4.3.4, 4.4.1, 4.4.2, 4.4.3, 4.4.4 and 4.5.0.
     </para>
     <para><ulink url="http://www.intel.com">Intel</ulink>
       <ulink url="http://software.intel.com/en-us/intel-compilers">ICC</ulink>

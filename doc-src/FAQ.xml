@@ -264,7 +264,7 @@
           <itemizedlist>
             <listitem><para>
                 <ulink url="http://gcc.gnu.org">gcc</ulink> versions 4.1.2,
-                4.3.2, 4.3.4, 4.4.1, 4.4.2 and 4.5.0.
+                4.3.2, 4.3.4, 4.4.1, 4.4.2, 4.4.3, 4.4.4 and 4.5.0.
             </para></listitem>
             <listitem><para>
                 <ulink url="http://www.intel.com">Intel</ulink>
@@ -286,8 +286,8 @@
           <itemizedlist>
             <listitem><ulink url="http://www.gentoo.org">gentoo</ulink> x86</listitem>
             <listitem><ulink url="http://www.gentoo.org">gentoo</ulink> amd64</listitem>
-            <listitem><ulink url="http://www.ubuntu.com">Ubuntu</ulink> Linux 9.10 (karmic koala) x86</listitem>
-            <listitem><ulink url="http://www.ubuntu.com">Ubuntu</ulink> Linux 9.10 (karmic koala) x86-64</listitem>
+            <listitem><ulink url="http://www.ubuntu.com">Ubuntu</ulink> Linux 10.10 (maverick meerkat) x86</listitem>
+            <listitem><ulink url="http://www.ubuntu.com">Ubuntu</ulink> Linux 10.10 (maverick meerkat) x86-64</listitem>
           </itemizedlist>
         </para>
       </answer>
@@ -296,7 +296,7 @@
 </chapter>
 <chapter id="problems">
   <title>Problems</title>
-  <qandaset defayltlabel="number">
+  <qandaset defaultlabel="number">
     <qandaentry>
       <question>
         <para>My test is killed by crpcut, what gives?</para>
