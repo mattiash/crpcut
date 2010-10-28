@@ -177,6 +177,20 @@
       to the CMake line. The directory you want to install to will be called
       <symbol>&lt;prefix-dir&gt;</symbol> in the rest of this guide.
     </para>
+    <para>
+      You can also fine tune the name of the directory where the libraries are
+      stored. Often seen variants are <symbol>lib</symbol>,
+      <symbol>lib32</symbol> and <symbol>lib64</symbol>. By default
+      the directory name is <symbol>lib64</symbol> on 64-bit systems, and
+      just <symbol>lib</symbol> on 32-bit systems. You can choose your
+      suffix with <constant>-DLIB_SUFFIX</constant>=<symbol>name</symbol>.
+      If <symbol>name</symbol> is the empty string, <symbol>lib</symbol>
+      will be used also on 32-bit systems. If you want something
+      completely different, use
+      <constant>-DLIBRARY_OUTPUT_PATH</constant>=<symbol>name</symbol>
+      instead. Then <symbol>name</symbol> will be the complete name
+      of the directory, and the suffix variable will be ignored.
+    </para>
   </simplesect>
   <simplesect>
     <title>Support for
