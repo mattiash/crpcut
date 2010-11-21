@@ -308,6 +308,22 @@ namespace std {
 #define CRPCUT_VERBATIM(x) x
 
 namespace crpcut {
+
+  template <typename T>
+  struct eval_t
+  {
+    typedef const T &type;
+    static type func(const T& t) { return t; }
+  };
+
+  template <typename T>
+  typename eval_t<T>::type eval(const T& t);
+
+  namespace expr {
+    template <typename T>
+    const T& gen();
+  }
+
   class test_case_factory;
   namespace heap {
     const size_t system = ~size_t();
@@ -2055,7 +2071,6 @@ namespace crpcut {
         ostringstream os;
 
         os << loc_ << "\n" << name << "(" << vn << ")\n"
-          "  where:\n    " << vn << "\n"
           "  is evaluated as:\n    ";
         conditionally_stream<8>(os, v);
         std::string s(os.str());
@@ -3942,13 +3957,6 @@ namespace crpcut {
     return test_case_factory::get_start_dir();
   }
 
-  template <typename T>
-  struct eval_t;
-
-  namespace expr {
-    template <typename T>
-    const T& gen();
-  }
 
 #define CRPCUT_BINOP(name, opexpr)                                      \
   namespace expr {                                                      \
@@ -3986,7 +3994,7 @@ namespace crpcut {
   {									\
     typedef typename eval_t<T>::type ttype;                             \
     typedef typename eval_t<U>::type utype;                             \
-    typedef CRPCUT_DECLTYPE(expr::gen<ttype>() opexpr expr::gen<utype>()) type; \
+    typedef CRPCUT_DECLTYPE(::crpcut::expr::gen<ttype>() opexpr ::crpcut::expr::gen<utype>()) type; \
     static type func(const expr::name<T, U>& n)				\
     {									\
       return eval(n.t_) opexpr eval(n.u_);                              \
@@ -4034,6 +4042,7 @@ namespace crpcut {
       std::ostream &operator<<(std::ostream &os, const atom& a)
       {
         implementation::conditionally_stream<8>(os, a.t_);
+        return os;
       }
     private:
       const T& t_;
@@ -4043,8 +4052,8 @@ namespace crpcut {
   template <typename T>
   struct eval_t<expr::atom<T> >
   {
-    typedef typename eval_t<T>::type type;
-    static type func(const expr::atom<T> &n) { return eval(n.t_); }
+    typedef const T& type;
+    static type func(const expr::atom<T> &n) { return n.t_; }
   };
 
   namespace expr
@@ -4065,12 +4074,6 @@ namespace crpcut {
     };
   }
 
-  template <typename T>
-  struct eval_t
-  {
-    typedef const T &type;
-    static type func(const T& t) { return t; }
-  };
 
   template <typename T>
   typename eval_t<T>::type eval(const T& t) { return eval_t<T>::func(t); }

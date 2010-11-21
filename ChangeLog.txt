@@ -29,6 +29,9 @@
            used if the object size is eight bytes or smaller, otherwise
            the value is just represented by '?'.
 
+           GCC 4.1 is picky and requires a public copy constructor for the
+           objects in the sub-expressions.
+
            Thanks to Kevlin Henney and Phil Nash for bringing this technique
            to my attention.
 

@@ -134,7 +134,7 @@ TESTS = {
   'asserts::should_fail_on_assert_false_with_fixture' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_FALSE\(num\)\n\s+where:\n\s+num\n\s+is evaluated as:\n\s+3/me),
+      /#{A_H}ASSERT_FALSE\(num\)\n\s+is evaluated as:\n\s+3/me),
 
   'asserts::should_fail_on_assert_ge_with_fixture' =>
   Test.new('FAILED').
@@ -169,7 +169,7 @@ TESTS = {
   'asserts::should_fail_on_assert_true_with_fixture' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(num\)\s+where:\s+num\n\s+is evaluated as:\s+0/me),
+      /#{A_H}ASSERT_TRUE\(num\)\n\s+is evaluated as:\s+0/me),
 
   'asserts::should_succeed_assert_no_throw' =>
   Test.new('PASSED'),
@@ -244,22 +244,22 @@ TESTS = {
   'asserts::should_fail_false_volatile' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_FALSE\(n\)\n\s+where:\n\s+n\n\s+is evaluated as:\n\s+3\s*/me),
+      /#{A_H}ASSERT_FALSE\(n\)\n\s+is evaluated as:\n\s+3\s*/me),
 
   'asserts::should_fail_false_const_volatile' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_FALSE\(n\)\n\s+where:\n\s+n\n\s+is evaluated as:\n\s+3\s*/me),
+      /#{A_H}ASSERT_FALSE\(n\)\n\s+is evaluated as:\n\s+3\s*/me),
 
   'asserts::should_fail_true_volatile' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(n\)\n\s+where:\s*n\n\s+is evaluated as:\n\s*0\s*/me),
+      /#{A_H}ASSERT_TRUE\(n\)\n\s+is evaluated as:\n\s*0\s*/me),
 
   'asserts::should_fail_true_const_volatile' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(n\)\n\s+where:\n\s*n\n\s*is evaluated as:\n\s*0\s*/me),
+      /#{A_H}ASSERT_TRUE\(n\)\n\s+is evaluated as:\n\s*0\s*/me),
 
   'asserts::should_succeed_class_const_int_member' =>
   Test.new('PASSED'),
@@ -270,37 +270,37 @@ TESTS = {
   'asserts::should_fail_on_assert_true_with_small_unstreamable_param' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(i\)\n\s+where:\n\s+i\n\s+is evaluated as:\n\s+.*<[0 ]*>\s*/me),
+      /#{A_H}ASSERT_TRUE\(i\)\n\s+is evaluated as:\n\s+.*<[0 ]*>\s*/me),
 
   'asserts::should_fail_on_assert_true_with_large_unstreamable_param' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(i\)\n\s+where:\n\s+i\n\s+is evaluated as:\n\s+\?\s*/me),
+      /#{A_H}ASSERT_TRUE\(i\)\n\s+is evaluated as:\n\s+\?\s*/me),
 
   'asserts::expr::should_fail_on_assert_true_with_small_unstreamable_param' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(.*\)\n\s+where:\n\s+i - 4 < unstreamable<int>\(0\)\n\s+is evaluated as:\n\s+.*<[04 ]*> - 4 < .*<[0 ]*>\s*/me),
+      /#{A_H}ASSERT_TRUE\(i - 4 < unstreamable<int>\(0\)\)\n\s+is evaluated as:\n\s+.*<[04 ]*> - 4 < .*<[0 ]*>\s*/me),
 
   'asserts::expr::should_fail_on_assert_true_with_large_unstreamable_param' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(.*\)\n\s+where:\n\s+i - 4 < unstreamable<long double>\(0\)\n\s+is evaluated as:\n\s+ \? - 4 < \?\s*/me),
+      /#{A_H}ASSERT_TRUE\(i - 4 < unstreamable<long double>\(0\)\)\n\s+is evaluated as:\n\s+ \? - 4 < \?\s*/me),
 
   'asserts::expr::should_fail_on_assert_true_with_lt' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(.*\)\n\s+where:\n\s+n < num\n\s+is evaluated as:\n\s+4 < 3\s*/me),
+      /#{A_H}ASSERT_TRUE\(n < num\)\n\s+is evaluated as:\n\s+4 < 3\s*/me),
 
   'asserts::expr::should_fail_on_assert_true_with_add_lt' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(.*\)\n\s+where:\n\s+n \+ num < 5\n\s+is evaluated as:\n\s+4 \+ 3 < 5\s*/me),
+      /#{A_H}ASSERT_TRUE\(n \+ num < 5\)\n\s+is evaluated as:\n\s+4 \+ 3 < 5\s*/me),
 
   'asserts::expr::should_fail_on_assert_true_with_sub_lt' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(.*\)\n\s+where:\n\s+n - num < 0\n\s+is evaluated as:\n\s+4 - 3 < 0\s*/me),
+      /#{A_H}ASSERT_TRUE\(n - num < 0\)\n\s+is evaluated as:\n\s+4 - 3 < 0\s*/me),
 
   'death::by_exception::should_fail_any_exception' =>
   Test.new('FAILED').
