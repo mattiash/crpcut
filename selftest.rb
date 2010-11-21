@@ -267,6 +267,41 @@ TESTS = {
   'asserts::should_succeed_0_eq_pointer_to_member' =>
   Test.new('PASSED'),
 
+  'asserts::should_fail_on_assert_true_with_small_unstreamable_param' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{A_H}ASSERT_TRUE\(i\)\n\s+where:\n\s+i\n\s+is evaluated as:\n\s+.*<[0 ]*>\s*/me),
+
+  'asserts::should_fail_on_assert_true_with_large_unstreamable_param' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{A_H}ASSERT_TRUE\(i\)\n\s+where:\n\s+i\n\s+is evaluated as:\n\s+\?\s*/me),
+
+  'asserts::expr::should_fail_on_assert_true_with_small_unstreamable_param' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{A_H}ASSERT_TRUE\(.*\)\n\s+where:\n\s+i - 4 < unstreamable<int>\(0\)\n\s+is evaluated as:\n\s+.*<[04 ]*> - 4 < .*<[0 ]*>\s*/me),
+
+  'asserts::expr::should_fail_on_assert_true_with_large_unstreamable_param' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{A_H}ASSERT_TRUE\(.*\)\n\s+where:\n\s+i - 4 < unstreamable<long double>\(0\)\n\s+is evaluated as:\n\s+ \? - 4 < \?\s*/me),
+
+  'asserts::expr::should_fail_on_assert_true_with_lt' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{A_H}ASSERT_TRUE\(.*\)\n\s+where:\n\s+n < num\n\s+is evaluated as:\n\s+4 < 3\s*/me),
+
+  'asserts::expr::should_fail_on_assert_true_with_add_lt' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{A_H}ASSERT_TRUE\(.*\)\n\s+where:\n\s+n \+ num < 5\n\s+is evaluated as:\n\s+4 \+ 3 < 5\s*/me),
+
+  'asserts::expr::should_fail_on_assert_true_with_sub_lt' =>
+  Test.new('FAILED').
+  log('violation',
+      /#{A_H}ASSERT_TRUE\(.*\)\n\s+where:\n\s+n - num < 0\n\s+is evaluated as:\n\s+4 - 3 < 0\s*/me),
+
   'death::by_exception::should_fail_any_exception' =>
   Test.new('FAILED').
   log('violation',
@@ -1099,52 +1134,52 @@ RUNS={
   [ /default_success/,    /PASSED/,      1,  0,  0, BLOCKED_TESTS ],
 
   "            asserts" =>
-  [ /^asserts::/,         /FAILED/, 40, 23,  0, BLOCKED_TESTS ],
+  [ /^asserts::/,         /FAILED/, 47, 30,  0, BLOCKED_TESTS ],
 
   " -v         asserts" =>
-  [ /^asserts::/,         /.*/,     40, 23, 17, BLOCKED_TESTS ],
+  [ /^asserts::/,         /.*/,     47, 30, 17, BLOCKED_TESTS ],
 
   " -c 8       asserts" =>
-  [ /^asserts::/,         /FAILED/, 40, 23,  0, BLOCKED_TESTS ],
+  [ /^asserts::/,         /FAILED/, 47, 30,  0, BLOCKED_TESTS ],
 
   " -c 8 -v    asserts" =>
-  [ /^asserts::/,         /.*/,     40, 23, 17, BLOCKED_TESTS ],
+  [ /^asserts::/,         /.*/,     47, 30, 17, BLOCKED_TESTS ],
 
   " -n         asserts" =>
-  [ /^asserts::/,         /FAILED/, 40, 23,  0, [] ],
+  [ /^asserts::/,         /FAILED/, 47, 30,  0, [] ],
 
   " -n -v      asserts" =>
-  [ /^asserts::/,         /.*/,     40, 23, 17, [] ],
+  [ /^asserts::/,         /.*/,     47, 30, 17, [] ],
 
   " -n -c 8    asserts" =>
-  [ /^asserts::/,         /FAILED/, 40, 23,  0, [] ],
+  [ /^asserts::/,         /FAILED/, 47, 30,  0, [] ],
 
   " -n -c 8 -v asserts" =>
-  [ /^asserts::/,         /.*/,     40, 23, 17, [] ],
+  [ /^asserts::/,         /.*/,     47, 30, 17, [] ],
 
   "            asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 56, 35,  0, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /FAILED/, 63, 42,  0, BLOCKED_TESTS ],
 
   " -v         asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     56, 35, 21, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /.*/,     63, 42, 21, BLOCKED_TESTS ],
 
   " -c 8       asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 56, 35,  0, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /FAILED/, 63, 42,  0, BLOCKED_TESTS ],
 
   " -c 8 -v    asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     56, 35, 21, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /.*/,     63, 42, 21, BLOCKED_TESTS ],
 
   " -n         asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 56, 35,  0, [] ],
+  [ /^(asserts|death)::/, /FAILED/, 63, 42,  0, [] ],
 
   " -n -v      asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     56, 35, 21, [] ],
+  [ /^(asserts|death)::/, /.*/,     63, 42, 21, [] ],
 
   " -n -c 8    asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 56, 35,  0, [] ],
+  [ /^(asserts|death)::/, /FAILED/, 63, 42,  0, [] ],
 
   " -n -c 8 -v asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     56, 35, 21, [] ],
+  [ /^(asserts|death)::/, /.*/,     63, 42, 21, [] ],
 
   ""         =>
   [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ],

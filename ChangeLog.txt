@@ -1,3 +1,31 @@
+         * ASSERT_TRUE and ASSERT_FALSE now uses some type evaluation abuse
+           that lets them intrepret expressions. An example failed exception
+           report is:
+
+           ASSERT_TRUE(n + num < 5)
+             where:
+               n + num < 5
+             is evaluated as:
+               4 + 3 < 5
+
+           By language rules the C++ operator presedence is obeyed, which
+           imposes some limits on what information you can get from the
+           expressions depending on how you write them. For
+           example, a minor rewrite of the above example gives:
+
+           ASSERT_TRUE(5 > n + num)
+             where:
+               5 > n + num
+             is evaluated as:
+               5 > 7
+
+           If a subexpression is of an unstreamable type a hex-dump is
+           used if the object size is eight bytes or smaller, otherwise
+           the value is just represented by '?'.
+
+           Thanks to Kevlin Henney and Phil Nash for bringing this technique
+           to my attention.
+
 2010-10-25 1.1.0
 
          * It is now possible to expect realtime timeouts with the

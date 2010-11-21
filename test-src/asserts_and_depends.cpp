@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
 
  * Redistribution and use in source and binary forms, with or without
@@ -205,6 +205,16 @@ TESTSUITE(asserts)
     ASSERT_GT(i, num);
   }
 
+  TEST(should_fail_on_assert_true_with_small_unstreamable_param)
+  {
+    unstreamable<int> i(0);
+    ASSERT_TRUE(i);
+  }
+  TEST(should_fail_on_assert_true_with_large_unstreamable_param)
+  {
+    unstreamable<long double> i(0);
+    ASSERT_TRUE(i);
+  }
   TEST(should_succeed_pointer_eq_0)
   {
     int *pi = 0;
@@ -306,6 +316,36 @@ TESTSUITE(asserts)
     int local::*p = 0;
     ASSERT_EQ(0, p);
   }
+
+  TESTSUITE(expr)
+  {
+    TEST(should_fail_on_assert_true_with_small_unstreamable_param)
+    {
+      unstreamable<int> i(4);
+      ASSERT_TRUE(i - 4 < unstreamable<int>(0));
+    }
+    TEST(should_fail_on_assert_true_with_large_unstreamable_param)
+    {
+      unstreamable<long double> i(4);
+      ASSERT_TRUE(i - 4 < unstreamable<long double>(0));
+    }
+    TEST(should_fail_on_assert_true_with_lt, fixture<3>)
+    {
+      int n = 4;
+      ASSERT_TRUE(n < num);
+    }
+    TEST(should_fail_on_assert_true_with_add_lt, fixture<3>)
+    {
+      int n = 4;
+      ASSERT_TRUE(n + num < 5);
+    }
+    TEST(should_fail_on_assert_true_with_sub_lt, fixture<3>)
+    {
+      int n = 4;
+      ASSERT_TRUE(n - num < 0);
+    }
+  }
+
 }
 
 DISABLED_TEST(should_never_run, fixture<3>)

@@ -1757,6 +1757,17 @@ namespace crpcut {
       }
     };
 
+    template <typename T>
+    void conditionally_stream(std::ostream &os, const T& t)
+    {
+      implementation::conditional_streamer<T, sizeof(T)>::stream(os, t);
+    }
+    template <size_t N, typename T>
+    void conditionally_stream(std::ostream &os, const T& t)
+    {
+      implementation::conditional_streamer<T, N>::stream(os, t);
+    }
+
     class null_cmp
     {
       class secret;
@@ -2020,10 +2031,8 @@ namespace crpcut {
       return v;
     }
 
-    //    template <typename T>
     class bool_tester
     {
-      //      typedef typename param_traits<T>::type type;
       const char *loc_;
     public:
       bool_tester(const char *loc) : loc_(loc) {}
@@ -2047,7 +2056,8 @@ namespace crpcut {
 
         os << loc_ << "\n" << name << "(" << vn << ")\n"
           "  where:\n    " << vn << "\n"
-          "  is evaluated as:\n    " << v;
+          "  is evaluated as:\n    ";
+        conditionally_stream<8>(os, v);
         std::string s(os.str());
         os.~ostringstream();
         new (&os) ostringstream();
@@ -2575,16 +2585,6 @@ namespace crpcut {
       return b;
     }
 
-    template <typename T>
-    void conditionally_stream(std::ostream &os, const T& t)
-    {
-      implementation::conditional_streamer<T, sizeof(T)>::stream(os, t);
-    }
-    template <size_t N, typename T>
-    void conditionally_stream(std::ostream &os, const T& t)
-    {
-      implementation::conditional_streamer<T, N>::stream(os, t);
-    }
     template <typename T>
     bool stream_param(std::ostream &os,
                       const char *prefix,
@@ -3960,7 +3960,10 @@ namespace crpcut {
       inline friend							\
         std::ostream &operator<<(std::ostream &os, const name &a)       \
       {									\
-        return os << a.t_ << " " #opexpr " " << a.u_;			\
+        implementation::conditionally_stream<8>(os, a.t_);              \
+        os << " " << #opexpr << " ";                                    \
+        implementation::conditionally_stream<8>(os, a.u_);              \
+        return os;                                                      \
       }									\
       friend class eval_t<name>;                                        \
     private:								\
@@ -4030,7 +4033,7 @@ namespace crpcut {
       inline friend
       std::ostream &operator<<(std::ostream &os, const atom& a)
       {
-        return os << a.t_;
+        implementation::conditionally_stream<8>(os, a.t_);
       }
     private:
       const T& t_;
