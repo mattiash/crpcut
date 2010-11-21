@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,13 @@
 TEST(assert_true_succeeds)
 {
   std::string val;
-  ASSERT_TRUE(val.empty());
+  ASSERT_TRUE(val.length() == 0);
 }
 
 TEST(assert_true_fails)
 {
   std::string val;
-  ASSERT_TRUE(val.length());
+  ASSERT_TRUE(val.length() > 0);
 }
 
 int main(int argc, char *argv[])
