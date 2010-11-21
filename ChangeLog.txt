@@ -1,3 +1,5 @@
+2010-11-21 1.1.1
+
          * Improved the control over naming of the lib directory from the
            cmake command line. Both -DLIB_SUFFIX= and -DLIBRARY_OUTPUT_PATH=
            can be used. The former just controls what suffix to add to the
