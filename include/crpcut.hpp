@@ -1701,6 +1701,7 @@ namespace crpcut {
     }
 
     template <typename T,
+              size_t size_limit = sizeof(T),
               bool b = stream_checker::is_output_streamable<T>::value>
     struct conditional_streamer
     {
@@ -1710,11 +1711,16 @@ namespace crpcut {
       }
     };
 
-    template <typename T>
-    struct conditional_streamer<T, false>
+    template <typename T, size_t size_limit>
+    struct conditional_streamer<T, size_limit, false>
     {
       static void stream(std::ostream &os, const T& t)
       {
+        if (sizeof(T) > size_limit)
+          {
+            os << '?';
+            return;
+          }
         static const char lf[] = "\n    ";
         const size_t bytes = sizeof(T);
         os << bytes << "-byte object <";
@@ -2578,9 +2584,13 @@ namespace crpcut {
     template <typename T>
     void conditionally_stream(std::ostream &os, const T& t)
     {
-      implementation::conditional_streamer<T>::stream(os, t);
+      implementation::conditional_streamer<T, sizeof(T)>::stream(os, t);
     }
-
+    template <size_t N, typename T>
+    void conditionally_stream(std::ostream &os, const T& t)
+    {
+      implementation::conditional_streamer<T, N>::stream(os, t);
+    }
     template <typename T>
     bool stream_param(std::ostream &os,
                       const char *prefix,
