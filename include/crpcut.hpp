@@ -2020,33 +2020,34 @@ namespace crpcut {
       return v;
     }
 
-    template <typename T>
-    class bool_tester_t
+    //    template <typename T>
+    class bool_tester
     {
-      typedef typename param_traits<T>::type type;
+      //      typedef typename param_traits<T>::type type;
       const char *loc_;
     public:
-      bool_tester_t(const char *loc) : loc_(loc) {}
-      void assert_true(type v, const char *vn) const
+      bool_tester(const char *loc) : loc_(loc) {}
+      template <typename T>
+      void assert_true(const T& v, const char *vn) const
       {
-        if (v) {} else { report("ASSERT_TRUE", v, vn); }
+        if (eval(v)) {} else { report("ASSERT_TRUE", v, vn); }
       }
-      void assert_false(type v, const char *vn) const
+      template <typename T>
+      void assert_false(const T& v, const char *vn) const
       {
-        if (v) { report("ASSERT_FALSE", v, vn); }
+        if (eval(v)) { report("ASSERT_FALSE", v, vn); }
       }
     private:
-      void report(const char *name, type v, const char *vn) const
+      template <typename T>
+      void report(const char *name, const T& v, const char *vn) const
       {
         heap::set_limit(heap::system);
         using std::ostringstream;
         ostringstream os;
 
-        os << loc_ << "\n" << name << "(" << vn << ")\n";
-        stream_param(os,
-                     "  where ",
-                     vn,
-                     v);
+        os << loc_ << "\n" << name << "(" << vn << ")\n"
+          "  where:\n    " << vn << "\n"
+          "  is evaluated as:\n    " << v;
         std::string s(os.str());
         os.~ostringstream();
         new (&os) ostringstream();
@@ -2057,13 +2058,6 @@ namespace crpcut {
         comm::report(crpcut::comm::exit_fail, p, len);
       }
     };
-
-    template <typename T>
-    bool_tester_t<T> bool_tester(const char *loc)
-    {
-      bool_tester_t<T> v(loc);
-      return v;
-    }
 
     template <case_convert_type converter>
     struct convert_traits
@@ -3947,6 +3941,137 @@ namespace crpcut {
   {
     return test_case_factory::get_start_dir();
   }
+
+  template <typename T>
+  struct eval_t;
+
+  namespace expr {
+    template <typename T>
+    const T& gen();
+  }
+
+#define CRPCUT_BINOP(name, opexpr)                                      \
+  namespace expr {                                                      \
+    template <typename T, typename U>					\
+    class name								\
+    {									\
+    public:								\
+      name(const T& t, const U& u) : t_(t), u_(u) {}			\
+      inline friend							\
+        std::ostream &operator<<(std::ostream &os, const name &a)       \
+      {									\
+        return os << a.t_ << " " #opexpr " " << a.u_;			\
+      }									\
+      friend class eval_t<name>;                                        \
+    private:								\
+      const T& t_;							\
+      const U& u_;							\
+    };									\
+  }
+
+#define CRPCUT_OPFUNC(name, opexpr)                                     \
+  namespace expr {                                                      \
+    template <typename T, typename U>					\
+    inline								\
+    name<T, U> operator opexpr(const T& t, const U& u)			\
+    {									\
+      return name<T, U>(t, u);						\
+    }									\
+  }                                                                     \
+  template <typename T, typename U>					\
+  struct eval_t<expr::name<T, U> >                                      \
+  {									\
+    typedef typename eval_t<T>::type ttype;                             \
+    typedef typename eval_t<U>::type utype;                             \
+    typedef CRPCUT_DECLTYPE(expr::gen<ttype>() opexpr expr::gen<utype>()) type; \
+    static type func(const expr::name<T, U>& n)				\
+    {									\
+      return eval(n.t_) opexpr eval(n.u_);                              \
+    }									\
+  };									\
+
+#define CRPCUT_OPS(x)                           \
+  x(eq_op, ==)					\
+  x(ne_op, !=)					\
+  x(ls_op, <<)					\
+  x(rs_op, >>)					\
+  x(lt_op, <)					\
+  x(le_op, <=)					\
+  x(gt_op, >)					\
+  x(ge_op, >=)					\
+  x(add_op, +)					\
+  x(sub_op, -)					\
+  x(mul_op, *)					\
+  x(div_op, /)					\
+  x(mod_op, %)					\
+  x(and_op, &)					\
+  x(or_op, |)					\
+  x(xor_op, ^)
+
+  CRPCUT_OPS(CRPCUT_BINOP)
+  CRPCUT_OPS(CRPCUT_OPFUNC)
+#undef CRPCUT_OFPUNC
+#undef CRPCUT_BINOP
+#undef CRPCUT_OPS
+
+  namespace expr {
+    template <typename T, typename U>
+    struct use_two_assertions_instead  operator&&(const T&, const U&);
+
+    template <typename T, typename U>
+    struct refactor_this_expression  operator||(const T&, const U&);
+
+    template <typename T>
+    class atom
+    {
+    public:
+      atom(const T& t) : t_(t) {}
+      friend class eval_t<atom>;
+      inline friend
+      std::ostream &operator<<(std::ostream &os, const atom& a)
+      {
+        return os << a.t_;
+      }
+    private:
+      const T& t_;
+    };
+  }
+
+  template <typename T>
+  struct eval_t<expr::atom<T> >
+  {
+    typedef typename eval_t<T>::type type;
+    static type func(const expr::atom<T> &n) { return eval(n.t_); }
+  };
+
+  namespace expr
+  {
+    class hook
+    {
+    public:
+      template <case_convert_type type>
+      const crpcut::collate_t<type>& operator->*(const crpcut::collate_t<type>& r) const
+      {
+        return r;
+      }
+      template <typename T>
+      atom<T> operator->*(const T& t) const
+      {
+        return atom<T>(t);
+      }
+    };
+  }
+
+  template <typename T>
+  struct eval_t
+  {
+    typedef const T &type;
+    static type func(const T& t) { return t; }
+  };
+
+  template <typename T>
+  typename eval_t<T>::type eval(const T& t) { return eval_t<T>::func(t); }
+
 } // namespace crpcut
 
 extern crpcut::implementation::namespace_info current_namespace;
@@ -4135,9 +4260,9 @@ namespace crpcut {
 #define ASSERT_TRUE(a)                                                  \
   do {                                                                  \
     try {                                                               \
-      crpcut::implementation::bool_tester<CRPCUT_DECLTYPE((a))>         \
+      crpcut::implementation::bool_tester                               \
         (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__))                      \
-        .assert_true((a), #a);                                          \
+        .assert_true((crpcut::expr::hook()->*a), #a);                      \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
                 {                                                       \
@@ -4156,9 +4281,9 @@ namespace crpcut {
 #define ASSERT_FALSE(a)                                                 \
   do {                                                                  \
     try {                                                               \
-      crpcut::implementation::bool_tester<CRPCUT_DECLTYPE((a))>         \
+      crpcut::implementation::bool_tester                               \
         (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__))                      \
-        .assert_false((a), #a);                                         \
+        .assert_false((crpcut::expr::hook()->*a), #a);                 \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
                 {                                                       \

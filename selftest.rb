@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-#  Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+#  Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
 #  All rights reserved
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions
@@ -134,7 +134,7 @@ TESTS = {
   'asserts::should_fail_on_assert_false_with_fixture' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_FALSE\(num\)\s+where\s+num\s*=\s*3/me),
+      /#{A_H}ASSERT_FALSE\(num\)\n\s+where:\n\s+num\n\s+is evaluated as:\n\s+3/me),
 
   'asserts::should_fail_on_assert_ge_with_fixture' =>
   Test.new('FAILED').
@@ -169,7 +169,7 @@ TESTS = {
   'asserts::should_fail_on_assert_true_with_fixture' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(num\)\s+where\s+num\s*=\s*0/me),
+      /#{A_H}ASSERT_TRUE\(num\)\s+where:\s+num\n\s+is evaluated as:\s+0/me),
 
   'asserts::should_succeed_assert_no_throw' =>
   Test.new('PASSED'),
@@ -244,22 +244,22 @@ TESTS = {
   'asserts::should_fail_false_volatile' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_FALSE\(n\)\n\s+where n = 3\s*/me),
+      /#{A_H}ASSERT_FALSE\(n\)\n\s+where:\n\s+n\n\s+is evaluated as:\n\s+3\s*/me),
 
   'asserts::should_fail_false_const_volatile' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_FALSE\(n\)\n\s+where n = 3\s*/me),
+      /#{A_H}ASSERT_FALSE\(n\)\n\s+where:\n\s+n\n\s+is evaluated as:\n\s+3\s*/me),
 
   'asserts::should_fail_true_volatile' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(n\)\n\s+where n = 0\s*/me),
+      /#{A_H}ASSERT_TRUE\(n\)\n\s+where:\s*n\n\s+is evaluated as:\n\s*0\s*/me),
 
   'asserts::should_fail_true_const_volatile' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_TRUE\(n\)\n\s+where n = 0\s*/me),
+      /#{A_H}ASSERT_TRUE\(n\)\n\s+where:\n\s*n\n\s*is evaluated as:\n\s*0\s*/me),
 
   'asserts::should_succeed_class_const_int_member' =>
   Test.new('PASSED'),
