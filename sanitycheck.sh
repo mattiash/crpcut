@@ -27,9 +27,9 @@ AWK=$1
 DIR=$2
 
 BLOCKED=7
-R=201
+R=208
 RN=$(($R+$BLOCKED))
-F=98
+F=105
 [ "$3" == "gmock" ] && {
   GR=11
   GF=7
@@ -40,25 +40,25 @@ F=98
 }
 tests=(
     "           default_success" "run=1 failed=0"
-    "           asserts"       "run=40 failed=23"
-    "-v         asserts"       "run=40 failed=23 verbose=1"
-    "-c 8       asserts"       "run=40 failed=23"
-    "-c 8 -v    asserts"       "run=40 failed=23 verbose=1"
+    "           asserts"       "run=47 failed=30"
+    "-v         asserts"       "run=47 failed=30 verbose=1"
+    "-c 8       asserts"       "run=47 failed=30"
+    "-c 8 -v    asserts"       "run=47 failed=30 verbose=1"
 
-    "-n         asserts"       "run=40 failed=23 nodeps=1"
-    "-n -v      asserts"       "run=40 failed=23 nodeps=1 verbose=1"
-    "-n -c 8    asserts"       "run=40 failed=23 nodens=1"
-    "-n -c 8 -v asserts"       "run=40 failed=23 nodeps=1 verbose=1"
+    "-n         asserts"       "run=47 failed=30 nodeps=1"
+    "-n -v      asserts"       "run=47 failed=30 nodeps=1 verbose=1"
+    "-n -c 8    asserts"       "run=47 failed=30 nodens=1"
+    "-n -c 8 -v asserts"       "run=47 failed=30 nodeps=1 verbose=1"
 
-    "           asserts death" "run=56 failed=35"
-    "-v         asserts death" "run=56 failed=35 verbose=1"
-    "-c 8       asserts death" "run=56 failed=35"
-    "-c 8 -v    asserts death" "run=56 failed=35 verbose=1"
+    "           asserts death" "run=63 failed=42"
+    "-v         asserts death" "run=63 failed=42 verbose=1"
+    "-c 8       asserts death" "run=63 failed=42"
+    "-c 8 -v    asserts death" "run=63 failed=42 verbose=1"
 
-    "-n         asserts death" "run=56 failed=35 nodeps=1"
-    "-n -v      asserts death" "run=56 failed=35 nodeps=1 verbose=1"
-    "-n -c 8    asserts death" "run=56 failed=35 nodeps=1"
-    "-n -c 8 -v asserts death" "run=56 failed=35 nodeps=1 verbose=1"
+    "-n         asserts death" "run=63 failed=42 nodeps=1"
+    "-n -v      asserts death" "run=63 failed=42 nodeps=1 verbose=1"
+    "-n -c 8    asserts death" "run=63 failed=42 nodeps=1"
+    "-n -c 8 -v asserts death" "run=63 failed=42 nodeps=1 verbose=1"
 
     ""                         "run=$R failed=$F blocked=$BLOCKED"
     "-v"                       "run=$R failed=$F blocked=$BLOCKED verbose=1 "
