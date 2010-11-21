@@ -1,3 +1,9 @@
+         * Improved the control over naming of the lib directory from the
+           cmake command line. Both -DLIB_SUFFIX= and -DLIBRARY_OUTPUT_PATH=
+           can be used. The former just controls what suffix to add to the
+           library name as "lib{suffix}", whereas the latter defines the
+           entire name, ignoring the LIB_SUFFIX variable value.
+
          * ASSERT_TRUE and ASSERT_FALSE now uses some type evaluation abuse
            that lets them intrepret expressions. An example failed exception
            report is:
