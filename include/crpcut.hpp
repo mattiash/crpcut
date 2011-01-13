@@ -944,7 +944,7 @@ namespace crpcut {
       };
 
       class wrapper;
-
+      class timeout_wrapper;
     } // namespace deaths
 
     template <unsigned long N>
@@ -967,8 +967,8 @@ namespace crpcut {
     class realtime_timeout_death : protected virtual default_policy
     {
     public:
-      typedef deaths::wrapper crpcut_run_wrapper;
-      typedef deaths::timeout<N> crpcut_expected_death_cause;
+      typedef deaths::timeout_wrapper crpcut_run_wrapper;
+      typedef deaths::timeout<N>      crpcut_expected_death_cause;
       typedef timeout::enforcer<timeout::realtime, N> crpcut_realtime_enforcer;
     };
     class any_exception_wrapper;
@@ -1112,16 +1112,14 @@ namespace crpcut {
         enforcer();
         struct monitor
         {
-          bool crpcut_cputime_timeout(unsigned long ms) const
-          {
-            return ms > timeout_ms;
-          }
+          bool crpcut_cputime_timeout(unsigned long ms) const;
           void crpcut_cputime_limit(std::ostream &os) const
           {
             os << timeout_ms << "ms";
           }
         };
       };
+
 
       template <unsigned long timeout_ms>
       class enforcer<realtime, timeout_ms> : public monotonic_enforcer
@@ -1152,7 +1150,6 @@ namespace crpcut {
 
 
   } // namespace policies
-
 
   class test_case_base : protected virtual policies::default_policy
   {
@@ -1483,6 +1480,7 @@ namespace crpcut {
     static void present(pid_t pid, comm::type t, test_phase phase,
                         size_t len, const char *buff);
     static bool tests_as_child_procs();
+    static bool timeouts_enabled();
     static void set_deadline(implementation::crpcut_test_case_registrator *i);
     static void clear_deadline(implementation::crpcut_test_case_registrator *i);
     static void return_dir(int num);
@@ -1562,6 +1560,7 @@ namespace crpcut {
     registrator_list reg;
     unsigned         pending_children;
     bool             verbose_mode;
+    bool             enable_timeouts;
     bool             nodeps;
     unsigned         num_parallel;
     bool             single_process;
@@ -1628,6 +1627,13 @@ namespace crpcut {
 
     template <typename T>
     class test_wrapper<policies::deaths::wrapper, T>
+    {
+    public:
+      static void run(T *t);
+    };
+
+    template <typename T>
+    class test_wrapper<policies::deaths::timeout_wrapper, T>
     {
     public:
       static void run(T *t);
@@ -1710,6 +1716,17 @@ namespace crpcut {
     void test_wrapper<policies::deaths::wrapper, T>::run(T *t)
     {
       t->test();
+      stream::toastream<128> os;
+      os << "Unexpectedly survived\nExpected ";
+      T::crpcut_reg().crpcut_expected_death(os);
+      comm::report(comm::exit_fail, os.begin(), os.size());
+    }
+
+    template <typename T>
+    void test_wrapper<policies::deaths::timeout_wrapper, T>::run(T *t)
+    {
+      t->test();
+      if (!test_case_factory::timeouts_enabled()) return;
       stream::toastream<128> os;
       os << "Unexpectedly survived\nExpected ";
       T::crpcut_reg().crpcut_expected_death(os);
@@ -2971,7 +2988,10 @@ namespace crpcut {
       bool
       timeout<N>::crpcut_is_expected_signal(int code) const
       {
-        return code == SIGKILL || code == SIGXCPU;
+        return
+          !test_case_factory::timeouts_enabled()
+          || code == SIGKILL
+          || code == SIGXCPU;
       }
 
       template <unsigned long N>
@@ -3061,6 +3081,15 @@ namespace crpcut {
         : monotonic_enforcer(timeout_ms)
       {
       }
+
+      template <unsigned long timeout_ms>
+      bool
+      enforcer<cputime, timeout_ms>::monitor
+      ::crpcut_cputime_timeout(unsigned long ms) const
+      {
+        return test_case_factory::timeouts_enabled() && ms > timeout_ms;
+      }
+
     } // namespace timeout
 
   } // namespace policies
@@ -3453,6 +3482,12 @@ namespace crpcut {
   test_case_factory::tests_as_child_procs()
   {
     return obj().num_parallel > 0;
+  }
+
+  inline bool
+  test_case_factory::timeouts_enabled()
+  {
+    return obj().enable_timeouts;
   }
 
   inline void

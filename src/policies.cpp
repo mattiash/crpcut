@@ -101,7 +101,7 @@ namespace crpcut {
         : duration_ms(timeout_ms),
           start_timestamp_ms(clocks::cputime::timestamp_ms_absolute())
       {
-        if (test_case_factory::tests_as_child_procs())
+        if (test_case_factory::timeouts_enabled())
           {
             rlimit r = { (duration_ms + 1500) / 1000,
                          (duration_ms + 2500) / 1000 };
@@ -111,7 +111,7 @@ namespace crpcut {
 
       cputime_enforcer::~cputime_enforcer()
       {
-        if (!test_case_factory::tests_as_child_procs()) return;
+        if (!test_case_factory::timeouts_enabled()) return;
 
         clocks::cputime::timestamp now
           = clocks::cputime::timestamp_ms_absolute();
@@ -140,7 +140,7 @@ namespace crpcut {
 
       monotonic_enforcer::~monotonic_enforcer()
       {
-        if (!test_case_factory::tests_as_child_procs()) return;
+        if (!test_case_factory::timeouts_enabled()) return;
         typedef clocks::monotonic mono;
         mono::timestamp now  = mono::timestamp_ms_absolute();
         comm::report(comm::cancel_timeout, 0, 0);
@@ -165,5 +165,5 @@ namespace crpcut {
 
     } // namespace timeout
 
-  } // namespace policien
+  } // namespace policies
 }

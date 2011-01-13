@@ -41,6 +41,7 @@ namespace crpcut {
   test_case_factory::test_case_factory()
     : pending_children(0),
       verbose_mode(false),
+      enable_timeouts(true),
       nodeps(false),
       num_parallel(1),
       num_registered_tests(0),
@@ -772,7 +773,7 @@ namespace crpcut {
       {
         using namespace implementation;
 
-        int timeout_ms = deadlines.size()
+        int timeout_ms = timeouts_enabled() && deadlines.size()
           ? int(deadlines.front()->crpcut_ms_until_deadline())
           : -1;
         polltype::descriptor desc = poller.wait(timeout_ms);
@@ -958,7 +959,11 @@ namespace crpcut {
               {
                 value = 0;
               }
-            if (wrapped::strncmp("verbose", param, len) == 0)
+            if (wrapped::strncmp("disable-timeouts", param, len) == 0)
+              {
+                cmd = 't';
+              }
+            else if (wrapped::strncmp("verbose", param, len) == 0)
               {
                 cmd = 'v';
               }
@@ -1058,6 +1063,7 @@ namespace crpcut {
           pcount = 1;
           num_parallel = 0;
           nodeps = true;
+          enable_timeouts = false;
           process_limit_set = 's';
           break;
         case 'l':
@@ -1094,6 +1100,10 @@ namespace crpcut {
           break;
         case 'n':
           nodeps = true;
+          pcount = 1;
+          break;
+        case 't':
+          enable_timeouts = false;
           pcount = 1;
           break;
         case 'x':
@@ -1158,6 +1168,8 @@ namespace crpcut {
             "        don't display the -o brief summary\n\n"
             "   -s, --single-shot\n"
             "        run only one test case, and run it in the main process\n\n"
+            "   -t, --disable-timeouts\n"
+            "        never fail a test due to time consumption\n"
             "   -v, --verbose\n"
             "        verbose mode, print result from passed tests\n\n"
             "   -x, --xml\n"
