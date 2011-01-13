@@ -183,17 +183,11 @@ TESTSUITE(asserts)
   template <typename T>
     class unstreamable
   {
-    class nieu;
   public:
     unstreamable(T t) : data(t) {}
     unstreamable& operator=(const T& t) { data = t; return *this; }
     operator T&() { return data; }
     operator const T&() const { return data; }
-    bool operator!() const { return !data; }
-    operator const nieu*() const
-    {
-      return data ? reinterpret_cast<const nieu*>(&data) : 0;
-    }
   private:
     unstreamable(const unstreamable&);
     T data;
