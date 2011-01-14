@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+#  Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
 #  All rights reserved
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions
@@ -27,9 +27,9 @@ AWK=$1
 DIR=$2
 
 BLOCKED=7
-R=208
+R=212
 RN=$(($R+$BLOCKED))
-F=105
+F=107
 [ "$3" == "gmock" ] && {
   GR=11
   GF=7

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,6 +106,59 @@ TESTSUITE(timeouts)
          DEADLINE_CPU_MS(3))
     {
       sleep(3);
+    }
+
+  }
+
+  TESTSUITE(scoped)
+  {
+
+    TEST(should_succeed_realtime_short_sleep)
+    {
+      ASSERT_SCOPE_MAX_REALTIME_MS(10)
+      {
+        usleep(1000);
+      }
+    }
+
+    TEST(should_fail_realtime_short_sleep)
+    {
+      ASSERT_SCOPE_MAX_REALTIME_MS(1)
+      {
+        usleep(2000);
+      }
+    }
+
+    TEST(should_succeed_oversleep)
+    {
+      ASSERT_SCOPE_MIN_REALTIME_MS(3)
+      {
+        ASSERT_SCOPE_MAX_CPUTIME_MS(1)
+        {
+          usleep(4000);
+        }
+      }
+    }
+
+    TEST(should_fail_cputime_long)
+    {
+      ASSERT_SCOPE_MAX_CPUTIME_MS(900)
+      {
+        ASSERT_SCOPE_MIN_REALTIME_MS(1000)
+        {
+          const clock_t clocks_per_tick = sysconf(_SC_CLK_TCK);
+          tms t;
+          times(&t);
+          clock_t deadline = t.tms_utime + t.tms_stime + clocks_per_tick;
+          for (;;)
+            {
+              for (volatile int n = 0; n < 100000; ++n)
+                ;
+              times(&t);
+              if (t.tms_utime + t.tms_stime > deadline) break;
+            }
+        }
+      }
     }
 
   }

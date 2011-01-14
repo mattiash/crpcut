@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
 
  * Redistribution and use in source and binary forms, with or without
@@ -4113,6 +4113,68 @@ namespace crpcut {
   template <typename T>
   typename eval_t<T>::type eval(const T& t) { return eval_t<T>::func(t); }
 
+  namespace scope {
+    class time_base
+    {
+    public:
+      struct min
+      {
+        static const char *name();
+        static bool busted(unsigned long now, unsigned long deadline);
+      };
+      struct max
+      {
+        static const char *name();
+        static bool busted(unsigned long now, unsigned long deadline);
+      };
+      struct realtime
+      {
+        static const char *name();
+        static unsigned long now();
+      };
+      struct cputime
+      {
+        static const char *name();
+        static unsigned long now();
+      };
+      ~time_base() {};
+      operator bool() const { return false; }
+      void silence_warning() const {}
+    protected:
+      time_base(unsigned long deadline, const char *filename, size_t line);
+      unsigned long const deadline_;
+      char const *  const filename_;
+      size_t        const line_;
+    };
+    template <typename cond, typename clock>
+    class time : public time_base
+    {
+    public:
+      time(unsigned long ms, const char *file, size_t line)
+        : time_base(clock::now() + ms, file, line),
+          limit_(ms)
+      {
+      }
+      ~time()
+      {
+        unsigned long t = clock::now();
+        if (test_case_factory::timeouts_enabled()
+            && cond::busted(t, deadline_))
+          {
+            comm::direct_reporter<crpcut::comm::exit_fail>()
+              << filename_ << ":" << line_ << "\nASSERT_SCOPE_" << cond::name()
+                 << "_" << clock::name() << "_MS(" << limit_ << ")"
+              "\nActual time used was " << t - (deadline_-limit_) << "ms";
+          }
+      }
+    private:
+      time(const time&);
+      time& operator=(const time&);
+
+      unsigned long const limit_;
+    };
+  }
+
 } // namespace crpcut
 
 extern crpcut::implementation::namespace_info current_namespace;
@@ -4442,6 +4504,22 @@ namespace crpcut {
       })                                                                \
   } while (0)
 
+#define CRPCUT_ASSERT_SCOPE_TYPE_TIME_MS(type, clock, ms)               \
+  if (const crpcut::scope::time_base& CRPCUT_LOCAL_NAME(time_scope)     \
+      = crpcut::scope::time<crpcut::scope::time_base::type,             \
+                            crpcut::scope::time_base::clock>(ms,        \
+                                                             __FILE__,  \
+                                                             __LINE__)) \
+    { CRPCUT_LOCAL_NAME(time_scope).silence_warning(); } else           \
+
+#define ASSERT_SCOPE_MAX_REALTIME_MS(ms)        \
+  CRPCUT_ASSERT_SCOPE_TYPE_TIME_MS(max, realtime, ms)
+
+#define ASSERT_SCOPE_MIN_REALTIME_MS(ms)        \
+  CRPCUT_ASSERT_SCOPE_TYPE_TIME_MS(min, realtime, ms)
+
+#define ASSERT_SCOPE_MAX_CPUTIME_MS(ms)         \
+  CRPCUT_ASSERT_SCOPE_TYPE_TIME_MS(max, cputime, ms)
 
 
 class crpcut_testsuite_id;
@@ -4472,10 +4550,10 @@ class crpcut_testsuite_dep
   }                                                                     \
   namespace name
 
-#define ALL_TESTS(suite_name) crpcut::implementation::test_suite<suite_name :: crpcut_testsuite_id >
+#define ALL_TESTS(suite_name)                                           \
+  crpcut::implementation::test_suite<suite_name :: crpcut_testsuite_id >
+
 #define TESTSUITE(...) TESTSUITE_DEF(__VA_ARGS__, crpcut::crpcut_none)
-
-
 
 #define INFO crpcut::comm::direct_reporter<crpcut::comm::info>()
 #define FAIL crpcut::comm::direct_reporter<crpcut::comm::exit_fail>()   \

@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-#  Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
+#  Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
 #  All rights reserved
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions
@@ -877,6 +877,22 @@ TESTS = {
 
   'timeouts::expected::should_succeed_cputime' =>
   Test.new('PASSED'),
+
+  'timeouts::scoped::should_succeed_realtime_short_sleep' =>
+  Test.new('PASSED'),
+
+  'timeouts::scoped::should_fail_realtime_short_sleep' =>
+  Test.new('FAILED').
+  log('violation',
+      /ASSERT_SCOPE_MAX_REALTIME_MS.*Actual time used was [23]ms/me),
+
+  'timeouts::scoped::should_succeed_oversleep' =>
+  Test.new('PASSED'),
+
+  'timeouts::scoped::should_fail_cputime_long' =>
+  Test.new('FAILED').
+  log('violation',
+      /ASSERT_SCOPE_MAX_CPUTIME_MS.*Actual time used was 1\d\d\dms/me),
 
   'very_slow_success' =>
   Test.new('PASSED'),
