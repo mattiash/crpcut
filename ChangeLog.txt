@@ -1,3 +1,8 @@
+         * Added the --disable-timeouts command line flag, which disables
+           all deadline expectations such that no tests will fail due to
+           their time consumption. This turns out to be useful when
+           running tests under time consuming tools.
+
 2010-11-21 1.1.1
 
          * Improved the control over naming of the lib directory from the

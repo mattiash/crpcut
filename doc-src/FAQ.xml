@@ -320,6 +320,14 @@
           <xref linkend="DEADLINE_REALTIME_MS" xrefstyle="select:title"/>
           modifier and set a suitably long deadline.
         </para>
+        <note>
+          If this occurs when running under special circumstances, for
+          example with time consuming tools like
+          <ulink url="http://valgrind.org">valgrind</ulink>,
+          you may temporarily turn off all timeouts with the
+          <xref linkend="disable-timeouts" xrefstyle="select:title"/>
+          command line parameter.
+        </note>
       </answer>
     </qandaentry>
 

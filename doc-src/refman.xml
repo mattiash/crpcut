@@ -651,6 +651,11 @@
         combined in the modifier list for the same
         <xref linkend="TEST" xrefstyle="select:title"/>.
       </para>
+      <note>
+        It is possible to temporarily disable the deadline with the
+        <xref linkend="disable-timeouts" refstyle="select:title"/>
+        command line flag.
+      </note>
   </section>
   <section id="DEADLINE_REALTIME_MS">
     <title><function>DEADLINE_REALTIME_MS(n)</function></title>
@@ -688,6 +693,11 @@
         combined in the modifier list for the same
         <xref linkend="TEST" xrefstyle="select:title"/>.
       </para>
+      <note>
+        It is possible to temporarily disable the deadline with the
+        <xref linkend="disable-timeouts" refstyle="select:title"/>
+        command line flag.
+      </note>
   </section>
   <section id="DEPENDS_ON">
     <title><function>DEPENDS_ON(...)</function></title>
@@ -862,6 +872,11 @@
 
 <xi:include href="../sample-output/expect_realtime_timeout.out" parse="text"/>
 </screen>
+      <note>
+        It is possible to temporarily disable the expectation with the
+        <xref linkend="disable-timeouts" refstyle="select:title"/>
+        command line flag.
+      </note>
   </section>
 
   <section id="EXPECT_SIGNAL_DEATH">
@@ -1078,7 +1093,13 @@
       <para>Should you have a test that needs more time than
         <literal>2</literal>s, you can raise the limit with the
         <xref linkend="DEADLINE_REALTIME_MS"
-              xrefstyle="select:title"/> modifier.</para>
+              xrefstyle="select:title"/> modifier or, if the
+        need is temporary due to running with time consuming tools like
+        <ulink url="http://valgrind.org">valgrind</ulink>, you may
+        temporarily turn off all timeouts with the
+        <xref linkend="disable-timeouts" xrefstyle="select:title"/>
+        command line parameter.
+      </para>
       <para>It is important to understand that the name of a test is,
         in fact, the name of a class. The test body is the member function
         <function>test</function>()that is called by the &crpcut; engine.
@@ -1918,6 +1939,18 @@ int main(int argc, char *argv[])
               It is not possible for &crpcut; to monitor time consumed by the
               test case, and neither is it possible to monitor abnormal exits.
               Any failed assertion results in a call to <function>abort</function>().
+            </caution>
+          </listitem>
+        </varlistentry>
+        <varlistentry id="disable-timeouts"><term><parameter>-t</parameter> / <parameter>--disable-timeouts</parameter></term>
+          <listitem>
+            <para>Never fail a test due to its time consumption. This can be
+            useful when running tests under time consuming tools like
+            <ulink url="http://valgrind.org">valgrind</ulink>
+            </para>
+            <caution>
+              This turns off the safe guard of &crpcut; that kills tests that
+              have no progress (infinite loops, sleeps, etc.)
             </caution>
           </listitem>
         </varlistentry>
