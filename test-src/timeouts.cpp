@@ -142,14 +142,14 @@ TESTSUITE(timeouts)
 
     TEST(should_fail_cputime_long)
     {
+      const clock_t clocks_per_tick = sysconf(_SC_CLK_TCK);
+      tms t;
+      times(&t);
+      clock_t deadline = t.tms_utime + t.tms_stime + clocks_per_tick;
       ASSERT_SCOPE_MAX_CPUTIME_MS(900)
       {
         ASSERT_SCOPE_MIN_REALTIME_MS(1000)
         {
-          const clock_t clocks_per_tick = sysconf(_SC_CLK_TCK);
-          tms t;
-          times(&t);
-          clock_t deadline = t.tms_utime + t.tms_stime + clocks_per_tick;
           for (;;)
             {
               for (volatile int n = 0; n < 100000; ++n)

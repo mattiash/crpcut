@@ -320,8 +320,7 @@
     <para>Assert that a predicate evaluates to <constant>true</constant>.</para>
     <formalpara><title>Used in:</title>
       <para>A test function body, the constructor or destructor of a
-        <link linkend="fixtures">fixture</link>, or a function called from
-       them.
+        <link linkend="fixtures">fixture</link>, or a function called from them.
         See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
       </formalpara>
     <formalpara><title>Requirement:</title>
@@ -378,6 +377,135 @@
 </programlisting>
     </tip>
   </section>
+  <section id="ASSERT_SCOPE_MAX_CPUTIME_MS">
+    <title><function>ASSERT_SCOPE_MAX_CPUTIME_MS(ms)</function></title>
+    <para>Assert that the block of code immediately following the macro does
+    not consume more than <constant>ms</constant> milliseconds CPU time.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from them.
+      See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para><parameter>ms</parameter> is an unsigned integer value.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para>A code block follows immediately after.</para>
+    </formalpara>
+    <para>The assertion succeeds if, and only if, the code block following
+    completes its execution in less than <parameter>ms</parameter> milliseconds
+    of CPU-time.</para>
+    <para>On success the test function continues without side effects.</para>
+    <para>On failure, the test is terminated with an error report. The report
+    includes the parameter value <parameter>ms</parameter> and the actual
+    CPU-time consumed.</para>
+    <note>
+      It is possible to temporarily disable the assertion with the
+      <xref linkend="disable-timeouts" refstyle="select:title"/>
+      command line flag, in which case the assertion will always succeed,
+      regardless of the amount of CPU-time consumed by the following
+      code block. This can be useful when running with time consuming tools
+      like <ulink url="http://valgrind.org">valgrind</ulink>.
+    </note>
+
+    <para>Example: The test program
+    <programlisting language="c++">
+<xi:include href="../stripped-src/assert_scope_max_cpu.cpp" parse="text"/>
+    </programlisting>
+    reports one failed test:
+    <screen>
+
+<xi:include href="../sample-output/assert_scope_max_cpu.out" parse="text"/>
+    </screen>
+    </para>
+  </section>
+
+  <section id="ASSERT_SCOPE_MAX_REALTIME_MS">
+    <title><function>ASSERT_SCOPE_MAX_REALTIME_MS(ms)</function></title>
+    <para>Assert that the block of code immediately following the macro does
+    not consume more than <constant>ms</constant> milliseconds real time.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from them.
+      See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para><parameter>ms</parameter> is an unsigned integer value.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para>A code block follows immediately after.</para>
+    </formalpara>
+    <para>The assertion succeeds if, and only if, the code block following
+    completes its execution in less than <parameter>ms</parameter> milliseconds
+    of real-time.</para>
+    <para>On success the test function continues without side effects.</para>
+    <para>On failure, the test is terminated with an error report. The report
+    includes the parameter value <parameter>ms</parameter> and the actual
+    time consumed.</para>
+    <note>
+      It is possible to temporarily disable the assertion with the
+      <xref linkend="disable-timeouts" refstyle="select:title"/>
+      command line flag, in which case the assertion will always succeed,
+      regardless of the amount of time consumed by the following
+      code block. This can be useful when running with time consuming tools
+      like <ulink url="http://valgrind.org">valgrind</ulink>.
+    </note>
+
+    <para>Example: The test program
+    <programlisting language="c++">
+<xi:include href="../stripped-src/assert_scope_max_real.cpp" parse="text"/>
+    </programlisting>
+    reports one failed test:
+    <screen>
+
+<xi:include href="../sample-output/assert_scope_max_real.out" parse="text"/>
+    </screen>
+    </para>
+  </section>
+
+  <section id="ASSERT_SCOPE_MIN_REALTIME_MS">
+    <title><function>ASSERT_SCOPE_MIN_REALTIME_MS(ms)</function></title>
+    <para>Assert that the block of code immediately following the macro
+    consumes at least <constant>ms</constant> milliseconds real time.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from them.
+      See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para><parameter>ms</parameter> is an unsigned integer value.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para>A code block follows immediately after.</para>
+    </formalpara>
+    <para>The assertion succeeds if, and only if, the code block following
+    requires at least <parameter>ms</parameter> milliseconds of real-time
+    to complete its execution.</para>
+    <para>On success the test function continues without side effects.</para>
+    <para>On failure, the test is terminated with an error report. The report
+    includes the parameter value <parameter>ms</parameter> and the actual
+    time consumed.</para>
+    <note>
+      It is possible to temporarily disable the assertion with the
+      <xref linkend="disable-timeouts" refstyle="select:title"/>
+      command line flag, in which case the assertion will always succeed,
+      regardless of the amount of time consumed by the following
+      code block.
+    </note>
+
+    <para>Example: The test program
+    <programlisting language="c++">
+<xi:include href="../stripped-src/assert_scope_min_real.cpp" parse="text"/>
+    </programlisting>
+    reports two failed tests:
+    <screen>
+
+<xi:include href="../sample-output/assert_scope_min_real.out" parse="text"/>
+    </screen>
+    </para>
+  </section>
+
+
   <section id="ASSERT_THROW">
     <title><function>ASSERT_THROW(expr, exc_type)</function></title>
     <para>Assert that an expression throws the desired exception.</para>

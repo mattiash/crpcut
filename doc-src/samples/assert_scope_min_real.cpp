@@ -24,57 +24,60 @@
  * SUCH DAMAGE.
  */
 
+
 #include <crpcut.hpp>
-#include "clocks.hpp"
+#include <sys/times.h>
 
-namespace crpcut {
-  namespace scope {
-    time_base::time_base(unsigned long  deadline,
-                         char const    *filename,
-                         size_t         line)
-        : deadline_(deadline),
-          filename_(filename),
-          line_(line)
+TEST(sleeps)
+{
+  ASSERT_SCOPE_MIN_REALTIME_MS(5)
+  {
+    ASSERT_SCOPE_MAX_CPUTIME_MS(1)
     {
-    }
-
-    const char *time_base::min::name()
-    {
-      return "MIN";
-    }
-
-    bool time_base::min::busted(unsigned long now, unsigned long deadline)
-    {
-      return now < deadline;
-    }
-
-    const char *time_base::max::name()
-    {
-      return "MAX";
-    }
-
-    bool time_base::max::busted(unsigned long now, unsigned long deadline)
-    {
-      return now >= deadline;
-    }
-
-    const char *time_base::realtime::name()
-    {
-      return "REALTIME";
-    }
-
-    unsigned long time_base::realtime::now()
-    {
-      return clocks::monotonic::timestamp_ms_absolute();
-    }
-
-    const char *time_base::cputime::name()
-    {
-      return "CPUTIME";
-    }
-    unsigned long time_base::cputime::now()
-    {
-      return clocks::cputime::timestamp_ms_absolute();
+      for (int i = 0; i < 5; ++i)
+      {
+        usleep(1000); // would fail if implemented as busy wait
+      }
     }
   }
+}
+
+TEST(too_short)
+{
+  ASSERT_SCOPE_MIN_REALTIME_MS(5)
+  {
+    ASSERT_SCOPE_MAX_CPUTIME_MS(1)
+    {
+      for (int i = 0; i < 3; ++i)
+      {
+        usleep(1000); // would fail if implemented as busy wait
+      }
+    }
+  }
+}
+
+TEST(busy_wait)
+{
+  const clock_t clocks_per_tick = sysconf(_SC_CLK_TCK);
+  tms t;
+  times(&t);
+  clock_t deadline = t.tms_utime + t.tms_stime + clocks_per_tick/20;
+  ASSERT_SCOPE_MAX_CPUTIME_MS(1)
+  {
+    ASSERT_SCOPE_MIN_REALTIME_MS(50)
+    {
+      for (;;)
+        {
+          for (volatile int n = 0; n < 100000; ++n)
+            ;
+          times(&t);
+          if (t.tms_utime + t.tms_stime > deadline) break;
+        }
+    }
+  }
+}
+
+int main(int argc, char *argv[])
+{
+  return crpcut::run(argc, argv);
 }

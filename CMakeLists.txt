@@ -604,6 +604,65 @@ if (WITH_HTML_DOCS)
       VERBATIM)
 
     #
+    # assert_scope_max_cputime
+    #
+    file(GLOB ASSERT_PRED_FAILS "${DOC_SRC_LIB}/samples/assert_scope_max_cpu.cpp")
+    add_custom_target(
+      assert_scope_max_cpu.cpp
+      ${STRIP_SOURCES} < ${ASSERT_PRED_FAILS} > assert_scope_max_cpu.cpp
+      DEPENDS stripped-src ${ASSERT_PRED_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(assert_scope_max_cpu EXCLUDE_FROM_ALL ${ASSERT_PRED_FAILS})
+    target_link_libraries(assert_scope_max_cpu crpcut)
+    add_custom_target(
+      assert_scope_max_cpu.out
+      assert_scope_max_cpu | sed "s/\\(.*\\)/     \\1/g" > assert_scope_max_cpu.out
+      DEPENDS assert_scope_max_cpu sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
+    # assert_scope_max_realtime
+    #
+    file(GLOB ASSERT_PRED_FAILS "${DOC_SRC_LIB}/samples/assert_scope_max_real.cpp")
+    add_custom_target(
+      assert_scope_max_real.cpp
+      ${STRIP_SOURCES} < ${ASSERT_PRED_FAILS} > assert_scope_max_real.cpp
+      DEPENDS stripped-src ${ASSERT_PRED_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(assert_scope_max_real EXCLUDE_FROM_ALL ${ASSERT_PRED_FAILS})
+    target_link_libraries(assert_scope_max_real crpcut)
+    add_custom_target(
+      assert_scope_max_real.out
+      assert_scope_max_real | sed "s/\\(.*\\)/     \\1/g" > assert_scope_max_real.out
+      DEPENDS assert_scope_max_real sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+
+    #
+    # assert_scope_min_realtime
+    #
+    file(GLOB ASSERT_PRED_FAILS "${DOC_SRC_LIB}/samples/assert_scope_min_real.cpp")
+    add_custom_target(
+      assert_scope_min_real.cpp
+      ${STRIP_SOURCES} < ${ASSERT_PRED_FAILS} > assert_scope_min_real.cpp
+      DEPENDS stripped-src ${ASSERT_PRED_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(assert_scope_min_real EXCLUDE_FROM_ALL ${ASSERT_PRED_FAILS})
+    target_link_libraries(assert_scope_min_real crpcut)
+    add_custom_target(
+      assert_scope_min_real.out
+      assert_scope_min_real | sed "s/\\(.*\\)/     \\1/g" > assert_scope_min_real.out
+      DEPENDS assert_scope_min_real sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+
+    #
     # wrap_func
     #
     file(GLOB WRAP_FUNC "${DOC_SRC_LIB}/samples/wrap_func.cpp")
@@ -1483,6 +1542,9 @@ if (WITH_HTML_DOCS)
       stripped-src/assert_no_throw_fails.cpp sample-output/assert_no_throw_fails.out
       stripped-src/assert_throw_fails.cpp sample-output/assert_throw_fails.out
       stripped-src/assert_pred_fails.cpp sample-output/assert_pred_fails.out
+      stripped-src/assert_scope_max_cpu.cpp sample-output/assert_scope_max_cpu.out
+      stripped-src/assert_scope_max_real.cpp sample-output/assert_scope_max_real.out
+      stripped-src/assert_scope_min_real.cpp sample-output/assert_scope_min_real.out
       stripped-src/wrap_func.cpp sample-output/wrap_func.out
       stripped-src/wrap_v_func.cpp sample-output/wrap_v_func.out
       stripped-src/wrapped.cpp sample-output/wrapped.out
