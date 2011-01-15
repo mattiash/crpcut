@@ -749,6 +749,47 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
       very bad. Can you see why?
     </para>
   </chapter>
+
+  <chapter id="performance-management">
+    <title>Asserting execution time</title>
+    <para>Sometimes it is not enough that your code does the right thing. It
+    must do the right thing with the right timing. Testing time consumption
+    requirements is easy with &crpcut;.
+    </para>
+    <para>In order to assert performance requirements, &crpcut; provides the
+    macros
+    <xref linkend="ASSERT_SCOPE_MAX_CPUTIME_MS" xrefstyle="select:title"/>,
+    <xref linkend="ASSERT_SCOPE_MAX_REALTIME_MS" xrefstyle="select:title"/> and
+    <xref linkend="ASSERT_SCOPE_MIN_REALTIME_MS" xrefstyle="select:title"/>.
+    </para>
+    <para>Let's use the above macros and put the POSIX function
+    <ulink url="http://pubs.opengroup.org/onlinepubs/009695399/functions/usleep.html">usleep</ulink>() to the test. The test is to assert that it neither
+    takes too long, nor too short, and also to assert it yields the CPU during
+    the time instead of busy waiting. Below is a small test program for it
+    <programlisting language="c++">
+<xi:include href="../stripped-src/usleep.cpp" parse="text"/>
+</programlisting>
+    </para>
+    <para>Running the test program shows that the implementation of
+    <ulink url="http://pubs.opengroup.org/onlinepubs/009695399/functions/usleep.html">usleep</ulink>()
+    on the computer used for writing this documentation does indeed do the right thing.
+      <screen>
+
+<xi:include href="../sample-output/usleep.out" parse="text"/>
+</screen>
+    </para>
+    <tip>
+      When hunting down logic bugs in your code, you may want to run
+      tests under time consuming tools like
+      <ulink url="www.valgrind.org">valgrind</ulink>, but they greatly
+      impacts the timing of your code, invalidating all performance tests.
+      In those situations, the
+      <xref linkend="disable-timeouts" refstyle="select:title"/> command
+      line flag comes to the rescue. It tells &crpcut; to never fail a test
+      due to its time consumption.
+    </tip>
+  </chapter>
+
   <chapter id="lib-stubs">
     <title>Stubbing library functions</title>
     <para>You can safely roll your own versions of functions like

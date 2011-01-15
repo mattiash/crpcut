@@ -661,6 +661,25 @@ if (WITH_HTML_DOCS)
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
+    #
+    # usleep
+    #
+    file(GLOB ASSERT_PRED_FAILS "${DOC_SRC_LIB}/samples/usleep.cpp")
+    add_custom_target(
+      usleep.cpp
+      ${STRIP_SOURCES} < ${ASSERT_PRED_FAILS} > usleep.cpp
+      DEPENDS stripped-src ${ASSERT_PRED_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(usleep EXCLUDE_FROM_ALL ${ASSERT_PRED_FAILS})
+    target_link_libraries(usleep crpcut)
+    add_custom_target(
+      usleep.out
+      usleep "-v" | sed "s/\\(.*\\)/     \\1/g" > usleep.out
+      DEPENDS usleep sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
 
     #
     # wrap_func
@@ -1545,6 +1564,7 @@ if (WITH_HTML_DOCS)
       stripped-src/assert_scope_max_cpu.cpp sample-output/assert_scope_max_cpu.out
       stripped-src/assert_scope_max_real.cpp sample-output/assert_scope_max_real.out
       stripped-src/assert_scope_min_real.cpp sample-output/assert_scope_min_real.out
+      stripped-src/usleep.cpp sample-output/usleep.out
       stripped-src/wrap_func.cpp sample-output/wrap_func.out
       stripped-src/wrap_v_func.cpp sample-output/wrap_v_func.out
       stripped-src/wrapped.cpp sample-output/wrapped.out
