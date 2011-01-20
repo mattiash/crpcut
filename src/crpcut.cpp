@@ -840,7 +840,7 @@ namespace crpcut {
     if (pid == 0) // child
       {
         wrapped::setpgid(0, 0);
-        heap::control::enabled = true;
+        heap::control::enable();
         comm::report.set_fds(p2c.for_reading(pipe_pair::release_ownership),
                              c2p.for_writing(pipe_pair::release_ownership));
         wrapped::dup2(stdout.for_writing(), 1);

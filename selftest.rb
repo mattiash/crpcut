@@ -912,6 +912,16 @@ TESTS = {
   log('info',
       /p1=.*/),
 
+  'heap::should_fail_scope_leak_free' =>
+  Test.new('FAILED').
+  log('info',
+      /p=.*/).
+  log('violation',
+      /1 object\n.*100 bytes at (0x)?[0-9A-Fa-f]+ allocated with malloc.*/me),
+
+  'heap::should_succeed_scope_leak_free' =>
+  Test.new('PASSED'),
+
   'heap::should_succeed_malloc_free_balance' =>
   Test.new('PASSED'),
 

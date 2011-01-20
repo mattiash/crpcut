@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
 
  * Redistribution and use in source and binary forms, with or without
@@ -26,27 +26,63 @@
 
 #include <crpcut.hpp>
 
+namespace crpcut { namespace heap { void show_objects(); } }
 TESTSUITE(heap)
 {
   TEST(should_succeed_allocation_leak)
   {
     size_t pre_bytes = crpcut::heap::allocated_bytes();
     size_t pre_objects = crpcut::heap::allocated_objects();
+
     void *p1 = malloc(100);
     INFO << "p1=" << p1;
+
     ASSERT_EQ(pre_bytes + 100, crpcut::heap::allocated_bytes());
     ASSERT_EQ(pre_objects + 1, crpcut::heap::allocated_objects());
+  }
+
+  TEST(should_fail_scope_leak_free)
+  {
+    ASSERT_SCOPE_HEAP_LEAK_FREE
+    {
+      void *p = malloc(100);
+      INFO << "p=" << p;
+    }
+  }
+
+  TEST(should_succeed_scope_leak_free)
+  {
+    class elem
+    {
+    public:
+      elem(elem *p) : next(p) {}
+      ~elem() { delete next; }
+    private:
+      elem *next;
+    };
+    ASSERT_SCOPE_HEAP_LEAK_FREE
+    {
+      elem *root = 0;
+      for (int i = 0; i < 20; ++i)
+      {
+        root = new elem(root);
+      }
+      delete root;
+    }
   }
 
   TEST(should_succeed_malloc_free_balance)
   {
     size_t pre = crpcut::heap::allocated_bytes();
-    void *p1 = malloc(100);
-    ASSERT_LE(pre + 100, crpcut::heap::allocated_bytes());
-    void *p2 = malloc(150);
-    ASSERT_LE(pre + 250, crpcut::heap::allocated_bytes());
-    free(p1);
-    free(p2);
+    ASSERT_SCOPE_HEAP_LEAK_FREE
+      {
+        void *p1 = malloc(100);
+        ASSERT_LE(pre + 100, crpcut::heap::allocated_bytes());
+        void *p2 = malloc(150);
+        ASSERT_LE(pre + 250, crpcut::heap::allocated_bytes());
+        free(p1);
+        free(p2);
+      }
     ASSERT_EQ(pre, crpcut::heap::allocated_bytes());
   }
 

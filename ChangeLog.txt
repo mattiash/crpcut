@@ -1,3 +1,19 @@
+         * Added ASSERT_SCOPE_HEAP_LEAK_FREE, making it simpler to assert
+           that a block of code deas not leak heap objects. Failed
+           assertions list all objects that were added in the block of code
+           that still remain allocated at the end of the block.
+
+         * Added experimental support for storing the stack backtrace for
+           heap objects, displayed in failed ASSERT_SCOPE_HEAP_LEAK_FREE
+           and in alloc/dealloc type mismatch messages. The experimental
+           backtrace support is enabled with -DUSE_BACKTRACE=yes on the
+           cmake command line. It requires two non-POSIX functions in
+           libc.
+
+           - int backtrace(void**, int)
+           - char** backtrace_symbol(void**, int)
+
+
          * Added ASSERT_SCOPE_MAX_REALTIME_MS(),
            ASSERT_SCOPE_MIN_REALTIME_MS() and ASSERT_SCOPE_MAX_CPUTIME_MS()
            for asserting that blocks of code meets performance

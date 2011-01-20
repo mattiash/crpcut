@@ -136,6 +136,9 @@ try_compile(HAVE_VALGRIND ${CMAKE_BINARY_DIR}
 
 # check for clock_gettime()
 
+if (USE_BACKTRACE)
+  add_definitions(-DUSE_BACKTRACE)
+endif (USE_BACKTRACE)
 set(EXTRA_LIBS "${EXTRA_LIBS} -l${CMAKE_DL_LIBS}")
 check_function_exists("clock_gettime()" HAVE_CLOCK_GETTIME)
 if(HAVE_CLOCK_GETTIME)

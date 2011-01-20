@@ -335,9 +335,44 @@ namespace crpcut {
     public:
       static bool is_enabled() { return enabled; }
     private:
+      static void enable();
       friend class ::crpcut::test_case_factory;
       static bool enabled;
     };
+
+    struct mem_list_element
+    {
+      mem_list_element        *next;
+      mem_list_element        *prev;
+      mem_list_element        *stack;
+      int                      stack_size;
+      size_t                   mem;
+      int                      type;
+    };
+
+    class local_root : public mem_list_element
+    {
+    public:
+      local_root(const char *file, size_t line);
+      ~local_root();
+      operator const local_root*() const { return 0; }
+      void insert_object(mem_list_element *p);
+      void remove_object(mem_list_element *p);
+      static local_root* current();
+    private:
+      local_root();
+      void assert_empty() const;
+      local_root(const local_root&);
+      local_root& operator=(const local_root&);
+
+      char      const * const file_;
+      size_t            const line_;
+      local_root       *const old_root_;
+      size_t                  object_count_;
+
+      static local_root      *current_root;
+    };
+
   }
 
   typedef enum { verbatim, uppercase, lowercase } case_convert_type;
@@ -1238,15 +1273,18 @@ namespace crpcut {
         os << p; return *this;
       }
       ~direct_reporter() {
-        heap::set_limit(heap_limit);
         using std::ostringstream;
-        std::string s(os.str());
+        std::string s;
+        os.str().swap(s);
+        /*
+        os.~ostringstream();
+        new (&os) ostringstream(); // Just how ugly is this?
+        */
         size_t len = s.length();
         char *p = static_cast<char*>(alloca(len));
         s.copy(p, len);
         std::string().swap(s);
-        os.~ostringstream();
-        new (&os) ostringstream(); // Just how ugly is this?
+        heap::set_limit(heap_limit);
         report(t, p, len);
       }
     private:
@@ -2085,6 +2123,7 @@ namespace crpcut {
       {
         heap::set_limit(heap::system);
         using std::ostringstream;
+        using std::stringbuf;
         ostringstream os;
 
         os << loc_ << "\n" << name << "(" << vn << ")\n"
@@ -4521,6 +4560,13 @@ namespace crpcut {
 #define ASSERT_SCOPE_MAX_CPUTIME_MS(ms)         \
   CRPCUT_ASSERT_SCOPE_TYPE_TIME_MS(max, cputime, ms)
 
+#define ASSERT_SCOPE_HEAP_LEAK_FREE \
+  if (const crpcut::heap::local_root & CRPCUT_LOCAL_NAME(leak_free_scope) \
+      = crpcut::heap::local_root(__FILE__, __LINE__))                   \
+    {                                                                   \
+      CRPCUT_LOCAL_NAME(leak_free_scope).operator const local_root*();  \
+    }                                                                   \
+  else
 
 class crpcut_testsuite_id;
 class crpcut_testsuite_dep

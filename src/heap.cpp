@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
 
  * Redistribution and use in source and binary forms, with or without
@@ -28,24 +28,54 @@
 #ifdef HAVE_VALGRIND
 #include <valgrind/valgrind.h>
 #include <valgrind/memcheck.h>
+namespace {
+  //template <typename A, typename B, typename C>
+  inline void valgrind_create_mempool(void *a,size_t b,bool c) { VALGRIND_CREATE_MEMPOOL(a,b,c); }
+  //template <typename T>
+  inline void valgrind_make_mem_noaccess(void *a, size_t  b) { VALGRIND_MAKE_MEM_NOACCESS(a, b);}
+  //  template <typename T>
+  inline void valgrind_make_mem_undefined(void *a, size_t b) { VALGRIND_MAKE_MEM_UNDEFINED(a, b);}
+  //template <typename A, typename B, typename C, typename D>
+  inline void valgrind_malloclike_block(void *a, size_t b, size_t c, bool d) { VALGRIND_MALLOCLIKE_BLOCK(a, b, c, d);}
+  //template <typename T>
+  inline void valgrind_make_mem_defined(void *a, size_t b) { VALGRIND_MAKE_MEM_DEFINED(a, b);}
+  //template <typename T>
+  inline void valgrind_freelike_block(void *a, size_t b) { VALGRIND_FREELIKE_BLOCK(a, b);}
+  //  template <typename A, typename B>
+  inline void valgrind_mempool_free(void *a, void  *b) { VALGRIND_MEMPOOL_FREE(a, b);}
+  //template <typename A, typename B, typename C>
+  inline void valgrind_mempool_alloc(void *a, void *b, size_t c) { VALGRIND_MEMPOOL_ALLOC(a, b, c);}
+}
 #else
-#  define VALGRIND_CREATE_MEMPOOL(a,b,c)        do {} while (0)
-#  define VALGRIND_MAKE_MEM_NOACCESS(a, b)      do {} while (0)
-#  define VALGRIND_MAKE_MEM_UNDEFINED(a, b)     do {} while (0)
-#  define VALGRIND_MALLOCLIKE_BLOCK(a, b, c, d) do {} while (0)
-#  define VALGRIND_MAKE_MEM_DEFINED(a, b)       do {} while (0)
-#  define VALGRIND_FREELIKE_BLOCK(a, b)         do {} while (0)
-#  define VALGRIND_MEMPOOL_FREE(a, b)           do {} while (0)
-#  define VALGRIND_MEMPOOL_ALLOC(a, b, c)       do {} while (0)
+namespace {
+  template <typename A, typename B, typename C>
+  inline void valgrind_create_mempool(A,B,C) {}
+  template <typename A, typename B>
+  inline void valgrind_make_mem_noaccess(A, B) {}
+  template <typename A, typename B>
+  inline void valgrind_make_mem_undefined(A, B) {}
+  template <typename A, typename B, typename C, typename D>
+  inline void valgrind_malloclike_block(A, B, C, D) {}
+  template <typename A, typename B>
+  inline void valgrind_make_mem_defined(A, B) {}
+  template <typename A, typename B>
+  inline void valgrind_freelike_block(A, B) {}
+  template <typename A, typename B>
+  inline void valgrind_mempool_free(A, B) {}
+  template <typename A, typename B, typename C>
+  inline void valgrind_mempool_alloc(A, B, C) {}
+}
 #endif
 
+extern "C" int putchar(int);
+
 namespace {
-  typedef enum { by_malloc, by_new_elem, by_new_array } alloc_type;
+  typedef enum { raw, by_malloc, by_new_elem, by_new_array } alloc_type;
   static const char *alloc_name[] = {
-    "malloc", "new", "new[]"
+    "raw", "malloc", "new", "new[]"
   };
   static const char *free_name[] = {
-    "free", "delete", "delete[]"
+    "raw", "free", "delete", "delete[]"
   };
 
   inline void *zeromem(void *p, size_t n)
@@ -75,7 +105,6 @@ namespace crpcut
     CRPCUT_WRAP_V_FUNC(libc, free, void, (const void *p), (p))
     CRPCUT_WRAP_FUNC(libc, calloc, void *, (size_t n, size_t s), (n, s))
     CRPCUT_WRAP_FUNC(libc, realloc, void *, (void *m, size_t n), (m, n))
-
   }
 
 
@@ -93,34 +122,193 @@ namespace crpcut
       std::new_handler handler;
     };
 
+
+
+    local_root *local_root::current_root;
+
     namespace {
-
-      struct stats {
-        size_t mem;
-        alloc_type type;
-      };
-
       const size_t num_elems = 50000;
-      stats vector[num_elems];
+      mem_list_element vector[num_elems];
       size_t current_offset = 0;
 
       size_t limit = heap::system;
       size_t bytes;
       size_t objects;
+
+      class function
+      {
+      public:
+        function(const char *name)
+          : address(::dlsym(RTLD_DEFAULT, name))
+        {
+        }
+        template <typename R, typename A, typename B>
+        R call(A a, B b) const
+        {
+          union {
+            R (*f)(A, B);
+            void *p;
+          } cheat;
+          cheat.p = address;
+          return cheat.f(a, b);
+        }
+        operator void*() const { return address; }
+      private:
+        void *address;
+      };
+
+      function backtrace("backtrace");
+      function backtrace_symbols("backtrace_symbols");
+#if 0
+      int (*backtrace)(void*const*, int) = (int (*)(void*const*, int))::dlsym(RTLD_DEFAULT, "backtrace");
+      char ** (*backtrace_symbols)(void*const*,int) = (char ** (*)(void*const*,int))::dlsym(RTLD_DEFAULT, "backtrace_symbols");
+#endif
+    }
+
+    local_root::local_root()
+      : file_(0),
+        line_(0),
+        old_root_(0),
+        object_count_(0)
+    {
+      next = prev = this;
+    }
+
+    local_root::local_root(const char *file, size_t line)
+      : file_(file),
+        line_(line),
+        old_root_(current()),
+        object_count_(0)
+      {
+        current_root = this;
+        next = this;
+        prev = this;
+        stack = 0;
+        type = 0;
+      }
+
+    local_root::~local_root()
+    {
+      current_root = old_root_;
+      if (file_) assert_empty();
+    }
+    local_root* local_root::current()
+    {
+      static bool first = true;
+      if (first)
+        {
+          static local_root obj;
+          current_root = &obj;
+          first = false;
+        }
+      return current_root;
+    }
+
+
+    void local_root::assert_empty() const
+    {
+      if (object_count_ == 0) return;
+
+      std::ostringstream msg;
+      msg << object_count_ << (object_count_ == 1 ? " object\n\n" : " objects\n\n");
+      for (mem_list_element *p = next; p != this; p = p->next)
+        {
+          msg << p->mem << " byte";
+          if (p->mem != 1) msg << 's';
+          msg << " at " << p+1 << " allocated with " << alloc_name[p->type];
+#ifdef USE_BACKTRACE
+          if (p->stack)
+            {
+              msg << "\nAllocated at:";
+              void *stack_addr = p->stack + 1;
+              void **bt = static_cast<void**>(stack_addr);
+              char **alloc_stack = backtrace_symbols.call<char**>(bt, p->stack_size);
+              for (int i = 1; i < p->stack_size; ++i)
+                {
+                  msg << '\n' << alloc_stack[i];
+                }
+              free(alloc_stack);
+            }
+#endif
+          if (p->next != this) msg << '\n';
+        }
+      comm::direct_reporter<comm::exit_fail>() << file_ << ":" << line_
+                                               << "\nASSERT_SCOPE_LEAK_FREE\n"
+                                               << msg.str();
+    }
+
+    void local_root::insert_object(mem_list_element *p)
+    {
+      valgrind_make_mem_defined(current_root, sizeof(mem_list_element));
+      p->prev = current_root->prev;
+      valgrind_make_mem_defined(p->prev, sizeof(mem_list_element));
+      p->prev->next = p;
+      current_root->prev = p;
+      valgrind_make_mem_noaccess(p->prev, sizeof(mem_list_element));
+      valgrind_make_mem_noaccess(current_root, sizeof(mem_list_element));
+      p->next = current_root;
+      ++object_count_;
+    }
+
+    void local_root::remove_object(mem_list_element *p)
+    {
+      if (p->next)
+        {
+          valgrind_make_mem_defined(p->next, sizeof(mem_list_element));
+          p->next->prev = p->prev;
+          valgrind_make_mem_noaccess(p->next, sizeof(mem_list_element));
+          valgrind_make_mem_defined(p->prev, sizeof(mem_list_element));
+          p->prev->next = p->next;
+          valgrind_make_mem_noaccess(p->prev, sizeof(mem_list_element));
+          --object_count_;
+        }
     }
     bool control::enabled;
 
-    static void alloc_type_check(stats *p, alloc_type type) throw ()
+    void control::enable()
+    {
+#ifdef USE_BACKTRACE
+      void *p;
+      if (backtrace) backtrace.call<int>(&p, 1);
+#endif
+      enabled = true;
+    }
+    static void alloc_type_check(mem_list_element *p, alloc_type type) throw ()
     {
       if (p->type != type)
         {
           void *addr = p + 1;
           if (control::is_enabled())
             {
+#ifdef USE_BACKTRACE
+              std::ostringstream msg;
+              if (p->stack)
+                {
+                  void *stack_addr = p->stack+1;
+                  void **bt = static_cast<void**>(stack_addr);
+                  char **alloc_stack = backtrace_symbols.call<char**>(bt, p->stack_size);
+                  for (int i = 1; i < p->stack_size; ++i)
+                    {
+                      msg << alloc_stack[i] << '\n';
+                    }
+                  msg << "Now at:\n";
+                  void *buffer[50];
+                  int elems = backtrace.call<int>(buffer, 50);
+                  alloc_stack = backtrace_symbols.call<char**>(buffer, elems);
+                  for (int i = 1; i < elems; ++i)
+                    {
+                      msg << alloc_stack[i] << '\n';
+                    }
+                }
+#endif
               comm::direct_reporter<crpcut::comm::exit_fail>()
                 << "DEALLOC FAIL\n"
                 << free_name[type] << " " << addr << " was allocated using "
-                << alloc_name[p->type];
+                << alloc_name[p->type]
+#ifdef USE_BACKTRACE
+                 << "\nAlloc stack:\n" << msg.str()
+#endif
+                ;
             }
           else
             {
@@ -131,52 +319,117 @@ namespace crpcut
         }
     }
 
-    static void *alloc_mem(size_t s, alloc_type type) throw ()
+    static mem_list_element *raw_alloc_mem(size_t s) throw ()
     {
-      const size_t current_limit = limit;
-      if (bytes + s > current_limit)
-        {
-          return 0;
-        }
-
-      const size_t blocks = (s + sizeof(stats) - 1)/sizeof(stats) + 1;
+      const size_t blocks = (s + sizeof(mem_list_element) - 1)/sizeof(mem_list_element) + 1;
 
       if (current_offset + blocks < num_elems)
         {
           if (current_offset == 0)
             {
-              VALGRIND_CREATE_MEMPOOL(vector, sizeof(stats), 0);
-              VALGRIND_MAKE_MEM_NOACCESS(vector, sizeof(vector));
+              valgrind_create_mempool(vector, sizeof(mem_list_element), 0);
+              valgrind_make_mem_noaccess(vector, sizeof(vector));
             }
-          stats *p = &vector[current_offset];
+          mem_list_element *p = &vector[current_offset];
           current_offset += blocks + 1;
-          bytes += s;
-          VALGRIND_MAKE_MEM_UNDEFINED(p, sizeof(stats));
-          p->mem = s;
-          p->type = type;
-          VALGRIND_MAKE_MEM_NOACCESS(p, sizeof(stats));
-          ++p;
-          VALGRIND_MEMPOOL_ALLOC(vector, p, s);
-          VALGRIND_MALLOCLIKE_BLOCK(p, s, sizeof(stats), 0);
-          ++objects;
+          valgrind_mempool_alloc(vector, p+1, s);
+          valgrind_malloclike_block(p+1, s, sizeof(mem_list_element), 0);
           return p;
         }
-      const size_t size = s + 2*sizeof(stats);
+      const size_t size = s + 2*sizeof(mem_list_element);
       void *addr = crpcut::wrapped::malloc(size);
-      stats *p = static_cast<stats*>(addr);
-      if (p)
+      mem_list_element *p = static_cast<mem_list_element*>(addr);
+      return p;
+    }
+
+    class recursive_check
+    {
+    public:
+      recursive_check() { ++count; }
+      ~recursive_check() { --count; }
+      operator const void*() const { return count ? this : 0; }
+    private:
+      recursive_check(const recursive_check&);
+      recursive_check &operator=(const recursive_check&);
+      static int count;
+    };
+
+    int recursive_check::count = -1;
+
+    /*static*/void *alloc_mem(size_t s, alloc_type type) throw ()
+    {
+      recursive_check recursive;
+      if (!recursive)
         {
+          const size_t current_limit = limit;
+          if (bytes + s > current_limit)
+            {
+              return 0;
+            }
+        }
+
+      mem_list_element *p = raw_alloc_mem(s);
+      if (p  != 0)
+        {
+          valgrind_make_mem_undefined(p, sizeof(mem_list_element));
           p->mem = s;
+          p->stack = 0;
           p->type = type;
-          VALGRIND_MAKE_MEM_NOACCESS(p, size);
+          if (recursive)
+            {
+              p->next = p->prev = 0;
+            }
+          else
+            {
+              local_root *root = local_root::current();
+              if (root) root->insert_object(p);
+              bytes += s;
+              ++objects;
+#ifdef USE_BACKTRACE
+              if (control::is_enabled())
+                {
+                  if (backtrace)
+                    {
+                      static void* buffer[50];
+                      int    const elems  = backtrace.call<int>(buffer, 50);
+                      size_t const ebytes = elems*sizeof(void*);
+                      mem_list_element *sr = raw_alloc_mem(ebytes);
+                      if (sr)
+                        {
+                          valgrind_make_mem_undefined(sr,
+                                                      sizeof(mem_list_element)+ebytes);
+                          sr->mem = ebytes;
+                          sr->stack = sr->prev = sr->next = 0;
+                          sr->type = raw;
+                          void *addr = sr+1;
+                          void **stack = static_cast<void**>(addr);
+                          for (int i = 0; i < elems; ++i)
+                            {
+                              stack[i] = buffer[i];
+                            }
+                          p->stack = sr;
+                          p->stack_size = elems;
+                        }
+                    }
+                }
+#endif
+            }
+          valgrind_make_mem_noaccess(p, sizeof(mem_list_element));
           ++p;
-          VALGRIND_MALLOCLIKE_BLOCK(p, s, sizeof(stats), 0);
-          bytes+= s;
-          ++objects;
+          valgrind_make_mem_undefined(p, s);
         }
       return p;
     }
 
+    static void free_mem_raw(mem_list_element *p) throw()
+    {
+      if (p >= vector && p < &vector[num_elems])
+        {
+          valgrind_mempool_free(vector, p+1);
+          return;
+        }
+      crpcut::wrapped::free(p);
+    }
 
     static void free_mem(void *addr, alloc_type expected) throw ()
     {
@@ -184,19 +437,24 @@ namespace crpcut
 
       using namespace crpcut::heap;
 
-      stats *p = static_cast<stats*>(addr);
-      VALGRIND_MAKE_MEM_DEFINED(p-1, sizeof(stats));
-      alloc_type_check(p-1, expected);
-      bytes-= p[-1].mem;
-      VALGRIND_FREELIKE_BLOCK(p, sizeof(stats));
-      --objects;
-      if (p >= vector && p < &vector[num_elems])
+      mem_list_element *p = static_cast<mem_list_element*>(addr);
+      --p;
+      valgrind_make_mem_defined(p, sizeof(mem_list_element));
+      alloc_type_check(p, expected);
+#ifdef USE_BACKTRACE
+      if (p->stack) {
+        free_mem_raw(p->stack);
+      }
+#endif
+      recursive_check recursive;
+      if (!recursive)
         {
-          VALGRIND_MEMPOOL_FREE(vector, addr);
-          return;
+          bytes-= p->mem;
+          --objects;
         }
-
-      crpcut::wrapped::free(p - 1);
+      local_root *root = local_root::current();
+      if (root) root->remove_object(p);
+      free_mem_raw(p);
     }
 
 
@@ -274,11 +532,11 @@ extern "C"
         free(addr);
         return 0;
       }
-    crpcut::heap::stats *p = static_cast<crpcut::heap::stats*>(addr);
-    VALGRIND_MAKE_MEM_DEFINED(p - 1, sizeof(crpcut::heap::stats));
+    crpcut::heap::mem_list_element *p = static_cast<crpcut::heap::mem_list_element*>(addr);
+    valgrind_make_mem_defined(p - 1, sizeof(crpcut::heap::mem_list_element));
     crpcut::heap::alloc_type_check(p-1, by_malloc);
     const size_t block_size = p[-1].mem;
-    VALGRIND_MAKE_MEM_NOACCESS(p - 1, sizeof(crpcut::heap::stats));
+    valgrind_make_mem_noaccess(p - 1, sizeof(crpcut::heap::mem_list_element));
     if (s <= block_size) return addr;
 
     void *new_addr = malloc(s);
@@ -323,16 +581,6 @@ void *operator new[](size_t s, const std::nothrow_t&) throw ()
   return 0;
 }
 
-void operator delete(void *p) throw ()
-{
-  crpcut::heap::free_mem(p, by_new_elem);
-}
-
-void operator delete(void *p, const std::nothrow_t&) throw ()
-{
-  crpcut::heap::free_mem(p, by_new_elem);
-}
-
 void operator delete[](void *p) throw ()
 {
   crpcut::heap::free_mem(p, by_new_array);
@@ -341,5 +589,15 @@ void operator delete[](void *p) throw ()
 void operator delete[](void *p, const std::nothrow_t&) throw ()
 {
   crpcut::heap::free_mem(p, by_new_array);
+}
+
+void operator delete(void *p) throw ()
+{
+  crpcut::heap::free_mem(p, by_new_elem);
+}
+
+void operator delete(void *p, const std::nothrow_t&) throw ()
+{
+  crpcut::heap::free_mem(p, by_new_elem);
 }
 
