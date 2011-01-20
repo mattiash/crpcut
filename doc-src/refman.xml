@@ -377,6 +377,41 @@
 </programlisting>
     </tip>
   </section>
+
+  <section id="ASSERT_SCOPE_HEAP_LEAK_FREE">
+    <title><function>ASSERT_SCOPE_HEAP_LEAK_FREE</function></title>
+    <para>Assert that all heap objects allocated in the the block of code
+    immediately following the macro, are also deallocated in the same
+    block.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from them.
+      See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para>A code block follows immediately after.</para>
+    </formalpara>
+    <para>The assertion succeeds if, and only if, all heap objects allocated
+    in the code block following are also deallocated in the block, so that
+    the objects on the heap are exactly the same before the code of block
+    begins and after the code of block ends.</para>
+    <para>On success the test function continues without side effects.</para>
+    <para>On failure, the test is terminated with an error report. The report
+    includes all heap objects allocated in the block of code that still exists
+    after the destructors for the block of code have finished.</para>
+
+    <para>Example: The test program
+    <programlisting language="c++">
+<xi:include href="../stripped-src/assert_scope_leak_free.cpp" parse="text"/>
+    </programlisting>
+    reports one failed test:
+    <screen>
+
+<xi:include href="../sample-output/assert_scope_leak_free.out" parse="text"/>
+    </screen>
+    </para>
+  </section>
+
   <section id="ASSERT_SCOPE_MAX_CPUTIME_MS">
     <title><function>ASSERT_SCOPE_MAX_CPUTIME_MS(ms)</function></title>
     <para>Assert that the block of code immediately following the macro does

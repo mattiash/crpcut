@@ -701,9 +701,25 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
       the heap.
     </para>
     <para>
-      The function
+      The simplest way to assert that your code does not leak heap objects is
+      to use
+      <xref linkend="ASSERT_SCOPE_HEAP_LEAK_FREE" xrefstyle="select:title"/>.
+      With it, you assert that any heap object allocated inside the code block
+      is also deallocated when code block ends. A simple example. The test
+      program:
+    <programlisting language="c++">
+<xi:include href="../stripped-src/assert_scope_leak_free.cpp" parse="text"/>
+    </programlisting>
+    reports one failed test:
+    <screen>
+
+<xi:include href="../sample-output/assert_scope_leak_free.out" parse="text"/>
+    </screen>
+    </para>
+    <para>
+      When more detailed control of the heap is needed, the function
       <type>size_t</type> <type>crpcut::heap::</type><function>allocated_bytes</function>()
-      is used to ask the heap how much memory is allocated on the heap.
+      reports how much memory is allocated on the heap.
       The number returned is the sum of bytes allocated, sans any overhead,
       i.e. it is the sum of the size arguments to all calls to
       <function>malloc</function>(),  <function>calloc</function>(),
@@ -712,7 +728,8 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
     </para>
     <tip>Use a fixture that compares allocated bytes at destruction time
       with allocated bytes at construction time. If they aren't equal,
-      the test has leaked.</tip>
+      the test has leaked, even if the exact objects at beginning and end
+    aren't identical.</tip>
     <para>The heap can also be limited with the function
       <type>size_t</type> <type>crpcut::heap::</type><function>set_limit</function>(<type>size_t</type> <parameter>bytes</parameter>).
     </para>

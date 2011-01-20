@@ -664,6 +664,27 @@ if (WITH_HTML_DOCS)
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
+
+    #
+    # assert_scope_leak_free
+    #
+    file(GLOB ASSERT_PRED_FAILS "${DOC_SRC_LIB}/samples/assert_scope_leak_free.cpp")
+    add_custom_target(
+      assert_scope_leak_free.cpp
+      ${STRIP_SOURCES} < ${ASSERT_PRED_FAILS} > assert_scope_leak_free.cpp
+      DEPENDS stripped-src ${ASSERT_PRED_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(assert_scope_leak_free EXCLUDE_FROM_ALL ${ASSERT_PRED_FAILS})
+    target_link_libraries(assert_scope_leak_free crpcut)
+    add_custom_target(
+      assert_scope_leak_free.out
+      assert_scope_leak_free | sed "s/\\(.*\\)/     \\1/g" > assert_scope_leak_free.out
+      DEPENDS assert_scope_leak_free sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+
     #
     # usleep
     #
@@ -1567,6 +1588,7 @@ if (WITH_HTML_DOCS)
       stripped-src/assert_scope_max_cpu.cpp sample-output/assert_scope_max_cpu.out
       stripped-src/assert_scope_max_real.cpp sample-output/assert_scope_max_real.out
       stripped-src/assert_scope_min_real.cpp sample-output/assert_scope_min_real.out
+      stripped-src/assert_scope_leak_free.cpp sample-output/assert_scope_leak_free.out
       stripped-src/usleep.cpp sample-output/usleep.out
       stripped-src/wrap_func.cpp sample-output/wrap_func.out
       stripped-src/wrap_v_func.cpp sample-output/wrap_v_func.out
