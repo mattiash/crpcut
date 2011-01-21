@@ -404,7 +404,7 @@
     <programlisting language="c++">
 <xi:include href="../stripped-src/assert_scope_leak_free.cpp" parse="text"/>
     </programlisting>
-    reports one failed test:
+    reports two failed test:
     <screen>
 
 <xi:include href="../sample-output/assert_scope_leak_free.out" parse="text"/>

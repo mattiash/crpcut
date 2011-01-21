@@ -30,36 +30,39 @@
 
 TEST(heap_in_balance)
 {
+  std::string before("a");
   ASSERT_SCOPE_HEAP_LEAK_FREE
   {
-    void *p[5];
-    for (int i = 0; i < 4; ++i)
-      {
-        p[i] = malloc(i);
-      }
-    for (int i = 3; i >= 0; --i)
-      {
-        free(p[i]);
-      }
+    std::string after("b");
   }
 }
 
 TEST(heap_imbalance)
 {
+  std::string before("a");
   ASSERT_SCOPE_HEAP_LEAK_FREE
-  {
-    void *p[5];
-    for (int i = 0; i < 4; ++i)
-      {
-        p[i] = malloc(i+1);
-      }
-    for (int i = 3; i > 0; --i)
-      {
-        free(p[i]);
-      }
+  {                           // This is not a memory leak, but it is reported
+    std::string after("b");   // as such because the object allocated here is
+    std::swap(before, after); // not released at the end of the block
   }
 }
 
+TEST(heap_leak)
+{
+  char *p[5];
+  ASSERT_SCOPE_HEAP_LEAK_FREE
+  {
+    int i;
+    for (i = 0; i < 5; ++i)
+      {
+        p[i] = new char[i+1];
+      }
+    while (--i > 0)
+      {
+        delete[] p[i];
+      }
+  }
+}
 int main(int argc, char *argv[])
 {
   return crpcut::run(argc, argv);

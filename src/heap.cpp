@@ -168,8 +168,7 @@ namespace crpcut
     local_root::local_root()
       : file_(0),
         line_(0),
-        old_root_(0),
-        object_count_(0)
+        old_root_(0)
     {
       next = prev = this;
     }
@@ -177,8 +176,7 @@ namespace crpcut
     local_root::local_root(const char *file, size_t line)
       : file_(file),
         line_(line),
-        old_root_(current()),
-        object_count_(0)
+        old_root_(current())
       {
         current_root = this;
         next = this;
@@ -207,10 +205,12 @@ namespace crpcut
 
     void local_root::assert_empty() const
     {
-      if (object_count_ == 0) return;
+      if (next == this) return;
 
+      unsigned count = 0;
+      for (mem_list_element *p = next; p != this; p = p->next) ++count;
       std::ostringstream msg;
-      msg << object_count_ << (object_count_ == 1 ? " object\n\n" : " objects\n\n");
+      msg << count << (count == 1 ? " object\n\n" : " objects\n\n");
       for (mem_list_element *p = next; p != this; p = p->next)
         {
           msg << p->mem << " byte";
@@ -247,7 +247,6 @@ namespace crpcut
       valgrind_make_mem_noaccess(p->prev, sizeof(mem_list_element));
       valgrind_make_mem_noaccess(current_root, sizeof(mem_list_element));
       p->next = current_root;
-      ++object_count_;
     }
 
     void local_root::remove_object(mem_list_element *p)
@@ -260,7 +259,6 @@ namespace crpcut
           valgrind_make_mem_defined(p->prev, sizeof(mem_list_element));
           p->prev->next = p->next;
           valgrind_make_mem_noaccess(p->prev, sizeof(mem_list_element));
-          --object_count_;
         }
     }
     bool control::enabled;

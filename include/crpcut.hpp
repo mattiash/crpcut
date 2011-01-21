@@ -368,7 +368,6 @@ namespace crpcut {
       char      const * const file_;
       size_t            const line_;
       local_root       *const old_root_;
-      size_t                  object_count_;
 
       static local_root      *current_root;
     };
