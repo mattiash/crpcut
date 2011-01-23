@@ -48,7 +48,7 @@ TEST(too_short)
   {
     ASSERT_SCOPE_MAX_CPUTIME_MS(1)
     {
-      for (int i = 0; i < 3; ++i)
+      for (int i = 0; i < 2; ++i)
       {
         usleep(1000); // would fail if implemented as busy wait
       }

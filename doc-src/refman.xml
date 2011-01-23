@@ -70,6 +70,9 @@
       includes the exact parameter text for each parameter and, when they
       are output streamable, a text representation of each expression value,
       or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="VERIFY_EQ" xrefstyle="select:title"/></para>
+
     <para>Example: The test program</para>
       <programlisting language="c++">
 <xi:include href="../stripped-src/assert_eq_fails.cpp" parse="text"/>
@@ -102,6 +105,8 @@
         includes the exact expression text, and if the value is output
         streamable, a text representation of the expression value, otherwise
         a byte by  byte hex dump is used.</para>
+      <para>See also:
+      <xref linkend="VERIFY_FALSE" xrefstyle="select:title"/></para>
       <para>Example: The test program
         <programlisting language="c++">
 <xi:include href="../stripped-src/assert_false_fails.cpp" parse="text"/>
@@ -135,6 +140,8 @@
       includes the exact parameter text for each parameter and, when they
       are output streamable, a text representation of each expression value,
       or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="VERIFY_GE" xrefstyle="select:title"/></para>
     <para>Example: The test program
       <programlisting language="c++">
 <xi:include href="../stripped-src/assert_ge_fails.cpp" parse="text"/>
@@ -167,6 +174,8 @@
       includes the exact parameter text for each parameter and, when they
       are output streamable, a text representation of each expression value,
       or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="VERIFY_GT" xrefstyle="select:title"/></para>
     <para>Example: The test program
       <programlisting language="c++">
 <xi:include href="../stripped-src/assert_gt_fails.cpp" parse="text"/>
@@ -203,6 +212,8 @@
       includes the exact parameter text for each parameter and, when they
       are output streamable, a text representation of each expression value,
       or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="VERIFY_LE" xrefstyle="select:title"/></para>
     <para>Example: The test program
       <programlisting language="c++">
 <xi:include href="../stripped-src/assert_le_fails.cpp" parse="text"/>
@@ -237,6 +248,8 @@
       includes the exact parameter text for each parameter and, when they
       are output streamable, a text representation of each expression value,
       or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="VERIFY_LT" xrefstyle="select:title"/></para>
     <para>Example: The test program
       <programlisting language="c++">
 <xi:include href="../stripped-src/assert_lt_fails.cpp" parse="text"/>
@@ -271,6 +284,8 @@
       includes the exact parameter text for each parameter and, when they
       are output streamable, a text representation of each expression value,
       or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="VERIFY_NE" xrefstyle="select:title"/></para>
     <para>Example: The test program
       <programlisting language="c++">
 <xi:include href="../stripped-src/assert_ne_fails.cpp" parse="text"/>
@@ -304,6 +319,8 @@
       <type>std::exception</type> the string from the virtual
       member function <function>std::exception::what()</function>, or a
       generic message otherwise.</para>
+      <para>See also:
+      <xref linkend="VERIFY_NO_THROW" xrefstyle="select:title"/></para>
     <para>Example: The test program
       <programlisting language="c++">
 <xi:include href="../stripped-src/assert_no_throw_fails.cpp" parse="text"/>
@@ -316,37 +333,54 @@
     </para>
   </section>
   <section id="ASSERT_PRED">
-    <title><function>ASSERT_PRED(pred, ...)</function></title>
+    <title>
+      <function>ASSERT_PRED(pred, ...)</function>
+    </title>
     <para>Assert that a predicate evaluates to <constant>true</constant>.</para>
-    <formalpara><title>Used in:</title>
-      <para>A test function body, the constructor or destructor of a
+    <formalpara>
+      <title>Used in:</title>
+      <para>
+        A test function body, the constructor or destructor of a
         <link linkend="fixtures">fixture</link>, or a function called from them.
-        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
-      </formalpara>
-    <formalpara><title>Requirement:</title>
-      <para><function>pred</function> is callable with
-      <parameter>...</parameter> as its parameter list, and returns a value
-      that can be evaluated as a bool.</para>
+      See <xref linkend="TEST" xrefstyle="select:title"/>.
+      </para>
+    </formalpara>
+    <formalpara>
+      <title>Requirement:</title>
+      <para>
+        <function>pred</function> is callable with
+        <parameter>...</parameter> as its parameter list, and returns a value
+        that can be evaluated as a bool.
+      </para>
+    </formalpara>
+    <para>
+      <parameter>...</parameter> may be <literal>0</literal> to
+      <literal>9</literal> expressions.
       <note>
         If you use <ulink url="http://gcc.gnu.org">GCC</ulink> version 4.3 or
         higher, and compile your test sources with <symbol>-std=c++0x</symbol>,
-        there is no limit to the number of parameters, otherwise
-        <function>pred</function> is limited to a maximum of 9 parameters.
+        there is no limit to the number of parameters.
       </note>
-      </formalpara>
-    <para><parameter>...</parameter> may be <literal>0</literal> to
-      <literal>9</literal> expressions.</para>
-    <para>The assertion succeeds if, and only if,
+    </para>
+    <para>
+      The assertion succeeds if, and only if,
       <function>bool(pred(...))</function>
-      returns a value that compares equal to <constant>true</constant>.</para>
+      returns a value that compares equal to <constant>true</constant>.
+    </para>
     <para>On success the test function continues without side effects.</para>
-    <para>On failure the test is terminated with an error report. The
+    <para>
+      On failure the test is terminated with an error report. The
       report includes the predicate and parameter list text, and the
       parameter values that are output streamable have a text representation
       of their value, and a byte by byte hex dump for the others. If the
-    <function>pred</function> itself has an output stream operator, the output
-    of it is included for extra information.</para>
-    <para>Example: The test program
+      <function>pred</function> itself has an output stream operator, the output
+      of it is included for extra information.
+    </para>
+    <para>See also:
+    <xref linkend="VERIFY_PRED" xrefstyle="select:title"/>
+    </para>
+    <para>
+      Example: The test program
       <programlisting language="c++">
 <xi:include href="../stripped-src/assert_pred_fails.cpp" parse="text"/>
       </programlisting>
@@ -364,8 +398,9 @@
       <xref linkend="ulps_diff" xrefstyle="select:title"/>,)
       for matching regular expressions (
       <xref linkend="regex"  xrefstyle="select:title"/>,) and
-      for string collation (<xref linkend="collate" xrefstyle="select:title"/>.)
-      </para>
+      for string collation (<xref linkend="collate" xrefstyle="select:title"/>,)
+      and <xref linkend="VERIFY_PRED" xrefstyle="select:title"/>.
+    </para>
     <tip>If you have a compiler that supports C++0x
       <ulink url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda</ulink>
       expressions, lambdas make excellent predicates.
@@ -400,6 +435,9 @@
     includes all heap objects allocated in the block of code that still exists
     after the destructors for the block of code have finished.</para>
 
+    <para>See also:
+    <xref linkend="VERIFY_SCOPE_HEAP_LEAK_FREE" xrefstyle="select:title"/>.
+    </para>
     <para>Example: The test program
     <programlisting language="c++">
 <xi:include href="../stripped-src/assert_scope_leak_free.cpp" parse="text"/>
@@ -428,7 +466,7 @@
     <para>A code block follows immediately after.</para>
     </formalpara>
     <para>The assertion succeeds if, and only if, the code block following
-    completes its execution in less than <parameter>ms</parameter> milliseconds
+    completes its execution in at most <parameter>ms</parameter> milliseconds
     of CPU-time.</para>
     <para>On success the test function continues without side effects.</para>
     <para>On failure, the test is terminated with an error report. The report
@@ -442,6 +480,9 @@
       code block. This can be useful when running with time consuming tools
       like <ulink url="http://valgrind.org">valgrind</ulink>.
     </note>
+    <para>See also:
+    <xref linkend="VERIFY_SCOPE_MAX_CPUTIME_MS" xrefstyle="select:title"/>.
+    </para>
 
     <para>Example: The test program
     <programlisting language="c++">
@@ -471,7 +512,7 @@
     <para>A code block follows immediately after.</para>
     </formalpara>
     <para>The assertion succeeds if, and only if, the code block following
-    completes its execution in less than <parameter>ms</parameter> milliseconds
+    completes its execution in at most <parameter>ms</parameter> milliseconds
     of real-time.</para>
     <para>On success the test function continues without side effects.</para>
     <para>On failure, the test is terminated with an error report. The report
@@ -485,6 +526,9 @@
       code block. This can be useful when running with time consuming tools
       like <ulink url="http://valgrind.org">valgrind</ulink>.
     </note>
+    <para>See also:
+    <xref linkend="VERIFY_SCOPE_MAX_REALTIME_MS" xrefstyle="select:title"/>.
+    </para>
 
     <para>Example: The test program
     <programlisting language="c++">
@@ -527,6 +571,9 @@
       regardless of the amount of time consumed by the following
       code block.
     </note>
+    <para>See also:
+    <xref linkend="VERIFY_SCOPE_MIN_REALTIME_MS" xrefstyle="select:title"/>
+    </para>
 
     <para>Example: The test program
     <programlisting language="c++">
@@ -570,6 +617,8 @@
       the output string from the virtual function
       <function>std::exception::what()</function>, or a generic
       message otherwise.</para>
+      <para>See also:
+      <xref linkend="VERIFY_THROW" xrefstyle="select:title"/></para>
     <para>Example: The test program
       <programlisting language="c++">
 <xi:include href="../stripped-src/assert_throw_fails.cpp" parse="text"/>
@@ -604,6 +653,9 @@
         includes the exact expression text, and if the value is output
         streamable, a text representation of the expression value, otherwise
         a byte by  byte hex dump is used.</para>
+        <para>See also:
+        <xref linkend="VERIFY_TRUE" xrefstyle="select:title"/>
+        </para>
       <para>Example: The test program
         <programlisting language="c++">
 <xi:include href="../stripped-src/assert_true_fails.cpp" parse="text"/>
@@ -1215,8 +1267,25 @@
       <xref linkend="ASSERT_LT" xrefstyle="select:title"/>,
       <xref linkend="ASSERT_FALSE" xrefstyle="select:title"/>,
       <xref linkend="ASSERT_TRUE" xrefstyle="select:title"/>,
-      <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> or
+      <xref linkend="ASSERT_PRED" xrefstyle="select:title"/>,
+      <xref linkend="ASSERT_SCOPE_HEAP_LEAK_FREE" xrefstyle="select:title"/>,
+      <xref linkend="ASSERT_SCOPE_MAX_CPUTIME_MS" xrefstyle="select:title"/>,
+      <xref linkend="ASSERT_SCOPE_MAX_REALTIME_MS" xrefstyle="select:title"/>,
+      <xref linkend="ASSERT_SCOPE_MIN_REALTIME_MS" xrefstyle="select:title"/>,
       <xref linkend="FAIL" xrefstyle="select:title"/>).
+      <xref linkend="VERIFY_EQ" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_NE" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_GE" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_GT" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_LE" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_LT" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_FALSE" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_TRUE" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_PRED" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_SCOPE_HEAP_LEAK_FREE" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_SCOPE_MAX_CPUTIME_MS" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_SCOPE_MAX_REALTIME_MS" xrefstyle="select:title"/>,
+      <xref linkend="VERIFY_SCOPE_MIN_REALTIME_MS" xrefstyle="select:title"/>,
     </para>
     <para>Example: The smallest test that can succeed:</para>
       <programlisting language="c++">
@@ -1450,7 +1519,653 @@
       advised.
     </para>
   </section>
+
+  <section id="VERIFY_EQ">
+    <title><function>VERIFY_EQ(a, b)</function></title>
+    <para>Verifies that two expressions are equal.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from
+       them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para>The expression <parameter>(a == b)</parameter>
+        can be evaluated as a <type>bool</type>.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, the expression
+      <parameter>bool(a == b)</parameter> evaluates to
+      <constant>true</constant>.
+      </para>
+    <para>On success the test continues without side effects.</para>
+    <para>On failure the test is marked as failed, but continues execution
+    with an error report. The report
+    includes the exact parameter text for each parameter and, when they
+    are output streamable, a text representation of each expression value,
+    or a byte by byte hex dump otherwise.</para>
+    <para>See also:
+    <xref linkend="ASSERT_EQ" xrefstyle="select:title"/></para>
+    <para>Example: The test program
+      <programlisting language="c++">
+<xi:include href="../stripped-src/verify_eq_fails.cpp" parse="text"/>
+</programlisting>
+      reports one failed test with two failed
+    <function>VERIFY_EQ</function>() checks:
+      <screen>
+
+<xi:include href="../sample-output/verify_eq_fails.out" parse="text"/>
+</screen>
+    </para>
+  </section>
+  <section id="VERIFY_FALSE">
+    <title><function>VERIFY_FALSE(expr)</function></title>
+    <para>Verify that an expression evaluates to
+      <constant>false</constant>.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from
+       them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para>The expression <parameter>expr</parameter> can be
+      evaluated as a <type>bool</type>.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if,
+      <parameter>bool(expr)</parameter>
+      evaluates to equal to <constant>false</constant>.</para>
+      <para>On success the test continues without side effects.</para>
+      <para>On failure the test is marked as failed, but continues execution
+      with an error report. The report
+      includes the exact parameter text for each parameter and, when they
+      are output streamable, a text representation of each expression value,
+      or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="ASSERT_FALSE" xrefstyle="select:title"/></para>
+      <para>Example: The test program
+        <programlisting language="c++">
+<xi:include href="../stripped-src/verify_false_fails.cpp" parse="text"/>
+        </programlisting>
+        reports one failed test with two failed
+        <function>VERIFY_FALSE</function>() checks:
+        <screen>
+
+<xi:include href="../sample-output/verify_false_fails.out" parse="text"/>
+        </screen>
+      </para>
+  </section>
+  <section id="VERIFY_GE">
+    <title><function>VERIFY_GE(a, b)</function></title>
+    <para>Verifies that an expression evaluates to greater than or equal to
+      another.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from
+       them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para>The expression <parameter>(a &gt;= b)</parameter> can
+      be evaluated as a <type>bool</type>.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, the expression
+      <parameter>bool(a &gt;= b)</parameter> evaluates to
+      <constant>true</constant>.</para>
+    <para>On success the test function continues without side effects.</para>
+      <para>On failure the test is marked as failed, but continues execution
+      with an error report. The report
+      includes the exact parameter text for each parameter and, when they
+      are output streamable, a text representation of each expression value,
+      or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="ASSERT_GE" xrefstyle="select:title"/></para>
+    <para>Example: The test program
+      <programlisting language="c++">
+<xi:include href="../stripped-src/verify_ge_fails.cpp" parse="text"/>
+      </programlisting>
+      reports one failed test with two failed
+      <function>VERIFY_GE</function>() checks:
+      <screen>
+
+<xi:include href="../sample-output/verify_ge_fails.out" parse="text"/>
+      </screen>
+    </para>
+  </section>
+  <section id="VERIFY_GT">
+    <title><function>VERIFY_GT(a, b)</function></title>
+    <para>Verify that an expression evaluates to greater than another.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from
+       them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para>The expression <parameter>(a &gt; b)</parameter> can
+      be evaluated as a <type>bool</type>.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, the expression
+      <parameter>bool(a &gt; b)</parameter> evaluates equal to
+      <constant>true</constant>.</para>
+    <para>On success the test function continues without side effects.</para>
+      <para>On failure the test is marked as failed, but continues execution
+      with an error report. The report
+      includes the exact parameter text for each parameter and, when they
+      are output streamable, a text representation of each expression value,
+      or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="ASSERT_GT" xrefstyle="select:title"/></para>
+    <para>Example: The test program
+      <programlisting language="c++">
+<xi:include href="../stripped-src/verify_gt_fails.cpp" parse="text"/>
+</programlisting>
+      reports one failed test with two failed
+      <function>VERIFY_GT</function>() checks:
+      <screen>
+
+<xi:include href="../sample-output/verify_gt_fails.out" parse="text"/>
+</screen>
+    </para>
+
+
+  </section>
+  <section id="VERIFY_LE">
+    <title><function>VERIFY_LE(a, b)</function></title>
+
+    <para>Verify that an expression evaluates to less than or equal to
+      another.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from
+       them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para>The expression <parameter>(a &lt;= b)</parameter> can
+      be evaluated as a <type>bool</type>.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, the expression
+      <parameter>bool(a &lt;= b)</parameter> evaluates to
+      <constant>true</constant>.</para>
+    <para>On success the test function continues without side effects.</para>
+      <para>On failure the test is marked as failed, but continues execution
+      with an error report. The report
+      includes the exact parameter text for each parameter and, when they
+      are output streamable, a text representation of each expression value,
+      or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="ASSERT_LE" xrefstyle="select:title"/></para>
+    <para>Example: The test program
+      <programlisting language="c++">
+<xi:include href="../stripped-src/verify_le_fails.cpp" parse="text"/>
+      </programlisting>
+      reports one failed test with two failed
+      <function>VERIFY_LE</function>() checks:
+      <screen>
+
+<xi:include href="../sample-output/verify_le_fails.out" parse="text"/>
+      </screen>
+    </para>
+
+  </section>
+  <section id="VERIFY_LT">
+    <title><function>VERIFY_LT(a, b)</function></title>
+
+    <para>Verify that an expression evaluates to less than another.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from
+       them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para>The expression <parameter>(a &lt; b)</parameter> can
+        be evaluated as a <type>bool</type>.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, the expression
+      <parameter>bool(a &lt; b)</parameter> evaluates to
+      <constant>true</constant>.</para>
+    <para>On success the test function continues without side effects.</para>
+      <para>On failure the test is marked as failed, but continues execution
+      with an error report. The report
+      includes the exact parameter text for each parameter and, when they
+      are output streamable, a text representation of each expression value,
+      or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="ASSERT_LT" xrefstyle="select:title"/></para>
+    <para>Example: The test program
+      <programlisting language="c++">
+<xi:include href="../stripped-src/verify_lt_fails.cpp" parse="text"/>
+      </programlisting>
+      reports one failed test with two failed
+      <function>VERIFY_LT</function>() checks:
+      <screen>
+
+<xi:include href="../sample-output/verify_lt_fails.out" parse="text"/>
+      </screen>
+    </para>
+
+  </section>
+  <section id="VERIFY_NE">
+    <title><function>VERIFY_NE(a, b)</function></title>
+
+    <para>Verify that an expression evaluates not equal to another.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from
+       them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para>The expression <parameter>(a != b)</parameter> can
+      be evaluated as a <type>bool</type>.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, the expression
+      <parameter>bool(a != b)</parameter> evaluates to
+      <constant>true</constant>.</para>
+      <para>On success the test function continues without side effects.</para>
+      <para>On failure the test is marked as failed, but continues execution
+      with an error report. The report
+      includes the exact parameter text for each parameter and, when they
+      are output streamable, a text representation of each expression value,
+      or a byte by byte hex dump otherwise.</para>
+      <para>See also:
+      <xref linkend="ASSERT_NE" xrefstyle="select:title"/></para>
+    <para>Example: The test program
+      <programlisting language="c++">
+<xi:include href="../stripped-src/verify_ne_fails.cpp" parse="text"/>
+      </programlisting>
+      reports one failed test with two failed
+      <function>VERIFY_NE</function>() checks:
+      <screen>
+
+<xi:include href="../sample-output/verify_ne_fails.out" parse="text"/>
+      </screen>
+    </para>
+
+  </section>
+  <section id="VERIFY_NO_THROW">
+    <title><function>VERIFY_NO_THROW(expr)</function></title>
+    <para>Verify that an expression does not throw any exception.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from
+       them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para><parameter>expr;</parameter> can be used as a complete
+      statement.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, the statement
+      <parameter>expr;</parameter> does not throw any exception.</para>
+    <para>On success the test function continues without side effects.</para>
+      <para>On failure the test is marked as failed, but continues execution
+      with an error report. The report
+      includes the exact expression text and, if the exception inherits from
+      <type>std::exception</type> the string from the virtual
+      member function <function>std::exception::what()</function>, or a
+      generic message otherwise.</para>
+      <para>See also:
+      <xref linkend="ASSERT_NO_THROW" xrefstyle="select:title"/></para>
+    <para>Example: The test program
+      <programlisting language="c++">
+<xi:include href="../stripped-src/verify_no_throw_fails.cpp" parse="text"/>
+      </programlisting>
+      reports one failed test with two failed
+      <function>VERIFY_NO_THROW</function>() checks:
+      <screen>
+
+<xi:include href="../sample-output/verify_no_throw_fails.out" parse="text"/>
+      </screen>
+    </para>
+  </section>
+  <section id="VERIFY_PRED">
+    <title><function>VERIFY_PRED(pred, ...)</function></title>
+    <para>Verify that a predicate evaluates to <constant>true</constant>.</para>
+    <formalpara>
+      <title>Used in:</title>
+      <para>
+        A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.
+      </para>
+    </formalpara>
+    <formalpara>
+      <title>Requirement:</title>
+      <para>
+        <function>pred</function> is callable with
+        <parameter>...</parameter> as its parameter list, and returns a value
+        that can be evaluated as a bool.
+      </para>
+    </formalpara>
+    <para>
+      <parameter>...</parameter> may be <literal>0</literal> to
+      <literal>9</literal> expressions.
+      <note>
+        If you use <ulink url="http://gcc.gnu.org">GCC</ulink> version 4.3 or
+        higher, and compile your test sources with <symbol>-std=c++0x</symbol>,
+        there is no limit to the number of parameters.
+      </note>
+
+    </para>
+    <para>
+      The check succeeds if, and only if,
+      <function>bool(pred(...))</function>
+      returns a value that compares equal to <constant>true</constant>.
+    </para>
+    <para>On success the test function continues without side effects.</para>
+    <para>
+      On failure the test is marked as failed, but continues execution
+      with an error report.  The
+      report includes the predicate and parameter list text, and the
+      parameter values that are output streamable have a text representation
+      of their value, and a byte by byte hex dump for the others. If the
+      <function>pred</function> itself has an output stream operator, the output
+      of it is included for extra information.
+    </para>
+    <para>See also:
+    <xref linkend="ASSERT_PRED" xrefstyle="select:title"/>
+    </para>
+    <para>
+      Example: The test program
+      <programlisting language="c++">
+<xi:include href="../stripped-src/verify_pred_fails.cpp" parse="text"/>
+      </programlisting>
+      reports one failed test with two failed
+      <function>VERIFY_PRED</function>() checks:
+      <screen>
+
+<xi:include href="../sample-output/verify_pred_fails.out" parse="text"/>
+      </screen>
+    </para>
+    <para>
+      See also: <xref linkend="match" xrefstyle="select:title"/> for
+      floating point comparisons (
+      <xref linkend="abs_diff" xrefstyle="select:title"/>,
+      <xref linkend="relative_diff" xrefstyle="select:title"/>,
+      <xref linkend="ulps_diff" xrefstyle="select:title"/>,)
+      for matching regular expressions (
+      <xref linkend="regex"  xrefstyle="select:title"/>,) and
+      for string collation (<xref linkend="collate" xrefstyle="select:title"/>,)
+      and <xref linkend="ASSERT_PRED" xrefstyle="select:title"/>.
+    </para>
+
+    <tip>If you have a compiler that supports C++0x
+      <ulink url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda</ulink>
+      expressions, lambdas make excellent predicates.
+      <programlisting language="C++">
+
+    const char *refstr = get_from_a_function();
+    VERIFY_PRED([](const char *p) { return ::strcmp(p, "key") == 0; }, refstr);
+
+</programlisting>
+    </tip>
+  </section>
+
+  <section id="VERIFY_SCOPE_HEAP_LEAK_FREE">
+    <title><function>VERIFY_SCOPE_HEAP_LEAK_FREE</function></title>
+    <para>Verify that all heap objects allocated in the the block of code
+    immediately following the macro, are also deallocated in the same
+    block.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from them.
+      See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para>A code block follows immediately after.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, all heap objects allocated
+    in the code block following are also deallocated in the block, so that
+    the objects on the heap are exactly the same before the code of block
+    begins and after the code of block ends.</para>
+    <para>On success the test function continues without side effects.</para>
+      <para>On failure the test is marked as failed, but continues execution
+      with an error report.  The report
+      includes all heap objects allocated in the block of code that still exists
+      after the destructors for the block of code have finished.</para>
+
+      <para>See also:
+      <xref linkend="ASSERT_SCOPE_HEAP_LEAK_FREE"
+      xrefstyle="select:title"/>.</para>
+    <para>Example: The test program
+    <programlisting language="c++">
+<xi:include href="../stripped-src/verify_scope_leak_free.cpp" parse="text"/>
+    </programlisting>
+    reports two failed test:
+    <screen>
+
+<xi:include href="../sample-output/verify_scope_leak_free.out" parse="text"/>
+    </screen>
+    </para>
+  </section>
+
+  <section id="VERIFY_SCOPE_MAX_CPUTIME_MS">
+    <title><function>VERIFY_SCOPE_MAX_CPUTIME_MS(ms)</function></title>
+    <para>Verify that the block of code immediately following the macro does
+    not consume more than <constant>ms</constant> milliseconds CPU time.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from them.
+      See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para><parameter>ms</parameter> is an unsigned integer value.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para>A code block follows immediately after.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, the code block following
+    completes its execution in at most <parameter>ms</parameter> milliseconds
+    of CPU-time.</para>
+    <para>On success the test function continues without side effects.</para>
+    <para>On failure the test is marked as failed, but continues execution
+    with an error report. The report
+    includes the parameter value <parameter>ms</parameter> and the actual
+    CPU-time consumed.</para>
+    <note>
+      It is possible to temporarily disable the check with the
+      <xref linkend="disable-timeouts" refstyle="select:title"/>
+      command line flag, in which case the assertion will always succeed,
+      regardless of the amount of CPU-time consumed by the following
+      code block. This can be useful when running with time consuming tools
+      like <ulink url="http://valgrind.org">valgrind</ulink>.
+    </note>
+    <para>See also:
+    <xref linkend="ASSERT_SCOPE_MAX_CPUTIME_MS" xrefstyle="select:title"/>.
+    </para>
+    <para>Example: The test program
+    <programlisting language="c++">
+<xi:include href="../stripped-src/verify_scope_max_cpu.cpp" parse="text"/>
+    </programlisting>
+    reports one failed test followed by an
+    <xref linkend="INFO" xrefstyle="select:title"/> log entry:
+    <screen>
+
+<xi:include href="../sample-output/verify_scope_max_cpu.out" parse="text"/>
+    </screen>
+    </para>
+  </section>
+
+  <section id="VERIFY_SCOPE_MAX_REALTIME_MS">
+    <title><function>VERIFY_SCOPE_MAX_REALTIME_MS(ms)</function></title>
+    <para>Verify that the block of code immediately following the macro does
+    not consume more than <constant>ms</constant> milliseconds real time.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from them.
+      See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para><parameter>ms</parameter> is an unsigned integer value.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para>A code block follows immediately after.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, the code block following
+    completes its execution in at most <parameter>ms</parameter> milliseconds
+    of real-time.</para>
+    <para>On success the test function continues without side effects.</para>
+    <para>On failure the test is marked as failed, but continues execution
+    with an error report. The report
+    includes the parameter value <parameter>ms</parameter> and the actual
+    time consumed.</para>
+    <note>
+      It is possible to temporarily disable the check with the
+      <xref linkend="disable-timeouts" refstyle="select:title"/>
+      command line flag, in which case the assertion will always succeed,
+      regardless of the amount of time consumed by the following
+      code block. This can be useful when running with time consuming tools
+      like <ulink url="http://valgrind.org">valgrind</ulink>.
+    </note>
+    <para>See also:
+    <xref linkend="ASSERT_SCOPE_MAX_REALTIME_MS" xrefstyle="select:title"/>.
+    </para>
+    <para>Example: The test program
+    <programlisting language="c++">
+<xi:include href="../stripped-src/verify_scope_max_real.cpp" parse="text"/>
+    </programlisting>
+    reports one failed test followed by an
+    <xref linkend="INFO" xrefstyle="select:title"/> log entry:
+    <screen>
+
+<xi:include href="../sample-output/verify_scope_max_real.out" parse="text"/>
+    </screen>
+    </para>
+  </section>
+
+  <section id="VERIFY_SCOPE_MIN_REALTIME_MS">
+    <title><function>VERIFY_SCOPE_MIN_REALTIME_MS(ms)</function></title>
+    <para>Verify that the block of code immediately following the macro
+    consumes at least <constant>ms</constant> milliseconds real time.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from them.
+      See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para><parameter>ms</parameter> is an unsigned integer value.</para>
+    </formalpara>
+    <formalpara><title>Requirement:</title>
+    <para>A code block follows immediately after.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if, the code block following
+    requires at least <parameter>ms</parameter> milliseconds of real-time
+    to complete its execution.</para>
+    <para>On success the test function continues without side effects.</para>
+    <para>On failure the test is marked as failed, but continues execution
+    with an error report. The report
+    includes the parameter value <parameter>ms</parameter> and the actual
+    time consumed.</para>
+    <note>
+      It is possible to temporarily disable the check with the
+      <xref linkend="disable-timeouts" refstyle="select:title"/>
+      command line flag, in which case the assertion will always succeed,
+      regardless of the amount of time consumed by the following
+      code block.
+    </note>
+    <para>See also:
+    <xref linkend="ASSERT_SCOPE_MIN_REALTIME_MS" xrefstyle="select:title"/>
+    </para>
+    <para>Example: The test program
+    <programlisting language="c++">
+<xi:include href="../stripped-src/verify_scope_min_real.cpp" parse="text"/>
+    </programlisting>
+    reports two failed tests:
+    <screen>
+
+<xi:include href="../sample-output/verify_scope_min_real.out" parse="text"/>
+    </screen>
+    </para>
+  </section>
+
+
+  <section id="VERIFY_THROW">
+    <title><function>VERIFY_THROW(expr, exc_type)</function></title>
+    <para>Verify that an expression throws the desired exception.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from
+       them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para><parameter>expr;</parameter> can be used as a complete
+      statement.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para><type>exc_type</type> is either a type, or
+        <type>...</type>.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if,
+    the statement <parameter>expr;</parameter>
+      throws an exception that can be caught using
+      <type>catch(exc_type&amp;)</type>.
+    </para>
+    <para>On success the test function continues without side effects.</para>
+    <para>On failure the test is marked as failed, but continues execution
+    with an error report. The
+      report includes the expression text, the expression type and,
+      if the expression caught inherits from <type>std::exception</type>
+      the output string from the virtual function
+      <function>std::exception::what()</function>, or a generic
+      message otherwise.</para>
+      <para>See also:
+      <xref linkend="ASSERT_THROW" xrefstyle="select:title"/></para>
+    <para>Example: The test program
+      <programlisting language="c++">
+<xi:include href="../stripped-src/verify_throw_fails.cpp" parse="text"/>
+      </programlisting>
+      reports one failed test with two violated
+      <function>VERIFY_THROW</function>() checks.
+      <screen>
+
+<xi:include href="../sample-output/verify_throw_fails.out" parse="text"/>
+      </screen>
+    </para>
+  </section>
+  <section id="VERIFY_TRUE">
+    <title><function>VERIFY_TRUE(expr)</function></title>
+
+    <para>Verify that an expression evaluates to
+      <constant>true</constant>.</para>
+    <formalpara><title>Used in:</title>
+      <para>A test function body, the constructor or destructor of a
+        <link linkend="fixtures">fixture</link>, or a function called from
+       them.
+        See <xref linkend="TEST" xrefstyle="select:title"/>.</para>
+      </formalpara>
+    <formalpara><title>Requirement:</title>
+      <para>The expression <parameter>expr</parameter> can be
+        evaluated as a <type>bool</type>.</para>
+    </formalpara>
+    <para>The check succeeds if, and only if,
+      <parameter>bool(expr)</parameter>
+      evaluates to equal to <constant>true</constant>.</para>
+      <para>On success the test continues without side effects.</para>
+      <para>On failure the test is marked as failed, but continues execution
+    with an error report. The report
+        includes the exact expression text, and if the value is output
+        streamable, a text representation of the expression value, otherwise
+        a byte by  byte hex dump is used.</para>
+        <para>See also:
+        <xref linkend="ASSERT_TRUE" xrefstyle="select:title"/>
+        </para>
+      <para>Example: The test program
+        <programlisting language="c++">
+<xi:include href="../stripped-src/verify_true_fails.cpp" parse="text"/>
+        </programlisting>
+        reports one failed test with two reported violations:
+        <screen>
+
+<xi:include href="../sample-output/verify_true_fails.out" parse="text"/>
+        </screen>
+      </para>
+
+  </section>
 </chapter>
+
 <chapter id="namespace crpcut">
   <title>namespace <type>crpcut</type></title>
   <section id="abs_diff">

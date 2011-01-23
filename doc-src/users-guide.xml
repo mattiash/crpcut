@@ -93,11 +93,18 @@
       </para>
     </section>
     <section id="asserts">
-      <title>Asserting correctness</title>
-      <para>A test isn't worth much if it isn't possible to assert the
+      <title>Checking correctness</title>
+      <para>A test isn't worth much if it isn't possible to check the
         correctness of the unit under test. Although you can use the
         standard C/C++ <function>assert()</function> macro, &crpcut;
         offers a wealth of its own assert macros with several benefits.
+      </para>
+      <para>There are two families of macros used for checking results,
+      the ASSERT macros and the VERIFY macros. Failure to meet the expectation
+      will fail the test. The ASSERT macros will terminate the test case
+      immediately if the condition is not met, whereas the VERIFY macros will
+      log the violation, mark the test case as failed, and let execution
+      continue.
       </para>
       <para>Consider the C-style intrusive list class, written below:
         <programlisting>
@@ -110,16 +117,17 @@
 <xi:include href="../stripped-src/itest.cpp" parse="text"/>
 </programlisting>
         Expressions with side effects are OK in &crpcut;
-        <function>ASSERT_*()</function> macros. They are carefully
-        designed to evaluate each parameter only once.
+        <function>ASSERT_*()</function> and <function>VERIFY_*()</function>
+        macros. They are carefully designed to evaluate each parameter only
+        once.
       </para>
       <para>The result of running this test program is:</para>
         <screen>
 
 <xi:include href="../sample-output/itest.out" parse="text"/>
 </screen>
-        <para>In <type>several_elements</type> an assertion fails.
-          If the parameters to an assertion are output streamable, the
+        <para>In <type>several_elements</type> a check fails.
+          If the parameters to a check are output streamable, the
           values are printed in the report, otherwise &crpcut; displays a
           hex-dump of the objects memory. When an assertion fails, the test
           process is terminated. Is it the test or the list
@@ -141,71 +149,81 @@
           process and its own working directory, the crash is not fatal to
           the &crpcut; execution, and the information in the core dump can
           be used when debugging the  code. Can you spot the bug?</para>
-        <para>The full list of <function>ASSERT_*()</function> macros are:
-        <variablelist><title><function>ASSERT_*()</function> macros</title>
-          <varlistentry><term><xref linkend="ASSERT_EQ" xrefstyle="select:title"/></term>
+        <para>The full list of <function>ASSERT_*</function>() and
+        <function>VERIFY_*</function>() macros for logical correctness:
+        <variablelist><title>macros</title>
+          <varlistentry><term><xref linkend="ASSERT_EQ" xrefstyle="select:title"/></term> and <term><xref linkend="VERIFY_EQ" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert equality between two expressions.</para>
+              <para>Require equality between two expressions.</para>
             </listitem>
           </varlistentry>
 
           <varlistentry><term><xref linkend="ASSERT_FALSE"
-                                    xrefstyle="select:title"/></term>
+                                    xrefstyle="select:title"/></term> and
+          <term><xref linkend="VERIFY_FALSE" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert non-truth value of an expression.</para>
+              <para>Require non-truth value of an expression.</para>
             </listitem>
           </varlistentry>
 
 
           <varlistentry><term><xref linkend="ASSERT_GE"
-                                    xrefstyle="select:title"/></term>
+                                    xrefstyle="select:title"/></term> and
+          <term><xref linkend="VERIFY_GE" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert greater-than or equal relation between
+              <para>Require greater-than or equal relation between
                 two expressions.</para>
             </listitem>
           </varlistentry>
 
           <varlistentry><term><xref linkend="ASSERT_GT"
-                                    xrefstyle="select:title"/></term>
+                                    xrefstyle="select:title"/></term> and
+          <term><xref linkend="VERIFY_GT" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert greater-than relation between two expressions.</para>
+              <para>Require greater-than relation between two
+              expressions.</para>
             </listitem>
           </varlistentry>
 
           <varlistentry><term><xref linkend="ASSERT_LE"
-                                    xrefstyle="select:title"/></term>
+                                    xrefstyle="select:title"/></term> and
+          <term><xref linkend="VERIFY_LE" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert less-than or equal relation between two
+              <para>Require less-than or equal relation between two
                 expressions.</para>
             </listitem>
           </varlistentry>
 
           <varlistentry><term><xref linkend="ASSERT_LT"
-                                    xrefstyle="select:title"/></term>
+                                    xrefstyle="select:title"/></term> and
+          <term><xref linkend="VERIFY_LT" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert less-than relation between two expressions.</para>
+              <para>Require less-than relation between two expressions.</para>
             </listitem>
           </varlistentry>
 
           <varlistentry><term><xref linkend="ASSERT_NE"
-                                    xrefstyle="select:title"/></term>
+                                    xrefstyle="select:title"/></term> and
+          <term><xref linkend="VERIFY_NE" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert not-equal relation between two expressions.</para>
+              <para>Require not-equal relation between two expressions.</para>
             </listitem>
           </varlistentry>
 
           <varlistentry><term><xref linkend="ASSERT_NO_THROW"
-                                    xrefstyle="select:title"/></term>
+                                    xrefstyle="select:title"/></term> and
+          <term><xref linkend="VERIFY_NO_THROW" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert that an expression/statement does not throw
+              <para>Require that an expression/statement does not throw
                 any exception.</para>
             </listitem>
           </varlistentry>
 
           <varlistentry><term><xref linkend="ASSERT_PRED"
-                                    xrefstyle="select:title"/></term>
+                                    xrefstyle="select:title"/></term> and
+          <term><xref linkend="VERIFY_PRED" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert that a predicate evaluates to true. A predicate is
+              <para>Require that a predicate evaluates to true. A predicate is
                 something that looks like a function and returns a boolean.
                 For example:
                 <programlisting language="C++">
@@ -234,17 +252,19 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
           </varlistentry>
 
           <varlistentry><term><xref linkend="ASSERT_THROW"
-                                    xrefstyle="select:title"/></term>
+                                    xrefstyle="select:title"/></term> and
+          <term><xref linkend="VERIFY_THROW" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert that an expression/statement throws the correct
+              <para>Require that an expression/statement throws the correct
                 exception.</para>
             </listitem>
           </varlistentry>
 
           <varlistentry><term><xref linkend="ASSERT_TRUE"
-                                    xrefstyle="select:title"/></term>
+                                    xrefstyle="select:title"/></term> and
+          <term><xref linkend="VERIFY_TRUE" xrefstyle="select:title"/></term>
             <listitem>
-              <para>Assert truth value of an expression.</para>
+              <para>Require truth value of an expression.</para>
             </listitem>
           </varlistentry>
 
@@ -534,8 +554,9 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
       </varlistentry>
     </variablelist>
     <para>All three near-equality comparators are used in the same way,
-      using <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> and
-      <xref linkend="match" xrefstyle="select:title"/>. An example using
+      using <xref linkend="match" xrefstyle="select:title"/>
+      with either <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> or
+      <xref linkend="VERIFY_PRED" xrefstyle="select:title"/>. An example using
       <xref linkend="ulps_diff" xrefstyle="select:title"/>:
       <programlisting language="c++">
 
@@ -573,10 +594,11 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
     <section id="matching_regex">
       <title>Matching strings with regular expressions</title>
       <para>
-        Regular expression matching is used with
-        <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> and
+        Regular expressions are  matched using
         <xref linkend="match" xrefstyle="select:title"/> instantiated
-        with <xref linkend="regex" xrefstyle="select:title"/>. This is
+        with <xref linkend="regex" xrefstyle="select:title"/>, with
+        <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> or
+        <xref linkend="VERIFY_PRED" xrefstyle="select:title"/>. This is
         easiest to show with an example:
         <programlisting language="c++">
 
@@ -619,8 +641,11 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
         The result of <type>crpcut::</type><function>collate</function>
         can be compared against a string using the comparison operators
         &lt;, &lt;=, !=, ==, &gt;=, and &gt; using the
-        <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> or the
-        <xref linkend="ASSERT_TRUE" xrefstyle="select:title"/> macro.
+        <xref linkend="ASSERT_PRED" xrefstyle="select:title"/>,
+        <xref linkend="VERIFY_PRED" xrefstyle="select:title"/>,
+        <xref linkend="ASSERT_TRUE" xrefstyle="select:title"/> or the
+        <xref linkend="VERIFY_TRUE" xrefstyle="select:title"/> macro.
+macro.
         <note>Operator == in a collation check does not mean strict
           equality, but rather that the left hand side and right hand
           side are equitable in the sort order of by the locale.
@@ -703,8 +728,9 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
     <para>
       The simplest way to assert that your code does not leak heap objects is
       to use
-      <xref linkend="ASSERT_SCOPE_HEAP_LEAK_FREE" xrefstyle="select:title"/>.
-      With it, you assert that any heap object allocated inside the code block
+      <xref linkend="ASSERT_SCOPE_HEAP_LEAK_FREE" xrefstyle="select:title"/> or
+      <xref linkend="VERIFY_SCOPE_HEAP_LEAK_FREE" xrefstyle="select:title"/>.
+      With it, you check that any heap object allocated inside the code block
       is also deallocated when code block ends. A simple example. The test
       program:
     <programlisting language="c++">
@@ -768,16 +794,20 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
   </chapter>
 
   <chapter id="performance-management">
-    <title>Asserting execution time</title>
+    <title>Requirements on execution time</title>
     <para>Sometimes it is not enough that your code does the right thing. It
     must do the right thing with the right timing. Testing time consumption
     requirements is easy with &crpcut;.
     </para>
-    <para>In order to assert performance requirements, &crpcut; provides the
-    macros
+    <para>In order to check performance requirements, &crpcut; provides the
+    ASSERT macros
     <xref linkend="ASSERT_SCOPE_MAX_CPUTIME_MS" xrefstyle="select:title"/>,
-    <xref linkend="ASSERT_SCOPE_MAX_REALTIME_MS" xrefstyle="select:title"/> and
-    <xref linkend="ASSERT_SCOPE_MIN_REALTIME_MS" xrefstyle="select:title"/>.
+    <xref linkend="ASSERT_SCOPE_MAX_REALTIME_MS" xrefstyle="select:title"/>
+    <xref linkend="ASSERT_SCOPE_MIN_REALTIME_MS" xrefstyle="select:title"/>,
+    and the corresponding VERIFY macros
+    <xref linkend="VERIFY_SCOPE_MAX_CPUTIME_MS" xrefstyle="select:title"/>,
+    <xref linkend="VERIFY_SCOPE_MAX_REALTIME_MS" xrefstyle="select:title"/>
+    <xref linkend="VERIFY_SCOPE_MIN_REALTIME_MS" xrefstyle="select:title"/>,
     </para>
     <para>Let's use the above macros and put the POSIX function
     <ulink url="http://pubs.opengroup.org/onlinepubs/009695399/functions/usleep.html">usleep</ulink>() to the test. The test is to assert that it neither
@@ -987,17 +1017,21 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
       <function>operator ()()</function>.
     </para>
     <para>Predicates are used with
-      <xref linkend="ASSERT_PRED" xrefstyle="select:title"/>. Logically
+      <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> or
+      <xref linkend="VERIFY_PRED" xrefstyle="select:title"/>. Logically
       <function>ASSERT_PRED</function>(<constant>predicate</constant>,
       <parameter>param1</parameter>, <parameter>param2</parameter>,
       ...<parameter>paramN</parameter>) is identical with
       <function>ASSERT_TRUE</function>(<function>predicate</function>(<parameter>param1</parameter>, <parameter>param2</parameter>,
-      ...<parameter>paramN</parameter>)). The difference lies in error
-      reporting. <xref linkend="ASSERT_PRED" xrefstyle="select:title"/>
+      ...<parameter>paramN</parameter>)), and likewise for
+      <function>VERIFY_PRED</function>(). The difference lies in error
+      reporting. <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> and
+      <xref linkend="VERIFY_PRED" xrefstyle="select:title"/>
       will list the value of each of the parameters in a violation
       report, whereas
-      <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> will only
-      include the result.
+      <xref linkend="ASSERT_PRED" xrefstyle="select:title"/> and
+      <xref linkend="VERIFY_PRED" xrefstyle="select:title"/> will give a
+      cruder report with less details.
     </para>
     <para>The below example uses both versions:
       <programlisting>

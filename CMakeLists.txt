@@ -409,6 +409,33 @@ if (WITH_HTML_DOCS)
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
+    #
+    # verify_eq_fails
+    #
+    file(GLOB VERIFY_EQ_FAILS "${DOC_SRC_LIB}/samples/verify_eq_fails.cpp")
+    file(GLOB DEBUG_CMD "${DOC_SRC_LIB}/samples/debug_cmd")
+    add_custom_target(
+      verify_eq_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_EQ_FAILS} > verify_eq_fails.cpp
+      DEPENDS stripped-src ${VERIFY_EQ_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_eq_fails EXCLUDE_FROM_ALL ${VERIFY_EQ_FAILS})
+    set_target_properties(verify_eq_fails PROPERTIES COMPILE_FLAGS "-ggdb")
+    target_link_libraries(verify_eq_fails crpcut)
+    add_custom_target(
+      verify_eq_fails.out
+      verify_eq_fails | sed "s/\\(.*\\)/     \\1/g" > verify_eq_fails.out
+      DEPENDS sample-output verify_eq_fails
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+    add_custom_target(
+      debug_verify_eq_fails.out
+      ${GDB} ../test/verify_eq_fails  < ${DEBUG_CMD} | sed "1,1s/^.*\\(GNU.*\\)/bash > gdb .\\/test\\/verify_eq_fails\\n\\1/g;s/\\((gdb).*\\)(gdb) \\(.*\\)$/\\1\\n\\2/g;s/^\\(..\\)\\((gdb).*\\)/\\1\\n\\2/g;s/\\[answered.*//g"  > debug_verify_eq_fails.out
+      DEPENDS sample-output verify_eq_fails
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
 
 
     #
@@ -427,6 +454,25 @@ if (WITH_HTML_DOCS)
       assert_ge_fails.out
       assert_ge_fails | sed "s/\\(.*\\)/     \\1/g" > assert_ge_fails.out
       DEPENDS assert_ge_fails sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
+    # verify_ge_fails
+    #
+    file(GLOB VERIFY_GE_FAILS "${DOC_SRC_LIB}/samples/verify_ge_fails.cpp")
+    add_custom_target(
+      verify_ge_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_GE_FAILS} > verify_ge_fails.cpp
+      DEPENDS stripped-src ${VERIFY_GE_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_ge_fails EXCLUDE_FROM_ALL ${VERIFY_GE_FAILS})
+    target_link_libraries(verify_ge_fails crpcut)
+    add_custom_target(
+      verify_ge_fails.out
+      verify_ge_fails | sed "s/\\(.*\\)/     \\1/g" > verify_ge_fails.out
+      DEPENDS verify_ge_fails sample-output
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
@@ -450,6 +496,25 @@ if (WITH_HTML_DOCS)
       VERBATIM)
 
     #
+    # verify_le_fails
+    #
+    file(GLOB VERIFY_LE_FAILS "${DOC_SRC_LIB}/samples/verify_le_fails.cpp")
+    add_custom_target(
+      verify_le_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_LE_FAILS} > verify_le_fails.cpp
+      DEPENDS stripped-src ${VERIFY_LE_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_le_fails EXCLUDE_FROM_ALL ${VERIFY_LE_FAILS})
+    target_link_libraries(verify_le_fails crpcut)
+    add_custom_target(
+      verify_le_fails.out
+      verify_le_fails | sed "s/\\(.*\\)/     \\1/g" > verify_le_fails.out
+      DEPENDS verify_le_fails sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
     # assert_lt_fails
     #
     file(GLOB ASSERT_LT_FAILS "${DOC_SRC_LIB}/samples/assert_lt_fails.cpp")
@@ -465,6 +530,25 @@ if (WITH_HTML_DOCS)
       assert_lt_fails.out
       assert_lt_fails | sed "s/\\(.*\\)/     \\1/g" > assert_lt_fails.out
       DEPENDS assert_lt_fails sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
+    # verify_lt_fails
+    #
+    file(GLOB VERIFY_LT_FAILS "${DOC_SRC_LIB}/samples/verify_lt_fails.cpp")
+    add_custom_target(
+      verify_lt_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_LT_FAILS} > verify_lt_fails.cpp
+      DEPENDS stripped-src ${VERIFY_LT_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_lt_fails EXCLUDE_FROM_ALL ${VERIFY_LT_FAILS})
+    target_link_libraries(verify_lt_fails crpcut)
+    add_custom_target(
+      verify_lt_fails.out
+      verify_lt_fails | sed "s/\\(.*\\)/     \\1/g" > verify_lt_fails.out
+      DEPENDS verify_lt_fails sample-output
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
@@ -488,6 +572,25 @@ if (WITH_HTML_DOCS)
       VERBATIM)
 
     #
+    # verify_gt_fails
+    #
+    file(GLOB VERIFY_GT_FAILS "${DOC_SRC_LIB}/samples/verify_gt_fails.cpp")
+    add_custom_target(
+      verify_gt_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_GT_FAILS} > verify_gt_fails.cpp
+      DEPENDS stripped-src ${VERIFY_GT_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_gt_fails EXCLUDE_FROM_ALL ${VERIFY_GT_FAILS})
+    target_link_libraries(verify_gt_fails crpcut)
+    add_custom_target(
+      verify_gt_fails.out
+      verify_gt_fails | sed "s/\\(.*\\)/     \\1/g" > verify_gt_fails.out
+      DEPENDS verify_gt_fails sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
     # assert_ne_fails
     #
     file(GLOB ASSERT_NE_FAILS "${DOC_SRC_LIB}/samples/assert_ne_fails.cpp")
@@ -503,6 +606,25 @@ if (WITH_HTML_DOCS)
       assert_ne_fails.out
       assert_ne_fails | sed "s/\\(.*\\)/     \\1/g" > assert_ne_fails.out
       DEPENDS assert_ne_fails sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
+    # verify_ne_fails
+    #
+    file(GLOB VERIFY_NE_FAILS "${DOC_SRC_LIB}/samples/verify_ne_fails.cpp")
+    add_custom_target(
+      verify_ne_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_NE_FAILS} > verify_ne_fails.cpp
+      DEPENDS stripped-src ${VERIFY_NE_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_ne_fails EXCLUDE_FROM_ALL ${VERIFY_NE_FAILS})
+    target_link_libraries(verify_ne_fails crpcut)
+    add_custom_target(
+      verify_ne_fails.out
+      verify_ne_fails | sed "s/\\(.*\\)/     \\1/g" > verify_ne_fails.out
+      DEPENDS verify_ne_fails sample-output
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
@@ -528,6 +650,27 @@ if (WITH_HTML_DOCS)
 
 
     #
+    # verify_false_fails
+    #
+    file(GLOB VERIFY_FALSE_FAILS
+      "${DOC_SRC_LIB}/samples/verify_false_fails.cpp")
+    add_custom_target(
+      verify_false_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_FALSE_FAILS} > verify_false_fails.cpp
+      DEPENDS stripped-src ${VERIFY_FALSE_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_false_fails EXCLUDE_FROM_ALL ${VERIFY_FALSE_FAILS})
+    target_link_libraries(verify_false_fails crpcut)
+    add_custom_target(
+      verify_false_fails.out
+      verify_false_fails | sed "s/\\(.*\\)/     \\1/g" > verify_false_fails.out
+      DEPENDS verify_false_fails sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+
+    #
     # assert_true_fails
     #
     file(GLOB ASSERT_TRUE_FAILS "${DOC_SRC_LIB}/samples/assert_true_fails.cpp")
@@ -543,6 +686,25 @@ if (WITH_HTML_DOCS)
       assert_true_fails.out
       assert_true_fails | sed "s/\\(.*\\)/     \\1/g" > assert_true_fails.out
       DEPENDS assert_true_fails sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
+    # verify_true_fails
+    #
+    file(GLOB VERIFY_TRUE_FAILS "${DOC_SRC_LIB}/samples/verify_true_fails.cpp")
+    add_custom_target(
+      verify_true_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_TRUE_FAILS} > verify_true_fails.cpp
+      DEPENDS stripped-src ${VERIFY_TRUE_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_true_fails EXCLUDE_FROM_ALL ${VERIFY_TRUE_FAILS})
+    target_link_libraries(verify_true_fails crpcut)
+    add_custom_target(
+      verify_true_fails.out
+      verify_true_fails | sed "s/\\(.*\\)/     \\1/g" > verify_true_fails.out
+      DEPENDS verify_true_fails sample-output
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
@@ -568,6 +730,27 @@ if (WITH_HTML_DOCS)
       VERBATIM)
 
     #
+    # verify_no_throw_fails
+    #
+    file(GLOB VERIFY_NO_THROW_FAILS
+      "${DOC_SRC_LIB}/samples/verify_no_throw_fails.cpp")
+    add_custom_target(
+      verify_no_throw_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_NO_THROW_FAILS} > verify_no_throw_fails.cpp
+      DEPENDS stripped-src ${VERIFY_NO_THROW_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_no_throw_fails EXCLUDE_FROM_ALL
+      ${VERIFY_NO_THROW_FAILS})
+    target_link_libraries(verify_no_throw_fails crpcut)
+    add_custom_target(
+      verify_no_throw_fails.out
+      verify_no_throw_fails | sed "s/\\(.*\\)/     \\1/g" > verify_no_throw_fails.out
+      DEPENDS verify_no_throw_fails sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
     # assert_throw_fails
     #
     file(GLOB ASSERT_THROW_FAILS
@@ -584,6 +767,26 @@ if (WITH_HTML_DOCS)
       assert_throw_fails.out
       assert_throw_fails | sed "s/\\(.*\\)/     \\1/g" > assert_throw_fails.out
       DEPENDS assert_throw_fails sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
+    # verify_throw_fails
+    #
+    file(GLOB VERIFY_THROW_FAILS
+      "${DOC_SRC_LIB}/samples/verify_throw_fails.cpp")
+    add_custom_target(
+      verify_throw_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_THROW_FAILS} > verify_throw_fails.cpp
+      DEPENDS stripped-src ${VERIFY_THROW_FAILS}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_throw_fails EXCLUDE_FROM_ALL ${VERIFY_THROW_FAILS})
+    target_link_libraries(verify_throw_fails crpcut)
+    add_custom_target(
+      verify_throw_fails.out
+      verify_throw_fails | sed "s/\\(.*\\)/     \\1/g" > verify_throw_fails.out
+      DEPENDS verify_throw_fails sample-output
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
@@ -608,21 +811,59 @@ if (WITH_HTML_DOCS)
       VERBATIM)
 
     #
-    # assert_scope_max_cputime
+    # verify_pred_fails
     #
-    file(GLOB ASSERT_PRED_FAILS "${DOC_SRC_LIB}/samples/assert_scope_max_cpu.cpp")
+    file(GLOB VERIFY_PRED_FAILS "${DOC_SRC_LIB}/samples/verify_pred_fails.cpp")
     add_custom_target(
-      assert_scope_max_cpu.cpp
-      ${STRIP_SOURCES} < ${ASSERT_PRED_FAILS} > assert_scope_max_cpu.cpp
-      DEPENDS stripped-src ${ASSERT_PRED_FAILS}
+      verify_pred_fails.cpp
+      ${STRIP_SOURCES} < ${VERIFY_PRED_FAILS} > verify_pred_fails.cpp
+      DEPENDS stripped-src ${VERIFY_PRED_FAILS}
       WORKING_DIRECTORY stripped-src
       VERBATIM)
-    add_executable(assert_scope_max_cpu EXCLUDE_FROM_ALL ${ASSERT_PRED_FAILS})
+    add_executable(verify_pred_fails EXCLUDE_FROM_ALL ${VERIFY_PRED_FAILS})
+    target_link_libraries(verify_pred_fails crpcut)
+    add_custom_target(
+      verify_pred_fails.out
+      verify_pred_fails | sed "s/\\(.*\\)/     \\1/g" > verify_pred_fails.out
+      DEPENDS verify_pred_fails sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
+    # assert_scope_max_cputime
+    #
+    file(GLOB ASSERT_SCOPE_MAX_CPUTIME "${DOC_SRC_LIB}/samples/assert_scope_max_cpu.cpp")
+    add_custom_target(
+      assert_scope_max_cpu.cpp
+      ${STRIP_SOURCES} < ${ASSERT_SCOPE_MAX_CPUTIME} > assert_scope_max_cpu.cpp
+      DEPENDS stripped-src ${ASSERT_SCOPE_MAX_CPUTIME}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(assert_scope_max_cpu EXCLUDE_FROM_ALL ${ASSERT_SCOPE_MAX_CPUTIME})
     target_link_libraries(assert_scope_max_cpu crpcut)
     add_custom_target(
       assert_scope_max_cpu.out
       assert_scope_max_cpu | sed "s/\\(.*\\)/     \\1/g" > assert_scope_max_cpu.out
       DEPENDS assert_scope_max_cpu sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
+    # verify_scope_max_cputime
+    #
+    file(GLOB VERIFY_SCOPE_MAX_CPUTIME "${DOC_SRC_LIB}/samples/verify_scope_max_cpu.cpp")
+    add_custom_target(
+      verify_scope_max_cpu.cpp
+      ${STRIP_SOURCES} < ${VERIFY_SCOPE_MAX_CPUTIME} > verify_scope_max_cpu.cpp
+      DEPENDS stripped-src ${VERIFY_SCOPE_MAX_CPUTIME}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_scope_max_cpu EXCLUDE_FROM_ALL ${VERIFY_SCOPE_MAX_CPUTIME})
+    target_link_libraries(verify_scope_max_cpu crpcut)
+    add_custom_target(
+      verify_scope_max_cpu.out
+      verify_scope_max_cpu | sed "s/\\(.*\\)/     \\1/g" > verify_scope_max_cpu.out
+      DEPENDS verify_scope_max_cpu sample-output
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
@@ -645,18 +886,37 @@ if (WITH_HTML_DOCS)
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
+    #
+    # verify_scope_max_realtime
+    #
+    file(GLOB VERIFY_SCOPE_MAX_REALTIME "${DOC_SRC_LIB}/samples/verify_scope_max_real.cpp")
+    add_custom_target(
+      verify_scope_max_real.cpp
+      ${STRIP_SOURCES} < ${VERIFY_SCOPE_MAX_REALTIME} > verify_scope_max_real.cpp
+      DEPENDS stripped-src ${VERIFY_SCOPE_MAX_REALTIME}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_scope_max_real EXCLUDE_FROM_ALL ${VERIFY_SCOPE_MAX_REALTIME})
+    target_link_libraries(verify_scope_max_real crpcut)
+    add_custom_target(
+      verify_scope_max_real.out
+      verify_scope_max_real | sed "s/\\(.*\\)/     \\1/g" > verify_scope_max_real.out
+      DEPENDS verify_scope_max_real sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
 
     #
     # assert_scope_min_realtime
     #
-    file(GLOB ASSERT_PRED_FAILS "${DOC_SRC_LIB}/samples/assert_scope_min_real.cpp")
+    file(GLOB ASSERT_SCOPE_MIN_REALTIME "${DOC_SRC_LIB}/samples/assert_scope_min_real.cpp")
     add_custom_target(
       assert_scope_min_real.cpp
-      ${STRIP_SOURCES} < ${ASSERT_PRED_FAILS} > assert_scope_min_real.cpp
-      DEPENDS stripped-src ${ASSERT_PRED_FAILS}
+      ${STRIP_SOURCES} < ${ASSERT_SCOPE_MIN_REALTIME} > assert_scope_min_real.cpp
+      DEPENDS stripped-src ${ASSERT_SCOPE_MIN_REALTIME}
       WORKING_DIRECTORY stripped-src
       VERBATIM)
-    add_executable(assert_scope_min_real EXCLUDE_FROM_ALL ${ASSERT_PRED_FAILS})
+    add_executable(assert_scope_min_real EXCLUDE_FROM_ALL ${ASSERT_SCOPE_MIN_REALTIME})
     target_link_libraries(assert_scope_min_real crpcut)
     add_custom_target(
       assert_scope_min_real.out
@@ -667,21 +927,60 @@ if (WITH_HTML_DOCS)
 
 
     #
-    # assert_scope_leak_free
+    # verify_scope_min_real
     #
-    file(GLOB ASSERT_PRED_FAILS "${DOC_SRC_LIB}/samples/assert_scope_leak_free.cpp")
+    file(GLOB VERIFY_SCOPE_MIN_REAL "${DOC_SRC_LIB}/samples/verify_scope_min_real.cpp")
     add_custom_target(
-      assert_scope_leak_free.cpp
-      ${STRIP_SOURCES} < ${ASSERT_PRED_FAILS} > assert_scope_leak_free.cpp
-      DEPENDS stripped-src ${ASSERT_PRED_FAILS}
+      verify_scope_min_real.cpp
+      ${STRIP_SOURCES} < ${VERIFY_SCOPE_MIN_REAL} > verify_scope_min_real.cpp
+      DEPENDS stripped-src ${VERIFY_SCOPE_MIN_REAL}
       WORKING_DIRECTORY stripped-src
       VERBATIM)
-    add_executable(assert_scope_leak_free EXCLUDE_FROM_ALL ${ASSERT_PRED_FAILS})
+    add_executable(verify_scope_min_real EXCLUDE_FROM_ALL ${VERIFY_SCOPE_MIN_REAL})
+    target_link_libraries(verify_scope_min_real crpcut)
+    add_custom_target(
+      verify_scope_min_real.out
+      verify_scope_min_real | sed "s/\\(.*\\)/     \\1/g" > verify_scope_min_real.out
+      DEPENDS verify_scope_min_real sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+
+    #
+    # assert_scope_leak_free
+    #
+    file(GLOB ASSERT_SCOPE_LEAK_FREE "${DOC_SRC_LIB}/samples/assert_scope_leak_free.cpp")
+    add_custom_target(
+      assert_scope_leak_free.cpp
+      ${STRIP_SOURCES} < ${ASSERT_SCOPE_LEAK_FREE} > assert_scope_leak_free.cpp
+      DEPENDS stripped-src ${ASSERT_SCOPE_LEAK_FREE}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(assert_scope_leak_free EXCLUDE_FROM_ALL ${ASSERT_SCOPE_LEAK_FREE})
     target_link_libraries(assert_scope_leak_free crpcut)
     add_custom_target(
       assert_scope_leak_free.out
       assert_scope_leak_free | sed "s/\\(.*\\)/     \\1/g" > assert_scope_leak_free.out
       DEPENDS assert_scope_leak_free sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
+    # verify_scope_leak_free
+    #
+    file(GLOB VERIFY_SCOPE_LEAK_FREE "${DOC_SRC_LIB}/samples/verify_scope_leak_free.cpp")
+    add_custom_target(
+      verify_scope_leak_free.cpp
+      ${STRIP_SOURCES} < ${VERIFY_SCOPE_LEAK_FREE} > verify_scope_leak_free.cpp
+      DEPENDS stripped-src ${VERIFY_SCOPE_LEAK_FREE}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(verify_scope_leak_free EXCLUDE_FROM_ALL ${VERIFY_SCOPE_LEAK_FREE})
+    target_link_libraries(verify_scope_leak_free crpcut)
+    add_custom_target(
+      verify_scope_leak_free.out
+      verify_scope_leak_free | sed "s/\\(.*\\)/     \\1/g" > verify_scope_leak_free.out
+      DEPENDS verify_scope_leak_free sample-output
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
@@ -1575,21 +1874,36 @@ if (WITH_HTML_DOCS)
       stripped-src/all_tests.cpp sample-output/all_tests.out
       stripped-src/exit_any_code.cpp sample-output/exit_any_code.out
       stripped-src/assert_ne_fails.cpp sample-output/assert_ne_fails.out
+      stripped-src/verify_ne_fails.cpp sample-output/verify_ne_fails.out
       stripped-src/assert_le_fails.cpp sample-output/assert_le_fails.out
+      stripped-src/verify_le_fails.cpp sample-output/verify_le_fails.out
       stripped-src/assert_lt_fails.cpp sample-output/assert_lt_fails.out
+      stripped-src/verify_lt_fails.cpp sample-output/verify_lt_fails.out
       stripped-src/assert_eq_fails.cpp sample-output/assert_eq_fails.out
+      stripped-src/verify_eq_fails.cpp sample-output/verify_eq_fails.out
       stripped-src/assert_ge_fails.cpp sample-output/assert_ge_fails.out
+      stripped-src/verify_ge_fails.cpp sample-output/verify_ge_fails.out
       sample-output/debug_assert_eq_fails.out
       stripped-src/assert_gt_fails.cpp sample-output/assert_gt_fails.out
+      stripped-src/verify_gt_fails.cpp sample-output/verify_gt_fails.out
       stripped-src/assert_false_fails.cpp sample-output/assert_false_fails.out
+      stripped-src/verify_false_fails.cpp sample-output/verify_false_fails.out
       stripped-src/assert_true_fails.cpp sample-output/assert_true_fails.out
+      stripped-src/verify_true_fails.cpp sample-output/verify_true_fails.out
       stripped-src/assert_no_throw_fails.cpp sample-output/assert_no_throw_fails.out
+      stripped-src/verify_no_throw_fails.cpp sample-output/verify_no_throw_fails.out
       stripped-src/assert_throw_fails.cpp sample-output/assert_throw_fails.out
+      stripped-src/verify_throw_fails.cpp sample-output/verify_throw_fails.out
       stripped-src/assert_pred_fails.cpp sample-output/assert_pred_fails.out
+      stripped-src/verify_pred_fails.cpp sample-output/verify_pred_fails.out
       stripped-src/assert_scope_max_cpu.cpp sample-output/assert_scope_max_cpu.out
+      stripped-src/verify_scope_max_cpu.cpp sample-output/verify_scope_max_cpu.out
       stripped-src/assert_scope_max_real.cpp sample-output/assert_scope_max_real.out
+      stripped-src/verify_scope_max_real.cpp sample-output/verify_scope_max_real.out
       stripped-src/assert_scope_min_real.cpp sample-output/assert_scope_min_real.out
+      stripped-src/verify_scope_min_real.cpp sample-output/verify_scope_min_real.out
       stripped-src/assert_scope_leak_free.cpp sample-output/assert_scope_leak_free.out
+      stripped-src/verify_scope_leak_free.cpp sample-output/verify_scope_leak_free.out
       stripped-src/usleep.cpp sample-output/usleep.out
       stripped-src/wrap_func.cpp sample-output/wrap_func.out
       stripped-src/wrap_v_func.cpp sample-output/wrap_v_func.out

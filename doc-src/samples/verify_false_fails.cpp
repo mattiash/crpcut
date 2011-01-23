@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,66 +24,20 @@
  * SUCH DAMAGE.
  */
 
+
 #include <crpcut.hpp>
-#include "ilist_element.hpp"
 
-struct elem : public ilist_element<elem>
+TEST(verify_false_succeeds)
 {
-  elem(int i) : n(i) {}
-  int n;
-};
-
-TEST(create_and_destroy_empty)
-{
-  ilist_element<elem> list;
-  ASSERT_TRUE(list.is_empty());
+  const char *p = 0;
+  VERIFY_FALSE(p);
 }
 
-TEST(insert_and_traverse_one_element)
+TEST(verify_false_fails)
 {
-  ilist_element<elem> list;
-  elem obj(1);
-  list.insert_after(obj);
-  ASSERT_FALSE(list.is_empty());
-  ASSERT_TRUE(list.next()->n == 1);
-}
-
-TEST(several_elements)
-{
-  ilist_element<elem> list;
-
-  elem obj1(1);
-  list.insert_after(obj1);
-  elem *p2 = new elem(2);
-  list.insert_after(*p2);
-  elem obj3(3);
-  list.insert_after(obj3);
-
-  elem *i = list.next();
-  VERIFY_EQ(i->n, 3);
-  VERIFY_EQ((i=i->next())->n, 2);
-  VERIFY_EQ((i=i->next())->n, 1);
-  ASSERT_EQ(i, &list);
-  delete p2;
-  VERIFY_EQ((i=i->prev())->n, 1);
-  VERIFY_EQ((i=i->prev())->n, 3);
-  VERIFY_EQ(i->prev(), &list);
-}
-
-TEST(unlink)
-{
-  ilist_element<elem> list;
-  elem obj1(1);
-  list.insert_after(obj1);
-  elem obj2(2);
-  list.insert_after(obj2);
-  elem obj3(3);
-  list.insert_after(obj3);
-  obj2.unlink();
-  elem *i = list.prev();
-  VERIFY_EQ(i->n, 1);
-  i = i->prev();
-  VERIFY_EQ(i->n, 3);
+  const char *p = "message";
+  VERIFY_FALSE(p);
+  VERIFY_FALSE(p[1]);
 }
 
 int main(int argc, char *argv[])

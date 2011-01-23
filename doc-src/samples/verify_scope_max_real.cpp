@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,66 +24,38 @@
  * SUCH DAMAGE.
  */
 
+
 #include <crpcut.hpp>
-#include "ilist_element.hpp"
+#include <sys/times.h>
 
-struct elem : public ilist_element<elem>
+TEST(long_real_time)
 {
-  elem(int i) : n(i) {}
-  int n;
-};
-
-TEST(create_and_destroy_empty)
-{
-  ilist_element<elem> list;
-  ASSERT_TRUE(list.is_empty());
+  VERIFY_SCOPE_MAX_REALTIME_MS(3)
+  {
+    for (int i = 0; i < 5; ++i)
+      {
+        usleep(1000); // would fail if implemented as busy wait
+      }
+  }
+  INFO << "after violation";
 }
 
-TEST(insert_and_traverse_one_element)
+TEST(short_real_time)
 {
-  ilist_element<elem> list;
-  elem obj(1);
-  list.insert_after(obj);
-  ASSERT_FALSE(list.is_empty());
-  ASSERT_TRUE(list.next()->n == 1);
-}
-
-TEST(several_elements)
-{
-  ilist_element<elem> list;
-
-  elem obj1(1);
-  list.insert_after(obj1);
-  elem *p2 = new elem(2);
-  list.insert_after(*p2);
-  elem obj3(3);
-  list.insert_after(obj3);
-
-  elem *i = list.next();
-  VERIFY_EQ(i->n, 3);
-  VERIFY_EQ((i=i->next())->n, 2);
-  VERIFY_EQ((i=i->next())->n, 1);
-  ASSERT_EQ(i, &list);
-  delete p2;
-  VERIFY_EQ((i=i->prev())->n, 1);
-  VERIFY_EQ((i=i->prev())->n, 3);
-  VERIFY_EQ(i->prev(), &list);
-}
-
-TEST(unlink)
-{
-  ilist_element<elem> list;
-  elem obj1(1);
-  list.insert_after(obj1);
-  elem obj2(2);
-  list.insert_after(obj2);
-  elem obj3(3);
-  list.insert_after(obj3);
-  obj2.unlink();
-  elem *i = list.prev();
-  VERIFY_EQ(i->n, 1);
-  i = i->prev();
-  VERIFY_EQ(i->n, 3);
+  const clock_t clocks_per_tick = sysconf(_SC_CLK_TCK);
+  tms t;
+  times(&t);
+  clock_t deadline = t.tms_utime + t.tms_stime + clocks_per_tick/20;
+  VERIFY_SCOPE_MAX_REALTIME_MS(100)
+  {
+    for (;;)
+      {
+        for (volatile int n = 0; n < 100000; ++n)
+          ;
+        times(&t);
+        if (t.tms_utime + t.tms_stime > deadline) break;
+      }
+  }
 }
 
 int main(int argc, char *argv[])

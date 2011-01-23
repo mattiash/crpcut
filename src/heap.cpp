@@ -29,21 +29,13 @@
 #include <valgrind/valgrind.h>
 #include <valgrind/memcheck.h>
 namespace {
-  //template <typename A, typename B, typename C>
   inline void valgrind_create_mempool(void *a,size_t b,bool c) { VALGRIND_CREATE_MEMPOOL(a,b,c); }
-  //template <typename T>
   inline void valgrind_make_mem_noaccess(void *a, size_t  b) { VALGRIND_MAKE_MEM_NOACCESS(a, b);}
-  //  template <typename T>
   inline void valgrind_make_mem_undefined(void *a, size_t b) { VALGRIND_MAKE_MEM_UNDEFINED(a, b);}
-  //template <typename A, typename B, typename C, typename D>
   inline void valgrind_malloclike_block(void *a, size_t b, size_t c, bool d) { VALGRIND_MALLOCLIKE_BLOCK(a, b, c, d);}
-  //template <typename T>
   inline void valgrind_make_mem_defined(void *a, size_t b) { VALGRIND_MAKE_MEM_DEFINED(a, b);}
-  //template <typename T>
   inline void valgrind_freelike_block(void *a, size_t b) { VALGRIND_FREELIKE_BLOCK(a, b);}
-  //  template <typename A, typename B>
   inline void valgrind_mempool_free(void *a, void  *b) { VALGRIND_MEMPOOL_FREE(a, b);}
-  //template <typename A, typename B, typename C>
   inline void valgrind_mempool_alloc(void *a, void *b, size_t c) { VALGRIND_MEMPOOL_ALLOC(a, b, c);}
 }
 #else
@@ -191,6 +183,7 @@ namespace crpcut
     {
       current_root = old_root_;
       if (file_) assert_empty();
+      remove_object(this);
     }
     local_root* local_root::current()
     {
@@ -378,7 +371,7 @@ namespace crpcut
 
     int recursive_check::count = -1;
 
-    /*static*/void *alloc_mem(size_t s, alloc_type type) throw ()
+    static void *alloc_mem(size_t s, alloc_type type) throw ()
     {
       recursive_check recursive;
       if (!recursive)

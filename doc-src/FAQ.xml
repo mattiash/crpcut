@@ -150,11 +150,15 @@
           better to continue and see if there are more errors?</para>
       </question>
       <answer>
-        <para>The thought is tempting, but if an early assertion is found
-          to be false, how likely is the result from the rest of the code to
-          be of any real value? In the worst case it will do something harmful.
-          If the test is terminated immediately, it cannot do any further
-          damage.</para>
+        <para>What is better depends on the situation. Some times it is no use
+        to continue a test after a failed condition, because the state is not
+        one that makes sense for the rest of the test. At other times, more
+        checked conditions can give more insight into what went wrong.</para>
+        <para>This is why &crpcut; offers both ASSERT macros, that terminate
+        the test pracess on failure, and VERIFY macros, that allow execution
+        to continue even when the test is marked as failed.</para>
+        <para>Which is better to use is a judgement call from case to case.
+        </para>
       </answer>
     </qandaentry>
 
@@ -400,9 +404,10 @@
           tests that leave the test function body by throwing an exception.
         </para>
         <para>
-          Tests that fail, however, or tests that themselves choose to exit
-          abnormally, for example by calling <function>_Exit</function>() or
-          <function>abort</function>(), will not reliably get the collected
+          Tests that fail ASSERT checks, however, or tests that themselves
+          choose to exit abnormally, for example by calling
+          <function>_Exit</function>() or <function>abort</function>(), will
+          not reliably get the collected
           <ulink url="http://gcc.gnu.org/onlinedocs/gcc/Gcov.html">gcov</ulink>
           data flushed, even when that is the expected behaviour of the
           test.
@@ -496,12 +501,22 @@
       </question>
       <answer>
         <para>
-          Combine the modifiers
+          A broad check can be made for the entire test function with
           <xref linkend="DEADLINE_CPU_MS" xrefstyle="select:title"/> and
           <xref linkend="EXPECT_REALTIME_TIMEOUT_MS" xrefstyle="select:title"/>.
           The former imposes a limit on the maximum allowed CPU-time for the test,
           so that it cannot busy-wait. The latter requires a minimum realtime
           duration for the test, so if the test finishes earlier, it fails.
+        </para>
+        <para>It is also possible to make more fine grained checks with the
+        ASSERT macros
+        <xref linkend="ASSERT_SCOPE_MAX_CPUTIME_MS" xrefstyle="select:title"/>,
+        <xref linkend="ASSERT_SCOPE_MAX_REALTIME_MS" xrefstyle="select:title"/>,
+        <xref linkend="ASSERT_SCOPE_MIN_REALTIME_MS" xrefstyle="select:title"/>
+        and the corresponding VERIFY macros
+        <xref linkend="VERIFY_SCOPE_MAX_CPUTIME_MS" xrefstyle="select:title"/>,
+        <xref linkend="VERIFY_SCOPE_MAX_REALTIME_MS" xrefstyle="select:title"/>,
+        <xref linkend="VERIFY_SCOPE_MIN_REALTIME_MS" xrefstyle="select:title"/>
         </para>
       </answer>
     </qandaentry>
@@ -550,7 +565,7 @@
       </question>
       <answer>
         <para>
-          &crpcut; requires version 1.4.0.
+          &crpcut; requires version 1.4.0. or later.
         </para>
       </answer>
     </qandaentry>

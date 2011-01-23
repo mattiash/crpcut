@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,68 +24,48 @@
  * SUCH DAMAGE.
  */
 
+
 #include <crpcut.hpp>
-#include "ilist_element.hpp"
+#include <string>
 
-struct elem : public ilist_element<elem>
+TEST(heap_in_balance)
 {
-  elem(int i) : n(i) {}
-  int n;
-};
-
-TEST(create_and_destroy_empty)
-{
-  ilist_element<elem> list;
-  ASSERT_TRUE(list.is_empty());
+  std::string before("a");
+  VERIFY_SCOPE_HEAP_LEAK_FREE
+  {
+    std::string after("b");
+  }
 }
 
-TEST(insert_and_traverse_one_element)
+TEST(heap_imbalance)
 {
-  ilist_element<elem> list;
-  elem obj(1);
-  list.insert_after(obj);
-  ASSERT_FALSE(list.is_empty());
-  ASSERT_TRUE(list.next()->n == 1);
+  VERIFY_SCOPE_HEAP_LEAK_FREE     // no leak reported here
+  {
+    std::string before("a");
+    VERIFY_SCOPE_HEAP_LEAK_FREE
+    {                             // This is not a memory leak, but it is
+      std::string after("b");     // reported as such because the object
+      std::swap(before, after);   // allocated here is not released at the
+    }                             // end of the block
+  }
 }
 
-TEST(several_elements)
+TEST(heap_leak)
 {
-  ilist_element<elem> list;
-
-  elem obj1(1);
-  list.insert_after(obj1);
-  elem *p2 = new elem(2);
-  list.insert_after(*p2);
-  elem obj3(3);
-  list.insert_after(obj3);
-
-  elem *i = list.next();
-  VERIFY_EQ(i->n, 3);
-  VERIFY_EQ((i=i->next())->n, 2);
-  VERIFY_EQ((i=i->next())->n, 1);
-  ASSERT_EQ(i, &list);
-  delete p2;
-  VERIFY_EQ((i=i->prev())->n, 1);
-  VERIFY_EQ((i=i->prev())->n, 3);
-  VERIFY_EQ(i->prev(), &list);
+  char *p[5];
+  VERIFY_SCOPE_HEAP_LEAK_FREE
+  {
+    int i;
+    for (i = 0; i < 5; ++i)
+      {
+        p[i] = new char[i+1];
+      }
+    while (--i > 0)
+      {
+        delete[] p[i];
+      }
+  }
 }
-
-TEST(unlink)
-{
-  ilist_element<elem> list;
-  elem obj1(1);
-  list.insert_after(obj1);
-  elem obj2(2);
-  list.insert_after(obj2);
-  elem obj3(3);
-  list.insert_after(obj3);
-  obj2.unlink();
-  elem *i = list.prev();
-  VERIFY_EQ(i->n, 1);
-  i = i->prev();
-  VERIFY_EQ(i->n, 3);
-}
-
 int main(int argc, char *argv[])
 {
   return crpcut::run(argc, argv);
