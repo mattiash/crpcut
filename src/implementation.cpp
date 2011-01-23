@@ -121,6 +121,13 @@ namespace crpcut {
     }
 
 
+    void report_reader::close()
+    {
+      wrapped::close(response_fd);
+      response_fd = -1;
+      fdreader::close();
+    }
+
     bool report_reader::do_read(int fd, bool do_reply)
     {
       comm::type t;

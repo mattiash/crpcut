@@ -796,7 +796,7 @@ namespace crpcut {
           }
         if (read_failed || desc.hup())
           {
-            desc->unregister();
+            desc->close();
             crpcut_test_case_registrator *r = desc->get_registrator();
             if (!r->crpcut_has_active_readers())
               {

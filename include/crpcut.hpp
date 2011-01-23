@@ -392,6 +392,7 @@ namespace crpcut {
     char *               strerror(int n);
     size_t               strlen(const char *r);
     ssize_t              write(int fd, const void* p, size_t s);
+    int                  close(int fd);
   }
 
   namespace lib {
@@ -1275,10 +1276,8 @@ namespace crpcut {
         using std::ostringstream;
         std::string s;
         os.str().swap(s);
-        /*
         os.~ostringstream();
         new (&os) ostringstream(); // Just how ugly is this?
-        */
         size_t len = s.length();
         char *p = static_cast<char*>(alloca(len));
         s.copy(p, len);
@@ -1401,7 +1400,7 @@ namespace crpcut {
     public:
       bool read(bool do_reply);
       crpcut_test_case_registrator *get_registrator() const;
-      void close();
+      virtual void close();
       void unregister();
       virtual ~fdreader() {} // silence gcc, it's really not needed
     protected:
@@ -1427,6 +1426,7 @@ namespace crpcut {
     {
     public:
       report_reader(crpcut_test_case_registrator *r);
+      virtual void close();
       void set_fds(int in_fd, int out_fd);
     private:
       virtual bool do_read(int fd, bool do_reply);
@@ -3282,7 +3282,7 @@ namespace crpcut {
     {
       if (fd_)
         {
-          ::close(fd_);
+          wrapped::close(fd_);
         }
       unregister();
     }
@@ -3342,7 +3342,7 @@ namespace crpcut {
             {
               out << "\n  what()=" << msg;
             }
-          crpcut::comm::report(crpcut::comm::exit_fail, out);
+          crpcut::comm::report(comm::exit_fail, out);
         }
     }
 
