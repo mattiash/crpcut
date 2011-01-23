@@ -1165,7 +1165,7 @@ TESTS = {
   'timeouts::scoped::should_fail_realtime_short_sleep' =>
   Test.new('FAILED').
   log('violation',
-      /ASSERT_SCOPE_MAX_REALTIME_MS.*Actual time used was [23]ms/me),
+      /ASSERT_SCOPE_MAX_REALTIME_MS.*Actual time used was 2[0-5]ms/me),
 
   'timeouts::scoped::should_succeed_oversleep' =>
   Test.new('PASSED'),
@@ -1174,6 +1174,29 @@ TESTS = {
   Test.new('FAILED').
   log('violation',
       /ASSERT_SCOPE_MAX_CPUTIME_MS.*Actual time used was [1-5]\d\d\dms/me),
+
+
+  'timeouts::scoped::should_succeed_verify_realtime_short_sleep' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'timeouts::scoped::should_fail_verify_realtime_short_sleep' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_SCOPE_MAX_REALTIME_MS.*Actual time used was 2[0-5]ms/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'timeouts::scoped::should_succeed_verify_oversleep' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'timeouts::scoped::should_fail_verify_cputime_long' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_SCOPE_MAX_CPUTIME_MS.*Actual time used was [1-5]\d\d\dms/me).
+  log('info', /after/).
+  log('violation', //),
 
   'very_slow_success' =>
   Test.new('PASSED'),

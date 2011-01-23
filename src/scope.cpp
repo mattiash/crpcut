@@ -55,7 +55,7 @@ namespace crpcut {
 
     bool time_base::max::busted(unsigned long now, unsigned long deadline)
     {
-      return now >= deadline;
+      return now > deadline;
     }
 
     const char *time_base::realtime::name()

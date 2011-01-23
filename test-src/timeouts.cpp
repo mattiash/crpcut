@@ -123,19 +123,19 @@ TESTSUITE(timeouts)
 
     TEST(should_fail_realtime_short_sleep)
     {
-      ASSERT_SCOPE_MAX_REALTIME_MS(1)
+      ASSERT_SCOPE_MAX_REALTIME_MS(15)
       {
-        usleep(2000);
+        usleep(20000);
       }
     }
 
     TEST(should_succeed_oversleep)
     {
-      ASSERT_SCOPE_MIN_REALTIME_MS(3)
+      ASSERT_SCOPE_MIN_REALTIME_MS(35)
       {
-        ASSERT_SCOPE_MAX_CPUTIME_MS(1)
+        ASSERT_SCOPE_MAX_CPUTIME_MS(5)
         {
-          usleep(4000);
+          usleep(40000);
         }
       }
     }
@@ -159,6 +159,58 @@ TESTSUITE(timeouts)
             }
         }
       }
+    }
+
+    TEST(should_succeed_verify_realtime_short_sleep)
+    {
+      VERIFY_SCOPE_MAX_REALTIME_MS(10)
+      {
+        usleep(1000);
+      }
+      INFO << "after";
+    }
+
+    TEST(should_fail_verify_realtime_short_sleep)
+    {
+      VERIFY_SCOPE_MAX_REALTIME_MS(15)
+      {
+        usleep(20000);
+      }
+      INFO << "after";
+    }
+
+    TEST(should_succeed_verify_oversleep)
+    {
+      VERIFY_SCOPE_MIN_REALTIME_MS(35)
+      {
+        VERIFY_SCOPE_MAX_CPUTIME_MS(5)
+        {
+          usleep(40000);
+        }
+      }
+      INFO << "after";
+    }
+
+    TEST(should_fail_verify_cputime_long)
+    {
+      const clock_t clocks_per_tick = sysconf(_SC_CLK_TCK);
+      tms t;
+      times(&t);
+      clock_t deadline = t.tms_utime + t.tms_stime + clocks_per_tick;
+      VERIFY_SCOPE_MAX_CPUTIME_MS(900)
+      {
+        VERIFY_SCOPE_MIN_REALTIME_MS(1000)
+        {
+          for (;;)
+            {
+              for (volatile int n = 0; n < 100000; ++n)
+                ;
+              times(&t);
+              if (t.tms_utime + t.tms_stime > deadline) break;
+            }
+        }
+      }
+      INFO << "after";
     }
 
   }
