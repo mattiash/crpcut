@@ -4225,20 +4225,29 @@ namespace crpcut {
       }
       ~time()
       {
-        unsigned long t = clock::now();
-        if (test_case_factory::timeouts_enabled()
-            && cond::busted(t, deadline_))
+        //        if (limit_ + 1) // wrap around to 0 signals disabled temporary
           {
-            comm::direct_reporter<action>()
-              << filename_ << ":" << line_ << "\n"
-              << crpcut_check_name<action>::string()
-              << "_SCOPE_" << cond::name()
-                 << "_" << clock::name() << "_MS(" << limit_ << ")"
-              "\nActual time used was " << t - (deadline_-limit_) << "ms";
+            unsigned long t = clock::now();
+            if (test_case_factory::timeouts_enabled()
+                && cond::busted(t, deadline_))
+              {
+                comm::direct_reporter<action>()
+                  << filename_ << ":" << line_ << "\n"
+                  << crpcut_check_name<action>::string()
+                  << "_SCOPE_" << cond::name()
+                  << "_" << clock::name() << "_MS(" << limit_ << ")"
+                  "\nActual time used was " << t - (deadline_-limit_) << "ms";
+              }
           }
       }
+      time(const time& r)
+        : time_base(r),
+          limit_(r.limit_)
+      {
+        typedef unsigned long ul;
+        r.limit_ = ~(ul());
+      }
     private:
-      time(const time&);
       time& operator=(const time&);
 
       unsigned long const limit_;
