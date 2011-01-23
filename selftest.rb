@@ -899,7 +899,29 @@ TESTS = {
   Test.new('FAILED').
   log('violation',
        /#{PR_H}ASSERT_PRED\(is_positive, --v\)\s+param1 = -1/me),
+#
+  'predicates::should_succeed_verify_simple_func' =>
+  Test.new('PASSED').
+  log('info', /after/),
 
+  'predicates::should_fail_verify_simple_func' =>
+  Test.new('FAILED').
+  log('fail',
+       /#{PR_H}VERIFY_PRED\(is_positive, v\)\s+param1 = -1/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'predicates::should_succeed_verify_simple_func_with_param_side_effect' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'predicates::should_fail_verify_simple_func_with_param_side_effect' =>
+  Test.new('FAILED').
+  log('fail',
+       /#{PR_H}VERIFY_PRED\(is_positive, --v\)\s+param1 = -1/me).
+  log('info', /after/).
+  log('violation', //),
+#
   'predicates::should_succeed_func_wrap_class' =>
   Test.new('PASSED'),
 
@@ -908,6 +930,18 @@ TESTS = {
   log('violation',
       /#{PR_H}ASSERT_PRED\(bifuncwrap.*less.*strcmp.*katt.*apa\"\)\s+param1 = katt\s+param2 = apa/me),
 
+#
+  'predicates::should_succeed_verify_func_wrap_class' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'predicates::should_fail_verify_func_wrap_class' =>
+  Test.new('FAILED').
+  log('fail',
+      /#{PR_H}VERIFY_PRED\(bifuncwrap.*less.*strcmp.*katt.*apa\"\)\s+param1 = katt\s+param2 = apa/me).
+  log('info', /after/).
+  log('violation', //),
+#
   'predicates::should_succeed_streamable_pred' =>
   Test.new('PASSED'),
 
@@ -924,6 +958,29 @@ TESTS = {
   log('violation',
       /#{PR_H}ASSERT_PRED.*pointing to:\s+4.*pointing to:\s+3/me),
 
+#
+  'predicates::should_succeed_verify_streamable_pred' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'predicates::should_fail_verify_streamable_pred' =>
+  Test.new('FAILED').
+  log('fail',
+      /#{PR_H}VERIFY_PRED\(string_equal\(.*"katt"\)\s+param1 = katt\s+string_equal.*\) :\ncompare.*equal to "apa"/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'predicates::should_succeed_verify_ptr_deref_eq' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'predicates::should_fail_verify_ptr_deref_eq' =>
+  Test.new('FAILED').
+  log('fail',
+      /#{PR_H}VERIFY_PRED.*pointing to:\s+4.*pointing to:\s+3/me).
+  log('info', /after/).
+  log('violation', //),
+#
   'collate::should_succeed_collation_string' =>
   Test.new('PASSED'),
 

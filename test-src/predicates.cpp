@@ -93,6 +93,35 @@ TESTSUITE(predicates)
     ASSERT_PRED(is_positive, --v);
   }
 
+  TEST(should_succeed_verify_simple_func)
+  {
+    int v = 1;
+    VERIFY_PRED(is_positive, v);
+    INFO << "after";
+  }
+
+  TEST(should_fail_verify_simple_func)
+  {
+    int v = -1;
+    VERIFY_PRED(is_positive, v);
+    INFO << "after";
+  }
+
+  TEST(should_succeed_verify_simple_func_with_param_side_effect)
+  {
+    int v = 1;
+    VERIFY_PRED(is_positive, v--);
+    ASSERT_EQ(v, 0);
+    INFO << "after";
+  }
+
+  TEST(should_fail_verify_simple_func_with_param_side_effect)
+  {
+    int v = 0;
+    VERIFY_PRED(is_positive, --v);
+    INFO << "after";
+  }
+
   template <typename RC, typename RT, typename P1, typename P2>
   class bifuncwrap_t
   {
@@ -119,6 +148,18 @@ TESTSUITE(predicates)
   TEST(should_fail_func_wrap_class)
   {
     ASSERT_PRED(bifuncwrap<std::less<int> >(std::strcmp, 0), "katt", "apa");
+  }
+
+  TEST(should_succeed_verify_func_wrap_class)
+  {
+    VERIFY_PRED(bifuncwrap<std::less<int> >(std::strcmp, 0), "apa", "katt");
+    INFO << "after";
+  }
+
+  TEST(should_fail_verify_func_wrap_class)
+  {
+    VERIFY_PRED(bifuncwrap<std::less<int> >(std::strcmp, 0), "katt", "apa");
+    INFO << "after";
   }
 
   class string_equal
@@ -158,5 +199,35 @@ TESTSUITE(predicates)
     int m = 3;
     int *p = &m;
     ASSERT_PRED(crpcut::match<ptr_deref_eq>(&n), p);
+  }
+
+  TEST(should_succeed_verify_streamable_pred)
+  {
+    VERIFY_PRED(string_equal("apa"), "apa");
+    INFO << "after";
+  }
+
+  TEST(should_fail_verify_streamable_pred)
+  {
+    VERIFY_PRED(string_equal("apa"), "katt");
+    INFO << "after";
+  }
+
+  TEST(should_succeed_verify_ptr_deref_eq)
+  {
+    int n = 3;
+    int m = 3;
+    int *p = &m;
+    VERIFY_PRED(crpcut::match<ptr_deref_eq>(&n), p);
+    INFO << "after";
+  }
+
+  TEST(should_fail_verify_ptr_deref_eq)
+  {
+    int n = 4;
+    int m = 3;
+    int *p = &m;
+    VERIFY_PRED(crpcut::match<ptr_deref_eq>(&n), p);
+    INFO << "after";
   }
 }
