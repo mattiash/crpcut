@@ -892,7 +892,7 @@ TESTS = {
   'timeouts::scoped::should_fail_cputime_long' =>
   Test.new('FAILED').
   log('violation',
-      /ASSERT_SCOPE_MAX_CPUTIME_MS.*Actual time used was 1\d\d\dms/me),
+      /ASSERT_SCOPE_MAX_CPUTIME_MS.*Actual time used was [1-5]\d\d\dms/me),
 
   'very_slow_success' =>
   Test.new('PASSED'),
