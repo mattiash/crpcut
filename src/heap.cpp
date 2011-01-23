@@ -205,14 +205,20 @@ namespace crpcut
 
     void local_root::assert_empty() const
     {
+      valgrind_make_mem_defined(const_cast<local_root*>(this), sizeof(*this));
       if (next == this) return;
 
       unsigned count = 0;
-      for (mem_list_element *p = next; p != this; p = p->next) ++count;
+      for (mem_list_element *p = next; p != this;p = p->next)
+        {
+          valgrind_make_mem_defined(p, sizeof(mem_list_element));
+          ++count;
+        }
       std::ostringstream msg;
       msg << count << (count == 1 ? " object\n\n" : " objects\n\n");
-      for (mem_list_element *p = next; p != this; p = p->next)
+      for (mem_list_element *p = next; p != this;)
         {
+          mem_list_element *n = p->next;
           msg << p->mem << " byte";
           if (p->mem != 1) msg << 's';
           msg << " at " << p+1 << " allocated with " << alloc_name[p->type];
@@ -230,11 +236,14 @@ namespace crpcut
               free(alloc_stack);
             }
 #endif
-          if (p->next != this) msg << '\n';
+          valgrind_make_mem_undefined(p, sizeof(mem_list_element));
+          if (n != this) msg << '\n';
+          p = n;
         }
       comm::direct_reporter<comm::exit_fail>() << file_ << ":" << line_
                                                << "\nASSERT_SCOPE_LEAK_FREE\n"
                                                << msg.str();
+      valgrind_make_mem_undefined(const_cast<local_root*>(this), sizeof(*this));
     }
 
     void local_root::insert_object(mem_list_element *p)
@@ -273,7 +282,8 @@ namespace crpcut
     }
     static void alloc_type_check(mem_list_element *p, alloc_type type) throw ()
     {
-      if (p->type != type)
+      int current_type = p->type;
+      if (current_type != type)
         {
           void *addr = p + 1;
           if (control::is_enabled())
@@ -282,10 +292,11 @@ namespace crpcut
               std::ostringstream msg;
               if (p->stack)
                 {
+                  int stack_size = p->stack_size;
                   void *stack_addr = p->stack+1;
                   void **bt = static_cast<void**>(stack_addr);
                   char **alloc_stack = backtrace_symbols.call<char**>(bt, p->stack_size);
-                  for (int i = 1; i < p->stack_size; ++i)
+                  for (int i = 1; i < stack_size; ++i)
                     {
                       msg << alloc_stack[i] << '\n';
                     }
@@ -302,7 +313,7 @@ namespace crpcut
               comm::direct_reporter<crpcut::comm::exit_fail>()
                 << "DEALLOC FAIL\n"
                 << free_name[type] << " " << addr << " was allocated using "
-                << alloc_name[p->type]
+                << alloc_name[current_type]
 #ifdef USE_BACKTRACE
                  << "\nAlloc stack:\n" << msg.str()
 #endif
