@@ -1620,7 +1620,7 @@ if ulimit != "unlimited" && ulimit.to_i == 0  then
   puts "> ulimit -c 100000"
   exit 1
 end
-puts "Self test takes nearly a minute to complete"
+puts "Self test takes a little over a minute to complete"
 RUNS.each do | params, expects |
   print "%-70s: " % "./test/testprog -x -p apa=katt#{params}"
   STDOUT.flush

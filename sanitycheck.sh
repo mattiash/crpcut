@@ -70,7 +70,7 @@ tests=(
     "-n -c 8"                  "run=$RN failed=$F blocked=0 nodeps=1"
     "-n -c 8 -v"               "run=$RN failed=$F blocked=0 nodeps=1 verbose=1"
     )
-echo "sanity check takes about 50 seconds to complete"
+echo "sanity check takes just over one minute to complete"
 n=0
 echo apa > apafil
 while [ $n -lt ${#tests[*]} ]

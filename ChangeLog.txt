@@ -1,3 +1,5 @@
+2011-01-23 1.2.0
+
          * Added VERIFY_ macros to mirror the ASSERT_ macros. The difference
            is that execution of a test continues after a failed VERIFY_,
            although the test is marked as failed, whereas a failed ASSERT_
@@ -19,6 +21,7 @@
            libc.
 
            - int backtrace(void**, int)
+
            - char** backtrace_symbol(void**, int)
 
 
@@ -31,6 +34,8 @@
            all deadline expectations and scoped time asserts, such that no
            tests will fail due to their time consumption. This turns out
            to be useful when running tests under time consuming tools.
+
+         * Tightened a file descriptor leak in the main process.
 
 2010-11-21 1.1.1
 
