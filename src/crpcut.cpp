@@ -350,8 +350,8 @@ namespace crpcut {
       test_case_result(pid_t pid)
         :list_elem<test_case_result>(this),
          id(pid),
-         success(false),
          explicit_fail(false),
+         success(false),
          nonempty_dir(false),
          name(0),
          name_len(0),

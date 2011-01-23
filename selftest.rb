@@ -1229,6 +1229,22 @@ TESTS = {
   'heap::should_succeed_malloc_free_balance' =>
   Test.new('PASSED'),
 
+  'heap::should_fail_verify_scope_leak_free' =>
+  Test.new('FAILED').
+  log('info', //).
+  log('fail',
+      /1 object\n.*100 bytes at (0x)?[0-9A-Fa-f]+ allocated with malloc/me).
+  log('info', //).
+  log('violation', //),
+
+  'heap::should_succeed_verify_scope_leak_free' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'heap::should_succeed_verify_malloc_free_balance' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
   'heap::should_succeed_empty_balance_fix' =>
   Test.new('PASSED'),
 

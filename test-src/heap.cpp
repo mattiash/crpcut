@@ -86,6 +86,55 @@ TESTSUITE(heap)
     ASSERT_EQ(pre, crpcut::heap::allocated_bytes());
   }
 
+  TEST(should_fail_verify_scope_leak_free)
+  {
+    VERIFY_SCOPE_HEAP_LEAK_FREE
+    {
+      void *p = malloc(100);
+      INFO << "p=" << p;
+    }
+    INFO << "after";
+  }
+
+  TEST(should_succeed_verify_scope_leak_free)
+  {
+    class elem
+    {
+    public:
+      elem(elem *p) : next(p) {}
+      ~elem() { delete next; }
+    private:
+      elem *next;
+    };
+    VERIFY_SCOPE_HEAP_LEAK_FREE
+    {
+      elem *root = 0;
+      for (int i = 0; i < 20; ++i)
+      {
+        root = new elem(root);
+      }
+      delete root;
+    }
+    INFO << "after";
+  }
+
+  TEST(should_succeed_verify_malloc_free_balance)
+  {
+    size_t pre = crpcut::heap::allocated_bytes();
+    VERIFY_SCOPE_HEAP_LEAK_FREE
+      {
+        void *p1 = malloc(100);
+        VERIFY_LE(pre + 100, crpcut::heap::allocated_bytes());
+        void *p2 = malloc(150);
+        VERIFY_LE(pre + 250, crpcut::heap::allocated_bytes());
+        free(p1);
+        free(p2);
+      }
+    VERIFY_EQ(pre, crpcut::heap::allocated_bytes());
+    INFO << "after";
+  }
+
+
   struct no_leak_fixture
   {
     size_t pre;

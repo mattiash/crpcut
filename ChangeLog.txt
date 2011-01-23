@@ -1,3 +1,11 @@
+         * Added VERIFY_ macros to mirror the ASSERT_ macros. The difference
+           is that execution of a test continues after a failed VERIFY_,
+           although the test is marked as failed, whereas a failed ASSERT_
+           immediately terminates the failed test.
+
+         * Added the 'fail' entry to the list of entries that can occur
+           in a result log for a test. This is a change in the XML Schema.
+
          * Added ASSERT_SCOPE_HEAP_LEAK_FREE, making it simpler to assert
            that a block of code deas not leak heap objects. Failed
            assertions list all objects that were added in the block of code

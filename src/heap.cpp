@@ -168,15 +168,17 @@ namespace crpcut
     local_root::local_root()
       : file_(0),
         line_(0),
-        old_root_(0)
+        old_root_(0),
+        check_type_(comm::exit_fail)
     {
       next = prev = this;
     }
 
-    local_root::local_root(const char *file, size_t line)
+    local_root::local_root(comm::type t, const char *file, size_t line)
       : file_(file),
         line_(line),
-        old_root_(current())
+        old_root_(current()),
+        check_type_(t)
       {
         current_root = this;
         next = this;
@@ -240,9 +242,20 @@ namespace crpcut
           if (n != this) msg << '\n';
           p = n;
         }
-      comm::direct_reporter<comm::exit_fail>() << file_ << ":" << line_
-                                               << "\nASSERT_SCOPE_LEAK_FREE\n"
-                                               << msg.str();
+      if (check_type_ == comm::exit_fail)
+        {
+          comm::direct_reporter<comm::exit_fail>()
+            << file_ << ":" << line_
+            << "\nASSERT_SCOPE_LEAK_FREE\n"
+            << msg.str();
+        }
+      else
+        {
+          comm::direct_reporter<comm::fail>()
+            << file_ << ":" << line_
+            << "\nVERIFY_SCOPE_LEAK_FREE\n"
+            << msg.str();
+        }
       valgrind_make_mem_undefined(const_cast<local_root*>(this), sizeof(*this));
     }
 

@@ -325,54 +325,6 @@ namespace crpcut {
   }
 
   class test_case_factory;
-  namespace heap {
-    const size_t system = ~size_t();
-    size_t allocated_bytes();
-    size_t allocated_objects();
-    size_t set_limit(size_t n); // must be higher than allocated_bytes()
-
-    class control {
-    public:
-      static bool is_enabled() { return enabled; }
-    private:
-      static void enable();
-      friend class ::crpcut::test_case_factory;
-      static bool enabled;
-    };
-
-    struct mem_list_element
-    {
-      mem_list_element        *next;
-      mem_list_element        *prev;
-      mem_list_element        *stack;
-      int                      stack_size;
-      size_t                   mem;
-      int                      type;
-    };
-
-    class local_root : public mem_list_element
-    {
-    public:
-      local_root(const char *file, size_t line);
-      ~local_root();
-      operator const local_root*() const { return 0; }
-      void insert_object(mem_list_element *p);
-      void remove_object(mem_list_element *p);
-      static local_root* current();
-    private:
-      local_root();
-      void assert_empty() const;
-      local_root(const local_root&);
-      local_root& operator=(const local_root&);
-
-      char      const * const file_;
-      size_t            const line_;
-      local_root       *const old_root_;
-
-      static local_root      *current_root;
-    };
-
-  }
 
   typedef enum { verbatim, uppercase, lowercase } case_convert_type;
   template <case_convert_type>
@@ -1252,7 +1204,7 @@ namespace crpcut {
     class direct_reporter
     {
     public:
-      direct_reporter() : heap_limit(heap::set_limit(heap::system)) {}
+      direct_reporter();
       template <typename V>
       direct_reporter& operator<<(V& v);
       template <typename V>
@@ -1273,19 +1225,7 @@ namespace crpcut {
       {
         os << p; return *this;
       }
-      ~direct_reporter() {
-        using std::ostringstream;
-        std::string s;
-        os.str().swap(s);
-        os.~ostringstream();
-        new (&os) ostringstream(); // Just how ugly is this?
-        size_t len = s.length();
-        char *p = static_cast<char*>(alloca(len));
-        s.copy(p, len);
-        std::string().swap(s);
-        heap::set_limit(heap_limit);
-        report(t, p, len);
-      }
+      ~direct_reporter();
     private:
       direct_reporter(const direct_reporter &);
       direct_reporter& operator=(const direct_reporter&);
@@ -1294,6 +1234,56 @@ namespace crpcut {
     };
 
   } // namespace comm
+
+  namespace heap {
+    const size_t system = ~size_t();
+    size_t allocated_bytes();
+    size_t allocated_objects();
+    size_t set_limit(size_t n); // must be higher than allocated_bytes()
+
+    class control {
+    public:
+      static bool is_enabled() { return enabled; }
+    private:
+      static void enable();
+      friend class ::crpcut::test_case_factory;
+      static bool enabled;
+    };
+
+    struct mem_list_element
+    {
+      mem_list_element        *next;
+      mem_list_element        *prev;
+      mem_list_element        *stack;
+      int                      stack_size;
+      size_t                   mem;
+      int                      type;
+    };
+
+    class local_root : public mem_list_element
+    {
+    public:
+      local_root(comm::type type, const char *file, size_t line);
+      ~local_root();
+      operator const local_root*() const { return 0; }
+      void insert_object(mem_list_element *p);
+      void remove_object(mem_list_element *p);
+      static local_root* current();
+    private:
+      local_root();
+      void assert_empty() const;
+      local_root(const local_root&);
+      local_root& operator=(const local_root&);
+
+      char      const * const file_;
+      size_t            const line_;
+      local_root       *const old_root_;
+      comm::type        const check_type_;
+
+      static local_root      *current_root;
+    };
+
+  }
 
   template <comm::type> struct crpcut_check_name;
 
@@ -3259,6 +3249,12 @@ namespace crpcut {
         }
     }
 
+    template <comm::type type>
+    direct_reporter<type>::direct_reporter()
+      : heap_limit(heap::set_limit(heap::system))
+    {
+    }
+
     template <comm::type t> template <typename V>
     direct_reporter<t>& direct_reporter<t>::operator<<(const V& v)
     {
@@ -3273,6 +3269,21 @@ namespace crpcut {
       return *this;
     }
 
+    template <comm::type type>
+    direct_reporter<type>::~direct_reporter()
+    {
+      using std::ostringstream;
+      std::string s;
+      os.str().swap(s);
+      os.~ostringstream();
+      new (&os) ostringstream(); // Just how ugly is this?
+      size_t len = s.length();
+      char *p = static_cast<char*>(alloca(len));
+      s.copy(p, len);
+      std::string().swap(s);
+      heap::set_limit(heap_limit);
+      report(type, p, len);
+    }
   } // namespace comm
 
   namespace implementation {
@@ -4633,13 +4644,19 @@ namespace crpcut {
 #define VERIFY_SCOPE_MAX_CPUTIME_MS(ms)         \
   CRPCUT_CHECK_SCOPE_TYPE_TIME_MS(fail, max, cputime, ms)
 
-#define ASSERT_SCOPE_HEAP_LEAK_FREE \
+#define CRPCUT_CHECK_SCOPE_HEAP_LEAK_FREE(type)                         \
   if (const crpcut::heap::local_root & CRPCUT_LOCAL_NAME(leak_free_scope) \
-      = crpcut::heap::local_root(__FILE__, __LINE__))                   \
+      = crpcut::heap::local_root(crpcut::comm::type,__FILE__, __LINE__)) \
     {                                                                   \
       CRPCUT_LOCAL_NAME(leak_free_scope).operator const local_root*();  \
     }                                                                   \
   else
+
+#define ASSERT_SCOPE_HEAP_LEAK_FREE \
+  CRPCUT_CHECK_SCOPE_HEAP_LEAK_FREE(exit_fail)
+
+#define VERIFY_SCOPE_HEAP_LEAK_FREE \
+  CRPCUT_CHECK_SCOPE_HEAP_LEAK_FREE(fail)
 
 class crpcut_testsuite_id;
 class crpcut_testsuite_dep
