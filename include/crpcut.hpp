@@ -1210,6 +1210,7 @@ namespace crpcut {
       translator(info),                          \
       translator(exit_ok),                       \
       translator(exit_fail),                     \
+      translator(fail),                          \
       translator(dir),                           \
       translator(set_timeout),                   \
       translator(cancel_timeout),                \
@@ -1293,6 +1294,20 @@ namespace crpcut {
     };
 
   } // namespace comm
+
+  template <comm::type> struct crpcut_check_name;
+
+  template <>
+  struct crpcut_check_name<comm::exit_fail>
+  {
+    static const char *string() { return "ASSERT"; }
+  };
+
+  template <>
+  struct crpcut_check_name<comm::fail>
+  {
+    static const char *string() { return "VERIFY"; }
+  };
 
   namespace stream {
     template <typename charT, class traits = std::char_traits<charT> >
@@ -1402,7 +1417,7 @@ namespace crpcut {
       crpcut_test_case_registrator *get_registrator() const;
       virtual void close();
       void unregister();
-      virtual ~fdreader() {} // silence gcc, it's really not needed
+      virtual ~fdreader() { } // silence gcc, it's really not needed
     protected:
       fdreader(crpcut_test_case_registrator *r, int fd = 0);
       void set_fd(int fd);
@@ -1931,7 +1946,7 @@ namespace crpcut {
         : location(loc), op(ops)
       {
       }
-      template <typename T1, typename T2>
+      template <comm::type action, typename T1, typename T2>
       void verify(bool b, T1 v1, const char *n1, T2 v2, const char *n2) const
       {
         if (!b)
@@ -1940,7 +1955,8 @@ namespace crpcut {
             using std::ostringstream;
             ostringstream os;
             os << location
-               << "\nASSERT_" << op << "(" << n1 << ", " << n2 << ")";
+               << "\n" << crpcut_check_name<action>::string()
+               << "_" << op << "(" << n1 << ", " << n2 << ")";
 
             static const char *prefix[] = { "\n  where ", "\n        " };
             bool prev = stream_param(os, prefix[0], n1, v1);
@@ -1953,7 +1969,7 @@ namespace crpcut {
             std::string().swap(s);
             os.~ostringstream();
             new (&os) ostringstream();
-            comm::report(comm::exit_fail, p, len);
+            comm::report(action, p, len);
           }
       }
     private:
@@ -1961,7 +1977,7 @@ namespace crpcut {
       const char *op;
     };
 
-    template <typename T1, typename T2>
+    template <comm::type action, typename T1, typename T2>
     class tester_t : tester_base
     {
       typedef typename param_traits<T1>::type type1;
@@ -1970,32 +1986,32 @@ namespace crpcut {
       tester_t(const char *loc, const char *ops) : tester_base(loc, ops) {}
       void EQ(type1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<type1, type2>(v1 == v2, v1, n1, v2, n2);
+        verify<action, type1, type2>(v1 == v2, v1, n1, v2, n2);
       }
       void NE(type1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<type1, type2>(v1 != v2, v1, n1, v2, n2);
+        verify<action, type1, type2>(v1 != v2, v1, n1, v2, n2);
       }
       void GT(type1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<type1, type2>(v1 > v2, v1, n1, v2, n2);
+        verify<action, type1, type2>(v1 > v2, v1, n1, v2, n2);
       }
       void GE(type1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<type1, type2>(v1 >= v2, v1, n1, v2, n2);
+        verify<action, type1, type2>(v1 >= v2, v1, n1, v2, n2);
       }
       void LT(type1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<type1, type2>(v1 < v2, v1, n1, v2, n2);
+        verify<action, type1, type2>(v1 < v2, v1, n1, v2, n2);
       }
       void LE(type1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<type1, type2>(v1 <= v2, v1, n1, v2, n2);
+        verify<action, type1, type2>(v1 <= v2, v1, n1, v2, n2);
       }
     };
 
-    template <typename T1>
-    class tester_t<T1, void> : tester_base
+    template <comm::type action, typename T1>
+    class tester_t<action, T1, void> : tester_base
     {
       typedef typename param_traits<T1>::type type1;
     public:
@@ -2003,37 +2019,37 @@ namespace crpcut {
       template <typename T2>
       void EQ(type1 v1, const char *n1, T2 v2, const char *n2) const
       {
-        verify<type1, T2>(v1 == 0, v1, n1, v2, n2);
+        verify<action, type1, T2>(v1 == 0, v1, n1, v2, n2);
       }
       template <typename T2>
       void NE(type1 v1, const char *n1, T2 v2, const char *n2) const
       {
-        verify<type1, T2>(v1 != 0, v1, n1, v2, n2);
+        verify<action, type1, T2>(v1 != 0, v1, n1, v2, n2);
       }
       template <typename T2>
       void GT(type1 v1, const char *n1, T2 v2, const char *n2) const
       {
-        verify<type1, T2>(v1 > 0, v1, n1, v2, n2);
+        verify<action, type1, T2>(v1 > 0, v1, n1, v2, n2);
       }
       template <typename T2>
       void GE(type1 v1, const char *n1, T2 v2, const char *n2) const
       {
-        verify<type1, T2>(v1 >= 0, v1, n1, v2, n2);
+        verify<action, type1, T2>(v1 >= 0, v1, n1, v2, n2);
       }
       template <typename T2>
       void LT(type1 v1, const char *n1, T2 v2, const char *n2) const
       {
-        verify<type1, T2>(v1 < 0, v1, n1, v2, n2);
+        verify<action, type1, T2>(v1 < 0, v1, n1, v2, n2);
       }
       template <typename T2>
       void LE(type1 v1, const char *n1, T2 v2, const char *n2) const
       {
-        verify<type1, T2>(v1 <= 0, v1, n1, v2, n2);
+        verify<action, type1, T2>(v1 <= 0, v1, n1, v2, n2);
       }
     };
 
-    template <typename T2>
-    class tester_t<void, T2> : tester_base
+    template <comm::type action, typename T2>
+    class tester_t<action, void, T2> : tester_base
     {
       typedef typename param_traits<T2>::type type2;
     public:
@@ -2041,80 +2057,83 @@ namespace crpcut {
       template <typename T1>
       void EQ(T1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<T1, type2>(0 == v2, v1, n1, v2, n2);
+        verify<action, T1, type2>(0 == v2, v1, n1, v2, n2);
       }
       template <typename T1>
       void NE(T1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<T1, type2>(0 != v2, v1, n1, v2, n2);
+        verify<action, T1, type2>(0 != v2, v1, n1, v2, n2);
       }
       template <typename T1>
       void GT(T1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<T1, type2>(0 > v2, v1, n1, v2, n2);
+        verify<action, T1, type2>(0 > v2, v1, n1, v2, n2);
       }
       template <typename T1>
       void GE(T1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<T1, type2>(0 >= v2, v1, n1, v2, n2);
+        verify<action, T1, type2>(0 >= v2, v1, n1, v2, n2);
       }
       template <typename T1>
       void LT(T1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<T1, type2>(0 < v2, v1, n1, v2, n2);
+        verify<action, T1, type2>(0 < v2, v1, n1, v2, n2);
       }
       template <typename T1>
       void LE(T1 v1, const char *n1, type2 v2, const char *n2) const
       {
-        verify<T1, type2>(0 <= v2, v1, n1, v2, n2);
+        verify<action, T1, type2>(0 <= v2, v1, n1, v2, n2);
       }
     };
 
-    template <>
-    class tester_t<void, void> /* pretty bizarre */ : tester_base
+    template <comm::type action>
+    class tester_t<action, void, void> /* pretty bizarre */ : tester_base
     {
     public:
       void EQ(int, const char*,int, const char*) const { }
       void NE(int, const char *n1, int, const char *n2) const
       {
-        verify<int,int>(false, 0, n1, 0, n2);
+        verify<action, int,int>(false, 0, n1, 0, n2);
       }
       void GT(int, const char *n1, int, const char *n2) const
       {
-        verify<int,int>(false, 0, n1, 0, n2);
+        verify<action, int,int>(false, 0, n1, 0, n2);
       }
       void GE(int, const char*, int, const char *) const { }
       void LT(int, const char *n1, int, const char *n2) const
       {
-        verify<int,int>(false, 0, n1, 0, n2);
+        verify<action, int,int>(false, 0, n1, 0, n2);
       }
       void LE(int, const char*, int, const char*) const { }
     };
 
-    template <bool null1, typename T1, bool null2, typename T2>
-    tester_t<typename if_else<null1, void, T1>::type,
+    template <comm::type action, bool null1, typename T1, bool null2, typename T2>
+    tester_t<action,
+             typename if_else<null1, void, T1>::type,
              typename if_else<null2, void, T2>::type>
     tester(const char *loc, const char *op)
     {
-      tester_t<typename if_else<null1, void, T1>::type,
-        typename if_else<null2, void, T2>::type> v(loc, op);
+      tester_t<action,
+               typename if_else<null1, void, T1>::type,
+               typename if_else<null2, void, T2>::type> v(loc, op);
       return v;
     }
 
+    template <comm::type action>
     class bool_tester
     {
       const char *loc_;
     public:
       bool_tester(const char *loc) : loc_(loc) {}
       template <typename T>
-      void assert_true(const T& v, const char *vn) const
+      void check_true(const T& v, const char *vn) const
       {
-        if (eval(v)) {} else { report("ASSERT_TRUE", v, vn); }
+        if (eval(v)) {} else { report("_TRUE", v, vn); }
       }
       template <typename T>
       void assert_false(const T& v, const char *vn) const
       {
-        if (eval(v)) { report("ASSERT_FALSE", v, vn); }
+        if (eval(v)) { report("_FALSE", v, vn); }
       }
     private:
       template <typename T>
@@ -2125,7 +2144,8 @@ namespace crpcut {
         using std::stringbuf;
         ostringstream os;
 
-        os << loc_ << "\n" << name << "(" << vn << ")\n"
+        os << loc_ << "\n" << crpcut_check_name<action>::string()
+           << name << "(" << vn << ")\n"
           "  is evaluated as:\n    ";
         conditionally_stream<8>(os, v);
         std::string s(os.str());
@@ -2135,7 +2155,7 @@ namespace crpcut {
         char *p = static_cast<char*>(alloca(len));
         s.copy(p, len);
         std::string().swap(s);
-        comm::report(crpcut::comm::exit_fail, p, len);
+        comm::report(action, p, len);
       }
     };
 
@@ -3320,7 +3340,6 @@ namespace crpcut {
       fdreader::set_fd(in_fd);
       response_fd = out_fd;
     }
-
     template <typename T>
     inline
     void crpcut_test_case_registrator::crpcut_run_test_case()
@@ -3342,7 +3361,7 @@ namespace crpcut {
             {
               out << "\n  what()=" << msg;
             }
-          crpcut::comm::report(comm::exit_fail, out);
+          comm::report(comm::exit_fail, out);
         }
     }
 
@@ -4184,7 +4203,7 @@ namespace crpcut {
       char const *  const filename_;
       size_t        const line_;
     };
-    template <typename cond, typename clock>
+    template <comm::type action, typename cond, typename clock>
     class time : public time_base
     {
     public:
@@ -4199,8 +4218,10 @@ namespace crpcut {
         if (test_case_factory::timeouts_enabled()
             && cond::busted(t, deadline_))
           {
-            comm::direct_reporter<crpcut::comm::exit_fail>()
-              << filename_ << ":" << line_ << "\nASSERT_SCOPE_" << cond::name()
+            comm::direct_reporter<action>()
+              << filename_ << ":" << line_ << "\n"
+              << crpcut_check_name<action>::string()
+              << "_SCOPE_" << cond::name()
                  << "_" << clock::name() << "_MS(" << limit_ << ")"
               "\nActual time used was " << t - (deadline_-limit_) << "ms";
           }
@@ -4374,93 +4395,111 @@ namespace crpcut {
 #define CRPCUT_IS_ZERO_LIT(x) (sizeof(crpcut::implementation::null_cmp::func(x)) == 1)
 
 
-#define CRPCUT_BINARY_ASSERT(name, lh, rh)                              \
+#define CRPCUT_BINARY_CHECK(action, name, lh, rh)                       \
   do {                                                                  \
     try {                                                               \
       crpcut::implementation::tester                                    \
-        <CRPCUT_IS_ZERO_LIT(lh), CRPCUT_DECLTYPE(lh),                   \
-        CRPCUT_IS_ZERO_LIT(rh), CRPCUT_DECLTYPE(rh)>                    \
+        <crpcut::comm::action,                                          \
+         CRPCUT_IS_ZERO_LIT(lh), CRPCUT_DECLTYPE(lh),                   \
+         CRPCUT_IS_ZERO_LIT(rh), CRPCUT_DECLTYPE(rh)>                   \
         (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__), #name)               \
         .name(lh, #lh, rh, #rh);                                        \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e), {                 \
-        FAIL <<                                                         \
-          "ASSERT_" #name "(" #lh ", " #rh ")\n"                        \
+        CRPCUT_CHECK_REPORT_HEAD(action) <<                             \
+          "_" #name "(" #lh ", " #rh ")\n"                              \
           "  caught std::exception\n"                                   \
           "  what()=" << CRPCUT_LOCAL_NAME(e).what();                   \
       })                                                                \
       CATCH_BLOCK(..., {                                                \
-          FAIL <<                                                       \
-            "ASSERT_" #name "(" #lh ", " #rh ")\n"                      \
+          CRPCUT_CHECK_REPORT_HEAD(action) <<                           \
+            "_" #name "(" #lh ", " #rh ")\n"                            \
             "  caught ...";                                             \
         })                                                              \
   } while(0)
 
 
 
-#define ASSERT_TRUE(a)                                                  \
+#define CRPCUT_CHECK_TRUE(action, a)                                    \
   do {                                                                  \
     try {                                                               \
-      crpcut::implementation::bool_tester                               \
+      crpcut::implementation::bool_tester<crpcut::comm::action>         \
         (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__))                      \
-        .assert_true((crpcut::expr::hook()->*a), #a);                      \
+        .check_true((crpcut::expr::hook()->*a), #a);                    \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
                 {                                                       \
-                  FAIL <<                                               \
-                    "ASSERT_TRUE(" #a ")\n"                             \
+                  CRPCUT_CHECK_REPORT_HEAD(action) <<                   \
+                    "_TRUE(" #a ")\n"                                   \
                     "  caught std::exception\n"                         \
                     "  what()=" << CRPCUT_LOCAL_NAME(e).what();         \
                 })                                                      \
     CATCH_BLOCK(..., {                                                  \
-        FAIL <<                                                         \
-          "ASSERT_TRUE(" #a ")\n"                                       \
+        CRPCUT_CHECK_REPORT_HEAD(action) <<                             \
+          "_TRUE(" #a ")\n"                                             \
           "  caught ...";                                               \
       })                                                                \
   } while(0)
 
-#define ASSERT_FALSE(a)                                                 \
+#define ASSERT_TRUE(a) CRPCUT_CHECK_TRUE(exit_fail, a)
+#define VERIFY_TRUE(a) CRPCUT_CHECK_TRUE(fail, a)
+
+#define CRPCUT_CHECK_FALSE(action, a)                                   \
   do {                                                                  \
     try {                                                               \
-      crpcut::implementation::bool_tester                               \
+      crpcut::implementation::bool_tester<crpcut::comm::action>         \
         (__FILE__ ":" CRPCUT_STRINGIZE_(__LINE__))                      \
-        .assert_false((crpcut::expr::hook()->*a), #a);                 \
+        .assert_false((crpcut::expr::hook()->*a), #a);                  \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
                 {                                                       \
-                  FAIL <<                                               \
-                    "ASSERT_FALSE(" #a ")\n"                            \
+                  CRPCUT_CHECK_REPORT_HEAD(action) <<                   \
+                    "_FALSE(" #a ")\n"                                  \
                     "  caught std::exception\n"                         \
                     "  what()=" << CRPCUT_LOCAL_NAME(e).what();         \
                 })                                                      \
     CATCH_BLOCK(..., {                                                  \
-        FAIL <<                                                         \
-          "ASSERT_FALSE(" #a ")\n"                                      \
+        CRPCUT_CHECK_REPORT_HEAD(action) <<                             \
+          "_FALSE(" #a ")\n"                                            \
           "  caught ...";                                               \
       })                                                                \
   } while(0)
 
+#define ASSERT_FALSE(a) CRPCUT_CHECK_FALSE(exit_fail, a)
+#define VERIFY_FALSE(a) CRPCUT_CHECK_FALSE(fail, a)
 
-#define ASSERT_EQ(lh, rh)  CRPCUT_BINARY_ASSERT(EQ, lh, rh)
+#define ASSERT_EQ(lh, rh)  CRPCUT_BINARY_CHECK(exit_fail, EQ, lh, rh)
 
-#define ASSERT_NE(lh, rh)  CRPCUT_BINARY_ASSERT(NE, lh, rh)
+#define ASSERT_NE(lh, rh)  CRPCUT_BINARY_CHECK(exit_fail, NE, lh, rh)
 
-#define ASSERT_GE(lh, rh)  CRPCUT_BINARY_ASSERT(GE, lh, rh)
+#define ASSERT_GE(lh, rh)  CRPCUT_BINARY_CHECK(exit_fail, GE, lh, rh)
 
-#define ASSERT_GT(lh, rh)  CRPCUT_BINARY_ASSERT(GT, lh, rh)
+#define ASSERT_GT(lh, rh)  CRPCUT_BINARY_CHECK(exit_fail, GT, lh, rh)
 
-#define ASSERT_LT(lh, rh)  CRPCUT_BINARY_ASSERT(LT, lh, rh)
+#define ASSERT_LT(lh, rh)  CRPCUT_BINARY_CHECK(exit_fail, LT, lh, rh)
 
-#define ASSERT_LE(lh, rh)  CRPCUT_BINARY_ASSERT(LE, lh, rh)
+#define ASSERT_LE(lh, rh)  CRPCUT_BINARY_CHECK(exit_fail, LE, lh, rh)
+
+#define VERIFY_EQ(lh, rh)  CRPCUT_BINARY_CHECK(fail, EQ, lh, rh)
+
+#define VERIFY_NE(lh, rh)  CRPCUT_BINARY_CHECK(fail, NE, lh, rh)
+
+#define VERIFY_GE(lh, rh)  CRPCUT_BINARY_CHECK(fail, GE, lh, rh)
+
+#define VERIFY_GT(lh, rh)  CRPCUT_BINARY_CHECK(fail, GT, lh, rh)
+
+#define VERIFY_LT(lh, rh)  CRPCUT_BINARY_CHECK(fail, LT, lh, rh)
+
+#define VERIFY_LE(lh, rh)  CRPCUT_BINARY_CHECK(fail, LE, lh, rh)
 
 #ifndef CRPCUT_NO_EXCEPTION_SUPPORT
-#define ASSERT_THROW(expr, exc)                                         \
+#define CRPCUT_CHECK_THROW(action, expr, exc)                           \
   do {                                                                  \
     try {                                                               \
       try {                                                             \
         expr;                                                           \
-        FAIL <<                                                         \
-          "ASSERT_THROW(" #expr ", " #exc ")\n"                         \
+        CRPCUT_CHECK_REPORT_HEAD(action) <<                             \
+          "_THROW(" #expr ", " #exc ")\n"                         \
           "  Did not throw";                                            \
       }                                                                 \
       catch (exc) {                                                     \
@@ -4468,41 +4507,58 @@ namespace crpcut {
       }                                                                 \
     }                                                                   \
     catch (std::exception &CRPCUT_LOCAL_NAME(e)) {                      \
-      FAIL <<                                                           \
-        "ASSERT_THROW(" #expr ", " #exc ")\n"                           \
+      CRPCUT_CHECK_REPORT_HEAD(action) <<                               \
+        "_THROW(" #expr ", " #exc ")\n"                                 \
         "  caught std::exception\n"                                     \
         "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
     }                                                                   \
     catch (...) {                                                       \
-      FAIL <<                                                           \
-        "ASSERT_THROW(" #expr ", " #exc ")\n"                           \
+      CRPCUT_CHECK_REPORT_HEAD(action) <<                               \
+        "_THROW(" #expr ", " #exc ")\n"                                 \
         "  caught ...";                                                 \
     }                                                                   \
   } while (0)
+
+#define ASSERT_THROW(expr, exc)                                         \
+  CRPCUT_CHECK_THROW(exit_fail, expr, exc)
+
+#define VERIFY_THROW(expr, exc)                                         \
+  CRPCUT_CHECK_THROW(fail, expr, exc)
 #endif
 
 #ifndef CRPCUT_NO_EXCEPTION_SUPPORT
-#define ASSERT_NO_THROW(expr)                                           \
+#define CRPCUT_CHECK_NO_THROW(action, expr)                             \
   do {                                                                  \
     try {                                                               \
       expr;                                                             \
     }                                                                   \
     catch(std::exception &CRPCUT_LOCAL_NAME(e)) {                       \
-      FAIL <<                                                           \
-        "ASSERT_NO_THROW(" #expr ")\n"                                  \
+      CRPCUT_CHECK_REPORT_HEAD(action) <<                               \
+        "_NO_THROW(" #expr ")\n"                                        \
         "  caught std::exception\n"                                     \
         "  what()=" << CRPCUT_LOCAL_NAME(e).what();                     \
     }                                                                   \
     catch (...) {                                                       \
-      FAIL <<                                                           \
-        "ASSERT_NO_THROW(" #expr ")\n"                                  \
+      CRPCUT_CHECK_REPORT_HEAD(action) <<                               \
+        "_NO_THROW(" #expr ")\n"                                        \
         "  caught ...";                                                 \
     }                                                                   \
   } while (0)
+
+#define ASSERT_NO_THROW(expr)                                           \
+  CRPCUT_CHECK_NO_THROW(exit_fail, expr)
+
+#define VERIFY_NO_THROW(expr)                                           \
+  CRPCUT_CHECK_NO_THROW(fail, expr)
 #endif
 
 
-#define ASSERT_PRED(pred, ...)                                          \
+#define CRPCUT_CHECK_REPORT_HEAD(action)                                \
+  crpcut::comm::direct_reporter<crpcut::comm::action>()                 \
+  << __FILE__ ":" CRPCUT_STRINGIZE_(__LINE__) "\n"                      \
+    << crpcut::crpcut_check_name<crpcut::comm::action>::string()        \
+
+#define CRPCUT_CHECK_PRED(action, pred, ...)                            \
   do {                                                                  \
     static const char CRPCUT_LOCAL_NAME(sep)[][3] = { ", ", "" };       \
     try {                                                               \
@@ -4518,16 +4574,17 @@ namespace crpcut {
           CRPCUT_LOCAL_NAME(m).copy(CRPCUT_LOCAL_NAME(p),               \
                                     CRPCUT_LOCAL_NAME(len));            \
           CRPCUT_LOCAL_NAME(p)[CRPCUT_LOCAL_NAME(len)]=0;               \
-            std::string().swap(CRPCUT_LOCAL_NAME(m));                   \
-          FAIL << "ASSERT_PRED(" #pred                                  \
-               << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                \
-               << #__VA_ARGS__ ")\n"                                    \
-               << CRPCUT_LOCAL_NAME(p);                                 \
+          std::string().swap(CRPCUT_LOCAL_NAME(m));                     \
+          CRPCUT_CHECK_REPORT_HEAD(action)                              \
+            << "_PRED(" #pred                                           \
+            << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                   \
+            << #__VA_ARGS__ ")\n"                                       \
+            << CRPCUT_LOCAL_NAME(p);                                    \
         }                                                               \
     }                                                                   \
     CATCH_BLOCK(std::exception &CRPCUT_LOCAL_NAME(e),                   \
                 {                                                       \
-                  FAIL << "ASSERT_PRED(" #pred                          \
+                  CRPCUT_CHECK_REPORT_HEAD(action) << "PRED(" #pred     \
                        << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]        \
                        << #__VA_ARGS__ ")\n"                            \
                        << "  caught std::exception\n"                   \
@@ -4535,29 +4592,46 @@ namespace crpcut {
                 }                                                       \
                 )                                                       \
     CATCH_BLOCK(..., {                                                  \
-        FAIL << "ASSERT_PRED(" #pred                                    \
+        CRPCUT_CHECK_REPORT_HEAD(action) <<"_PRED(" #pred               \
              << CRPCUT_LOCAL_NAME(sep)[!*#__VA_ARGS__]                  \
              << #__VA_ARGS__ ")\n"                                      \
              << "  caught ...";                                         \
       })                                                                \
   } while (0)
 
-#define CRPCUT_ASSERT_SCOPE_TYPE_TIME_MS(type, clock, ms)               \
+#define ASSERT_PRED(pred, ...)                                          \
+  CRPCUT_CHECK_PRED(exit_fail, pred, __VA_ARGS__)
+
+#define VERIFY_PRED(pred, ...)                                          \
+  CRPCUT_CHECK_PRED(fail, pred, __VA_ARGS__)
+
+
+#define CRPCUT_CHECK_SCOPE_TYPE_TIME_MS(action, type, clock, ms)        \
   if (const crpcut::scope::time_base& CRPCUT_LOCAL_NAME(time_scope)     \
-      = crpcut::scope::time<crpcut::scope::time_base::type,             \
+      = crpcut::scope::time<crpcut::comm::action,                       \
+                            crpcut::scope::time_base::type,             \
                             crpcut::scope::time_base::clock>(ms,        \
                                                              __FILE__,  \
                                                              __LINE__)) \
     { CRPCUT_LOCAL_NAME(time_scope).silence_warning(); } else           \
 
 #define ASSERT_SCOPE_MAX_REALTIME_MS(ms)        \
-  CRPCUT_ASSERT_SCOPE_TYPE_TIME_MS(max, realtime, ms)
+  CRPCUT_CHECK_SCOPE_TYPE_TIME_MS(exit_fail, max, realtime, ms)
 
 #define ASSERT_SCOPE_MIN_REALTIME_MS(ms)        \
-  CRPCUT_ASSERT_SCOPE_TYPE_TIME_MS(min, realtime, ms)
+  CRPCUT_CHECK_SCOPE_TYPE_TIME_MS(exit_fail, min, realtime, ms)
 
 #define ASSERT_SCOPE_MAX_CPUTIME_MS(ms)         \
-  CRPCUT_ASSERT_SCOPE_TYPE_TIME_MS(max, cputime, ms)
+  CRPCUT_CHECK_SCOPE_TYPE_TIME_MS(exit_fail, max, cputime, ms)
+
+#define VERIFY_SCOPE_MAX_REALTIME_MS(ms)        \
+  CRPCUT_CHECK_SCOPE_TYPE_TIME_MS(fail, max, realtime, ms)
+
+#define VERIFY_SCOPE_MIN_REALTIME_MS(ms)        \
+  CRPCUT_CHECK_SCOPE_TYPE_TIME_MS(fail, min, realtime, ms)
+
+#define VERIFY_SCOPE_MAX_CPUTIME_MS(ms)         \
+  CRPCUT_CHECK_SCOPE_TYPE_TIME_MS(fail, max, cputime, ms)
 
 #define ASSERT_SCOPE_HEAP_LEAK_FREE \
   if (const crpcut::heap::local_root & CRPCUT_LOCAL_NAME(leak_free_scope) \

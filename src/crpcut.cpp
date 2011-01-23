@@ -351,6 +351,7 @@ namespace crpcut {
         :list_elem<test_case_result>(this),
          id(pid),
          success(false),
+         explicit_fail(false),
          nonempty_dir(false),
          name(0),
          name_len(0),
@@ -370,6 +371,7 @@ namespace crpcut {
       void *operator new(size_t) { return allocator::alloc(); }
       void operator delete(void *p) { allocator::release(p); }
       pid_t            id;
+      bool             explicit_fail;
       bool             success;
       bool             nonempty_dir;
       const char      *name;
@@ -633,9 +635,9 @@ namespace crpcut {
             assert(rv == sizeof(len));
             assert(len == 0);
 
-            if (!s->success || verbose)
+            if (s->explicit_fail || !s->success || verbose)
               {
-                printer print(fmt, s->name, s->name_len, s->success);
+                printer print(fmt, s->name, s->name_len, s->success && !s->explicit_fail);
 
                 for (event *i = s->history.next();
                      i != static_cast<event*>(&s->history);
@@ -644,7 +646,7 @@ namespace crpcut {
                     fmt.print(tag_info[i->tag].str, tag_info[i->tag].len,
                               i->body, i->body_len);
                   }
-                if (s->term_len || s->nonempty_dir)
+                if (s->term_len || s->nonempty_dir || s->explicit_fail)
                   {
                     if (s->nonempty_dir)
                       {
@@ -679,8 +681,10 @@ namespace crpcut {
             s->nonempty_dir = true;
           }
           break;
-        case comm::exit_ok:
+        case comm::fail:
         case comm::exit_fail:
+          s->explicit_fail = true;
+        case comm::exit_ok:
           s->success &= t == comm::exit_ok; // fallthrough
         case comm::stdout:
         case comm::stderr:

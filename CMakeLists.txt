@@ -250,6 +250,7 @@ endif(GMOCK_LIBS)
 file(GLOB TEST_SRCS
      test-src/unitt.cpp
      test-src/asserts_and_depends.cpp
+     test-src/verify.cpp
      test-src/output.cpp
      test-src/timeouts.cpp
      test-src/death_by_exit.cpp

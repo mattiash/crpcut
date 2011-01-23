@@ -141,7 +141,7 @@ namespace crpcut {
       t = static_cast < comm::type >(t & ~kill_mask);
       if (rv == 0) return false;
       assert(rv == sizeof(t));
-      if (t == comm::exit_fail || kill_mask)
+      if (t == comm::exit_fail || t == comm::fail || kill_mask)
         {
           reg->crpcut_register_success(false);
         }

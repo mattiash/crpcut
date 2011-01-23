@@ -302,6 +302,287 @@ TESTS = {
   log('violation',
       /#{A_H}ASSERT_TRUE\(n - num < 0\)\n\s+is evaluated as:\n\s+4 - 3 < 0\s*/me),
 
+  'verify::should_succeed_verify_throw_with_correct_exception' =>
+  Test.new('PASSED').
+  log('info',
+      /after/),
+
+  'verify::should_fail_verify_exception_with_wrong_exception' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_THROW.*caught std::exception\s+what\(\)=/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_verify_throw_with_no_exception' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_THROW.*Did not throw/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_verify_no_throw' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_fail_verify_throw_any_with_no_exception' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_THROW.*Did not throw/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_throw_any_with_int_exception' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_fail_verify_no_throw_with_unknown_exception' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_NO_THROW.*caught\s+\.\.\./me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_verify_no_throw_with_std_exception_string_apa' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_NO_THROW.*caught\s+#{S_E}=apa/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_on_verify_eq_with_fixture' =>
+  Test.new('PASSED').
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_on_verify_eq_with_fixture' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_EQ\(num, 3\)\s+where\s+num\s*=\s*4/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_on_verify_ne_with_fixture' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_fail_on_verify_ne_with_fixture' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_NE\(num, 3\)\s+where\s+num\s*=\s*3/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_on_verify_gt_with_fixture' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_fail_on_verify_gt_with_fixture' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_GT\(num, 3\)\s+where\s+num\s*=\s+3/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_on_verify_ge_with_fixture' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_fail_on_verify_ge_with_fixture' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_GE\(num, 3\)\s+where\s+num\s*=\s*2/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_on_verify_lt_with_fixture' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_fail_on_verify_lt_with_fixture' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_LT\(num, 3\)\s+where\s+num\s*=\s*3/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_on_verify_le_with_fixture' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_fail_on_verify_le_with_fixture' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_LE\(num, 3\)\s+where\s+num\s*=\s*4/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_on_verify_true_with_fixture' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_fail_on_verify_true_with_fixture' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_TRUE\(num\)\n\s+is evaluated as:\s+0/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_on_verify_false_with_fixture' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_fail_on_verify_false_with_fixture' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_FALSE\(num\)\n\s+is evaluated as:\n\s+3/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_on_verify_gt_with_unstreamable_param_i' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_GT\(i, num\)\s+where\s+i\s*=\s*\d+-byte object <[03 ]+>\s+num\s*=\s*3/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_on_verify_true_with_small_unstreamable_param' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_TRUE\(i\)\n\s+is evaluated as:\n\s+.*<[0 ]*>\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_on_verify_true_with_large_unstreamable_param' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_TRUE\(i\)\n\s+is evaluated as:\n\s+\?\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_pointer_eq_0' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_succeed_0_eq_pointer' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_succeed_void_ptr_eq_ptr' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_succeed_ptr_eq_void_ptr' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_fail_pointer_eq_0' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_EQ\(pi, 0\)\n\s+where pi = (0x)?[[:xdigit:]]+$/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_0_eq_pointer' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_EQ\(0, pi\)\n\s+where pi = (0x)?[[:xdigit:]]+$/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_void_ptr_eq_ptr' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_EQ\(pv, pi\)\n\s+where pv = 0\n\s+pi = (0x)?[[:xdigit:]]+$/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_ptr_eq_void_ptr' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_EQ\(pi, pv\)\n\s+where pi = (0x)?[[:xdigit:]]+\n\s+pv = 0\s*$/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_eq_volatile' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_EQ\(n, m\)\n\s+where n = 3\n\s+m = 4\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_false_volatile' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_FALSE\(n\)\n\s+is evaluated as:\n\s+3\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_false_const_volatile' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_FALSE\(n\)\n\s+is evaluated as:\n\s+3\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_true_volatile' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_TRUE\(n\)\n\s+is evaluated as:\n\s*0\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_fail_true_const_volatile' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_TRUE\(n\)\n\s+is evaluated as:\n\s*0\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::should_succeed_class_const_int_member' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::should_succeed_0_eq_pointer_to_member' =>
+  Test.new('PASSED').
+  log('info', /after/),
+
+  'verify::expr::should_fail_on_verify_true_with_small_unstreamable_param' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_TRUE\(i - 4 < unstreamable<int>\(0\)\)\n\s+is evaluated as:\n\s+.*<[04 ]*> - 4 < .*<[0 ]*>\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::expr::should_fail_on_verify_true_with_large_unstreamable_param' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_TRUE\(i - 4 < unstreamable<long double>\(0\)\)\n\s+is evaluated as:\n\s+ \? - 4 < \?\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::expr::should_fail_on_verify_true_with_lt' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_TRUE\(n < num\)\n\s+is evaluated as:\n\s+4 < 3\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::expr::should_fail_on_verify_true_with_add_lt' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_TRUE\(n \+ num < 5\)\n\s+is evaluated as:\n\s+4 \+ 3 < 5\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+  'verify::expr::should_fail_on_verify_true_with_sub_lt' =>
+  Test.new('FAILED').
+  log('fail',
+      /VERIFY_TRUE\(n - num < 0\)\n\s+is evaluated as:\n\s+4 - 3 < 0\s*/me).
+  log('info', /after/).
+  log('violation', //),
+
+
   'death::by_exception::should_fail_any_exception' =>
   Test.new('FAILED').
   log('violation',
