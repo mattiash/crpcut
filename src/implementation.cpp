@@ -36,7 +36,6 @@ extern "C" {
 #include <sys/time.h>
 }
 
-#define POLL_USE_EPOLL
 #include "poll.hpp"
 #include "implementation.hpp"
 
@@ -73,6 +72,7 @@ namespace crpcut {
       return (name ? wrapped::strlen(name) : 0)
         + (parent ? 2 + parent->full_name_len() : 0);
     }
+
     std::ostream &operator<<(std::ostream &os, const namespace_info &ns)
     {
       if (!ns.parent) return os;
@@ -562,4 +562,4 @@ namespace crpcut {
 
   } // namespace implementation
 
-}
+} // namespace crpcut

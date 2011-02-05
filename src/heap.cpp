@@ -151,10 +151,6 @@ namespace crpcut
 
       function backtrace("backtrace");
       function backtrace_symbols("backtrace_symbols");
-#if 0
-      int (*backtrace)(void*const*, int) = (int (*)(void*const*, int))::dlsym(RTLD_DEFAULT, "backtrace");
-      char ** (*backtrace_symbols)(void*const*,int) = (char ** (*)(void*const*,int))::dlsym(RTLD_DEFAULT, "backtrace_symbols");
-#endif
     }
 
     local_root::local_root()

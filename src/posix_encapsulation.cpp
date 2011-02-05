@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2010-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -181,7 +181,6 @@ namespace crpcut {
 
 
     CRPCUT_WRAP_FUNC(libc, strcmp, int, (const char *l, const char *r), (l, r))
-    CRPCUT_WRAP_FUNC(libc, strcpy, char *, (char *l, const char *r), (l, r))
     CRPCUT_WRAP_FUNC(libc, strerror, char *, (int n), (n))
     CRPCUT_WRAP_FUNC(libc, strlen, size_t, (const char *p), (p))
     CRPCUT_WRAP_FUNC(libc, strncmp,

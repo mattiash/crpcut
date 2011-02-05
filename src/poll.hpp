@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -160,7 +160,9 @@ namespace crpcut {
         if (this->access[i].fd == fd)
           {
             this->access[i] = this->access[--this->num_subscribers];
-            if (FD_ISSET(fd, &this->xset) || FD_ISSET(fd, &this->rset) || FD_ISSET(fd, &this->wset))
+            if (   FD_ISSET(fd, &this->xset)
+                || FD_ISSET(fd, &this->rset)
+                || FD_ISSET(fd, &this->wset))
               {
                 FD_CLR(fd, &this->rset);
                 FD_CLR(fd, &this->wset);
