@@ -28,6 +28,7 @@
 #include <crpcut.hpp>
 extern "C" {
 #include <sys/times.h>
+#include <unistd.h>
 }
 TESTSUITE(timeouts)
 {

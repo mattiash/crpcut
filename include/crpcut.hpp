@@ -263,12 +263,17 @@
 #include <iomanip>
 #include <cerrno>
 #include <cassert>
-#ifdef BOOST_TR1
-#include <boost/tr1/type_traits.hpp>
-#include <boost/tr1/array.hpp>
+#ifdef CRPCUT_EXPERIMENTAL_CXX0X
+#  include <type_traits>
+#  include <array>
 #else
-#include <tr1/type_traits>
-#include <tr1/array>
+#  ifdef BOOST_TR1
+#    include <boost/tr1/type_traits.hpp>
+#    include <boost/tr1/array.hpp>
+#  else
+#    include <tr1/type_traits>
+#    include <tr1/array>
+#  endif
 #endif
 #include <cstring>
 #include <cstdlib>
@@ -286,8 +291,8 @@ extern "C"
 }
 
 namespace std {
-  using std::tr1::array;
 #if (not defined(CRPCUT_EXPERIMENTAL_CXX0X) || defined (BOOST_TR1))
+  using std::tr1::array;
   using std::tr1::remove_cv;
   using std::tr1::remove_reference;
 #endif
@@ -414,13 +419,15 @@ namespace crpcut {
 
   namespace stream_checker
   {
+    template <typename V, typename U>
+    char operator<<(V&, const U&);
+
     template <typename T>
-    class is_output_streamable
+    struct is_output_streamable
     {
+    private:
       static std::ostream &os;
       static T& t;
-      template <typename V, typename U>
-      friend char operator<<(V&, const U&);
 
       static char check(char);
       static std::pair<char, char> check(std::ostream&);
@@ -666,7 +673,6 @@ namespace crpcut {
       typedef typename array::const_reverse_iterator const_reverse_iterator;
 
       array_v();
-      using array::assign;
       using array::begin;
       iterator end();
       const_iterator end() const;
@@ -901,7 +907,7 @@ namespace crpcut {
         virtual ~crpcut_none() {}
         virtual bool crpcut_is_expected_exit(int) const;
         virtual bool crpcut_is_expected_signal(int) const;
-        virtual void crpcut_expected_death(std::ostream &os);
+        virtual void crpcut_expected_death(std::ostream &os) const;
         virtual unsigned long crpcut_calc_deadline(unsigned long ts) const;
       };
 
@@ -910,7 +916,7 @@ namespace crpcut {
       {
       public:
         virtual bool crpcut_is_expected_signal(int code) const;
-        virtual void crpcut_expected_death(std::ostream &os);
+        virtual void crpcut_expected_death(std::ostream &os) const;
       };
 
       template <int N>
@@ -918,7 +924,7 @@ namespace crpcut {
       {
       public:
         virtual bool crpcut_is_expected_exit(int code) const;
-        virtual void crpcut_expected_death(std::ostream &os);
+        virtual void crpcut_expected_death(std::ostream &os) const;
       };
 
       template <unsigned long N>
@@ -926,7 +932,7 @@ namespace crpcut {
       {
       public:
         virtual bool          crpcut_is_expected_signal(int code) const;
-        virtual void          crpcut_expected_death(std::ostream &os);
+        virtual void          crpcut_expected_death(std::ostream &os) const;
         virtual unsigned long crpcut_calc_deadline(unsigned long ts) const;
       };
 
@@ -1263,9 +1269,11 @@ namespace crpcut {
     class local_root : public mem_list_element
     {
     public:
+      typedef const local_root *bool_test;
       local_root(comm::type type, const char *file, size_t line);
       ~local_root();
-      operator const local_root*() const { return 0; }
+      operator bool_test() const { return 0; }
+      void nonsense_func() const {}
       void insert_object(mem_list_element *p);
       void remove_object(mem_list_element *p);
       static local_root* current();
@@ -1307,31 +1315,30 @@ namespace crpcut {
     public:
       oabuf(charT *begin_, charT *end_)
       {
-        setp(begin_, end_);
+        parent::setp(begin_, end_);
       }
       const charT *begin() const { return parent::pbase(); }
       const charT *end() const { return parent::pptr(); }
     };
 
     template <typename charT, typename traits = std::char_traits<charT> >
-    class basic_oastream : public std::basic_ostream<charT, traits>
+    class basic_oastream : private oabuf<charT, traits>,
+                           public  std::basic_ostream<charT, traits>
     {
     public:
       basic_oastream(charT *begin_, charT *end_)
-        : buf(begin_, end_)
+        : oabuf<charT, traits>(begin_, end_),
+          std::basic_ostream<charT, traits>(this)
       {
-        init(&buf);
       }
       basic_oastream(charT *begin_, size_t size_)
-        : buf(begin_, begin_ + size_)
+        : oabuf<charT, traits>(begin_, begin_ + size_),
+          std::basic_ostream<charT, traits>(this)
       {
-        init(&buf);
       }
-      const charT *begin() const { return buf.begin(); }
-      const charT *end() const { return buf.end(); }
-      std::size_t size() const { return end() - begin(); }
-    private:
-      oabuf<charT, traits> buf;
+      using oabuf<charT, traits>::begin;
+      using oabuf<charT, traits>::end;
+      std::size_t size() const { return size_t(end() - begin()); }
     };
 
     template <typename charT, class traits = std::char_traits<charT> >
@@ -1340,29 +1347,28 @@ namespace crpcut {
     public:
       iabuf(const charT *begin, const charT *end)
       {
-        setg(const_cast<charT *>(begin),
-             const_cast<charT *>(begin),
-             const_cast<charT *>(end));
+        std::basic_streambuf<charT, traits>::setbuf(const_cast<charT *>(begin),
+                                                    end - begin);
+        std::basic_streambuf<charT, traits>::setg(const_cast<charT *>(begin),
+                                                  const_cast<charT *>(begin),
+                                                  const_cast<charT *>(end));
       }
     };
 
     template <typename charT, typename traits = std::char_traits<charT> >
-    class basic_iastream : public std::basic_istream<charT, traits>
+    class basic_iastream : private iabuf<charT, traits>, public std::basic_istream<charT, traits>
     {
     public:
       basic_iastream(const charT *begin, const charT *end)
-        : buf(begin, end)
+        : iabuf<charT, traits>(begin, end),
+          std::basic_istream<charT, traits>(this)
       {
-        init(&buf);
       }
       basic_iastream(const charT *begin)
-        :
-        buf(begin, begin + wrapped::strlen(begin))
+        : iabuf<charT, traits>(begin, begin + wrapped::strlen(begin)),
+          std::basic_istream<charT, traits>(this)
       {
-        init(&buf);
       }
-    private:
-      iabuf<charT, traits> buf;
     };
 
     template <size_t N,
@@ -1468,7 +1474,7 @@ namespace crpcut {
                                          const crpcut_test_case_registrator *rh);
       void crpcut_unregister_fds();
       crpcut_test_case_registrator *crpcut_get_next() const;
-      void crpcut_set_wd(int n);
+      void crpcut_set_wd(unsigned n);
       void crpcut_goto_wd() const;
       pid_t crpcut_get_pid() const;
       test_phase crpcut_get_phase() const;
@@ -1499,7 +1505,7 @@ namespace crpcut {
       pid_t                         crpcut_pid_;
       unsigned long                 crpcut_absolute_deadline_ms;
       struct timeval                crpcut_cpu_time_at_start;
-      int                           crpcut_dirnum;
+      unsigned                      crpcut_dirnum;
       report_reader                 crpcut_rep_reader;
       reader<comm::stdout>          crpcut_stdout_reader;
       reader<comm::stderr>          crpcut_stderr_reader;
@@ -1525,7 +1531,7 @@ namespace crpcut {
     static bool timeouts_enabled();
     static void set_deadline(implementation::crpcut_test_case_registrator *i);
     static void clear_deadline(implementation::crpcut_test_case_registrator *i);
-    static void return_dir(int num);
+    static void return_dir(unsigned num);
     static const char *get_working_dir();
     static void test_succeeded(implementation::crpcut_test_case_registrator*);
     static const char *get_start_dir();
@@ -1579,7 +1585,7 @@ namespace crpcut {
     void do_introduce_name(pid_t pid, const char *name, size_t len);
     void do_set_deadline(implementation::crpcut_test_case_registrator *i);
     void do_clear_deadline(implementation::crpcut_test_case_registrator *i);
-    void do_return_dir(int num);
+    void do_return_dir(unsigned num);
     const char *do_get_working_dir() const;
     const char *do_get_start_dir() const;
     const char *do_get_parameter(const char *name) const;
@@ -1612,8 +1618,8 @@ namespace crpcut {
     unsigned         num_successful_tests;
     int              presenter_pipe;
     timeout_queue    deadlines;
-    int              working_dirs[max_parallel];
-    int              first_free_working_dir;
+    unsigned         working_dirs[max_parallel];
+    unsigned         first_free_working_dir;
     char             dirbase[PATH_MAX];
     char             homedir[PATH_MAX];
     const char **    argv;
@@ -1638,7 +1644,7 @@ namespace crpcut {
 
           test_case_factory::present(reg->crpcut_get_pid(), t,
                                      reg->crpcut_get_phase(),
-                                     rv, buff);
+                                     size_t(rv), buff);
           return true;
         }
     }
@@ -1929,6 +1935,22 @@ namespace crpcut {
       typedef typename param_traits<T>::type type;
     };
 
+    template <typename T>
+    bool stream_param(std::ostream &os,
+                      const char *prefix,
+                      const char *name, const T& t)
+    {
+      std::ostringstream tmp;
+      conditionally_stream(tmp, t);
+      std::string str = tmp.str();
+      if (str != name)
+        {
+          os << prefix << name << " = " << str;
+          return true;
+        }
+      return false;
+    }
+
     class tester_base
     {
     protected:
@@ -2207,19 +2229,19 @@ namespace crpcut {
         return reinterpret_cast<const comparator*>(r ? 0 : this);
       }
       collate_result& set_lh() { side = left; return *this;}
-      friend std::ostream &operator<<(std::ostream& os, const collate_result &r)
+      friend std::ostream &operator<<(std::ostream& os, const collate_result &obj)
       {
         static const char rs[] = "\"\n"
           "  and right hand value = \"";
-        os << "Failed in locale \"" << r.locale.name() << "\"\n"
+        os << "Failed in locale \"" << obj.locale.name() << "\"\n"
           "  with left hand value = \"";
-        if (r.side == right)
+        if (obj.side == right)
           {
-            os << r.intl << rs << r.r << "\"";
+            os << obj.intl << rs << obj.r << "\"";
           }
         else
           {
-            os << r.r << rs << r.intl << "\"";
+            os << obj.r << rs << obj.intl << "\"";
           }
         return os;
       }
@@ -2665,21 +2687,6 @@ namespace crpcut {
       return b;
     }
 
-    template <typename T>
-    bool stream_param(std::ostream &os,
-                      const char *prefix,
-                      const char *name, const T& t)
-    {
-      std::ostringstream tmp;
-      conditionally_stream(tmp, t);
-      std::string str = tmp.str();
-      if (str != name)
-        {
-          os << prefix << name << " = " << str;
-          return true;
-        }
-      return false;
-    }
 
   } // namespace implementation
 
@@ -2998,7 +3005,7 @@ namespace crpcut {
 
       template <int N>
       inline void
-      signal<N>::crpcut_expected_death(std::ostream &os)
+      signal<N>::crpcut_expected_death(std::ostream &os) const
       {
         if (N == ANY_CODE)
           {
@@ -3019,7 +3026,7 @@ namespace crpcut {
 
       template <int N>
       inline void
-      exit<N>::crpcut_expected_death(std::ostream &os)
+      exit<N>::crpcut_expected_death(std::ostream &os) const
       {
         if (N == ANY_CODE)
           {
@@ -3044,7 +3051,7 @@ namespace crpcut {
 
       template <unsigned long N>
       void
-      timeout<N>::crpcut_expected_death(std::ostream &os)
+      timeout<N>::crpcut_expected_death(std::ostream &os) const
       {
         os << N << "ms realtime timeout";
       }
@@ -3212,7 +3219,7 @@ namespace crpcut {
                                       len - bytes_written);
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) throw "write failed";
-          bytes_written += rv;
+          bytes_written += size_t(rv);
         }
     }
 
@@ -3245,7 +3252,7 @@ namespace crpcut {
           if (rv <= 0) {
             throw "read failed";
           }
-          bytes_read += rv;
+          bytes_read += size_t(rv);
         }
     }
 
@@ -3409,8 +3416,8 @@ namespace crpcut {
       assert(rh->crpcut_deadline_set);
 
       long diff
-        = lh->crpcut_absolute_deadline_ms
-        - rh->crpcut_absolute_deadline_ms;
+        = long(lh->crpcut_absolute_deadline_ms
+               - rh->crpcut_absolute_deadline_ms);
       return diff > 0;
     }
 
@@ -3571,7 +3578,7 @@ namespace crpcut {
   }
 
   inline void
-  test_case_factory::return_dir(int num)
+  test_case_factory::return_dir(unsigned num)
   {
     obj().do_return_dir(num);
   }
@@ -3748,14 +3755,14 @@ namespace crpcut {
         if (diff < U()) diff = -diff;
         return diff <= t;
       }
-      friend std::ostream& operator<<(std::ostream &os, const type<T>& t)
+      friend std::ostream& operator<<(std::ostream &os, const type<T>& obj)
       {
         os << "\n    Max allowed difference is "
            << std::setprecision(std::numeric_limits<T>::digits10)
-           << t.t
+           << obj.t
            << "\n    Actual difference is "
            << std::setprecision(std::numeric_limits<T>::digits10)
-           << t.diff;
+           << obj.diff;
         return os;
       }
     private:
@@ -3788,13 +3795,13 @@ namespace crpcut {
         diff = 2 * ldiff / lsum;
         return diff <= t;
       }
-      friend std::ostream& operator<<(std::ostream &os, const type<T>& t)
+      friend std::ostream& operator<<(std::ostream &os, const type<T>& obj)
       {
         os << "\n    Max allowed relative difference is "
            << std::setprecision(std::numeric_limits<T>::digits10)
-           << t.t
+           << obj.t
            << "\n    Actual relative difference is "
-           << t.diff;
+           << obj.diff;
         return os;
       }
     private:
@@ -3816,7 +3823,7 @@ namespace crpcut {
   };
 
   template <typename T>
-  class must_be_ieee754_fp_type<T, false>;
+  struct must_be_ieee754_fp_type<T, false>;
 
 
 
@@ -3913,10 +3920,10 @@ namespace crpcut {
           }
         return !i;
       }
-      friend std::ostream& operator<<(std::ostream &os, const type &r)
+      friend std::ostream& operator<<(std::ostream &os, const type &obj)
       {
-        if (r.errmsg)
-          return os << r.errmsg;
+        if (obj.errmsg)
+          return os << obj.errmsg;
         return os << "did not match";
       }
       ~type()
@@ -4076,7 +4083,7 @@ namespace crpcut {
         implementation::conditionally_stream<8>(os, a.u_);              \
         return os;                                                      \
       }									\
-      friend class eval_t<name>;                                        \
+      friend struct eval_t<name>;                                       \
     private:								\
       const T& t_;							\
       const U& u_;							\
@@ -4140,7 +4147,7 @@ namespace crpcut {
     {
     public:
       atom(const T& t) : t_(t) {}
-      friend class eval_t<atom>;
+      friend struct eval_t<atom>;
       inline friend
       std::ostream &operator<<(std::ostream &os, const atom& a)
       {
@@ -4657,7 +4664,7 @@ namespace crpcut {
   if (const crpcut::heap::local_root & CRPCUT_LOCAL_NAME(leak_free_scope) \
       = crpcut::heap::local_root(crpcut::comm::type,__FILE__, __LINE__)) \
     {                                                                   \
-      CRPCUT_LOCAL_NAME(leak_free_scope).operator const local_root*();  \
+      CRPCUT_LOCAL_NAME(leak_free_scope).nonsense_func();  \
     }                                                                   \
   else
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -168,7 +168,7 @@ namespace crpcut {
               rv = wrapped::read(fd, p + bytes_read, len - bytes_read);
               if (rv == -1 && errno == EINTR) continue;
               assert(rv > 0);
-              bytes_read += rv;
+              bytes_read += size_t(rv);
             }
           ts+= clocks::monotonic::timestamp_ms_absolute();
           reg->crpcut_set_timeout(ts);
@@ -219,7 +219,7 @@ namespace crpcut {
           err=errno;
           if (rv == -1 && errno == EINTR) continue;
           assert(rv > 0 && err == 0);
-          bytes_read += rv;
+          bytes_read += size_t(rv);
         }
       if (kill_mask)
         {
@@ -255,7 +255,7 @@ namespace crpcut {
                 rv = wrapped::read(fd, buff + bytes_read, len - bytes_read);
                 if (rv == -1 && errno == EINTR) continue;
                 assert(rv > 0 && errno == 0);
-                bytes_read += rv;
+                bytes_read += size_t(rv);
               }
             wrapped::memcpy(&reg->crpcut_cpu_time_at_start, buff, len);
           }
@@ -394,8 +394,8 @@ namespace crpcut {
     {
       clocks::monotonic::timestamp now
         = clocks::monotonic::timestamp_ms_absolute();
-      long diff = crpcut_absolute_deadline_ms - now;
-      return diff < 0 ? 0UL : diff;
+      unsigned long diff = crpcut_absolute_deadline_ms - now;
+      return long(diff) < 0 ? 0UL : diff;
     }
 
     void
@@ -424,7 +424,7 @@ namespace crpcut {
     }
 
     void
-    crpcut_test_case_registrator::crpcut_set_wd(int n)
+    crpcut_test_case_registrator::crpcut_set_wd(unsigned n)
     {
       crpcut_dirnum = n;
       stream::toastream<std::numeric_limits<int>::digits/3+1> name;
@@ -458,7 +458,7 @@ namespace crpcut {
       for (;;)
         {
           ::siginfo_t local;
-          int rv = wrapped::waitid(P_PGID, crpcut_pid_, &local, WEXITED);
+          int rv = wrapped::waitid(P_PGID, id_t(crpcut_pid_), &local, WEXITED);
           int n = errno;
           if (rv == -1 && n == EINTR) continue;
           if (local.si_pid == crpcut_pid_) info = local;

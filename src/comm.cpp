@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
 
  * Redistribution and use in source and binary forms, with or without
@@ -71,7 +71,7 @@ namespace crpcut {
                                       len - bytes_written);
           if (rv == -1 && errno == EINTR) continue;
           if (rv <= 0) throw "report failed";
-          bytes_written += rv;
+          bytes_written += size_t(rv);
         }
       while (mask) // infinite
         {

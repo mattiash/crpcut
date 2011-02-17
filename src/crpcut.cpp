@@ -53,7 +53,7 @@ namespace crpcut {
     lib::strcpy(dirbase, "/tmp/crpcutXXXXXX");
     for (unsigned n = 0; n < max_parallel; ++n)
       {
-        working_dirs[n] = n+1;
+        working_dirs[n] = n + 1;
       }
   }
 
@@ -109,7 +109,7 @@ namespace crpcut {
     assert("clear deadline when none was ordered" == 0);
   }
 
-  void test_case_factory::do_return_dir(int num)
+  void test_case_factory::do_return_dir(unsigned num)
   {
     working_dirs[num] = first_free_working_dir;
     first_free_working_dir = num;
@@ -136,7 +136,8 @@ namespace crpcut {
     timersub(&accumulated_cputime, &prev, &child_time);
     struct timeval child_test_time;
     timersub(&child_time, &t, &child_test_time);
-    return child_test_time.tv_sec * 1000 + child_test_time.tv_usec/1000;
+    return (unsigned long)(child_test_time.tv_sec) * 1000UL
+      + (unsigned long)(child_test_time.tv_usec)/1000UL;
   }
 
   void test_case_factory::do_introduce_name(pid_t pid, const char *name, size_t len)
@@ -511,7 +512,7 @@ namespace crpcut {
 
           ssize_t n = wrapped::write(fd, buff + pos, len - pos);
           assert(n >= 0);
-          pos+= n;
+          pos+= size_t(n);
           if (pos == len)
             {
               pos = 0;
@@ -609,7 +610,7 @@ namespace crpcut {
                                    ptr + bytes_read,
                                    sizeof(len) - bytes_read);
                 assert(rv > 0);
-                bytes_read += rv;
+                bytes_read += size_t(rv);
               }
             char *buff = static_cast<char *>(wrapped::malloc(len + 1));
             bytes_read = 0;
@@ -619,7 +620,7 @@ namespace crpcut {
                                    buff + bytes_read,
                                    len - bytes_read);
                 assert(rv >= 0);
-                bytes_read += rv;
+                bytes_read += size_t(rv);
               }
             buff[len] = 0;
             s->name = buff;
@@ -827,7 +828,7 @@ namespace crpcut {
     pipe_pair stderr("communication pipe for test-case stderr");
     pipe_pair stdout("communication pipe for test-case stdout");
 
-    int wd = first_free_working_dir;
+    unsigned wd = first_free_working_dir;
     first_free_working_dir = working_dirs[wd];
     i->crpcut_set_wd(wd);
 
@@ -906,7 +907,7 @@ namespace crpcut {
               {
                 const char *pb = (*p)+2;
                 const char *n = nullindex(pb, '=');
-                if (wrapped::strncmp("param", pb, n - pb) == 0)
+                if (wrapped::strncmp("param", pb, size_t(n - pb)) == 0)
                   {
                     pstart = n + 1;
                   }
@@ -954,7 +955,7 @@ namespace crpcut {
             pcount = 1;
             param += 2;
             value = nullindex(param, '=');
-            size_t len = value - param;
+            size_t len = size_t(value - param);
             if (*value)
               {
                 ++value;
@@ -1279,9 +1280,11 @@ namespace crpcut {
               size_t bytes_written = 0;
               while (bytes_written < data.second)
                 {
-                  ssize_t n = wrapped::write(output_fd, data.first + bytes_written, data.second - bytes_written);
+                  ssize_t n = wrapped::write(output_fd,
+                                             data.first + bytes_written,
+                                             data.second - bytes_written);
                   assert(n >= 0);
-                  bytes_written+= n;
+                  bytes_written+= size_t(n);
                 }
               output::buffer::advance();
             }
@@ -1391,11 +1394,11 @@ namespace crpcut {
             {
               ssize_t n = wrapped::write(output_fd, buff + bytes_written, len - bytes_written);
               assert(n >= 0);
-              bytes_written += n;
+              bytes_written += size_t(n);
             }
           output::buffer::advance();
         }
-      return num_tests_run - num_successful_tests;
+      return int(num_tests_run - num_successful_tests);
     }
     catch (datatypes::posix_error &e)
       {

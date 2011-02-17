@@ -54,9 +54,12 @@ namespace crpcut {
       : num_subscribers(0U),
         pending_fds(0U)
     {
-      FD_ZERO(&rset);
-      FD_ZERO(&wset);
-      FD_ZERO(&xset);
+      memset(&rset, 0, sizeof(rset));
+      memset(&wset, 0, sizeof(wset));
+      memset(&xset, 0, sizeof(xset));
+      // FD_ZERO(&rset);
+      // FD_ZERO(&wset);
+      // FD_ZERO(&xset);
     }
     struct fdinfo
     {
@@ -198,9 +201,9 @@ namespace crpcut {
                                      &this->xset,
                                      timeout_ms == -1 ? 0 : &tv);
             if (rv == -1 && errno == EINTR) continue;
-            assert(rv != -1);
+            assert(rv >= 0);
             if (rv == 0) return descriptor(0,0); // timeout
-            this->pending_fds = rv;
+            this->pending_fds = size_t(rv);
             break;
           }
       }

@@ -229,12 +229,12 @@ TESTS = {
   'asserts::should_fail_void_ptr_eq_ptr' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_EQ\(pv, pi\)\n\s+where pv = 0\n\s+pi = (0x)?[[:xdigit:]]+$/me),
+      /#{A_H}ASSERT_EQ\(pv, pi\)\n\s+where pv = (0|\(nil\))\n\s+pi = (0x)?[[:xdigit:]]+$/me),
 
   'asserts::should_fail_ptr_eq_void_ptr' =>
   Test.new('FAILED').
   log('violation',
-      /#{A_H}ASSERT_EQ\(pi, pv\)\n\s+where pi = (0x)?[[:xdigit:]]+\n\s+pv = 0\s*$/me),
+      /#{A_H}ASSERT_EQ\(pi, pv\)\n\s+where pi = (0x)?[[:xdigit:]]+\n\s+pv = (0|\(nil\))\s*$/me),
 
   'asserts::should_fail_eq_volatile' =>
   Test.new('FAILED').
@@ -493,14 +493,14 @@ TESTS = {
   'verify::should_fail_void_ptr_eq_ptr' =>
   Test.new('FAILED').
   log('fail',
-      /VERIFY_EQ\(pv, pi\)\n\s+where pv = 0\n\s+pi = (0x)?[[:xdigit:]]+$/me).
+      /VERIFY_EQ\(pv, pi\)\n\s+where pv = (0|\(nil\))\n\s+pi = (0x)?[[:xdigit:]]+$/me).
   log('info', /after/).
   log('violation', //),
 
   'verify::should_fail_ptr_eq_void_ptr' =>
   Test.new('FAILED').
   log('fail',
-      /VERIFY_EQ\(pi, pv\)\n\s+where pi = (0x)?[[:xdigit:]]+\n\s+pv = 0\s*$/me).
+      /VERIFY_EQ\(pi, pv\)\n\s+where pi = (0x)?[[:xdigit:]]+\n\s+pv = (0|\(nil\))\s*$/me).
   log('info', /after/).
   log('violation', //),
 
@@ -771,7 +771,7 @@ TESTS = {
   'fp::ulps::using_float::should_fail_eps_diff_0_ulp' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = 1\n\s+param2 = 1/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0U\), f1, f2\)\n\s+param1 = 1\n\s+param2 = 1/me),
 
   'fp::ulps::using_float::should_succeed_high_denorm_1_ulp' =>
   Test.new('PASSED'),
@@ -779,7 +779,7 @@ TESTS = {
   'fp::ulps::using_float::should_fail_high_denorm_0_ulp' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = [0-9\.e+-]+\n\s+param2 = [0-9\.e+-]+/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0U\), f1, f2\)\n\s+param1 = [0-9\.e+-]+\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_float::should_succeed_low_denorm_1_ulp' =>
   Test.new('PASSED'),
@@ -787,7 +787,7 @@ TESTS = {
   'fp::ulps::using_float::should_fail_low_denorm_0_ulp' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = 0\n\s+param2 = [0-9\.e+-]+/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0U\), f1, f2\)\n\s+param1 = 0\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_float::should_succeed_pos_neg_denorm_min_2_ulps' =>
   Test.new('PASSED'),
@@ -795,7 +795,7 @@ TESTS = {
   'fp::ulps::using_float::should_fail_pos_neg_denorm_min_1_ulp' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(1\), f1, f2\)\n\s+param1 = [0-9\.e+-]+\n\s+param2 = -[0-9\.e+-]+/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(1U\), f1, f2\)\n\s+param1 = [0-9\.e+-]+\n\s+param2 = -[0-9\.e+-]+/me),
 
   'fp::ulps::using_float::should_fail_nan' =>
   Test.new('FAILED').
@@ -805,7 +805,7 @@ TESTS = {
   'fp::ulps::using_float::should_fail_max_inf_1_ulp' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(1\), f1, f2\)\n\s+param1 = [Ii][Nn][Ff]\n\s+param2 = [0-9\.e+-]+/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(1U\), f1, f2\)\n\s+param1 = [Ii][Nn][Ff]\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_float::should_succeed_max_inf_1_ulp' =>
   Test.new('PASSED'),
@@ -820,7 +820,7 @@ TESTS = {
   'fp::ulps::using_double::should_fail_eps_diff_0_ulp' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = 1\n\s+param2 = 1/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0U\), f1, f2\)\n\s+param1 = 1\n\s+param2 = 1/me),
 
   'fp::ulps::using_double::should_succeed_high_denorm_1_ulp' =>
   Test.new('PASSED'),
@@ -828,7 +828,7 @@ TESTS = {
   'fp::ulps::using_double::should_fail_high_denorm_0_ulp' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = [0-9\.e+-]+\n\s+param2 = [0-9\.e+-]+/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0U\), f1, f2\)\n\s+param1 = [0-9\.e+-]+\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_double::should_succeed_low_denorm_1_ulp' =>
   Test.new('PASSED'),
@@ -836,7 +836,7 @@ TESTS = {
   'fp::ulps::using_double::should_fail_low_denorm_0_ulp' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0\), f1, f2\)\n\s+param1 = 0\n\s+param2 = [0-9\.e+-]+/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(0U\), f1, f2\)\n\s+param1 = 0\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_double::should_succeed_pos_neg_denorm_min_2_ulps' =>
   Test.new('PASSED'),
@@ -844,7 +844,7 @@ TESTS = {
   'fp::ulps::using_double::should_fail_pos_neg_denorm_min_1_ulp' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(1\), f1, f2\)\n\s+param1 = [0-9\.e+-]+\n\s+param2 = -[0-9\.e+-]+/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(1U\), f1, f2\)\n\s+param1 = [0-9\.e+-]+\n\s+param2 = -[0-9\.e+-]+/me),
 
   'fp::ulps::using_double::should_fail_nan' =>
   Test.new('FAILED').
@@ -854,7 +854,7 @@ TESTS = {
   'fp::ulps::using_double::should_fail_max_inf_1_ulp' =>
   Test.new('FAILED').
   log('violation',
-      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(1\), f1, f2\)\n\s+param1 = [Ii][Nn][Ff]\n\s+param2 = [0-9\.e+-]+/me),
+      /#{FP_H}ASSERT_PRED\(crpcut::match<crpcut::ulps_diff>\(1U\), f1, f2\)\n\s+param1 = [Ii][Nn][Ff]\n\s+param2 = [0-9\.e+-]+/me),
 
   'fp::ulps::using_double::should_succeed_max_inf_1_ulp' =>
   Test.new('PASSED'),

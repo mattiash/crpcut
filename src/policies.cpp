@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@ namespace crpcut {
     }
 
     namespace deaths {
-      void crpcut_none::crpcut_expected_death(std::ostream &os)
+      void crpcut_none::crpcut_expected_death(std::ostream &os) const
       {
         os << "normal exit";
       }
@@ -115,8 +115,8 @@ namespace crpcut {
 
         clocks::cputime::timestamp now
           = clocks::cputime::timestamp_ms_absolute();
-        long diff = now - start_timestamp_ms;
-        if  (diff > int(duration_ms))
+        unsigned long diff = now - start_timestamp_ms;
+        if  (diff > duration_ms)
           {
             stream::toastream<128> os;
             os << "CPU-time timeout " << duration_ms
@@ -144,8 +144,8 @@ namespace crpcut {
         typedef clocks::monotonic mono;
         mono::timestamp now  = mono::timestamp_ms_absolute();
         comm::report(comm::cancel_timeout, 0, 0);
-        long diff = now - start_timestamp_ms;
-        if (diff > int(duration_ms))
+        unsigned long diff = now - start_timestamp_ms;
+        if (diff > duration_ms)
           {
             stream::toastream<128> os;
             os << "Realtime timeout " << duration_ms

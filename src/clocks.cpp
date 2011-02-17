@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
 
  * Redistribution and use in source and binary forms, with or without
@@ -95,7 +95,7 @@ namespace {
     struct timespec ts;
     int rv = crpcut::wrapped::clock_gettime(CLOCK_MONOTONIC, &ts);
     assert(rv == 0);
-    return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    return (unsigned long)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
   }
 }
 
@@ -124,7 +124,7 @@ namespace {
     struct timespec ts;
     int rv = crpcut::wrapped::clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
     assert(rv == 0);
-    return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    return (unsigned long)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
   }
 }
 
@@ -169,7 +169,8 @@ namespace {
     struct itimerval v;
     int rv = crpcut::wrapped::getitimer(ITIMER_REAL, &v);
     assert(rv == 0);
-    return (99999UL - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
+    return (99999UL - (unsigned long)(v.it_value.tv_sec))*1000UL
+      + 1000UL - (unsigned long)(v.it_value.tv_usec)/1000UL;
   }
 }
 
@@ -206,7 +207,8 @@ namespace {
     struct itimerval v;
     int rv = crpcut::wrapped::getitimer(ITIMER_VIRTUAL, &v);
     assert(rv == 0);
-    return (99999UL - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
+    return (99999UL - (unsigned long)(v.it_value.tv_sec))*1000UL
+      + 1000UL - (unsigned long)(v.it_value.tv_usec)/1000UL;
   }
 }
 
@@ -242,7 +244,8 @@ namespace {
     struct itimerval v;
     int rv = crpcut::wrapped::getitimer(ITIMER_PROF, &v);
     assert(rv == 0);
-    return (99999 - v.it_value.tv_sec)*1000 + 1000 - v.it_value.tv_usec/1000;
+    return (99999 - (unsigned long)(v.it_value.tv_sec))*1000UL +
+      1000UL - (unsigned long)(v.it_value.tv_usec)/1000UL;
   }
 }
 
@@ -277,7 +280,8 @@ namespace {
     struct timeval tv;
     int rv = crpcut::wrapped::gettimeofday(&tv, 0);
     assert(rv == 0);
-    return tv.tv_sec*1000 + tv.tv_usec/1000;
+    return (unsigned long)(tv.tv_sec)*1000UL
+      + (unsigned long)(tv.tv_usec)/1000UL;
   }
 }
 

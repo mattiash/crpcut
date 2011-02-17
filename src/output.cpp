@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2010 Bjorn Fahller <bjorn@fahller.se>
+ * Copyright 2009-2011 Bjorn Fahller <bjorn@fahller.se>
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,7 +68,7 @@ namespace crpcut
         {
           current = &(*current)->next;
         }
-      return size;
+      return ssize_t(size);
     }
 
     buffer::~buffer()
@@ -109,7 +109,7 @@ namespace crpcut
           return do_write(str, len);
         }
 
-      const char *prev = str;
+      size_t prev_n = 0;
       for (size_t n = 0; n < len; ++n)
         {
           const char *esc;
@@ -124,11 +124,11 @@ namespace crpcut
             case '\0': esc = 0;        esc_len = 0; break;
             default: continue;
             }
-          do_write(prev, &str[n] - prev);
+          do_write(str + prev_n, n - prev_n);
           do_write(esc, esc_len);
-          prev = &str[n] + 1;
+          prev_n = n + 1;
         }
-      do_write(prev, str + len - prev);
+      do_write(str + prev_n, len - prev_n);
       return len;
     }
 
@@ -139,7 +139,7 @@ namespace crpcut
         {
           ssize_t rv = buffer::write(p + bytes_written, len - bytes_written);
           assert(rv >= 0);
-          bytes_written += rv;
+          bytes_written += size_t(rv);
         }
       return bytes_written;
     }

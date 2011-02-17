@@ -77,7 +77,7 @@ if (NOT HAVE_VARIADIC_MACROS)
 endif(NOT HAVE_VARIADIC_MACROS)
 
 file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/exit.cpp
-  "#include <cstdlib>\nmain() { std::_Exit(0); }\n")
+  "#include <cstdlib>\nint main() { std::_Exit(0); }\n")
 try_compile(HAVE__EXIT ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/CMakeTmp/exit.cpp)
 if (NOT HAVE__EXIT)
