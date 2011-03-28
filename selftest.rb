@@ -172,7 +172,8 @@ TESTS = {
       /#{A_H}ASSERT_TRUE\(num\)\n\s+is evaluated as:\s+0/me),
 
   'asserts::should_succeed_assert_no_throw' =>
-  Test.new('PASSED'),
+  Test.new('PASSED').
+  log('stdout', /i=.*/),
 
   'asserts::should_succeed_assert_throw_with_correct_exception' =>
   Test.new('PASSED'),

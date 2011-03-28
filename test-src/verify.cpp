@@ -59,21 +59,21 @@ TESTSUITE(verify)
   {
     int i;
     VERIFY_THROW(i=1, std::exception);
-    INFO << "after";
+    INFO << "after i=" << i;
   }
 
   TEST(should_succeed_verify_no_throw)
   {
     int i;
     VERIFY_NO_THROW(i=1);
-    INFO << "after";
+    INFO << "after i=" << i;
   }
 
   TEST(should_fail_verify_throw_any_with_no_exception)
   {
     int i;
     VERIFY_THROW(i=1, ...);
-    INFO << "after";
+    INFO << "after i=" << i;
   }
   TEST(should_succeed_throw_any_with_int_exception)
   {

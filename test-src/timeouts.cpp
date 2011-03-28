@@ -104,7 +104,7 @@ TESTSUITE(timeouts)
 
     TEST(should_succeed_cputime,
          EXPECT_REALTIME_TIMEOUT_MS(100),
-         DEADLINE_CPU_MS(3))
+         DEADLINE_CPU_MS(10))
     {
       sleep(3);
     }

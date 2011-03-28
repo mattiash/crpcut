@@ -76,18 +76,21 @@ TESTSUITE(asserts)
   {
     int i;
     ASSERT_THROW(i=1, std::exception);
+    std::cout << "i=" << i; // won't run
   }
 
   TEST(should_succeed_assert_no_throw)
   {
     int i;
     ASSERT_NO_THROW(i=1);
+    std::cout << "i=" << i;
   }
 
   TEST(should_fail_assert_throw_any_with_no_exception)
   {
     int i;
     ASSERT_THROW(i=1, ...);
+    std::cout << "i=" << i;
   }
   TEST(should_succeed_throw_any_with_int_exception)
   {

@@ -181,14 +181,14 @@ TESTSUITE(heap)
     ASSERT_EQ(p, 0);
   }
 
-  struct apa
+  struct an_array
   {
     char str[101];
   };
   TEST(should_succeed_new_blast_limit, EXPECT_EXCEPTION(std::bad_alloc))
   {
     crpcut::heap::set_limit(crpcut::heap::allocated_bytes() + 100);
-    apa * p = new apa;
+    an_array * p = new an_array;
     INFO << p;
   }
 
