@@ -54,12 +54,9 @@ namespace crpcut {
       : num_subscribers(0U),
         pending_fds(0U)
     {
-      memset(&rset, 0, sizeof(rset));
-      memset(&wset, 0, sizeof(wset));
-      memset(&xset, 0, sizeof(xset));
-      // FD_ZERO(&rset);
-      // FD_ZERO(&wset);
-      // FD_ZERO(&xset);
+      FD_ZERO(&rset);
+      FD_ZERO(&wset);
+      FD_ZERO(&xset);
     }
     struct fdinfo
     {
