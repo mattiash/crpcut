@@ -884,6 +884,23 @@ namespace crpcut {
 
       template <type t, unsigned long ms>
       class enforcer;
+
+      template <unsigned long ms>
+      class setup_timeout_policy
+      {
+	virtual unsigned long crpcut_setup_timeout() const
+	{
+	  return ms;
+	}
+      };
+      template <unsigned long ms>
+      class teardown_timeout_policy
+      {
+	virtual unsigned long crpcut_teardown_timeout() const
+	{
+	  return ms;
+	}
+      };
     }
 
     class default_policy
@@ -895,6 +912,8 @@ namespace crpcut {
 
       typedef dependencies::crpcut_none crpcut_dependency;
 
+      typedef timeout::setup_timeout_policy<2000> crpcut_setup_timeout_policy;
+      typedef timeout::teardown_timeout_policy<2000> crpcut_teardown_timeout_policy;
       typedef timeout::enforcer<timeout::realtime,2000> crpcut_realtime_enforcer;
       typedef timeout::enforcer<timeout::cputime, 0> crpcut_cputime_enforcer;
     };
@@ -1493,6 +1512,10 @@ namespace crpcut {
       void crpcut_manage_test_case_execution(test_case_base*);
       std::ostream &crpcut_print_name(std::ostream &) const ;
 
+      virtual unsigned long crpcut_setup_timeout() const { return 0; }
+      virtual unsigned long crpcut_teardown_timeout() const { return 0; }
+      void crpcut_prepare_setup();
+      void crpcut_prepare_teardown();
       const char                   *crpcut_name_;
       const namespace_info         *crpcut_ns_info;
       crpcut_test_case_registrator *crpcut_next;
@@ -3362,11 +3385,14 @@ namespace crpcut {
     inline
     void crpcut_test_case_registrator::crpcut_run_test_case()
     {
+
       const char *msg = 0;
       const char *type = 0;
       try {
+	crpcut_prepare_setup();
         T obj;
         crpcut_manage_test_case_execution(&obj);
+	crpcut_prepare_teardown();
       }
       CATCH_BLOCK(std::exception &e,{ type = "std::exception"; msg = e.what();})
       CATCH_BLOCK(..., { type = "..."; } )
@@ -4299,7 +4325,9 @@ extern crpcut::implementation::namespace_info current_namespace;
         private virtual test_case_name::crpcut_cputime_enforcer::monitor, \
         public virtual test_case_name::crpcut_expected_death_cause,     \
         private virtual test_case_name::crpcut_dependency,              \
-        public virtual crpcut_testsuite_dep                             \
+        public virtual crpcut_testsuite_dep,				\
+	private virtual test_case_name::crpcut_setup_timeout_policy,	\
+	private virtual test_case_name::crpcut_teardown_timeout_policy	\
     {                                                                   \
        typedef crpcut::implementation::crpcut_test_case_registrator     \
          crpcut_registrator_base;                                       \

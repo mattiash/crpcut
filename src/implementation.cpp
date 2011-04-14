@@ -160,7 +160,7 @@ namespace crpcut {
       if (t == comm::set_timeout && !kill_mask)
         {
           assert(len == sizeof(reg->crpcut_absolute_deadline_ms));
-          assert(!reg->crpcut_deadline_is_set());
+	  //          assert(!reg->crpcut_deadline_is_set());
           clocks::monotonic::timestamp ts;
           char *p = static_cast<char*>(static_cast<void*>(&ts));
           while (bytes_read < len)
@@ -170,6 +170,10 @@ namespace crpcut {
               assert(rv > 0);
               bytes_read += size_t(rv);
             }
+	  if (reg->crpcut_deadline_is_set())
+	    {
+	      reg->crpcut_clear_deadline();
+	    }
           ts+= clocks::monotonic::timestamp_ms_absolute();
           reg->crpcut_set_timeout(ts);
           if (do_reply)
@@ -298,6 +302,28 @@ namespace crpcut {
     {
       test_case_factory::obj().reg.crpcut_prev = this;
       crpcut_prev->crpcut_next = this;
+    }
+
+    void
+    crpcut_test_case_registrator
+    ::crpcut_prepare_setup()
+    {
+      if (test_case_factory::tests_as_child_procs())
+	{
+	  clocks::monotonic::timestamp deadline = crpcut_setup_timeout();
+	  comm::report(comm::set_timeout, deadline);
+	}
+    }
+
+    void
+    crpcut_test_case_registrator
+    ::crpcut_prepare_teardown()
+    {
+      if (test_case_factory::tests_as_child_procs())
+	{
+	  clocks::monotonic::timestamp deadline = crpcut_teardown_timeout();
+	  comm::report(comm::set_timeout, deadline);
+	}
     }
 
     bool
