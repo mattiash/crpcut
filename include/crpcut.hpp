@@ -888,6 +888,7 @@ namespace crpcut {
       template <unsigned long ms>
       class setup_timeout_policy
       {
+      protected:
 	virtual unsigned long crpcut_setup_timeout() const
 	{
 	  return ms;
@@ -896,6 +897,7 @@ namespace crpcut {
       template <unsigned long ms>
       class teardown_timeout_policy
       {
+      protected:
 	virtual unsigned long crpcut_teardown_timeout() const
 	{
 	  return ms;
@@ -1512,8 +1514,8 @@ namespace crpcut {
       void crpcut_manage_test_case_execution(test_case_base*);
       std::ostream &crpcut_print_name(std::ostream &) const ;
 
-      virtual unsigned long crpcut_setup_timeout() const { return 0; }
-      virtual unsigned long crpcut_teardown_timeout() const { return 0; }
+      virtual unsigned long crpcut_setup_timeout() const  { assert(0); return 0; }
+      virtual unsigned long crpcut_teardown_timeout() const  { assert(0); return 0; }
       void crpcut_prepare_setup();
       void crpcut_prepare_teardown();
       const char                   *crpcut_name_;
@@ -4331,6 +4333,14 @@ extern crpcut::implementation::namespace_info current_namespace;
     {                                                                   \
        typedef crpcut::implementation::crpcut_test_case_registrator     \
          crpcut_registrator_base;                                       \
+       virtual unsigned long crpcut_setup_timeout() const		\
+       {								\
+	 return test_case_name::crpcut_setup_timeout_policy::crpcut_setup_timeout(); \
+       }								\
+       virtual unsigned long crpcut_teardown_timeout() const		\
+       {								\
+	 return test_case_name::crpcut_teardown_timeout_policy::crpcut_teardown_timeout(); \
+       }								\
     public:                                                             \
        crpcut_registrator()                                             \
          : crpcut_registrator_base(#test_case_name, current_namespace)  \
