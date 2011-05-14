@@ -81,6 +81,36 @@ TESTSUITE(timeouts)
     sleep(2);
   }
 
+  template <bool constructor_cond, bool destructor_cond>
+  class stuck_fixture
+  {
+  public:
+    stuck_fixture() { while (constructor_cond) ; }
+    ~stuck_fixture() { while (destructor_cond) ; }
+  };
+
+  TEST(should_fail_slow_save_from_stuck_constructor,
+       stuck_fixture<true, false>)
+  {
+  }
+
+  TEST(should_fail_quick_save_from_stuck_constructor,
+       FIXTURE_CONSTRUCTION_DEADLINE_REALTIME_MS(10),
+       stuck_fixture<true, false>)
+  {
+  }
+
+  TEST(should_fail_slow_save_from_stuck_destructor,
+       stuck_fixture<false, true>)
+  {
+  }
+
+  TEST(should_fail_quick_save_from_stuck_destructor,
+       FIXTURE_DESTRUCTION_DEADLINE_REALTIME_MS(10),
+       stuck_fixture<false, true>)
+  {
+  }
+
   TESTSUITE(expected)
   {
     TEST(should_succeed_sleep,

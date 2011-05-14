@@ -886,25 +886,24 @@ namespace crpcut {
       class enforcer;
 
       template <unsigned long ms>
-      class setup_timeout_policy
+      struct setup_enforcer
       {
-      protected:
 	virtual unsigned long crpcut_setup_timeout() const
 	{
 	  return ms;
 	}
       };
+
       template <unsigned long ms>
-      class teardown_timeout_policy
+      struct teardown_enforcer
       {
-      protected:
 	virtual unsigned long crpcut_teardown_timeout() const
 	{
 	  return ms;
 	}
       };
-    }
 
+    }
     class default_policy
     {
     protected:
@@ -914,10 +913,11 @@ namespace crpcut {
 
       typedef dependencies::crpcut_none crpcut_dependency;
 
-      typedef timeout::setup_timeout_policy<2000> crpcut_setup_timeout_policy;
-      typedef timeout::teardown_timeout_policy<2000> crpcut_teardown_timeout_policy;
       typedef timeout::enforcer<timeout::realtime,2000> crpcut_realtime_enforcer;
       typedef timeout::enforcer<timeout::cputime, 0> crpcut_cputime_enforcer;
+
+      typedef timeout::setup_enforcer<8000> crpcut_setup_timeout_enforcer;
+      typedef timeout::teardown_enforcer<8000> crpcut_teardown_timeout_enforcer;
     };
 
     namespace deaths {
@@ -985,6 +985,7 @@ namespace crpcut {
       typedef deaths::timeout<N>      crpcut_expected_death_cause;
       typedef timeout::enforcer<timeout::realtime, N> crpcut_realtime_enforcer;
     };
+
     class any_exception_wrapper;
 
     template <typename exc>
@@ -1163,6 +1164,18 @@ namespace crpcut {
     };
 
 
+    template <unsigned long ms>
+    struct setup_timeout_policy : public virtual default_policy
+    {
+      typedef timeout::setup_enforcer<ms> crpcut_setup_timeout_enforcer;
+    };
+
+    template <unsigned long ms>
+    struct teardown_timeout_policy : public virtual default_policy
+    {
+      typedef timeout::teardown_enforcer<ms> crpcut_teardown_timeout_enforcer;
+    };
+
   } // namespace policies
 
   class test_case_base : protected virtual policies::default_policy
@@ -1184,17 +1197,17 @@ namespace crpcut {
   namespace comm {
 
 #define CRPCUT_COMM_MSGS(translator)             \
-    translator(stdout),                          \
-      translator(stderr),                        \
-      translator(info),                          \
-      translator(exit_ok),                       \
-      translator(exit_fail),                     \
-      translator(fail),                          \
-      translator(dir),                           \
-      translator(set_timeout),                   \
-      translator(cancel_timeout),                \
-      translator(begin_test),                    \
-      translator(end_test)
+    translator(stdout),           /*  1 */       \
+      translator(stderr),         /*  2 */       \
+      translator(info),           /*  3 */       \
+      translator(exit_ok),        /*  4 */       \
+      translator(exit_fail),      /*  5 */       \
+      translator(fail),           /*  6 */       \
+      translator(dir),            /*  7 */       \
+      translator(set_timeout),    /*  8 */       \
+      translator(cancel_timeout), /*  9 */       \
+      translator(begin_test),     /* 10 */       \
+      translator(end_test)        /* 11 */
 
     typedef enum {
       CRPCUT_COMM_MSGS(CRPCUT_VERBATIM),
@@ -1514,8 +1527,8 @@ namespace crpcut {
       void crpcut_manage_test_case_execution(test_case_base*);
       std::ostream &crpcut_print_name(std::ostream &) const ;
 
-      virtual unsigned long crpcut_setup_timeout() const  { assert(0); return 0; }
-      virtual unsigned long crpcut_teardown_timeout() const  { assert(0); return 0; }
+      virtual unsigned long crpcut_setup_timeout() const { assert(0); return 0; }
+      virtual unsigned long crpcut_teardown_timeout() const { assert(0); return 0; }
       void crpcut_prepare_setup();
       void crpcut_prepare_teardown();
       const char                   *crpcut_name_;
@@ -3391,10 +3404,10 @@ namespace crpcut {
       const char *msg = 0;
       const char *type = 0;
       try {
-	crpcut_prepare_setup();
+        crpcut_prepare_setup();
         T obj;
         crpcut_manage_test_case_execution(&obj);
-	crpcut_prepare_teardown();
+        crpcut_prepare_teardown();
       }
       CATCH_BLOCK(std::exception &e,{ type = "std::exception"; msg = e.what();})
       CATCH_BLOCK(..., { type = "..."; } )
@@ -4098,63 +4111,63 @@ namespace crpcut {
 
 #define CRPCUT_BINOP(name, opexpr)                                      \
   namespace expr {                                                      \
-    template <typename T, typename U>					\
-    class name								\
-    {									\
-    public:								\
-      name(const T& t, const U& u) : t_(t), u_(u) {}			\
-      inline friend							\
+    template <typename T, typename U>                                   \
+    class name                                                          \
+    {                                                                   \
+    public:                                                             \
+      name(const T& t, const U& u) : t_(t), u_(u) {}                    \
+      inline friend                                                     \
         std::ostream &operator<<(std::ostream &os, const name &a)       \
-      {									\
+      {                                                                 \
         implementation::conditionally_stream<8>(os, a.t_);              \
         os << " " << #opexpr << " ";                                    \
         implementation::conditionally_stream<8>(os, a.u_);              \
         return os;                                                      \
-      }									\
+      }                                                                 \
       friend struct eval_t<name>;                                       \
-    private:								\
-      const T& t_;							\
-      const U& u_;							\
-    };									\
+    private:                                                            \
+      const T& t_;                                                      \
+      const U& u_;                                                      \
+    };                                                                  \
   }
 
 #define CRPCUT_OPFUNC(name, opexpr)                                     \
   namespace expr {                                                      \
-    template <typename T, typename U>					\
-    inline								\
-    name<T, U> operator opexpr(const T& t, const U& u)			\
-    {									\
-      return name<T, U>(t, u);						\
-    }									\
+    template <typename T, typename U>                                   \
+    inline                                                              \
+    name<T, U> operator opexpr(const T& t, const U& u)                  \
+    {                                                                   \
+      return name<T, U>(t, u);                                          \
+    }                                                                   \
   }                                                                     \
-  template <typename T, typename U>					\
+  template <typename T, typename U>                                     \
   struct eval_t<expr::name<T, U> >                                      \
-  {									\
+  {                                                                     \
     typedef typename eval_t<T>::type ttype;                             \
     typedef typename eval_t<U>::type utype;                             \
     typedef CRPCUT_DECLTYPE(::crpcut::expr::gen<ttype>() opexpr ::crpcut::expr::gen<utype>()) type; \
-    static type func(const expr::name<T, U>& n)				\
-    {									\
+    static type func(const expr::name<T, U>& n)                         \
+    {                                                                   \
       return eval(n.t_) opexpr eval(n.u_);                              \
-    }									\
-  };									\
+    }                                                                   \
+  };                                                                    \
 
 #define CRPCUT_OPS(x)                           \
-  x(eq_op, ==)					\
-  x(ne_op, !=)					\
-  x(ls_op, <<)					\
-  x(rs_op, >>)					\
-  x(lt_op, <)					\
-  x(le_op, <=)					\
-  x(gt_op, >)					\
-  x(ge_op, >=)					\
-  x(add_op, +)					\
-  x(sub_op, -)					\
-  x(mul_op, *)					\
-  x(div_op, /)					\
-  x(mod_op, %)					\
-  x(and_op, &)					\
-  x(or_op, |)					\
+  x(eq_op, ==)                                  \
+  x(ne_op, !=)                                  \
+  x(ls_op, <<)                                  \
+  x(rs_op, >>)                                  \
+  x(lt_op, <)                                   \
+  x(le_op, <=)                                  \
+  x(gt_op, >)                                   \
+  x(ge_op, >=)                                  \
+  x(add_op, +)                                  \
+  x(sub_op, -)                                  \
+  x(mul_op, *)                                  \
+  x(div_op, /)                                  \
+  x(mod_op, %)                                  \
+  x(and_op, &)                                  \
+  x(or_op, |)                                   \
   x(xor_op, ^)
 
   CRPCUT_OPS(CRPCUT_BINOP)
@@ -4327,19 +4340,21 @@ extern crpcut::implementation::namespace_info current_namespace;
         private virtual test_case_name::crpcut_cputime_enforcer::monitor, \
         public virtual test_case_name::crpcut_expected_death_cause,     \
         private virtual test_case_name::crpcut_dependency,              \
-        public virtual crpcut_testsuite_dep,				\
-	private virtual test_case_name::crpcut_setup_timeout_policy,	\
-	private virtual test_case_name::crpcut_teardown_timeout_policy	\
+        public virtual crpcut_testsuite_dep,                            \
+        public test_case_name::crpcut_setup_timeout_enforcer,	\
+        public test_case_name::crpcut_teardown_timeout_enforcer \
     {                                                                   \
        typedef crpcut::implementation::crpcut_test_case_registrator     \
          crpcut_registrator_base;                                       \
        virtual unsigned long crpcut_setup_timeout() const		\
        {								\
-	 return test_case_name::crpcut_setup_timeout_policy::crpcut_setup_timeout(); \
+	 typedef test_case_name::crpcut_setup_timeout_enforcer T;	\
+	 return T::crpcut_setup_timeout();				\
        }								\
        virtual unsigned long crpcut_teardown_timeout() const		\
        {								\
-	 return test_case_name::crpcut_teardown_timeout_policy::crpcut_teardown_timeout(); \
+	 typedef test_case_name::crpcut_teardown_timeout_enforcer T;	\
+	 return T::crpcut_teardown_timeout();				\
        }								\
     public:                                                             \
        crpcut_registrator()                                             \
@@ -4421,6 +4436,7 @@ namespace crpcut {
 #define EXPECT_SIGNAL_DEATH(num) \
   protected virtual crpcut::policies::signal_death<num>
 
+
 #ifndef CRPCUT_NO_EXCEPTION_SUPPORT
 #define EXPECT_EXCEPTION(type) \
   protected virtual crpcut::policies::exception_specifier<void (type)>
@@ -4433,6 +4449,11 @@ namespace crpcut {
 
 #define DEADLINE_CPU_MS(time) \
   crpcut::policies::timeout_policy<crpcut::policies::timeout::cputime, time>
+
+#define FIXTURE_CONSTRUCTION_DEADLINE_REALTIME_MS(time) \
+  public crpcut::policies::setup_timeout_policy<time>
+#define FIXTURE_DESTRUCTION_DEADLINE_REALTIME_MS(time) \
+  public crpcut::policies::teardown_timeout_policy<time>
 
 #define DEADLINE_REALTIME_MS(time) \
   crpcut::policies::timeout_policy<crpcut::policies::timeout::realtime, time>
