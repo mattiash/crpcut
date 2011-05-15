@@ -1178,7 +1178,7 @@ TESTS = {
   Test.new('FAILED').
   log('info', /.*/me).
   log('violation',
-      /CPU-time timeout 500ms exceeded.\s+#{A_T} (([5-9]\d\d)|(1\d\d\d))ms/me),
+      /CPU-time timeout 100ms exceeded.\s+#{A_T} (([2-9]\d\d)|(1\d\d\d))ms/me),
 
   'timeouts::should_fail_slow_cputime_deadline_by_death' =>
   Test.new('FAILED').
@@ -1201,6 +1201,26 @@ TESTS = {
   'timeouts::should_succeed_slow_realtime_deadline' =>
   Test.new('PASSED'),
 
+  'timeouts::should_fail_slow_save_from_stuck_constructor' =>
+  Test.new('FAILED').
+  log('violation',
+      /Timed out - killed/),
+  
+  'timeouts::should_fail_quick_save_from_stuck_constructor' =>
+  Test.new('FAILED').
+  log('violation',
+      /Timed out - killed/),
+  
+  'timeouts::should_fail_slow_save_from_stuck_destructor' =>
+  Test.new('FAILED').
+  log('violation',
+      /Timed out - killed/),
+  
+  'timeouts::should_fail_quick_save_from_stuck_destructor' =>
+  Test.new('FAILED').
+  log('violation',
+      /Timed out - killed/),
+  
   'timeouts::expected::should_succeed_sleep' =>
   Test.new('PASSED'),
 

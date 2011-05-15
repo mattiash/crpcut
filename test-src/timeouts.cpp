@@ -50,12 +50,15 @@ TESTSUITE(timeouts)
     usleep(300000); // should usleep busy-wait, this test would fail miserably
   }
 
-  TEST(should_fail_slow_cputime_deadline, DEADLINE_CPU_MS(500), NO_CORE_FILE)
+  TEST(should_fail_slow_cputime_deadline,
+       DEADLINE_CPU_MS(100),
+       DEADLINE_REALTIME_MS(8000),
+       NO_CORE_FILE)
   {
-    const clock_t clocks_per_tick = sysconf(_SC_CLK_TCK);
+    const clock_t ticks_per_sec = sysconf(_SC_CLK_TCK);
     tms t;
     times(&t);
-    clock_t deadline = t.tms_utime + t.tms_stime + clocks_per_tick;
+    clock_t deadline = t.tms_utime + t.tms_stime + ticks_per_sec/5;
     for (;;)
       {
         for (volatile int n = 0; n < 100000; ++n)
@@ -67,6 +70,7 @@ TESTSUITE(timeouts)
 
   TEST(should_fail_slow_cputime_deadline_by_death,
        DEADLINE_CPU_MS(100),
+       DEADLINE_REALTIME_MS(8000),
        NO_CORE_FILE)
   {
     for (;;)
@@ -171,7 +175,7 @@ TESTSUITE(timeouts)
       }
     }
 
-    TEST(should_fail_cputime_long)
+    TEST(should_fail_cputime_long, DEADLINE_REALTIME_MS(2000))
     {
       const clock_t clocks_per_tick = sysconf(_SC_CLK_TCK);
       tms t;

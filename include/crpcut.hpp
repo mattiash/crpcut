@@ -916,8 +916,8 @@ namespace crpcut {
       typedef timeout::enforcer<timeout::realtime,2000> crpcut_realtime_enforcer;
       typedef timeout::enforcer<timeout::cputime, 0> crpcut_cputime_enforcer;
 
-      typedef timeout::setup_enforcer<8000> crpcut_setup_timeout_enforcer;
-      typedef timeout::teardown_enforcer<8000> crpcut_teardown_timeout_enforcer;
+      typedef timeout::setup_enforcer<1000> crpcut_setup_timeout_enforcer;
+      typedef timeout::teardown_enforcer<1000> crpcut_teardown_timeout_enforcer;
     };
 
     namespace deaths {
@@ -3508,7 +3508,9 @@ namespace crpcut {
     crpcut_test_case_registrator
     ::crpcut_set_timeout(unsigned long ts)
     {
-      crpcut_absolute_deadline_ms = crpcut_calc_deadline(ts);
+      crpcut_absolute_deadline_ms = crpcut_phase == running
+	? crpcut_calc_deadline(ts)
+	: ts;
       crpcut_deadline_set = true;
     }
 
