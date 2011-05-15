@@ -883,8 +883,12 @@
         <xref linkend="TEST" xrefstyle="select:title"/></para>
     </formalpara>
     <note>The time measured is the running of the test function only.
-      Construction and destruction time for fixtures are excluded
-      (see <xref linkend="TEST" xrefstyle="select:title"/> for
+      For deadlines on construction and destruction time for fixtures,
+      see <xref linkend="FIXTURE_CONSTRUCTION_DEADLINE_REALTIME_MS"
+      xrefstyle="select:title"/> and
+      <xref linkend="FIXTURE_DESTRUCTION_DEADLINE_REALTIME_MS"
+            xrefstyle="select:title"/>.
+      See also <xref linkend="TEST" xrefstyle="select:title"/> for
       information about fixtures.</note>
       <note><function>DEADLINE_REALTIME_MS(ms)</function> cannot be
       used together with
@@ -1170,6 +1174,69 @@
 
 
   </section>
+
+  <section id="FIXTURE_CONSTRUCTION_DEADLINE_REALTIME_MS">
+    <title><function>FIXTURE_CONSTRUCTION_DEADLINE_REALTIME_MS(ms)</function></title>
+    <para>Change the default timeout for fixture construction from 1s the
+    specified number of milliseconds.</para>
+    <formalpara><title>Used in:</title>
+      <para>The modifier list of a test.
+      See <xref linkend="TEST" xrefstyle="select:title"/></para>
+    </formalpara>
+    <para>The parameter to
+    <function>FIXTURE_CONSTRUCTION_DEADLINE_REALTIME_MS</function>(<parameter>ms</parameter>)
+    is the maximum number of milliseconds real time that construction of the
+    fixtures for the test are allowed to consume. If the constructors require
+    more time than that to finish, the test process is killed and the test
+    failed.</para>
+    <para>Example: The test program</para>
+    <programlisting language="c++">
+<xi:include href="../stripped-src/fixture_construction_timeout.cpp" parse="text"/>
+</programlisting>
+    <para>reports one failed test:</para>
+      <screen>
+
+<xi:include href="../sample-output/fixture_construction_timeout.out" parse="text"/>
+</screen>
+      <note>
+        It is possible to temporarily disable the deadline with the
+        <xref linkend="disable-timeouts" refstyle="select:title"/>
+        command line flag.
+      </note>
+  </section>
+
+  <section id="FIXTURE_DESTRUCTION_DEADLINE_REALTIME_MS">
+    <title><function>FIXTURE_DESTRUCTION_DEADLINE_REALTIME_MS(ms)</function></title>
+    <para>Change the default timeout for fixture destruction from 1s the
+    specified number of milliseconds.</para>
+    <formalpara><title>Used in:</title>
+      <para>The modifier list of a test.
+      See <xref linkend="TEST" xrefstyle="select:title"/></para>
+    </formalpara>
+    <para>The parameter to
+    <function>FIXTURE_DESTRUCTION_DEADLINE_REALTIME_MS</function>(<parameter>ms</parameter>)
+    is the maximum number of milliseconds real time that destruction of the
+    fixtures for the test are allowed to consume. If the destructors require
+    more time than that to finish, the test process is killed and the test
+    failed.</para>
+    <para>Example: The test program</para>
+    <programlisting language="c++">
+<xi:include href="../stripped-src/fixture_destruction_timeout.cpp"
+            parse="text"/>
+</programlisting>
+    <para>reports one failed test:</para>
+      <screen>
+
+<xi:include href="../sample-output/fixture_destruction_timeout.out"
+            parse="text"/>
+</screen>
+      <note>
+        It is possible to temporarily disable the deadline with the
+        <xref linkend="disable-timeouts" refstyle="select:title"/>
+        command line flag.
+      </note>
+  </section>
+
   <section id="INFO">
     <title><function>INFO</function></title>
     <para>Provide information that can be useful in determining in why a

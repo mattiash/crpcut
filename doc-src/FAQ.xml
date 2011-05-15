@@ -315,14 +315,22 @@
 
           </screen>
         </para>
-        <para>By default, tests are given 2s to complete. Your test consumed
-          at least 3s. Most probably your code waits for something that doesn't
-          happen, or is stuck in a no-progress loop (infinite, that is.)
+        <para>By default, tests functions are given 2s to complete, and fixture
+        construction and destruction are given 1s each. Either you test
+        function consumed at least 3s, or your fixture constructor or
+        destructor consumed more that 1s. Most probably your code waits for
+        something that doesn't happen, or is stuck in a no-progress loop
+        (infinite, that is.)
         </para>
         <para>If, however, your test legitimately needs more time than that,
           you can easily raise the limit. Just use the
           <xref linkend="DEADLINE_REALTIME_MS" xrefstyle="select:title"/>
-          modifier and set a suitably long deadline.
+          modifier and set a suitably long deadline for the test function,
+          or <xref linkend="FIXTURE_CONSTRUCTION_DEADLINE_REALTIME_MS"
+          xrefstyle="select:title"/> for a slow fixture constructor or
+          <xref linkend="FIXTURE_DESTRUCTION_DEADLINE_REALTIME_MS"
+                xrefstyle="select:title"/> to get more time for the
+          fixture destructor.
         </para>
         <note>
           If this occurs when running under special circumstances, for

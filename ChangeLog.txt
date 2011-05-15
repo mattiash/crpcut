@@ -1,3 +1,8 @@
+         * Added timeout protection for fixture construction and destruction.
+           By default the timeout is 1s. If more time is need, the test
+           modifiers FIXTURE_CONSTRUCTION_DEADLINE_REALTIME_MS(ms) and
+           FIXTURE_DESTRUCTION_DEADLINE_REALTIME_MS(ms) can be used.
+
 2011-01-23 1.2.0
 
          * Added VERIFY_ macros to mirror the ASSERT_ macros. The difference

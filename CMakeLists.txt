@@ -1253,6 +1253,46 @@ if (WITH_HTML_DOCS)
       WORKING_DIRECTORY sample-output
       VERBATIM)
 
+
+    #
+    # fixture_construction_timeout
+    #
+    file(GLOB CONSTR_TIMEOUT "${DOC_SRC_LIB}/samples/fixture_construction_timeout.cpp")
+    add_custom_target(
+      fixture_construction_timeout.cpp
+      ${STRIP_SOURCES} < ${CONSTR_TIMEOUT} > fixture_construction_timeout.cpp
+      DEPENDS stripped-src ${CONSTR_TIMEOUT}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(fixture_construction_timeout EXCLUDE_FROM_ALL ${CONSTR_TIMEOUT})
+    target_link_libraries(fixture_construction_timeout crpcut)
+    add_custom_target(
+      fixture_construction_timeout.out
+      fixture_construction_timeout | sed "s/\\(.*\\)/     \\1/g" > fixture_construction_timeout.out
+      DEPENDS fixture_construction_timeout sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+    #
+    # fixture_destruction_timeout
+    #
+    file(GLOB DESTR_TIMEOUT "${DOC_SRC_LIB}/samples/fixture_destruction_timeout.cpp")
+    add_custom_target(
+      fixture_destruction_timeout.cpp
+      ${STRIP_SOURCES} < ${DESTR_TIMEOUT} > fixture_destruction_timeout.cpp
+      DEPENDS stripped-src ${DESTR_TIMEOUT}
+      WORKING_DIRECTORY stripped-src
+      VERBATIM)
+    add_executable(fixture_destruction_timeout EXCLUDE_FROM_ALL ${DESTR_TIMEOUT})
+    target_link_libraries(fixture_destruction_timeout crpcut)
+    add_custom_target(
+      fixture_destruction_timeout.out
+      fixture_destruction_timeout | sed "s/\\(.*\\)/     \\1/g" > fixture_destruction_timeout.out
+      DEPENDS fixture_destruction_timeout sample-output
+      WORKING_DIRECTORY sample-output
+      VERBATIM)
+
+
     #
     # info
     #
@@ -1917,6 +1957,8 @@ if (WITH_HTML_DOCS)
       stripped-src/expect_exit.cpp sample-output/expect_exit.out
       stripped-src/expect_signal_death.cpp sample-output/expect_signal_death.out
       stripped-src/expect_realtime_timeout.cpp sample-output/expect_realtime_timeout.out
+      stripped-src/fixture_construction_timeout.cpp sample-output/fixture_construction_timeout.out
+      stripped-src/fixture_destruction_timeout.cpp sample-output/fixture_destruction_timeout.out
       stripped-src/fail.cpp sample-output/fail.out
       stripped-src/info.cpp sample-output/info.out
       stripped-src/no_core.cpp sample-output/no_core.out
