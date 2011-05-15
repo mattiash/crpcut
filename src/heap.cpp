@@ -179,6 +179,7 @@ namespace crpcut
     {
       current_root = old_root_;
       if (file_) assert_empty();
+      valgrind_make_mem_defined(this, sizeof(mem_list_element));
       remove_object(this);
     }
     local_root* local_root::current()
@@ -262,15 +263,16 @@ namespace crpcut
 
     void local_root::remove_object(mem_list_element *p)
     {
-      if (p->next)
+      valgrind_make_mem_defined(p->next, sizeof(mem_list_element));
+      mem_list_element *next = p->next;
+      if (next)
         {
-          valgrind_make_mem_defined(p->next, sizeof(mem_list_element));
-          p->next->prev = p->prev;
-          valgrind_make_mem_noaccess(p->next, sizeof(mem_list_element));
           valgrind_make_mem_defined(p->prev, sizeof(mem_list_element));
-          p->prev->next = p->next;
+          next->prev = p->prev;
+          p->prev->next = next;
           valgrind_make_mem_noaccess(p->prev, sizeof(mem_list_element));
         }
+      valgrind_make_mem_noaccess(next, sizeof(mem_list_element));
     }
     bool control::enabled;
 
@@ -414,10 +416,7 @@ namespace crpcut
                           sr->type = raw;
                           void *addr = sr+1;
                           void **stack = static_cast<void**>(addr);
-                          for (int i = 0; i < elems; ++i)
-                            {
-                              stack[i] = buffer[i];
-                            }
+                          std::copy(buffer, buffer + elems, stack);
                           p->stack = sr;
                           p->stack_size = elems;
                         }
