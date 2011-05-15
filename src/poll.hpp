@@ -30,7 +30,7 @@
 
 extern "C" void perror(const char*);
 #include <cassert>
-
+#include <algorithm>
 namespace crpcut {
   namespace wrapped {
     int close(int fd);
@@ -60,6 +60,13 @@ namespace crpcut {
     }
     struct fdinfo
     {
+      struct has_fd
+      {
+        has_fd(int num) : fd_(num) {}
+        bool operator()(const fdinfo& i) const { return fd_ == i.fd; }
+      private:
+        int fd_;
+      };
       fdinfo(int fd_ = 0, int mode_ = 0, void *ptr_ = 0)
         : fd(fd_), mode(mode_), ptr(ptr_)
       {
@@ -155,24 +162,21 @@ namespace crpcut {
   template <typename T, size_t N>
   inline void poll<T, N>::del_fd(int fd)
   {
-    for (size_t i = 0; i < this->num_subscribers; ++i)
+    typedef typename polldata<N>::fdinfo info;
+    info *i = std::find_if(this->access,
+                           this->access + this->num_subscribers,
+                           typename info::has_fd(fd));
+    assert(i != this->access + this->num_subscribers && "fd not found");
+    *i = this->access[--this->num_subscribers];
+    if (   FD_ISSET(fd, &this->xset)
+           || FD_ISSET(fd, &this->rset)
+           || FD_ISSET(fd, &this->wset))
       {
-        if (this->access[i].fd == fd)
-          {
-            this->access[i] = this->access[--this->num_subscribers];
-            if (   FD_ISSET(fd, &this->xset)
-                || FD_ISSET(fd, &this->rset)
-                || FD_ISSET(fd, &this->wset))
-              {
-                FD_CLR(fd, &this->rset);
-                FD_CLR(fd, &this->wset);
-                FD_CLR(fd, &this->xset);
-                --this->pending_fds;
-              }
-            return;
-          }
+        FD_CLR(fd, &this->rset);
+        FD_CLR(fd, &this->wset);
+        FD_CLR(fd, &this->xset);
+        --this->pending_fds;
       }
-    assert("fd not found" == 0);
   }
 
   template <typename T, size_t N>

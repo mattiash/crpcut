@@ -72,41 +72,38 @@ namespace crpcut {
   ::do_clear_deadline(implementation::crpcut_test_case_registrator *i)
   {
     assert(i->crpcut_deadline_is_set());
-    for (size_t n = 0; n < deadlines.size(); ++n)
+    typedef implementation::crpcut_test_case_registrator tcr;
+    tcr **found = std::find(deadlines.begin(), deadlines.end(), i);
+    assert(found != deadlines.end() && "clear deadline when none was ordered");
+
+    size_t n = found - deadlines.begin();
+
+    for (;;)
       {
-        if (deadlines[n] == i)
+        size_t m = (n+1)*2-1;
+        if (m >= deadlines.size() - 1) break;
+        if (tcr::crpcut_timeout_compare(deadlines[m+1],
+                                        deadlines[m]))
           {
-            typedef implementation::crpcut_test_case_registrator tcr;
-            for (;;)
-              {
-                size_t m = (n+1)*2-1;
-                if (m >= deadlines.size() - 1) break;
-                if (tcr::crpcut_timeout_compare(deadlines[m+1],
-                                                deadlines[m]))
-                  {
-                    deadlines[n] = deadlines[m];
-                  }
-                else
-                  {
-                    deadlines[n] = deadlines[++m];
-                  }
-                n = m;
-              }
-            deadlines[n] = deadlines.back();
-            deadlines.pop_back();
-            if (n != deadlines.size())
-              {
-                while (n && !tcr::crpcut_timeout_compare(deadlines[n],
-                                                         deadlines[(n-1)/2]))
-                  {
-                    std::swap(deadlines[n], deadlines[(n-1)/2]);
-                    n=(n-1)/2;
-                  }
-              }
-            return;
+            deadlines[n] = deadlines[m];
+          }
+        else
+          {
+            deadlines[n] = deadlines[++m];
+          }
+        n = m;
+      }
+    deadlines[n] = deadlines.back();
+    deadlines.pop_back();
+    if (n != deadlines.size())
+      {
+        while (n && !tcr::crpcut_timeout_compare(deadlines[n],
+                                                 deadlines[(n-1)/2]))
+          {
+            std::swap(deadlines[n], deadlines[(n-1)/2]);
+            n=(n-1)/2;
           }
       }
-    assert("clear deadline when none was ordered" == 0);
   }
 
   void test_case_factory::do_return_dir(unsigned num)
@@ -1174,7 +1171,7 @@ namespace crpcut {
             "   -s, --single-shot\n"
             "        run only one test case, and run it in the main process\n\n"
             "   -t, --disable-timeouts\n"
-            "        never fail a test due to time consumption\n"
+            "        never fail a test due to time consumption\n\n"
             "   -v, --verbose\n"
             "        verbose mode, print result from passed tests\n\n"
             "   -x, --xml\n"
