@@ -886,18 +886,18 @@ namespace crpcut {
       class enforcer;
 
       template <unsigned long ms>
-      struct setup_enforcer
+      struct constructor_enforcer
       {
-	virtual unsigned long crpcut_setup_timeout() const
+	virtual unsigned long crpcut_constructor_timeout() const
 	{
 	  return ms;
 	}
       };
 
       template <unsigned long ms>
-      struct teardown_enforcer
+      struct destructor_enforcer
       {
-	virtual unsigned long crpcut_teardown_timeout() const
+	virtual unsigned long crpcut_destructor_timeout() const
 	{
 	  return ms;
 	}
@@ -916,8 +916,10 @@ namespace crpcut {
       typedef timeout::enforcer<timeout::realtime,2000> crpcut_realtime_enforcer;
       typedef timeout::enforcer<timeout::cputime, 0> crpcut_cputime_enforcer;
 
-      typedef timeout::setup_enforcer<1000> crpcut_setup_timeout_enforcer;
-      typedef timeout::teardown_enforcer<1000> crpcut_teardown_timeout_enforcer;
+      typedef timeout::constructor_enforcer<1000>
+      crpcut_constructor_timeout_enforcer;
+      typedef timeout::destructor_enforcer<1000>
+      crpcut_destructor_timeout_enforcer;
     };
 
     namespace deaths {
@@ -1165,15 +1167,17 @@ namespace crpcut {
 
 
     template <unsigned long ms>
-    struct setup_timeout_policy : public virtual default_policy
+    struct constructor_timeout_policy : public virtual default_policy
     {
-      typedef timeout::setup_enforcer<ms> crpcut_setup_timeout_enforcer;
+      typedef timeout::constructor_enforcer<ms>
+      crpcut_constructor_timeout_enforcer;
     };
 
     template <unsigned long ms>
-    struct teardown_timeout_policy : public virtual default_policy
+    struct destructor_timeout_policy : public virtual default_policy
     {
-      typedef timeout::teardown_enforcer<ms> crpcut_teardown_timeout_enforcer;
+      typedef timeout::destructor_enforcer<ms>
+      crpcut_destructor_timeout_enforcer;
     };
 
   } // namespace policies
@@ -1527,10 +1531,10 @@ namespace crpcut {
       void crpcut_manage_test_case_execution(test_case_base*);
       std::ostream &crpcut_print_name(std::ostream &) const ;
 
-      virtual unsigned long crpcut_setup_timeout() const { assert(0); return 0; }
-      virtual unsigned long crpcut_teardown_timeout() const { assert(0); return 0; }
-      void crpcut_prepare_setup();
-      void crpcut_prepare_teardown();
+      virtual unsigned long crpcut_constructor_timeout() const { assert(0); return 0; }
+      virtual unsigned long crpcut_destructor_timeout() const { assert(0); return 0; }
+      void crpcut_prepare_construction();
+      void crpcut_prepare_destruction();
       const char                   *crpcut_name_;
       const namespace_info         *crpcut_ns_info;
       crpcut_test_case_registrator *crpcut_next;
@@ -3404,10 +3408,10 @@ namespace crpcut {
       const char *msg = 0;
       const char *type = 0;
       try {
-        crpcut_prepare_setup();
+        crpcut_prepare_construction();
         T obj;
         crpcut_manage_test_case_execution(&obj);
-        crpcut_prepare_teardown();
+        crpcut_prepare_destruction();
       }
       CATCH_BLOCK(std::exception &e,{ type = "std::exception"; msg = e.what();})
       CATCH_BLOCK(..., { type = "..."; } )
@@ -4343,20 +4347,20 @@ extern crpcut::implementation::namespace_info current_namespace;
         public virtual test_case_name::crpcut_expected_death_cause,     \
         private virtual test_case_name::crpcut_dependency,              \
         public virtual crpcut_testsuite_dep,                            \
-        public test_case_name::crpcut_setup_timeout_enforcer,	\
-        public test_case_name::crpcut_teardown_timeout_enforcer \
+        public test_case_name::crpcut_constructor_timeout_enforcer,	\
+        public test_case_name::crpcut_destructor_timeout_enforcer	\
     {                                                                   \
        typedef crpcut::implementation::crpcut_test_case_registrator     \
          crpcut_registrator_base;                                       \
-       virtual unsigned long crpcut_setup_timeout() const		\
+       virtual unsigned long crpcut_constructor_timeout() const		\
        {								\
-	 typedef test_case_name::crpcut_setup_timeout_enforcer T;	\
-	 return T::crpcut_setup_timeout();				\
+	 typedef test_case_name::crpcut_constructor_timeout_enforcer T;	\
+	 return T::crpcut_constructor_timeout();			\
        }								\
-       virtual unsigned long crpcut_teardown_timeout() const		\
+       virtual unsigned long crpcut_destructor_timeout() const		\
        {								\
-	 typedef test_case_name::crpcut_teardown_timeout_enforcer T;	\
-	 return T::crpcut_teardown_timeout();				\
+	 typedef test_case_name::crpcut_destructor_timeout_enforcer T;	\
+	 return T::crpcut_destructor_timeout();				\
        }								\
     public:                                                             \
        crpcut_registrator()                                             \
@@ -4453,9 +4457,9 @@ namespace crpcut {
   crpcut::policies::timeout_policy<crpcut::policies::timeout::cputime, time>
 
 #define FIXTURE_CONSTRUCTION_DEADLINE_REALTIME_MS(time) \
-  public crpcut::policies::setup_timeout_policy<time>
+  public crpcut::policies::constructor_timeout_policy<time>
 #define FIXTURE_DESTRUCTION_DEADLINE_REALTIME_MS(time) \
-  public crpcut::policies::teardown_timeout_policy<time>
+  public crpcut::policies::destructor_timeout_policy<time>
 
 #define DEADLINE_REALTIME_MS(time) \
   crpcut::policies::timeout_policy<crpcut::policies::timeout::realtime, time>

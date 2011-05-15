@@ -306,22 +306,22 @@ namespace crpcut {
 
     void
     crpcut_test_case_registrator
-    ::crpcut_prepare_setup()
+    ::crpcut_prepare_construction()
     {
       if (test_case_factory::tests_as_child_procs())
 	{
-	  clocks::monotonic::timestamp deadline = crpcut_setup_timeout();
+	  clocks::monotonic::timestamp deadline = crpcut_constructor_timeout();
 	  comm::report(comm::set_timeout, deadline);
 	}
     }
 
     void
     crpcut_test_case_registrator
-    ::crpcut_prepare_teardown()
+    ::crpcut_prepare_destruction()
     {
       if (test_case_factory::tests_as_child_procs())
 	{
-	  clocks::monotonic::timestamp deadline = crpcut_teardown_timeout();
+	  clocks::monotonic::timestamp deadline = crpcut_destructor_timeout();
 	  comm::report(comm::set_timeout, deadline);
 	}
     }
