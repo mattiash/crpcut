@@ -1454,7 +1454,7 @@ GMOCK_TESTS = {
   'google_mock::should_fail_with_unstreamable_type_wrong_value' =>
   Test.new('FAILED').
   log('violation',
-      /Unexpected mock.*Expected.*object <[03 ]*>.*Actual.*object <[04 ]*>/me)
+      /Unexpected mock.*Expected.*equal.*3.*Actual.*4.*>/me)
 }
 tests=TESTS;
 tests.merge! GMOCK_TESTS if ARGV[0] == 'gmock'
