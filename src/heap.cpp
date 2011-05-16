@@ -264,15 +264,15 @@ namespace crpcut
     void local_root::remove_object(mem_list_element *p)
     {
       valgrind_make_mem_defined(p->next, sizeof(mem_list_element));
-      mem_list_element *next = p->next;
-      if (next)
+      mem_list_element *next_elem = p->next;
+      if (next_elem)
         {
           valgrind_make_mem_defined(p->prev, sizeof(mem_list_element));
-          next->prev = p->prev;
-          p->prev->next = next;
+          next_elem->prev = p->prev;
+          p->prev->next = next_elem;
           valgrind_make_mem_noaccess(p->prev, sizeof(mem_list_element));
         }
-      valgrind_make_mem_noaccess(next, sizeof(mem_list_element));
+      valgrind_make_mem_noaccess(next_elem, sizeof(mem_list_element));
     }
     bool control::enabled;
 
