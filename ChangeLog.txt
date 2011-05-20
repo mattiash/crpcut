@@ -1,5 +1,4 @@
-         * Modified selftest regexp to match changed message strings for
-           google-mock version 1.6.0.
+         * Verified interoperability with google-mock version 1.6.0.
 
          * Added timeout protection for fixture construction and destruction.
            By default the timeout is 1s. If more time is need, the test
