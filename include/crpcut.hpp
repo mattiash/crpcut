@@ -931,21 +931,32 @@ namespace crpcut {
         virtual bool crpcut_is_expected_exit(int) const;
         virtual bool crpcut_is_expected_signal(int) const;
         virtual void crpcut_expected_death(std::ostream &os) const;
+        virtual void crpcut_on_ok_action(const char *wd_name) const;
         virtual unsigned long crpcut_calc_deadline(unsigned long ts) const;
       };
 
-      template <int N>
-      class signal : public virtual crpcut_none
+      template <int N, typename action>
+      class signal : public virtual crpcut_none,
+                     private action
       {
       public:
+        virtual void crpcut_on_ok_action(const char *wd_name) const
+        {
+          action::crpcut_on_ok_action(wd_name);
+        }
         virtual bool crpcut_is_expected_signal(int code) const;
         virtual void crpcut_expected_death(std::ostream &os) const;
       };
 
-      template <int N>
-      class exit : public virtual crpcut_none
+      template <int N, typename action>
+      class exit : public virtual crpcut_none,
+                   private action
       {
       public:
+        virtual void crpcut_on_ok_action(const char *wd_name) const
+        {
+          action::crpcut_on_ok_action(wd_name);
+        }
         virtual bool crpcut_is_expected_exit(int code) const;
         virtual void crpcut_expected_death(std::ostream &os) const;
       };
@@ -961,22 +972,35 @@ namespace crpcut {
 
       class wrapper;
       class timeout_wrapper;
+
+      class no_action
+      {
+      public:
+        virtual void crpcut_on_ok_action(const char *) const;
+      };
+
+      class wipe_working_dir
+      {
+      public:
+        virtual void crpcut_on_ok_action(const char *wd_name) const;
+      private:
+      };
     } // namespace deaths
 
-    template <unsigned long N>
+    template <unsigned long N, typename action = deaths::no_action>
     class signal_death : protected virtual default_policy
     {
     public:
       typedef deaths::wrapper crpcut_run_wrapper;
-      typedef deaths::signal<N> crpcut_expected_death_cause;
+      typedef deaths::signal<N, action> crpcut_expected_death_cause;
     };
 
-    template <unsigned long N>
+    template <unsigned long N, typename action = deaths::no_action>
     class exit_death : protected virtual default_policy
     {
     public:
       typedef deaths::wrapper  crpcut_run_wrapper;
-      typedef deaths::exit<N>  crpcut_expected_death_cause;
+      typedef deaths::exit<N, action>  crpcut_expected_death_cause;
     };
 
     template <unsigned long N>
@@ -3026,6 +3050,11 @@ namespace crpcut {
 
     namespace deaths{
 
+      inline void
+      crpcut_none::crpcut_on_ok_action(const char *) const
+      {
+      }
+
       inline bool
       crpcut_none::crpcut_is_expected_exit(int) const
       {
@@ -3038,16 +3067,16 @@ namespace crpcut {
         return false;
       }
 
-      template <int N>
+      template <int N, typename action>
       inline bool
-      signal<N>::crpcut_is_expected_signal(int code) const
+      signal<N, action>::crpcut_is_expected_signal(int code) const
       {
         return N == ANY_CODE || code == N;
       }
 
-      template <int N>
+      template <int N, typename action>
       inline void
-      signal<N>::crpcut_expected_death(std::ostream &os) const
+      signal<N, action>::crpcut_expected_death(std::ostream &os) const
       {
         if (N == ANY_CODE)
           {
@@ -3059,16 +3088,16 @@ namespace crpcut {
           }
       }
 
-      template <int N>
+      template <int N, typename action>
       inline bool
-      exit<N>::crpcut_is_expected_exit(int code) const
+      exit<N, action>::crpcut_is_expected_exit(int code) const
       {
         return N == ANY_CODE || code == N;
       }
 
-      template <int N>
+      template <int N, typename action>
       inline void
-      exit<N>::crpcut_expected_death(std::ostream &os) const
+      exit<N, action>::crpcut_expected_death(std::ostream &os) const
       {
         if (N == ANY_CODE)
           {
@@ -4435,14 +4464,17 @@ namespace crpcut {
 #define NO_CORE_FILE \
   protected virtual crpcut::policies::no_core_file
 
-#define EXPECT_EXIT(num) \
-  protected virtual crpcut::policies::exit_death<num>
+#define WIPE_WORKING_DIR \
+  crpcut::policies::deaths::wipe_working_dir
+
+#define EXPECT_EXIT(...) \
+  protected virtual crpcut::policies::exit_death<__VA_ARGS__>
 
 #define EXPECT_REALTIME_TIMEOUT_MS(time) \
   protected virtual crpcut::policies::realtime_timeout_death<time>
 
-#define EXPECT_SIGNAL_DEATH(num) \
-  protected virtual crpcut::policies::signal_death<num>
+#define EXPECT_SIGNAL_DEATH(...) \
+  protected virtual crpcut::policies::signal_death<__VA_ARGS__>
 
 
 #ifndef CRPCUT_NO_EXCEPTION_SUPPORT

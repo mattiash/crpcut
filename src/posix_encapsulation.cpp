@@ -150,6 +150,7 @@ namespace crpcut {
                        void,
                        (regex_t *r),
                        (r))
+    CRPCUT_WRAP_FUNC(libc, remove, int, (const char *n), (n))
     CRPCUT_WRAP_FUNC(libc, rename, int, (const char *o, const char *n), (o, n))
     CRPCUT_WRAP_FUNC(libc, rmdir, int, (const char *n), (n))
     CRPCUT_WRAP_FUNC(libc, select,

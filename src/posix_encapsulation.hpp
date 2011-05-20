@@ -59,6 +59,7 @@ namespace crpcut {
     int                  pipe(int p[2]);
     int                  readdir_r(DIR* p, struct dirent* e, struct dirent** r);
     int                  rename(const char *o, const char *n);
+    int                  remove(const char *n);
     int                  rmdir(const char *n);
     int                  select(int, fd_set*, fd_set*, fd_set*, timeval *);
     int                  setpgid(pid_t pid, pid_t pgid);
