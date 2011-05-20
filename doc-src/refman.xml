@@ -1025,27 +1025,39 @@
 
   </section>
   <section id="EXPECT_EXIT">
-    <title><function>EXPECT_EXIT(num)</function></title>
+    <title><function>EXPECT_EXIT(num, action?)</function></title>
 
     <para>A test modifier which states that the normal way to finish the
       test is via <function>exit()</function> instead of returning from
-      the function.</para>
+      the function.
+    </para>
     <formalpara><title>Used in:</title>
       <para>The modifier list of a test.
         See <xref linkend="TEST" xrefstyle="select:title"/></para>
     </formalpara>
-    <para>The parameter to
-      <function>EXPECT_EXIT</function>(<parameter>num</parameter>) is the
-      exit code, or <xref linkend="ANY_CODE" xrefstyle="select:title"/>
+    <para><variablelist><title>Parametes</title>
+    <varlistentry><term><parameter>num</parameter></term>
+    <listitem>
+      the exit code required to pass the test, or
+      <xref linkend="ANY_CODE" xrefstyle="select:title"/>
       if any exit code is accepted.
+    </listitem>
+    </varlistentry>
+    <varlistentry><term><parameter>action?</parameter></term>
+    <listitem>Optional action to take if the test passed with the
+    correct exit code. Currently the only supported action is
+      <xref linkend="WIPE_WORKING_DIR" xrefstyle="select:title"/>.
+    </listitem>
+    </varlistentry>
+    </variablelist>
     </para>
     <para>
       If the test finishes through any other means, it fails.
     </para>
     <note>
-      <function>EXPECT_EXIT(num)</function> cannot be used together with
-      either of <xref linkend="EXPECT_EXCEPTION" xrefstyle="select:title"/> or
-      <xref linkend="EXPECT_SIGNAL_DEATH" xrefstyle="select:title"/>.
+      <function>EXPECT_EXIT(num, action?)</function> cannot be used together
+      with either of <xref linkend="EXPECT_EXCEPTION" xrefstyle="select:title"/>
+      or <xref linkend="EXPECT_SIGNAL_DEATH" xrefstyle="select:title"/>.
     </note>
     <para>Example: The test program</para>
       <programlisting language="c++">
@@ -1099,7 +1111,7 @@
   </section>
 
   <section id="EXPECT_SIGNAL_DEATH">
-    <title><function>EXPECT_SIGNAL_DEATH(signo)</function></title>
+    <title><function>EXPECT_SIGNAL_DEATH(signo, action?)</function></title>
 
     <para>A test modifier which states that the normal way to finish the
       test is via a signal instead of returning from the function.</para>
@@ -1107,11 +1119,21 @@
       <para>The modifier list of a test.
         See <xref linkend="TEST" xrefstyle="select:title"/></para>
     </formalpara>
-    <para>The parameter to
-      <function>EXPECT_SIGNAL_DEATH</function>(<parameter>num</parameter>)
-      is the signal number, or
+    <para><variablelist><title>Parameters</title>
+    <varlistentry><term><parameter>signo</parameter></term>
+    <listitem>
+      the signal number the test process must die on, or
       <xref linkend="ANY_CODE" xrefstyle="select:title"/>
       if any signal is accepted.
+    </listitem>
+    </varlistentry>
+    <varlistentry><term><parameter>action?</parameter></term>
+    <listitem>Optional action to take if the test passed with the
+    correct signal number. Currently the only supported action is
+    <xref linkend="WIPE_WORKING_DIR" xrefstyle="select:title"/>.
+    </listitem>
+    </varlistentry>
+  </variablelist>
     </para>
     <para>
       If the test finishes through any other means, it fails.
@@ -2230,6 +2252,22 @@
         </screen>
       </para>
 
+  </section>
+  <section id="WIPE_WORKING_DIR">
+    <title><function>WIPE_WORKING_DIR</function></title>
+    <para>
+      Post mortem action for
+      <xref linkend="EXPECT_EXIT" xrefstyle="select:title"/> and
+      <xref linkend="EXPECT_SIGNAL_DEATH" xrefstyle="select:title"/> which
+      clears all files in the working directory of the test case process.
+      <tip>This can be useful when doing negative tests for functions
+      that create files, or use fixtures that set up a file structure.
+      </tip>
+      <note>This action is disabled if running with the
+      <xref linkend="single-shot" xrefstyle="select:title"/> command line
+      parameter.
+      </note>
+    </para>
   </section>
 </chapter>
 

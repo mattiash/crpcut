@@ -1,3 +1,10 @@
+         * Added an optional second parameter to EXPECT_SIGNAL_DEATH and
+           EXPECT_EXIT, which defines an on-success action. Currently
+           the only on-success action available is WIPE_WORKING_DIR,
+           which removes all files in the test case working directory.
+           This can be handy for negative tests of functionality that
+           produces data in the working directory.
+
          * Verified interoperability with google-mock version 1.6.0.
 
          * Added timeout protection for fixture construction and destruction.

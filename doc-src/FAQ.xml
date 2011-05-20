@@ -529,6 +529,19 @@
       </answer>
     </qandaentry>
 
+    <qandaentry>
+      <question>
+        <para>I am writing negative tests for a function that creates files,
+      and the test fails because the files aren't erased. This is expected.
+      What should I do?</para></question>
+      <answer>
+        <para>Use <xref linkend="WIPE_WORKING_DIR" xrefstyle="select:title"/>
+        as the optional action parameter to
+        <xref linkend="EXPECT_EXIT" xrefstyle="select:title"/> or
+        <xref linkend="EXPECT_SIGNAL_DEATH" xrefstyle="select:title"/>.
+        </para>
+      </answer>
+    </qandaentry>
   </qandaset>
 </chapter>
 <chapter id="google-mock">
