@@ -26,9 +26,12 @@
 
 
 #include <crpcut.hpp>
-
+#include <fstream>
+#include <ostream>
 extern "C" {
 #include <signal.h> // raise
+#include <sys/stat.h> // mkdir
+#include <sys/types.h>
 }
 TESTSUITE(death)
 {
@@ -59,5 +62,16 @@ TESTSUITE(death)
     TEST(should_fail_with_normal_exit, EXPECT_SIGNAL_DEATH(11))
     {
     }
+
+    TEST(should_succeed_with_wiped_working_dir, EXPECT_SIGNAL_DEATH(9, WIPE_WORKING_DIR))
+    {
+      {
+        mkdir("katt", 0777);
+        std::ofstream of("katt/apa");
+        of << "lemur\n";
+      }
+      raise(9);
+    }
+
   }
 }

@@ -633,6 +633,9 @@ TESTS = {
   'death::by_exit::should_succeed_with_exit_code_3' =>
   Test.new('PASSED'),
 
+  'death::by_exit::should_succeed_with_wiped_working_dir' =>
+  Test.new('PASSED'),
+
   'death::by_signal::should_fail_with_left_behind_core_dump_due_to_death_on_signal_11' =>
   Test.new('FAILED').
   log('violation',
@@ -655,6 +658,9 @@ TESTS = {
       /Died on signal 11\s+Expected normal exit/me),
 
   'death::by_signal::should_succeed_with_death_on_signal_11' =>
+  Test.new('PASSED'),
+
+  'death::by_signal::should_succeed_with_wiped_working_dir' =>
   Test.new('PASSED'),
 
   'default_success' =>
@@ -1582,28 +1588,28 @@ RUNS={
   [ /^asserts::/,         /.*/,     47, 30, 17, [] ],
 
   "            asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 63, 42,  0, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /FAILED/, 65, 42,  0, BLOCKED_TESTS ],
 
   " -v         asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     63, 42, 21, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /.*/,     65, 42, 23, BLOCKED_TESTS ],
 
   " -c 8       asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 63, 42,  0, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /FAILED/, 65, 42,  0, BLOCKED_TESTS ],
 
   " -c 8 -v    asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     63, 42, 21, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /.*/,     65, 42, 23, BLOCKED_TESTS ],
 
   " -n         asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 63, 42,  0, [] ],
+  [ /^(asserts|death)::/, /FAILED/, 65, 42,  0, [] ],
 
   " -n -v      asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     63, 42, 21, [] ],
+  [ /^(asserts|death)::/, /.*/,     65, 42, 23, [] ],
 
   " -n -c 8    asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 63, 42,  0, [] ],
+  [ /^(asserts|death)::/, /FAILED/, 65, 42,  0, [] ],
 
   " -n -c 8 -v asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     63, 42, 21, [] ],
+  [ /^(asserts|death)::/, /.*/,     65, 42, 23, [] ],
 
   ""         =>
   [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ],
