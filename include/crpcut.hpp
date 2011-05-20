@@ -1309,6 +1309,7 @@ namespace crpcut {
     public:
       typedef const local_root *bool_test;
       local_root(comm::type type, const char *file, size_t line);
+      local_root(const local_root&);
       ~local_root();
       operator bool_test() const { return 0; }
       void nonsense_func() const {}
@@ -1318,12 +1319,11 @@ namespace crpcut {
     private:
       local_root();
       void assert_empty() const;
-      local_root(const local_root&);
       local_root& operator=(const local_root&);
 
       char      const * const file_;
       size_t            const line_;
-      local_root       *const old_root_;
+      mutable local_root     *old_root_;
       comm::type        const check_type_;
 
       static local_root      *current_root;
@@ -4151,7 +4151,9 @@ namespace crpcut {
   {                                                                     \
     typedef typename eval_t<T>::type ttype;                             \
     typedef typename eval_t<U>::type utype;                             \
-    typedef CRPCUT_DECLTYPE(::crpcut::expr::gen<ttype>() opexpr ::crpcut::expr::gen<utype>()) type; \
+    typedef typename std::remove_reference<typename std::remove_cv<ttype>::type>::type trtype; \
+    typedef typename std::remove_reference<typename std::remove_cv<utype>::type>::type urtype; \
+    typedef CRPCUT_DECLTYPE(::crpcut::expr::gen<trtype>() opexpr ::crpcut::expr::gen<urtype>()) type; \
     static type func(const expr::name<T, U>& n)                         \
     {                                                                   \
       return eval(n.t_) opexpr eval(n.u_);                              \
@@ -4279,7 +4281,7 @@ namespace crpcut {
       }
       ~time()
       {
-        //        if (limit_ + 1) // wrap around to 0 signals disabled temporary
+        if (limit_ + 1) // wrap around to 0 signals disabled temporary
           {
             unsigned long t = clock::now();
             if (test_case_factory::timeouts_enabled()
@@ -4304,7 +4306,7 @@ namespace crpcut {
     private:
       time& operator=(const time&);
 
-      unsigned long const limit_;
+      unsigned long mutable limit_;
     };
   }
 
