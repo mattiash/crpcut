@@ -32,7 +32,7 @@ include(CheckFunctionExists)
 include(CheckLibraryExists)
 
 set(CRPCUT_LIB_MAJOR_VERSION "1")
-set(CRPCUT_LIB_MINOR_VERSION "2")
+set(CRPCUT_LIB_MINOR_VERSION "3")
 set(CRPCUT_LIB_PATCH_VERSION "0")
 #set(CRPCUT_LIB_ALIAS_VERSION "")
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
