@@ -136,6 +136,14 @@
         <listitem><function>pipe</function>()</listitem>
         <listitem><function>read</function>()</listitem>
         <listitem><function>readdir_r</function>()</listitem>
+        <listitem><function>remove</function><footnote><para>A
+        runtime dependency that is only required when using the
+        <xref linkend="WIPE_WORKING_DIR" xrefstyle="select:title"/>
+        function with either the
+        <xref linkend="EXPECT_EXIT" xrefstyle="select:title"/>
+        or the <xref linkend="EXPECT_SIGNAL_DEATH" xrefstyle="select:title"/>
+        test case modifier.</para></footnote></listitem>
+
         <listitem><function>regcomp</function>(),
           <function>regexec</function>(),
           <function>regerror</function>() and
