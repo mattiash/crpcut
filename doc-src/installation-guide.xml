@@ -218,6 +218,16 @@
       definitely build on a machine with valgrind.
     </para>
   </simplesect>
+  <simplesect>
+    <title>Stack backtraces</title>
+    <para>If you add the command line parameter
+    <constant>-DUSE_BACKTRACE=yes</constant> to the CMake line, &crpcut; will
+    present the stack backtrace for all heap violations, where the errror was
+    detected and (when applicable) where the memory object was last changed.
+    </para>
+    <para>This experimental behaviour may become the default in the future.
+    Please report your experiences with it.</para>
+  </simplesect>
   <simplesect><title>Which compiler to use</title>
     <para>
     If you want to use another compiler than the default for CMake,
