@@ -1398,6 +1398,12 @@ namespace crpcut {
           std::basic_ostream<charT, traits>(this)
       {
       }
+      template <size_t N>
+      basic_oastream(charT (&buff)[N])
+        : oabuf<charT, traits>(buff, buff + N),
+          std::basic_ostream<charT, traits>(this)
+      {
+      }
       using oabuf<charT, traits>::begin;
       using oabuf<charT, traits>::end;
       std::size_t size() const { return size_t(end() - begin()); }

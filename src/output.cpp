@@ -114,15 +114,31 @@ namespace crpcut
         {
           const char *esc;
           size_t esc_len;
-          switch (str[n])
+          unsigned char ch = str[n];
+          switch (ch)
             {
+            case '\t' : continue;
+            case '\r' : continue;
+            case '\n' : continue;
             case '<' : esc = "&lt;";   esc_len = 4; break;
             case '>' : esc = "&gt;";   esc_len = 4; break;
             case '&' : esc = "&amp;";  esc_len = 5; break;
             case '"' : esc = "&quot;"; esc_len = 6; break;
             case '\'': esc = "&apos;"; esc_len = 6; break;
-            case '\0': esc = 0;        esc_len = 0; break;
-            default: continue;
+            case '\0': esc = 0; esc_len = 0; break;
+            default:
+              if (isprint(ch)) continue;
+              if (ch < 32)
+                {
+                  esc = "&#xfffd;";
+                  esc_len = 8;
+                  break;
+                }
+              static char buff[8];
+              stream::oastream out(buff);
+              out << "&#x" << std::hex << unsigned(ch) << ';';
+              esc = out.begin();
+              esc_len = out.end() - out.begin();
             }
           do_write(str + prev_n, n - prev_n);
           do_write(esc, esc_len);
