@@ -81,7 +81,11 @@ class Test
       rescue
       end
       return "#{name} is missing" if !is_found
-      File::unlink(path)
+      if is_found.directory? then
+        Dir::rmdir(path)
+      else
+        File::unlink(path)
+      end
     end
     begin
       dirname && Dir::rmdir(dirname)
@@ -619,7 +623,6 @@ TESTS = {
   Test.new('FAILED').
   log('violation',
       /Exited with code 3\s+Expected normal exit/me),
-
   'death::by_exit::should_fail_with_no_exit' =>
   Test.new('FAILED').
   log('violation',
@@ -635,6 +638,18 @@ TESTS = {
 
   'death::by_exit::should_succeed_with_wiped_working_dir' =>
   Test.new('PASSED'),
+
+  'death::by_exit::should_fail_wipe_with_left_behind_files_due_to_wrong_exit_code' =>
+  Test.new('FAILED').
+  file("katt/apa").
+  file("katt").
+  log('violation', /.*/me),
+
+  'death::by_exit::should_fail_wipe_with_left_behind_files_due_to_signal_death' =>
+  Test.new('FAILED').
+  file("katt/apa").
+  file("katt").
+  log('violation', /.*/me),
 
   'death::by_signal::should_fail_with_left_behind_core_dump_due_to_death_on_signal_11' =>
   Test.new('FAILED').
@@ -662,6 +677,18 @@ TESTS = {
 
   'death::by_signal::should_succeed_with_wiped_working_dir' =>
   Test.new('PASSED'),
+
+  'death::by_signal::should_fail_wipe_with_left_behind_files_due_to_wrong_signal' =>
+  Test.new('FAILED').
+  file("katt/apa").
+  file("katt").
+  log('violation', /.*/me),
+
+  'death::by_signal::should_fail_wipe_with_left_behind_files_due_to_exit' =>
+  Test.new('FAILED').
+  file("katt/apa").
+  file("katt").
+  log('violation', /.*/me),
 
   'default_success' =>
   Test.new('PASSED'),
@@ -1588,28 +1615,28 @@ RUNS={
   [ /^asserts::/,         /.*/,     47, 30, 17, [] ],
 
   "            asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 65, 42,  0, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /FAILED/, 69, 46,  0, BLOCKED_TESTS ],
 
   " -v         asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     65, 42, 23, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /.*/,     69, 46, 23, BLOCKED_TESTS ],
 
   " -c 8       asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 65, 42,  0, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /FAILED/, 69, 46,  0, BLOCKED_TESTS ],
 
   " -c 8 -v    asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     65, 42, 23, BLOCKED_TESTS ],
+  [ /^(asserts|death)::/, /.*/,     69, 46, 23, BLOCKED_TESTS ],
 
   " -n         asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 65, 42,  0, [] ],
+  [ /^(asserts|death)::/, /FAILED/, 69, 46,  0, [] ],
 
   " -n -v      asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     65, 42, 23, [] ],
+  [ /^(asserts|death)::/, /.*/,     69, 46, 23, [] ],
 
   " -n -c 8    asserts death" =>
-  [ /^(asserts|death)::/, /FAILED/, 65, 42,  0, [] ],
+  [ /^(asserts|death)::/, /FAILED/, 69, 46,  0, [] ],
 
   " -n -c 8 -v asserts death" =>
-  [ /^(asserts|death)::/, /.*/,     65, 42, 23, [] ],
+  [ /^(asserts|death)::/, /.*/,     69, 46, 23, [] ],
 
   ""         =>
   [ /.*/,                 /FAILED/, tests.size - BLOCKED_TESTS.size, fails,  0, BLOCKED_TESTS ],

@@ -56,7 +56,8 @@ TESTSUITE(death)
       exit(4);
     }
 
-    TEST(should_succeed_with_wiped_working_dir, EXPECT_EXIT(3, WIPE_WORKING_DIR))
+    TEST(should_succeed_with_wiped_working_dir,
+         EXPECT_EXIT(3, WIPE_WORKING_DIR))
     {
       {
         mkdir("katt", 0777);
@@ -64,6 +65,28 @@ TESTSUITE(death)
         of << "lemur\n";
       }
       exit(3);
+    }
+
+    TEST(should_fail_wipe_with_left_behind_files_due_to_wrong_exit_code,
+         EXPECT_EXIT(3, WIPE_WORKING_DIR))
+    {
+      {
+        mkdir("katt", 0777);
+        std::ofstream of("katt/apa");
+        of << "lemur\n";
+      }
+      exit(0);
+    }
+
+    TEST(should_fail_wipe_with_left_behind_files_due_to_signal_death,
+         EXPECT_EXIT(3, WIPE_WORKING_DIR))
+    {
+      {
+        mkdir("katt", 0777);
+        std::ofstream of("katt/apa");
+        of << "lemur\n";
+      }
+      raise(9);
     }
   }
 }
