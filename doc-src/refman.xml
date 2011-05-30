@@ -2841,6 +2841,14 @@ int main(int argc, char *argv[])
             </para>
           </listitem>
         </varlistentry>
+        <varlistentry id="identity"><term><parameter>-i</parameter> <constant>"a string"</constant> /
+        <parameter>--identity</parameter>=<constant>"a string"</constant></term>
+        <listitem>
+          <para>The string value given will be the value if the <constant>id</constant>-tag in
+          the header with XML-output. The command flag has no other purpose.
+          </para>
+        </listitem>
+        </varlistentry>
         <varlistentry id="list-tests"><term><parameter>-l</parameter> / <parameter>--list</parameter></term>
           <listitem>
             <para><xref linkend="run" xrefstyle="select:title"/> prints
@@ -2937,7 +2945,7 @@ int main(int argc, char *argv[])
             </caution>
           </listitem>
         </varlistentry>
-        <varlistentry id="verbose"><term><parameter>-v</parameter> / <parameter>--verbose</parameter></term>
+        <varlistentry id="verbose"><term><parameter>-v</parameter>  / <parameter>--verbose</parameter></term>
           <listitem>
             <para>Include the output from passed tests in the report.</para>
             <note><parameter>-v</parameter> / <parameter>--verbose</parameter>

@@ -73,6 +73,7 @@
       <xs:element name="blocked_tests" type="blocked_tests" minOccurs="0"/>
       <xs:element name="statistics" type="statistics"/>
     </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="optional"/>
     <xs:attribute name="command" type="xs:string" use="required"/>
     <xs:attribute name="host" type="xs:string" use="required"/>
     <xs:attribute name="starttime" type="xs:dateTime" use="required"/>

@@ -1,3 +1,9 @@
+         * Added an optional ID for a test-run. This ID is provided with
+           the -i / --identity command line parameter, which requires a
+           string value. If an identity is supplied, id "id" tag is
+           available in the XML crpcut-header. crpcut.xsd is updated with
+           this optional tag.
+
          * Fixed a bug with the XML-string encoding which allowed illegal
            characters. Now all non-legal characters are converted to
            &#xfffd;

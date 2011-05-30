@@ -160,7 +160,7 @@ namespace crpcut
       return bytes_written;
     }
 
-    xml_formatter::xml_formatter(int argc_, const char *argv_[])
+    xml_formatter::xml_formatter(const char *id, int argc_, const char *argv_[])
       : last_closed(false),
         blocked_tests(false),
         argc(argc_),
@@ -199,6 +199,11 @@ namespace crpcut
         {
           if (i > 0) write(" ", 1);
           write(argv[i], escaped);
+        }
+      if (id)
+        {
+          write("\" id=\"");
+          write(id, escaped);
         }
       write("\">\n");
     }

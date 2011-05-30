@@ -158,7 +158,7 @@ namespace crpcut
     class xml_formatter : public formatter
     {
     public:
-      xml_formatter(int argc_, const char *argv_[]);
+      xml_formatter(const char *id, int argc_, const char *argv_[]);
       virtual ~xml_formatter();
       virtual void begin_case(const char *name, size_t name_len, bool result);
       virtual void end_case();
@@ -187,7 +187,7 @@ namespace crpcut
     class text_formatter : public formatter
     {
     public:
-      text_formatter(int, const char**)  {}
+      text_formatter(const char *, int, const char**)  {}
       virtual void begin_case(const char *name, size_t name_len, bool result);
       virtual void end_case();
       virtual void terminate(test_phase phase,

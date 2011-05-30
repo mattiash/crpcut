@@ -869,15 +869,15 @@ namespace crpcut {
 
   namespace {
 
-    output::formatter &output_formatter(bool use_xml,
+    output::formatter &output_formatter(bool use_xml, const char *id,
                                         int argc, const char *argv[])
     {
       if (use_xml)
         {
-          static output::xml_formatter xo(argc, argv);
+          static output::xml_formatter xo(id, argc, argv);
           return xo;
         }
-      static output::text_formatter to(argc, argv);
+      static output::text_formatter to(id, argc, argv);
       return to;
     }
 
@@ -933,12 +933,13 @@ namespace crpcut {
                                 std::ostream &err_os)
   {
     argv = argv_;
-    const char *working_dir = 0;
-    bool quiet = false;
-    int output_fd = 1;
-    bool xml = false;
-    char process_limit_set = 0;
-    const char **p = argv+1;
+    const char  *working_dir       = 0;
+    bool         quiet             = false;
+    int          output_fd         = 1;
+    bool         xml               = false;
+    char         process_limit_set = 0;
+    const char  *identity          = 0;
+    const char **p                 = argv+1;
     while (const char *param = *p)
       {
         if (param[0] != '-') break;
@@ -961,7 +962,11 @@ namespace crpcut {
               {
                 value = 0;
               }
-            if (wrapped::strncmp("disable-timeouts", param, len) == 0)
+            if (wrapped::strncmp("identity", param, len) == 0)
+              {
+                cmd = 'i';
+              }
+            else if (wrapped::strncmp("disable-timeouts", param, len) == 0)
               {
                 cmd = 't';
               }
@@ -1010,6 +1015,19 @@ namespace crpcut {
         case 'q':
           quiet = true;
           pcount = 1;
+          break;
+        case 'i':
+          if (!value)
+            {
+              err_os << "-i must be followed by a string\n";
+              return -1;
+            }
+          if (identity)
+            {
+              err_os << "-i may only be used once\n";
+              return -1;
+            }
+          identity = value;
           break;
         case 'o':
           if (!value)
@@ -1157,6 +1175,8 @@ namespace crpcut {
                       << max_parallel << "\n\n"
             "   -d dir, --working-dir=dir\n"
             "        specify working directory (must exist)\n\n"
+            "   -i \"id string\", --identity=\"id string\"\n"
+            "        specify an identity string for the XML-header\n\n"
             "   -l, --list\n"
             "        list test cases\n\n"
             "   -n, --nodeps\n"
@@ -1256,7 +1276,7 @@ namespace crpcut {
           i = i->crpcut_get_next();
         }
     }
-    output::formatter &fmt = output_formatter(xml, argc, argv);
+    output::formatter &fmt = output_formatter(xml, identity, argc, argv);
     try {
       if (tests_as_child_procs())
         {
