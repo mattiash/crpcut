@@ -122,7 +122,6 @@
   class crpcut_reporter : public ::testing::EmptyTestEventListener      \
   {                                                                     \
   public:                                                               \
-    virtual ~crpcut_reporter() {};                                      \
     virtual void OnTestPartResult(const testing::TestPartResult& result) \
     {                                                                   \
       if (result.failed())                                              \
@@ -357,7 +356,7 @@ namespace crpcut {
     // the nul terminator in the destination, making concatenations easy
     // and cheap
     template <typename T, typename U>
-    inline T strcpy(T d, U s)
+    /*inline*/ T strcpy(T d, U s)
     {
       while ((*d = *s))
         {
@@ -642,7 +641,7 @@ namespace crpcut {
       {
         return msg_;
       }
-      virtual ~posix_error() throw () { wrapped::free(msg_);}
+      ~posix_error() throw () { wrapped::free(msg_);}
       posix_error(const posix_error &e) :
         std::exception(*this),
         msg_(e.msg_)
@@ -880,13 +879,20 @@ namespace crpcut {
     }
 
     namespace timeout {
+      class crpcut_none {
+      protected:
+        virtual unsigned long crpcut_destructor_timeout() const = 0;
+	virtual unsigned long crpcut_constructor_timeout() const = 0;
+        virtual bool crpcut_cputime_timeout(unsigned long ms) const = 0;
+        virtual void crpcut_cputime_limit(std::ostream& os) const = 0;
+      };
       typedef enum { realtime, cputime } type;
 
       template <type t, unsigned long ms>
       class enforcer;
 
       template <unsigned long ms>
-      struct constructor_enforcer
+      struct constructor_enforcer : public virtual crpcut_none
       {
 	virtual unsigned long crpcut_constructor_timeout() const
 	{
@@ -895,7 +901,7 @@ namespace crpcut {
       };
 
       template <unsigned long ms>
-      struct destructor_enforcer
+      struct destructor_enforcer : public virtual crpcut_none
       {
 	virtual unsigned long crpcut_destructor_timeout() const
 	{
@@ -927,7 +933,7 @@ namespace crpcut {
       class crpcut_none
       {
       public:
-        virtual ~crpcut_none() {}
+        ~crpcut_none() {}
         virtual bool crpcut_is_expected_exit(int) const;
         virtual bool crpcut_is_expected_signal(int) const;
         virtual void crpcut_expected_death(std::ostream &os) const;
@@ -1048,7 +1054,7 @@ namespace crpcut {
       protected:
       public:
         void crpcut_inc();
-        virtual ~crpcut_base(); // Silence warning on older gcc
+        ~crpcut_base();
         crpcut_base();
         void crpcut_add(basic_enforcer * other);
         bool crpcut_can_run() const;
@@ -1134,7 +1140,7 @@ namespace crpcut {
       class enforcer<cputime, 0>
       {
       public:
-        struct monitor
+        struct monitor : public virtual timeout::crpcut_none
         {
           bool crpcut_cputime_timeout(unsigned long) const
           {
@@ -1151,7 +1157,7 @@ namespace crpcut {
       {
       public:
         enforcer();
-        struct monitor
+        struct monitor : public virtual timeout::crpcut_none
         {
           bool crpcut_cputime_timeout(unsigned long ms) const;
           void crpcut_cputime_limit(std::ostream &os) const
@@ -1206,12 +1212,19 @@ namespace crpcut {
 
   } // namespace policies
 
+  namespace implementation {
+    class crpcut_test_case_registrator;
+  }
   class test_case_base : protected virtual policies::default_policy
   {
   protected:
     test_case_base();
   public:
-    virtual ~test_case_base();
+    using policies::default_policy::crpcut_constructor_timeout_enforcer;
+    using policies::default_policy::crpcut_destructor_timeout_enforcer;
+    virtual implementation::crpcut_test_case_registrator& crpcut_get_reg() const = 0;
+    ~test_case_base();
+    virtual void test() = 0;
     void run();
     void crpcut_test_finished();
   private:
@@ -1481,7 +1494,7 @@ namespace crpcut {
       crpcut_test_case_registrator *get_registrator() const;
       virtual void close();
       void unregister();
-      virtual ~fdreader() { } // silence gcc, it's really not needed
+      ~fdreader() { } // silence gcc, it's really not needed
     protected:
       fdreader(crpcut_test_case_registrator *r, int fd = 0);
       void set_fd(int fd);
@@ -1515,6 +1528,7 @@ namespace crpcut {
     class test_suite_base;
     class crpcut_test_case_registrator
       : public virtual policies::deaths::crpcut_none,
+        public virtual policies::timeout::crpcut_none,
         public virtual policies::dependencies::crpcut_base
     {
       friend class test_suite_base;
@@ -1551,8 +1565,6 @@ namespace crpcut {
       void crpcut_activate_reader();
       void crpcut_set_timeout(unsigned long);
       virtual void crpcut_run_test_case() = 0;
-      virtual bool crpcut_cputime_timeout(unsigned long) const { return 0; }
-      virtual void crpcut_cputime_limit(std::ostream&) const {}
     protected:
       template <typename T>
       void crpcut_run_test_case();
@@ -1561,8 +1573,6 @@ namespace crpcut {
       void crpcut_manage_test_case_execution(test_case_base*);
       std::ostream &crpcut_print_name(std::ostream &) const ;
 
-      virtual unsigned long crpcut_constructor_timeout() const { assert(0); return 0; }
-      virtual unsigned long crpcut_destructor_timeout() const { assert(0); return 0; }
       void crpcut_prepare_construction();
       void crpcut_prepare_destruction();
       const char                   *crpcut_name_;
@@ -1669,6 +1679,10 @@ namespace crpcut {
       virtual bool match_name(const char *) const { return false; }
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
       virtual void crpcut_run_test_case() {}
+      virtual unsigned long crpcut_constructor_timeout() const { return 0UL;}
+      virtual unsigned long crpcut_destructor_timeout() const { return 0UL; }
+      virtual bool crpcut_cputime_timeout(unsigned long) const { return false;}
+      virtual void crpcut_cputime_limit(std::ostream&) const {}
     };
 
     typedef datatypes::array_v<implementation::crpcut_test_case_registrator*,
@@ -1721,63 +1735,54 @@ namespace crpcut {
         }
     }
 
-    template <typename C, typename T>
+    template <typename C>
     class test_wrapper;
 
-    template <typename exc, typename T>
-    class test_wrapper<policies::exception_wrapper<exc>, T>
+    template <typename exc>
+    class test_wrapper<policies::exception_wrapper<exc> >
     {
     public:
-      static void run(T *t);
+      static void run(test_case_base *t);
     };
 
-    template <typename T>
-    class test_wrapper<policies::exception_wrapper<std::exception>, T>
+    template <>
+    class test_wrapper<policies::exception_wrapper<std::exception> >
     {
     public:
-      static void run(T *t);
+      static void run(test_case_base *t);
     };
 
-    template <typename T>
-    class test_wrapper<void, T>
+    template <>
+    class test_wrapper<void>
     {
     public:
-      static void run(T *t);
+      static void run(test_case_base *t);
     };
 
-    template <typename T>
-    class test_wrapper<policies::deaths::wrapper, T>
+    template <>
+    class test_wrapper<policies::deaths::wrapper>
     {
     public:
-      static void run(T *t);
+      static void run(test_case_base *t);
     };
 
-    template <typename T>
-    class test_wrapper<policies::deaths::timeout_wrapper, T>
+    template <>
+    class test_wrapper<policies::deaths::timeout_wrapper>
     {
     public:
-      static void run(T *t);
+      static void run(test_case_base *t);
     };
 
-    template <typename T>
-    class test_wrapper<policies::any_exception_wrapper, T>
+    template <>
+    class test_wrapper<policies::any_exception_wrapper>
     {
     public:
-      static void run(T* t)
-      {
-        try {
-          t->test();
-        }
-        catch (...) {
-          return;
-        }
-        comm::report(comm::exit_fail,
-                     "Unexpectedly did not throw");
-      }
+      static void run(test_case_base* t);
     };
 
-    template <typename exc, typename T>
-    void test_wrapper<policies::exception_wrapper<exc>, T>::run(T* t)
+    template <typename exc>
+    void
+    test_wrapper<policies::exception_wrapper<exc> >::run(test_case_base* t)
     {
       try {
         t->test();
@@ -1809,49 +1814,7 @@ namespace crpcut {
                    "Unexpectedly did not throw");
     }
 
-    template <typename T>
-    void test_wrapper<policies::exception_wrapper<std::exception>, T>::run(T* t)
-    {
-      try {
-        t->test();
-      }
-      catch (std::exception&) {
-        return;
-      }
-      catch (...) {
-        comm::report(comm::exit_fail,
-                     "Unexpectedly caught ...");
-      }
-      comm::report(comm::exit_fail,
-                   "Unexpectedly did not throw");
-    }
 
-    template <typename T>
-    void test_wrapper<void, T>::run(T *t)
-    {
-      t->test();
-    }
-
-    template <typename T>
-    void test_wrapper<policies::deaths::wrapper, T>::run(T *t)
-    {
-      t->test();
-      stream::toastream<128> os;
-      os << "Unexpectedly survived\nExpected ";
-      T::crpcut_reg().crpcut_expected_death(os);
-      comm::report(comm::exit_fail, os.begin(), os.size());
-    }
-
-    template <typename T>
-    void test_wrapper<policies::deaths::timeout_wrapper, T>::run(T *t)
-    {
-      t->test();
-      if (!test_case_factory::timeouts_enabled()) return;
-      stream::toastream<128> os;
-      os << "Unexpectedly survived\nExpected ";
-      T::crpcut_reg().crpcut_expected_death(os);
-      comm::report(comm::exit_fail, os.begin(), os.size());
-    }
 
     template <typename T,
               size_t size_limit = sizeof(T),
@@ -2359,7 +2322,7 @@ namespace crpcut {
     };
 
     template <typename ...T>
-    inline param_holder<1, T...> params(const T&... v)
+    /*inline*/ param_holder<1, T...> params(const T&... v)
     {
       return param_holder<1, T...>(v...);
     }
@@ -2587,7 +2550,7 @@ namespace crpcut {
               typename T4, typename T5, typename T6,
               typename T7, typename T8, typename T9>
     template <typename P>
-    inline
+    /*inline*/
     bool
     param_holder<T1, T2, T3, T4, T5, T6, T7, T8, T9>::apply(P &pred) const
     {
@@ -2606,7 +2569,7 @@ namespace crpcut {
     }
 
     template <typename T1>
-    inline
+    /*inline*/
     param_holder<T1>
     params(const T1& t1)
     {
@@ -2615,7 +2578,7 @@ namespace crpcut {
     }
 
     template <typename T1, typename T2>
-    inline
+    /*inline*/
     param_holder<T1, T2>
     params(const T1& t1, const T2 &t2)
     {
@@ -2624,7 +2587,7 @@ namespace crpcut {
     }
 
     template <typename T1, typename T2, typename T3>
-    inline
+    /*inline*/
     param_holder<T1, T2, T3>
     params(const T1& t1, const T2 &t2, const T3 &t3)
     {
@@ -2633,7 +2596,7 @@ namespace crpcut {
     }
 
     template <typename T1, typename T2, typename T3, typename T4>
-    inline
+    /*inline*/
     param_holder<T1, T2, T3, T4>
     params(const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4)
     {
@@ -2642,7 +2605,7 @@ namespace crpcut {
     }
 
     template <typename T1, typename T2, typename T3, typename T4, typename T5>
-    inline
+    /*inline*/
     param_holder<T1, T2, T3, T4, T5>
     params(const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4, const T5 &t5)
     {
@@ -2652,7 +2615,7 @@ namespace crpcut {
 
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6>
-    inline
+    /*inline*/
     param_holder<T1, T2, T3, T4, T5, T6>
     params(const T1& t1, const T2 &t2, const T3 &t3,
            const T4 &t4, const T5 &t5, const T6 &t6)
@@ -2664,7 +2627,7 @@ namespace crpcut {
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6,
               typename T7>
-    inline
+    /*inline*/
     param_holder<T1, T2, T3, T4, T5, T6, T7>
     params(const T1& t1, const T2 &t2, const T3 &t3,
            const T4 &t4, const T5 &t5, const T6 &t6,
@@ -2677,7 +2640,7 @@ namespace crpcut {
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6,
               typename T7, typename T8>
-    inline
+    /*inline*/
     param_holder<T1, T2, T3, T4, T5, T6, T7, T8>
     params(const T1& t1, const T2 &t2, const T3 &t3,
            const T4 &t4, const T5 &t5, const T6 &t6,
@@ -2690,7 +2653,7 @@ namespace crpcut {
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6,
               typename T7, typename T8, typename T9>
-    inline
+    /*inline*/
     param_holder<T1, T2, T3, T4, T5, T6, T7, T8, T9>
     params(const T1& t1, const T2 &t2, const T3 &t3,
            const T4 &t4, const T5 &t5, const T6 &t6,
@@ -2737,14 +2700,14 @@ namespace crpcut {
     }
 
     template <typename P>
-    inline
+    /*inline*/
     predicate_streamer<P> stream_predicate(const char *n, const P& p)
     {
       return predicate_streamer<P>(n, p);
     }
 
     template <typename Pred, typename Params>
-    inline bool
+    /*inline*/ bool
     match_pred(std::string &msg, const char *sp, Pred p, const Params &params)
     {
       bool b = params.apply(p);
@@ -2934,55 +2897,55 @@ namespace crpcut {
   namespace datatypes {
 
     template <typename T, std::size_t N>
-    inline array_v<T, N>::array_v()
+    /*inline*/ array_v<T, N>::array_v()
       : num_elements(0)
     {
     }
 
     template <typename T, std::size_t N>
-    inline typename array_v<T, N>::iterator
+    /*inline*/ typename array_v<T, N>::iterator
     array_v<T, N>::end()
     {
       return iterator(&operator[](size() - 1) + 1);
     }
 
     template <typename T, std::size_t N>
-    inline typename array_v<T, N>::const_iterator
+    /*inline*/ typename array_v<T, N>::const_iterator
     array_v<T, N>::end() const
     {
       return iterator(&operator[](size() - 1) + 1);
     }
 
     template <typename T, std::size_t N>
-    inline typename array_v<T, N>::reverse_iterator
+    /*inline*/ typename array_v<T, N>::reverse_iterator
     array_v<T, N>::rbegin()
     {
       return reverse_iterator(end());
     }
 
     template <typename T, std::size_t N>
-    inline typename array_v<T, N>::const_reverse_iterator
+    /*inline*/ typename array_v<T, N>::const_reverse_iterator
     array_v<T, N>::rbegin() const
     {
       return reverse_iterator(end());
     }
 
     template <typename T, std::size_t N>
-    inline typename array_v<T, N>::size_type
+    /*inline*/ typename array_v<T, N>::size_type
     array_v<T, N>::size() const
     {
       return num_elements;
     }
 
     template <typename T, std::size_t N>
-    inline bool
+    /*inline*/ bool
     array_v<T, N>::empty() const
     {
       return size() == 0;
     }
 
     template <typename T, std::size_t N>
-    inline typename array_v<T, N>::reference
+    /*inline*/ typename array_v<T, N>::reference
     array_v<T, N>::at(size_type n)
     {
       if (n >= num_elements) throw std::out_of_range("array_v::at");
@@ -2990,7 +2953,7 @@ namespace crpcut {
     }
 
     template <typename T, std::size_t N>
-    inline typename array_v<T, N>::const_reference
+    /*inline*/ typename array_v<T, N>::const_reference
     array_v<T, N>::at(size_type n) const
     {
       if (n >= num_elements) throw std::out_of_range("array_v::at");
@@ -2998,21 +2961,21 @@ namespace crpcut {
     }
 
     template <typename T, std::size_t N>
-    inline typename array_v<T, N>::reference
+    /*inline*/ typename array_v<T, N>::reference
     array_v<T, N>::back()
     {
       return *(end() - !empty());
     }
 
     template <typename T, std::size_t N>
-    inline typename array_v<T, N>::const_reference
+    /*inline*/ typename array_v<T, N>::const_reference
     array_v<T, N>::back() const
     {
       *(end() - !empty());
     }
 
     template <typename T, std::size_t N>
-    inline void
+    /*inline*/ void
     array_v<T, N>::push_back(const value_type &x)
     {
       assert(num_elements <= N);
@@ -3020,7 +2983,7 @@ namespace crpcut {
     }
 
     template <typename T, std::size_t N>
-    inline void
+    /*inline*/ void
     array_v<T, N>::pop_back()
     {
       assert(num_elements);
@@ -3056,32 +3019,16 @@ namespace crpcut {
 
     namespace deaths{
 
-      inline void
-      crpcut_none::crpcut_on_ok_action(const char *) const
-      {
-      }
-
-      inline bool
-      crpcut_none::crpcut_is_expected_exit(int) const
-      {
-        return false;
-      }
-
-      inline bool
-      crpcut_none::crpcut_is_expected_signal(int) const
-      {
-        return false;
-      }
 
       template <int N, typename action>
-      inline bool
+      /*inline*/ bool
       signal<N, action>::crpcut_is_expected_signal(int code) const
       {
         return N == ANY_CODE || code == N;
       }
 
       template <int N, typename action>
-      inline void
+      /*inline*/ void
       signal<N, action>::crpcut_expected_death(std::ostream &os) const
       {
         if (N == ANY_CODE)
@@ -3095,14 +3042,14 @@ namespace crpcut {
       }
 
       template <int N, typename action>
-      inline bool
+      /*inline*/ bool
       exit<N, action>::crpcut_is_expected_exit(int code) const
       {
         return N == ANY_CODE || code == N;
       }
 
       template <int N, typename action>
-      inline void
+      /*inline*/ void
       exit<N, action>::crpcut_expected_death(std::ostream &os) const
       {
         if (N == ANY_CODE)
@@ -3144,54 +3091,9 @@ namespace crpcut {
 
     namespace dependencies {
 
-      inline
-      crpcut_base::crpcut_base()
-        : crpcut_state(crpcut_not_run),
-          crpcut_num(0),
-          crpcut_dependants(0)
-      {
-      }
-
-      inline void
-      crpcut_base::crpcut_add(basic_enforcer *other)
-      {
-        other->next = crpcut_dependants;
-        crpcut_dependants = other;
-        crpcut_add_action(other);
-      }
-
-      inline void
-      crpcut_base::crpcut_inc()
-      {
-        ++crpcut_num;
-      }
-
-      inline bool
-      crpcut_base::crpcut_can_run() const
-      {
-        return crpcut_num == 0;
-      }
-
-      inline bool
-      crpcut_base::crpcut_failed() const
-      {
-        return crpcut_state == crpcut_fail;
-      }
-
-      inline bool
-      crpcut_base::crpcut_succeeded() const
-      {
-        return crpcut_state == crpcut_success;
-      }
-
-      inline
-      basic_enforcer::basic_enforcer()
-        : next(0)
-      {
-      }
 
       template <typename T>
-      inline
+      /*inline*/
       enforcer<T>::enforcer()
       {
         T::crpcut_reg().crpcut_add(this);
@@ -3201,14 +3103,14 @@ namespace crpcut {
     namespace timeout {
 
       template <unsigned long timeout_ms>
-      inline
+      /*inline*/
       enforcer<cputime, timeout_ms>::enforcer()
         : cputime_enforcer(timeout_ms)
       {
       }
 
       template <unsigned long timeout_ms>
-      inline
+      /*inline*/
       enforcer<realtime, timeout_ms>::enforcer()
         : monotonic_enforcer(timeout_ms)
       {
@@ -3226,61 +3128,10 @@ namespace crpcut {
 
   } // namespace policies
 
-  inline
-  test_case_base::test_case_base() : finished(false) {}
-
-  inline
-  void
-  test_case_base::crpcut_test_finished()
-  {
-    finished = true;
-    comm::report(comm::end_test, 0, 0);
-  }
-
-  inline
-  test_case_base::~test_case_base()
-  {
-    if (finished)
-      {
-        comm::report(comm::exit_ok, 0, 0);
-      }
-  }
-
-  inline void
-  test_case_base::run()
-  {
-    crpcut_run_test();
-  }
 
   namespace comm {
 
 
-    inline
-    reporter::reporter()
-      : write_fd(0),
-        read_fd(0)
-    {
-    }
-
-    inline void
-    reporter::set_fds(int rfd, int wfd)
-    {
-      write_fd = wfd;
-      read_fd = rfd;
-    }
-
-    inline void
-    reporter::operator()(type t, std::ostringstream &os) const
-    {
-      const std::string &s = os.str();
-      operator()(t, s.c_str(), s.length());
-    }
-
-    inline void
-    reporter::operator()(type t, const char *msg) const
-    {
-      operator()(t, msg, wrapped::strlen(msg));
-    }
 
     template <typename T>
     void
@@ -3372,42 +3223,6 @@ namespace crpcut {
 
   namespace implementation {
 
-    inline
-    namespace_info::namespace_info(const char *n, namespace_info *p)
-      : name(n),
-        parent(p)
-    {
-    }
-
-
-    inline bool
-    fdreader::read(bool do_reply)
-    {
-      return do_read(fd_, do_reply);
-    }
-
-    inline crpcut_test_case_registrator *
-    fdreader::get_registrator() const
-    {
-      return reg;
-    }
-
-    inline void
-    fdreader::close()
-    {
-      if (fd_)
-        {
-          wrapped::close(fd_);
-        }
-      unregister();
-    }
-
-    inline
-    fdreader::fdreader(crpcut_test_case_registrator *r, int fd)
-      : reg(r),
-        fd_(fd)
-    {
-    }
 
     template <comm::type t>
     inline
@@ -3423,20 +3238,8 @@ namespace crpcut {
       fdreader::set_fd(fd);
     }
 
-    inline
-    report_reader::report_reader(crpcut_test_case_registrator *r)
-      : fdreader(r)
-    {
-    }
-
-    inline void
-    report_reader::set_fds(int in_fd, int out_fd)
-    {
-      fdreader::set_fd(in_fd);
-      response_fd = out_fd;
-    }
     template <typename T>
-    inline
+    /*inline*/
     void crpcut_test_case_registrator::crpcut_run_test_case()
     {
 
@@ -3463,144 +3266,40 @@ namespace crpcut {
         }
     }
 
-    inline crpcut_test_case_registrator *
-    crpcut_test_case_registrator::crpcut_unlink()
-    {
-      crpcut_next->crpcut_prev = crpcut_prev;
-      crpcut_prev->crpcut_next = crpcut_next;
-      return crpcut_next;
-    }
-
-    inline void
-    crpcut_test_case_registrator::
-    crpcut_link_after(crpcut_test_case_registrator *r)
-    {
-      crpcut_next = r->crpcut_next;
-      crpcut_prev = r;
-      crpcut_next->crpcut_prev = this;
-      r->crpcut_next = this;
-    }
-    inline bool
-    crpcut_test_case_registrator
-    ::crpcut_deadline_is_set() const
-    {
-      return crpcut_deadline_set;
-    }
-
-    inline bool
-    crpcut_test_case_registrator
-    ::crpcut_timeout_compare(const crpcut_test_case_registrator *lh,
-                             const crpcut_test_case_registrator *rh)
-    {
-      assert(lh->crpcut_deadline_set);
-      assert(rh->crpcut_deadline_set);
-
-      long diff
-        = long(lh->crpcut_absolute_deadline_ms
-               - rh->crpcut_absolute_deadline_ms);
-      return diff > 0;
-    }
-
-    inline crpcut_test_case_registrator *
-    crpcut_test_case_registrator
-    ::crpcut_get_next() const
-    {
-      return crpcut_next;
-    }
-
-    inline pid_t
-    crpcut_test_case_registrator
-    ::crpcut_get_pid() const
-    {
-      return crpcut_pid_;
-    }
-
-    inline test_phase
-    crpcut_test_case_registrator
-    ::crpcut_get_phase() const
-    {
-      return crpcut_phase;
-    }
-
-    inline bool
-    crpcut_test_case_registrator
-    ::crpcut_has_active_readers() const
-    {
-      return crpcut_active_readers > 0U;
-    }
-
-    inline void
-    crpcut_test_case_registrator
-    ::crpcut_deactivate_reader()
-    {
-      --crpcut_active_readers;
-    }
-
-    inline void
-    crpcut_test_case_registrator
-    ::crpcut_activate_reader()
-    {
-      ++crpcut_active_readers;
-    }
-
-    inline void
-    crpcut_test_case_registrator
-    ::crpcut_set_timeout(unsigned long ts)
-    {
-      crpcut_absolute_deadline_ms = crpcut_phase == running
-	? crpcut_calc_deadline(ts)
-	: ts;
-      crpcut_deadline_set = true;
-    }
-
-    inline
-    crpcut_test_case_registrator
-    ::crpcut_test_case_registrator()
-      : crpcut_next(this),
-        crpcut_prev(this),
-        crpcut_active_readers(0),
-        crpcut_killed(false),
-        crpcut_death_note(false),
-        crpcut_deadline_set(false),
-        crpcut_rep_reader(0),
-        crpcut_stdout_reader(0),
-        crpcut_stderr_reader(0)
-    {
-    }
 
 
     template <typename T, case_convert_type type>
-    inline collate_result operator==(T r, const collate_t<type> &c)
+    /*inline*/ collate_result operator==(T r, const collate_t<type> &c)
     {
       return (c == r).set_lh();
     }
 
     template <typename T, case_convert_type type>
-    inline collate_result operator!=(T r, const collate_t<type> &c)
+    /*inline*/ collate_result operator!=(T r, const collate_t<type> &c)
     {
       return (c != r).set_lh();
     }
 
     template <typename T, case_convert_type type>
-    inline collate_result operator<(T r, const collate_t<type> &c)
+    /*inline*/ collate_result operator<(T r, const collate_t<type> &c)
     {
       return (c > r).set_lh();
     }
 
     template <typename T, case_convert_type type>
-    inline collate_result operator<=(T r, const collate_t<type> &c)
+    /*inline*/ collate_result operator<=(T r, const collate_t<type> &c)
     {
       return (c >= r).set_lh();
     }
 
     template <typename T, case_convert_type type>
-    inline collate_result operator>(T r, const collate_t<type> &c)
+    /*inline*/ collate_result operator>(T r, const collate_t<type> &c)
     {
       return (c < r).set_lh();
     }
 
     template <typename T, case_convert_type type>
-    inline collate_result operator>=(T r, const collate_t<type> &c)
+    /*inline*/ collate_result operator>=(T r, const collate_t<type> &c)
     {
       return (c <= r).set_lh();
     }
@@ -3609,115 +3308,17 @@ namespace crpcut {
 
 
 
-  inline int
-  test_case_factory::run_test(int argc, char *argv[], std::ostream &os)
-  {
-    return obj().do_run(argc, const_cast<const char**>(argv), os);
-  }
-
-  inline int
-  test_case_factory::run_test(int argc, const char *argv[], std::ostream &os)
-  {
-    return obj().do_run(argc, argv, os);
-  }
-
-
-  inline void
-  test_case_factory::introduce_name(pid_t pid, const char *name, size_t len)
-  {
-    obj().do_introduce_name(pid, name, len);
-  }
-
-  inline void
-  test_case_factory::present(pid_t pid, comm::type t, test_phase phase,
-                             size_t len, const char *buff)
-  {
-    obj().do_present(pid, t, phase, len, buff);
-  }
-
-  inline bool
-  test_case_factory::tests_as_child_procs()
-  {
-    return obj().num_parallel > 0;
-  }
-
-  inline bool
-  test_case_factory::timeouts_enabled()
-  {
-    return obj().enable_timeouts;
-  }
-
-  inline void
-  test_case_factory::set_deadline(implementation::crpcut_test_case_registrator *i)
-  {
-    obj().do_set_deadline(i);
-  }
-
-  inline void
-  test_case_factory::clear_deadline(implementation::crpcut_test_case_registrator *i)
-  {
-    obj().do_clear_deadline(i);
-  }
-
-  inline void
-  test_case_factory::return_dir(unsigned num)
-  {
-    obj().do_return_dir(num);
-  }
-
-  inline const char *
-  test_case_factory::get_working_dir()
-  {
-    return obj().do_get_working_dir();
-  }
-
-  inline const char *
-  test_case_factory::get_start_dir()
-  {
-    return obj().do_get_start_dir();
-  }
-
-  inline const char *
-  test_case_factory::get_parameter(const char *name)
-  {
-    return obj().do_get_parameter(name);
-  }
-
-  inline void
-  test_case_factory::test_succeeded(implementation::crpcut_test_case_registrator*)
-  {
-    ++obj().num_successful_tests;
-  }
-
-  inline test_case_factory &
-  test_case_factory::obj()
-  {
-    static test_case_factory f;
-    return f;
-  }
-
-  inline const char *
-  test_case_factory::do_get_working_dir() const
-  {
-    return dirbase;
-  }
-
-  inline const char *
-  test_case_factory::do_get_start_dir() const
-  {
-    return homedir;
-  }
 
 #ifdef CRPCUT_SUPPORTS_VTEMPLATES
   template <typename D, typename ...T>
-  inline typename match_traits<D, T...>::type
+  /*inline*/ typename match_traits<D, T...>::type
   match(T... t)
   {
     return typename match_traits<D, T...>::type(t...);
   }
 #else
   template <typename D, typename T>
-  inline
+  /*inline*/
   typename match_traits<D, T>::type
   match(T t)
   {
@@ -3727,7 +3328,7 @@ namespace crpcut {
   }
 
   template <typename D, typename T1, typename T2>
-  inline
+  /*inline*/
   typename match_traits<D, T1, T2>::type
   match(T1 t1, T2 t2)
   {
@@ -3738,7 +3339,7 @@ namespace crpcut {
 
   template <typename D,
             typename T1, typename T2, typename T3>
-  inline
+  /*inline*/
   typename match_traits<D, T1, T2, T3>::type
   match(T1 t1, T2 t2, T3 t3)
   {
@@ -3750,7 +3351,7 @@ namespace crpcut {
   template <typename D,
             typename T1, typename T2, typename T3,
             typename T4>
-  inline
+  /*inline*/
   typename match_traits<D, T1, T2, T3, T4>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4)
   {
@@ -3762,7 +3363,7 @@ namespace crpcut {
   template <typename D,
             typename T1, typename T2, typename T3,
             typename T4, typename T5>
-  inline
+  /*inline*/
   typename match_traits<D, T1, T2, T3, T4, T5>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
   {
@@ -3774,7 +3375,7 @@ namespace crpcut {
   template <typename D,
             typename T1, typename T2, typename T3,
             typename T4, typename T5, typename T6>
-  inline
+  /*inline*/
   typename match_traits<D, T1, T2, T3, T4, T5, T6>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
   {
@@ -3787,7 +3388,7 @@ namespace crpcut {
             typename T1, typename T2, typename T3,
             typename T4, typename T5, typename T6,
             typename T7>
-  inline
+  /*inline*/
   typename match_traits<D, T1, T2, T3, T4, T5, T6, T7>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
   {
@@ -3800,7 +3401,7 @@ namespace crpcut {
             typename T1, typename T2, typename T3,
             typename T4, typename T5, typename T6,
             typename T7, typename T8>
-  inline
+  /*inline*/
   typename match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
   {
@@ -3813,7 +3414,7 @@ namespace crpcut {
             typename T1, typename T2, typename T3,
             typename T4, typename T5, typename T6,
             typename T7, typename T8, typename T9>
-  inline
+  /*inline*/
   typename match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8, T9>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, T9 t9)
   {
@@ -4057,7 +3658,7 @@ namespace crpcut {
   }
 
   template <case_convert_type type>
-  inline
+  /*inline*/
   collate_t<type>
   collate(const std::string &s, const std::locale &l = std::locale())
   {
@@ -4113,23 +3714,6 @@ namespace crpcut {
 
   } // namespace implementation
 
-  inline int
-  run(int argc, char *argv[], std::ostream &os = std::cerr)
-  {
-    return test_case_factory::run_test(argc, argv, os);
-  }
-
-  inline int
-  run(int argc, const char *argv[], std::ostream &os = std::cerr)
-  {
-    return test_case_factory::run_test(argc, argv, os);
-  }
-
-  inline const char *
-  get_parameter(const char *name)
-  {
-    return test_case_factory::get_parameter(name);
-  }
 
   template <typename T>
   inline void get_parameter(const char *name, T& t)
@@ -4143,11 +3727,6 @@ namespace crpcut {
     return test_case_factory::get_parameter<T>(name);
   }
 
-  inline
-  const char *get_start_dir()
-  {
-    return test_case_factory::get_start_dir();
-  }
 
 
 #define CRPCUT_BINOP(name, opexpr)                                      \
@@ -4157,7 +3736,7 @@ namespace crpcut {
     {                                                                   \
     public:                                                             \
       name(const T& t, const U& u) : t_(t), u_(u) {}                    \
-      inline friend                                                     \
+      /*inline*/ friend                                                     \
         std::ostream &operator<<(std::ostream &os, const name &a)       \
       {                                                                 \
         implementation::conditionally_stream<8>(os, a.t_);              \
@@ -4175,7 +3754,7 @@ namespace crpcut {
 #define CRPCUT_OPFUNC(name, opexpr)                                     \
   namespace expr {                                                      \
     template <typename T, typename U>                                   \
-    inline                                                              \
+    /*inline*/                                                              \
     name<T, U> operator opexpr(const T& t, const U& u)                  \
     {                                                                   \
       return name<T, U>(t, u);                                          \
@@ -4232,7 +3811,7 @@ namespace crpcut {
     public:
       atom(const T& t) : t_(t) {}
       friend struct eval_t<atom>;
-      inline friend
+      /*inline*/ friend
       std::ostream &operator<<(std::ostream &os, const atom& a)
       {
         implementation::conditionally_stream<8>(os, a.t_);
@@ -4344,6 +3923,10 @@ namespace crpcut {
       unsigned long mutable limit_;
     };
   }
+  const char *get_start_dir();
+  const char *get_parameter(const char *name);
+  int  run(int argc, char *argv[], std::ostream &os = std::cerr);
+  int  run(int argc, const char *argv[], std::ostream &os = std::cerr);
 
 } // namespace crpcut
 
@@ -4357,20 +3940,17 @@ extern crpcut::implementation::namespace_info current_namespace;
   class test_case_name                                                  \
     : crpcut::test_case_base, __VA_ARGS__                               \
   {                                                                     \
-    friend class crpcut::implementation::test_wrapper<crpcut_run_wrapper, \
-      test_case_name>;                                                  \
+    friend class crpcut::implementation::test_wrapper<crpcut_run_wrapper>; \
     friend class crpcut::policies::dependencies::enforcer<test_case_name>; \
     friend class crpcut::implementation::crpcut_test_case_registrator;  \
-    struct crpcut_timeout_enforcer {                                    \
-      crpcut_realtime_enforcer rt;                                      \
-      crpcut_cputime_enforcer ct;                                       \
-    };                                                                  \
     virtual void crpcut_run_test()                                      \
     {                                                                   \
-      crpcut_timeout_enforcer obj;                                      \
-      (void)obj; /* silence warning */                                  \
+      crpcut_realtime_enforcer rt;                                      \
+      crpcut_cputime_enforcer ct;                                       \
+      (void)rt; /* silence warning */                                   \
+      (void)ct; /* silence warning */                                   \
       using crpcut::implementation::test_wrapper;                       \
-      test_wrapper<crpcut_run_wrapper, test_case_name>::run(this);      \
+      test_wrapper<crpcut_run_wrapper>::run(this);                      \
       if (crpcut::test_case_factory::tests_as_child_procs())            \
         {                                                               \
           crpcut_test_finished(); /* tell destructor to report success */ \
@@ -4389,16 +3969,6 @@ extern crpcut::implementation::namespace_info current_namespace;
     {                                                                   \
        typedef crpcut::implementation::crpcut_test_case_registrator     \
          crpcut_registrator_base;                                       \
-       virtual unsigned long crpcut_constructor_timeout() const		\
-       {								\
-	 typedef test_case_name::crpcut_constructor_timeout_enforcer T;	\
-	 return T::crpcut_constructor_timeout();			\
-       }								\
-       virtual unsigned long crpcut_destructor_timeout() const		\
-       {								\
-	 typedef test_case_name::crpcut_destructor_timeout_enforcer T;	\
-	 return T::crpcut_destructor_timeout();				\
-       }								\
     public:                                                             \
        crpcut_registrator()                                             \
          : crpcut_registrator_base(#test_case_name, current_namespace)  \
@@ -4410,19 +3980,16 @@ extern crpcut::implementation::namespace_info current_namespace;
          CRPCUT_DEFINE_REPORTER;                                        \
          crpcut_registrator_base::crpcut_run_test_case<test_case_name>(); \
        }                                                                \
-       virtual bool crpcut_cputime_timeout(unsigned long ms) const \
-       {                                                                \
-         return crpcut_cputime_enforcer::monitor::crpcut_cputime_timeout(ms); \
-       }                                                                \
-       virtual void crpcut_cputime_limit(std::ostream &os) const        \
-       {                                                                \
-         crpcut_cputime_enforcer::monitor::crpcut_cputime_limit(os);    \
-       }                                                                \
     };                                                                  \
     static crpcut_registrator &crpcut_reg()                             \
     {                                                                   \
       static crpcut_registrator obj;                                    \
       return obj;                                                       \
+    }                                                                   \
+    virtual crpcut::implementation::crpcut_test_case_registrator&       \
+      crpcut_get_reg() const                                            \
+    {                                                                   \
+      return crpcut_reg();                                              \
     }                                                                   \
     class crpcut_trigger                                                \
     {                                                                   \

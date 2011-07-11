@@ -86,6 +86,32 @@ namespace crpcut {
     }
 
     reporter report;
+
+    reporter::reporter()
+      : write_fd(0),
+        read_fd(0)
+    {
+    }
+
+    void
+    reporter::set_fds(int rfd, int wfd)
+    {
+      write_fd = wfd;
+      read_fd = rfd;
+    }
+
+    void
+    reporter::operator()(type t, std::ostringstream &os) const
+    {
+      const std::string &s = os.str();
+      operator()(t, s.c_str(), s.length());
+    }
+
+    void
+    reporter::operator()(type t, const char *msg) const
+    {
+      operator()(t, msg, wrapped::strlen(msg));
+    }
   }
 
 }

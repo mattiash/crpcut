@@ -88,6 +88,24 @@ namespace crpcut {
             wipe_dir(namebuff, end);
           }
       }
+
+      void
+      crpcut_none::crpcut_on_ok_action(const char *) const
+      {
+      }
+
+      bool
+      crpcut_none::crpcut_is_expected_exit(int) const
+      {
+        return false;
+      }
+
+      bool
+      crpcut_none::crpcut_is_expected_signal(int) const
+      {
+        return false;
+      }
+
     }
 
     no_core_file::no_core_file()
@@ -137,6 +155,51 @@ namespace crpcut {
       {
         other->crpcut_inc();
       }
+
+      crpcut_base::crpcut_base()
+        : crpcut_state(crpcut_not_run),
+          crpcut_num(0),
+          crpcut_dependants(0)
+      {
+      }
+
+      void
+      crpcut_base::crpcut_add(basic_enforcer *other)
+      {
+        other->next = crpcut_dependants;
+        crpcut_dependants = other;
+        crpcut_add_action(other);
+      }
+
+      void
+      crpcut_base::crpcut_inc()
+      {
+        ++crpcut_num;
+      }
+
+      bool
+      crpcut_base::crpcut_can_run() const
+      {
+        return crpcut_num == 0;
+      }
+
+      bool
+      crpcut_base::crpcut_failed() const
+      {
+        return crpcut_state == crpcut_fail;
+      }
+
+      bool
+      crpcut_base::crpcut_succeeded() const
+      {
+        return crpcut_state == crpcut_success;
+      }
+
+      basic_enforcer::basic_enforcer()
+        : next(0)
+      {
+      }
+
     } // namespace dependencies
 
     namespace timeout {

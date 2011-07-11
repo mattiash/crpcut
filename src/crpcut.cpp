@@ -1426,6 +1426,152 @@ namespace crpcut {
     return -1;
   }
 
+
+  test_case_base::test_case_base() : finished(false) {}
+
+  void
+  test_case_base::crpcut_test_finished()
+  {
+    finished = true;
+    comm::report(comm::end_test, 0, 0);
+  }
+
+  test_case_base::~test_case_base()
+  {
+    if (finished)
+      {
+        comm::report(comm::exit_ok, 0, 0);
+      }
+  }
+
+  void
+  test_case_base::run()
+  {
+    crpcut_run_test();
+  }
+
+  int
+  test_case_factory::run_test(int argc, char *argv[], std::ostream &os)
+  {
+    return obj().do_run(argc, const_cast<const char**>(argv), os);
+  }
+
+  int
+  test_case_factory::run_test(int argc, const char *argv[], std::ostream &os)
+  {
+    return obj().do_run(argc, argv, os);
+  }
+
+
+  void
+  test_case_factory::introduce_name(pid_t pid, const char *name, size_t len)
+  {
+    obj().do_introduce_name(pid, name, len);
+  }
+
+  void
+  test_case_factory::present(pid_t pid, comm::type t, test_phase phase,
+                             size_t len, const char *buff)
+  {
+    obj().do_present(pid, t, phase, len, buff);
+  }
+
+  bool
+  test_case_factory::tests_as_child_procs()
+  {
+    return obj().num_parallel > 0;
+  }
+
+  bool
+  test_case_factory::timeouts_enabled()
+  {
+    return obj().enable_timeouts;
+  }
+
+  void
+  test_case_factory::set_deadline(implementation::crpcut_test_case_registrator *i)
+  {
+    obj().do_set_deadline(i);
+  }
+
+  void
+  test_case_factory::clear_deadline(implementation::crpcut_test_case_registrator *i)
+  {
+    obj().do_clear_deadline(i);
+  }
+
+  void
+  test_case_factory::return_dir(unsigned num)
+  {
+    obj().do_return_dir(num);
+  }
+
+  const char *
+  test_case_factory::get_working_dir()
+  {
+    return obj().do_get_working_dir();
+  }
+
+  const char *
+  test_case_factory::get_start_dir()
+  {
+    return obj().do_get_start_dir();
+  }
+
+  const char *
+  test_case_factory::get_parameter(const char *name)
+  {
+    return obj().do_get_parameter(name);
+  }
+
+  void
+  test_case_factory::test_succeeded(implementation::crpcut_test_case_registrator*)
+  {
+    ++obj().num_successful_tests;
+  }
+
+  test_case_factory &
+  test_case_factory::obj()
+  {
+    static test_case_factory f;
+    return f;
+  }
+
+  const char *
+  test_case_factory::do_get_working_dir() const
+  {
+    return dirbase;
+  }
+
+  const char *
+  test_case_factory::do_get_start_dir() const
+  {
+    return homedir;
+  }
+
+  int
+  run(int argc, char *argv[], std::ostream &os)
+  {
+    return test_case_factory::run_test(argc, argv, os);
+  }
+
+  int
+  run(int argc, const char *argv[], std::ostream &os)
+  {
+    return test_case_factory::run_test(argc, argv, os);
+  }
+
+  const char *
+  get_parameter(const char *name)
+  {
+    return test_case_factory::get_parameter(name);
+  }
+
+  const char *get_start_dir()
+  {
+    return test_case_factory::get_start_dir();
+  }
+
 } // namespace crpcut
 
 crpcut::implementation::namespace_info current_namespace(0,0);
