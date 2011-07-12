@@ -1564,17 +1564,16 @@ namespace crpcut {
       void crpcut_deactivate_reader();
       void crpcut_activate_reader();
       void crpcut_set_timeout(unsigned long);
-      virtual void crpcut_run_test_case() = 0;
-    protected:
-      template <typename T>
       void crpcut_run_test_case();
+    protected:
+      virtual void crpcut_do_run_test_case() = 0;
       crpcut_test_case_registrator();
-    private:
       void crpcut_manage_test_case_execution(test_case_base*);
+      void crpcut_prepare_destruction();
+    private:
       std::ostream &crpcut_print_name(std::ostream &) const ;
 
       void crpcut_prepare_construction();
-      void crpcut_prepare_destruction();
       const char                   *crpcut_name_;
       const namespace_info         *crpcut_ns_info;
       crpcut_test_case_registrator *crpcut_next;
@@ -1678,7 +1677,7 @@ namespace crpcut {
     {
       virtual bool match_name(const char *) const { return false; }
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
-      virtual void crpcut_run_test_case() {}
+      virtual void crpcut_do_run_test_case() {}
       virtual unsigned long crpcut_constructor_timeout() const { return 0UL;}
       virtual unsigned long crpcut_destructor_timeout() const { return 0UL; }
       virtual bool crpcut_cputime_timeout(unsigned long) const { return false;}
@@ -3238,33 +3237,6 @@ namespace crpcut {
       fdreader::set_fd(fd);
     }
 
-    template <typename T>
-    /*inline*/
-    void crpcut_test_case_registrator::crpcut_run_test_case()
-    {
-
-      const char *msg = 0;
-      const char *type = 0;
-      try {
-        crpcut_prepare_construction();
-        T obj;
-        crpcut_manage_test_case_execution(&obj);
-        crpcut_prepare_destruction();
-      }
-      CATCH_BLOCK(std::exception &e,{ type = "std::exception"; msg = e.what();})
-      CATCH_BLOCK(..., { type = "..."; } )
-      if (type)
-        {
-          heap::set_limit(heap::system);
-          std::ostringstream out;
-          out << "Unexpected exception " << type;
-          if (msg)
-            {
-              out << "\n  what()=" << msg;
-            }
-          comm::report(comm::exit_fail, out);
-        }
-    }
 
 
 
@@ -3975,10 +3947,12 @@ extern crpcut::implementation::namespace_info current_namespace;
          {                                                              \
            crpcut::implementation::test_suite<crpcut_testsuite_id>::crpcut_reg().add_case(this); \
          }                                                              \
-       virtual void crpcut_run_test_case()                              \
+       virtual void crpcut_do_run_test_case()                           \
        {                                                                \
          CRPCUT_DEFINE_REPORTER;                                        \
-         crpcut_registrator_base::crpcut_run_test_case<test_case_name>(); \
+         test_case_name obj;                                            \
+         crpcut_manage_test_case_execution(&obj);                       \
+         crpcut_prepare_destruction();                                  \
        }                                                                \
     };                                                                  \
     static crpcut_registrator &crpcut_reg()                             \

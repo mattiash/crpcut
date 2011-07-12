@@ -220,6 +220,32 @@ namespace crpcut {
       crpcut_deadline_set = true;
     }
 
+    void
+    crpcut_test_case_registrator
+    ::crpcut_run_test_case()
+    {
+
+      const char *msg = 0;
+      const char *type = 0;
+      try {
+        crpcut_prepare_construction();
+        crpcut_do_run_test_case();
+      }
+      CATCH_BLOCK(std::exception &e,{ type = "std::exception"; msg = e.what();})
+      CATCH_BLOCK(..., { type = "..."; } )
+      if (type)
+        {
+          heap::set_limit(heap::system);
+          std::ostringstream out;
+          out << "Unexpected exception " << type;
+          if (msg)
+            {
+              out << "\n  what()=" << msg;
+            }
+          comm::report(comm::exit_fail, out);
+        }
+    }
+
     crpcut_test_case_registrator
     ::crpcut_test_case_registrator()
       : crpcut_next(this),
