@@ -356,7 +356,7 @@ namespace crpcut {
     // the nul terminator in the destination, making concatenations easy
     // and cheap
     template <typename T, typename U>
-    /*inline*/ T strcpy(T d, U s)
+    T strcpy(T d, U s)
     {
       while ((*d = *s))
         {
@@ -881,8 +881,6 @@ namespace crpcut {
     namespace timeout {
       class crpcut_none {
       protected:
-        virtual unsigned long crpcut_destructor_timeout() const = 0;
-	virtual unsigned long crpcut_constructor_timeout() const = 0;
         virtual bool crpcut_cputime_timeout(unsigned long ms) const = 0;
         virtual void crpcut_cputime_limit(std::ostream& os) const = 0;
       };
@@ -892,21 +890,15 @@ namespace crpcut {
       class enforcer;
 
       template <unsigned long ms>
-      struct constructor_enforcer : public virtual crpcut_none
+      struct constructor_enforcer
       {
-	virtual unsigned long crpcut_constructor_timeout() const
-	{
-	  return ms;
-	}
+        static const unsigned long crpcut_constructor_timeout_ms = ms;
       };
 
       template <unsigned long ms>
-      struct destructor_enforcer : public virtual crpcut_none
+      struct destructor_enforcer
       {
-	virtual unsigned long crpcut_destructor_timeout() const
-	{
-	  return ms;
-	}
+        static const unsigned long crpcut_destructor_timeout_ms = ms;
       };
 
     }
@@ -1220,8 +1212,6 @@ namespace crpcut {
   protected:
     test_case_base();
   public:
-    using policies::default_policy::crpcut_constructor_timeout_enforcer;
-    using policies::default_policy::crpcut_destructor_timeout_enforcer;
     virtual implementation::crpcut_test_case_registrator& crpcut_get_reg() const = 0;
     ~test_case_base();
     virtual void test() = 0;
@@ -1494,7 +1484,7 @@ namespace crpcut {
       crpcut_test_case_registrator *get_registrator() const;
       virtual void close();
       void unregister();
-      ~fdreader() { } // silence gcc, it's really not needed
+      ~fdreader() { }
     protected:
       fdreader(crpcut_test_case_registrator *r, int fd = 0);
       void set_fd(int fd);
@@ -1569,11 +1559,11 @@ namespace crpcut {
       virtual void crpcut_do_run_test_case() = 0;
       crpcut_test_case_registrator();
       void crpcut_manage_test_case_execution(test_case_base*);
-      void crpcut_prepare_destruction();
+      void crpcut_prepare_destruction(unsigned long ms);
+      void crpcut_prepare_construction(unsigned long ms);
     private:
       std::ostream &crpcut_print_name(std::ostream &) const ;
 
-      void crpcut_prepare_construction();
       const char                   *crpcut_name_;
       const namespace_info         *crpcut_ns_info;
       crpcut_test_case_registrator *crpcut_next;
@@ -1678,8 +1668,6 @@ namespace crpcut {
       virtual bool match_name(const char *) const { return false; }
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
       virtual void crpcut_do_run_test_case() {}
-      virtual unsigned long crpcut_constructor_timeout() const { return 0UL;}
-      virtual unsigned long crpcut_destructor_timeout() const { return 0UL; }
       virtual bool crpcut_cputime_timeout(unsigned long) const { return false;}
       virtual void crpcut_cputime_limit(std::ostream&) const {}
     };
@@ -2321,7 +2309,7 @@ namespace crpcut {
     };
 
     template <typename ...T>
-    /*inline*/ param_holder<1, T...> params(const T&... v)
+    param_holder<1, T...> params(const T&... v)
     {
       return param_holder<1, T...>(v...);
     }
@@ -2549,7 +2537,6 @@ namespace crpcut {
               typename T4, typename T5, typename T6,
               typename T7, typename T8, typename T9>
     template <typename P>
-    /*inline*/
     bool
     param_holder<T1, T2, T3, T4, T5, T6, T7, T8, T9>::apply(P &pred) const
     {
@@ -2568,7 +2555,6 @@ namespace crpcut {
     }
 
     template <typename T1>
-    /*inline*/
     param_holder<T1>
     params(const T1& t1)
     {
@@ -2577,7 +2563,6 @@ namespace crpcut {
     }
 
     template <typename T1, typename T2>
-    /*inline*/
     param_holder<T1, T2>
     params(const T1& t1, const T2 &t2)
     {
@@ -2586,7 +2571,6 @@ namespace crpcut {
     }
 
     template <typename T1, typename T2, typename T3>
-    /*inline*/
     param_holder<T1, T2, T3>
     params(const T1& t1, const T2 &t2, const T3 &t3)
     {
@@ -2595,7 +2579,6 @@ namespace crpcut {
     }
 
     template <typename T1, typename T2, typename T3, typename T4>
-    /*inline*/
     param_holder<T1, T2, T3, T4>
     params(const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4)
     {
@@ -2604,7 +2587,6 @@ namespace crpcut {
     }
 
     template <typename T1, typename T2, typename T3, typename T4, typename T5>
-    /*inline*/
     param_holder<T1, T2, T3, T4, T5>
     params(const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4, const T5 &t5)
     {
@@ -2614,7 +2596,6 @@ namespace crpcut {
 
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6>
-    /*inline*/
     param_holder<T1, T2, T3, T4, T5, T6>
     params(const T1& t1, const T2 &t2, const T3 &t3,
            const T4 &t4, const T5 &t5, const T6 &t6)
@@ -2626,7 +2607,6 @@ namespace crpcut {
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6,
               typename T7>
-    /*inline*/
     param_holder<T1, T2, T3, T4, T5, T6, T7>
     params(const T1& t1, const T2 &t2, const T3 &t3,
            const T4 &t4, const T5 &t5, const T6 &t6,
@@ -2639,7 +2619,6 @@ namespace crpcut {
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6,
               typename T7, typename T8>
-    /*inline*/
     param_holder<T1, T2, T3, T4, T5, T6, T7, T8>
     params(const T1& t1, const T2 &t2, const T3 &t3,
            const T4 &t4, const T5 &t5, const T6 &t6,
@@ -2652,7 +2631,6 @@ namespace crpcut {
     template <typename T1, typename T2, typename T3,
               typename T4, typename T5, typename T6,
               typename T7, typename T8, typename T9>
-    /*inline*/
     param_holder<T1, T2, T3, T4, T5, T6, T7, T8, T9>
     params(const T1& t1, const T2 &t2, const T3 &t3,
            const T4 &t4, const T5 &t5, const T6 &t6,
@@ -2699,14 +2677,13 @@ namespace crpcut {
     }
 
     template <typename P>
-    /*inline*/
     predicate_streamer<P> stream_predicate(const char *n, const P& p)
     {
       return predicate_streamer<P>(n, p);
     }
 
     template <typename Pred, typename Params>
-    /*inline*/ bool
+    bool
     match_pred(std::string &msg, const char *sp, Pred p, const Params &params)
     {
       bool b = params.apply(p);
@@ -2896,55 +2873,55 @@ namespace crpcut {
   namespace datatypes {
 
     template <typename T, std::size_t N>
-    /*inline*/ array_v<T, N>::array_v()
+    array_v<T, N>::array_v()
       : num_elements(0)
     {
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ typename array_v<T, N>::iterator
+    typename array_v<T, N>::iterator
     array_v<T, N>::end()
     {
       return iterator(&operator[](size() - 1) + 1);
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ typename array_v<T, N>::const_iterator
+    typename array_v<T, N>::const_iterator
     array_v<T, N>::end() const
     {
       return iterator(&operator[](size() - 1) + 1);
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ typename array_v<T, N>::reverse_iterator
+    typename array_v<T, N>::reverse_iterator
     array_v<T, N>::rbegin()
     {
       return reverse_iterator(end());
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ typename array_v<T, N>::const_reverse_iterator
+    typename array_v<T, N>::const_reverse_iterator
     array_v<T, N>::rbegin() const
     {
       return reverse_iterator(end());
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ typename array_v<T, N>::size_type
+    typename array_v<T, N>::size_type
     array_v<T, N>::size() const
     {
       return num_elements;
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ bool
+    bool
     array_v<T, N>::empty() const
     {
       return size() == 0;
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ typename array_v<T, N>::reference
+    typename array_v<T, N>::reference
     array_v<T, N>::at(size_type n)
     {
       if (n >= num_elements) throw std::out_of_range("array_v::at");
@@ -2952,7 +2929,7 @@ namespace crpcut {
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ typename array_v<T, N>::const_reference
+    typename array_v<T, N>::const_reference
     array_v<T, N>::at(size_type n) const
     {
       if (n >= num_elements) throw std::out_of_range("array_v::at");
@@ -2960,21 +2937,21 @@ namespace crpcut {
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ typename array_v<T, N>::reference
+    typename array_v<T, N>::reference
     array_v<T, N>::back()
     {
       return *(end() - !empty());
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ typename array_v<T, N>::const_reference
+    typename array_v<T, N>::const_reference
     array_v<T, N>::back() const
     {
       *(end() - !empty());
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ void
+    void
     array_v<T, N>::push_back(const value_type &x)
     {
       assert(num_elements <= N);
@@ -2982,7 +2959,7 @@ namespace crpcut {
     }
 
     template <typename T, std::size_t N>
-    /*inline*/ void
+    void
     array_v<T, N>::pop_back()
     {
       assert(num_elements);
@@ -3020,14 +2997,14 @@ namespace crpcut {
 
 
       template <int N, typename action>
-      /*inline*/ bool
+      bool
       signal<N, action>::crpcut_is_expected_signal(int code) const
       {
         return N == ANY_CODE || code == N;
       }
 
       template <int N, typename action>
-      /*inline*/ void
+      void
       signal<N, action>::crpcut_expected_death(std::ostream &os) const
       {
         if (N == ANY_CODE)
@@ -3041,14 +3018,14 @@ namespace crpcut {
       }
 
       template <int N, typename action>
-      /*inline*/ bool
+      bool
       exit<N, action>::crpcut_is_expected_exit(int code) const
       {
         return N == ANY_CODE || code == N;
       }
 
       template <int N, typename action>
-      /*inline*/ void
+      void
       exit<N, action>::crpcut_expected_death(std::ostream &os) const
       {
         if (N == ANY_CODE)
@@ -3092,7 +3069,6 @@ namespace crpcut {
 
 
       template <typename T>
-      /*inline*/
       enforcer<T>::enforcer()
       {
         T::crpcut_reg().crpcut_add(this);
@@ -3102,14 +3078,12 @@ namespace crpcut {
     namespace timeout {
 
       template <unsigned long timeout_ms>
-      /*inline*/
       enforcer<cputime, timeout_ms>::enforcer()
         : cputime_enforcer(timeout_ms)
       {
       }
 
       template <unsigned long timeout_ms>
-      /*inline*/
       enforcer<realtime, timeout_ms>::enforcer()
         : monotonic_enforcer(timeout_ms)
       {
@@ -3241,37 +3215,37 @@ namespace crpcut {
 
 
     template <typename T, case_convert_type type>
-    /*inline*/ collate_result operator==(T r, const collate_t<type> &c)
+    collate_result operator==(T r, const collate_t<type> &c)
     {
       return (c == r).set_lh();
     }
 
     template <typename T, case_convert_type type>
-    /*inline*/ collate_result operator!=(T r, const collate_t<type> &c)
+    collate_result operator!=(T r, const collate_t<type> &c)
     {
       return (c != r).set_lh();
     }
 
     template <typename T, case_convert_type type>
-    /*inline*/ collate_result operator<(T r, const collate_t<type> &c)
+    collate_result operator<(T r, const collate_t<type> &c)
     {
       return (c > r).set_lh();
     }
 
     template <typename T, case_convert_type type>
-    /*inline*/ collate_result operator<=(T r, const collate_t<type> &c)
+    collate_result operator<=(T r, const collate_t<type> &c)
     {
       return (c >= r).set_lh();
     }
 
     template <typename T, case_convert_type type>
-    /*inline*/ collate_result operator>(T r, const collate_t<type> &c)
+    collate_result operator>(T r, const collate_t<type> &c)
     {
       return (c < r).set_lh();
     }
 
     template <typename T, case_convert_type type>
-    /*inline*/ collate_result operator>=(T r, const collate_t<type> &c)
+    collate_result operator>=(T r, const collate_t<type> &c)
     {
       return (c <= r).set_lh();
     }
@@ -3283,14 +3257,13 @@ namespace crpcut {
 
 #ifdef CRPCUT_SUPPORTS_VTEMPLATES
   template <typename D, typename ...T>
-  /*inline*/ typename match_traits<D, T...>::type
+  typename match_traits<D, T...>::type
   match(T... t)
   {
     return typename match_traits<D, T...>::type(t...);
   }
 #else
   template <typename D, typename T>
-  /*inline*/
   typename match_traits<D, T>::type
   match(T t)
   {
@@ -3300,7 +3273,6 @@ namespace crpcut {
   }
 
   template <typename D, typename T1, typename T2>
-  /*inline*/
   typename match_traits<D, T1, T2>::type
   match(T1 t1, T2 t2)
   {
@@ -3311,7 +3283,6 @@ namespace crpcut {
 
   template <typename D,
             typename T1, typename T2, typename T3>
-  /*inline*/
   typename match_traits<D, T1, T2, T3>::type
   match(T1 t1, T2 t2, T3 t3)
   {
@@ -3323,7 +3294,6 @@ namespace crpcut {
   template <typename D,
             typename T1, typename T2, typename T3,
             typename T4>
-  /*inline*/
   typename match_traits<D, T1, T2, T3, T4>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4)
   {
@@ -3335,7 +3305,6 @@ namespace crpcut {
   template <typename D,
             typename T1, typename T2, typename T3,
             typename T4, typename T5>
-  /*inline*/
   typename match_traits<D, T1, T2, T3, T4, T5>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
   {
@@ -3347,7 +3316,6 @@ namespace crpcut {
   template <typename D,
             typename T1, typename T2, typename T3,
             typename T4, typename T5, typename T6>
-  /*inline*/
   typename match_traits<D, T1, T2, T3, T4, T5, T6>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
   {
@@ -3360,7 +3328,6 @@ namespace crpcut {
             typename T1, typename T2, typename T3,
             typename T4, typename T5, typename T6,
             typename T7>
-  /*inline*/
   typename match_traits<D, T1, T2, T3, T4, T5, T6, T7>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
   {
@@ -3373,7 +3340,6 @@ namespace crpcut {
             typename T1, typename T2, typename T3,
             typename T4, typename T5, typename T6,
             typename T7, typename T8>
-  /*inline*/
   typename match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
   {
@@ -3386,7 +3352,6 @@ namespace crpcut {
             typename T1, typename T2, typename T3,
             typename T4, typename T5, typename T6,
             typename T7, typename T8, typename T9>
-  /*inline*/
   typename match_traits<D, T1, T2, T3, T4, T5, T6, T7, T8, T9>::type
   match(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, T9 t9)
   {
@@ -3630,7 +3595,6 @@ namespace crpcut {
   }
 
   template <case_convert_type type>
-  /*inline*/
   collate_t<type>
   collate(const std::string &s, const std::locale &l = std::locale())
   {
@@ -3708,7 +3672,7 @@ namespace crpcut {
     {                                                                   \
     public:                                                             \
       name(const T& t, const U& u) : t_(t), u_(u) {}                    \
-      /*inline*/ friend                                                     \
+      friend                                                     \
         std::ostream &operator<<(std::ostream &os, const name &a)       \
       {                                                                 \
         implementation::conditionally_stream<8>(os, a.t_);              \
@@ -3726,7 +3690,6 @@ namespace crpcut {
 #define CRPCUT_OPFUNC(name, opexpr)                                     \
   namespace expr {                                                      \
     template <typename T, typename U>                                   \
-    /*inline*/                                                              \
     name<T, U> operator opexpr(const T& t, const U& u)                  \
     {                                                                   \
       return name<T, U>(t, u);                                          \
@@ -3783,7 +3746,7 @@ namespace crpcut {
     public:
       atom(const T& t) : t_(t) {}
       friend struct eval_t<atom>;
-      /*inline*/ friend
+      friend
       std::ostream &operator<<(std::ostream &os, const atom& a)
       {
         implementation::conditionally_stream<8>(os, a.t_);
@@ -3950,9 +3913,10 @@ extern crpcut::implementation::namespace_info current_namespace;
        virtual void crpcut_do_run_test_case()                           \
        {                                                                \
          CRPCUT_DEFINE_REPORTER;                                        \
+         crpcut_prepare_construction(crpcut_constructor_timeout_ms);    \
          test_case_name obj;                                            \
          crpcut_manage_test_case_execution(&obj);                       \
-         crpcut_prepare_destruction();                                  \
+         crpcut_prepare_destruction(crpcut_destructor_timeout_ms);      \
        }                                                                \
     };                                                                  \
     static crpcut_registrator &crpcut_reg()                             \

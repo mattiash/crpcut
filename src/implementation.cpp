@@ -228,7 +228,6 @@ namespace crpcut {
       const char *msg = 0;
       const char *type = 0;
       try {
-        crpcut_prepare_construction();
         crpcut_do_run_test_case();
       }
       CATCH_BLOCK(std::exception &e,{ type = "std::exception"; msg = e.what();})
@@ -486,22 +485,20 @@ namespace crpcut {
 
     void
     crpcut_test_case_registrator
-    ::crpcut_prepare_construction()
+    ::crpcut_prepare_construction(unsigned long deadline)
     {
       if (test_case_factory::tests_as_child_procs())
 	{
-	  clocks::monotonic::timestamp deadline = crpcut_constructor_timeout();
 	  comm::report(comm::set_timeout, deadline);
 	}
     }
 
     void
     crpcut_test_case_registrator
-    ::crpcut_prepare_destruction()
+    ::crpcut_prepare_destruction(unsigned long deadline)
     {
       if (test_case_factory::tests_as_child_procs())
 	{
-	  clocks::monotonic::timestamp deadline = crpcut_destructor_timeout();
 	  comm::report(comm::set_timeout, deadline);
 	}
     }
