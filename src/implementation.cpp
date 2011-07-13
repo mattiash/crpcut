@@ -255,7 +255,8 @@ namespace crpcut {
         crpcut_deadline_set(false),
         crpcut_rep_reader(0),
         crpcut_stdout_reader(0),
-        crpcut_stderr_reader(0)
+        crpcut_stderr_reader(0),
+        crpcut_cputime_limit_ms(0)
     {
     }
 
@@ -468,7 +469,8 @@ namespace crpcut {
 
     crpcut_test_case_registrator
     ::crpcut_test_case_registrator(const char *name,
-                                   const namespace_info &ns)
+                                   const namespace_info &ns,
+                                   unsigned long cputime_timeout_ms)
       : crpcut_name_(name),
         crpcut_ns_info(&ns),
         crpcut_next(&test_case_factory::obj().reg),
@@ -477,7 +479,8 @@ namespace crpcut {
         crpcut_rep_reader(this),
         crpcut_stdout_reader(this),
         crpcut_stderr_reader(this),
-        crpcut_phase(creating)
+        crpcut_phase(creating),
+        crpcut_cputime_limit_ms(cputime_timeout_ms)
     {
       test_case_factory::obj().reg.crpcut_prev = this;
       crpcut_prev->crpcut_next = this;
@@ -651,6 +654,15 @@ namespace crpcut {
         }
     }
 
+    bool
+    crpcut_test_case_registrator
+    ::crpcut_cputime_timeout(unsigned long ms) const
+    {
+      return test_case_factory::timeouts_enabled()
+        && crpcut_cputime_limit_ms
+        && ms > crpcut_cputime_limit_ms;
+    }
+
 
     void
     crpcut_test_case_registrator
@@ -711,8 +723,8 @@ namespace crpcut {
                           {
                             crpcut_phase = running;
                             out << "Test consumed "
-                                << cputime_ms << "ms CPU-time\nLimit was ";
-                            crpcut_cputime_limit(out);
+                                << cputime_ms << "ms CPU-time\nLimit was "
+                                << crpcut_cputime_limit_ms << "ms";
                             t = comm::exit_fail;
                           }
                         else

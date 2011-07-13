@@ -208,7 +208,7 @@ namespace crpcut {
         : duration_ms(timeout_ms),
           start_timestamp_ms(clocks::cputime::timestamp_ms_absolute())
       {
-        if (test_case_factory::timeouts_enabled())
+        if (timeout_ms && test_case_factory::timeouts_enabled())
           {
             rlimit r = { (duration_ms + 1500) / 1000,
                          (duration_ms + 2500) / 1000 };
@@ -218,7 +218,7 @@ namespace crpcut {
 
       cputime_enforcer::~cputime_enforcer()
       {
-        if (!test_case_factory::timeouts_enabled()) return;
+        if (!test_case_factory::timeouts_enabled() || duration_ms == 0) return;
 
         clocks::cputime::timestamp now
           = clocks::cputime::timestamp_ms_absolute();

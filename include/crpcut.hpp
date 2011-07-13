@@ -613,6 +613,7 @@ namespace crpcut {
 
   class crpcut_none {};
 
+
   namespace datatypes {
 
     class posix_error : public std::exception
@@ -879,11 +880,6 @@ namespace crpcut {
     }
 
     namespace timeout {
-      class crpcut_none {
-      protected:
-        virtual bool crpcut_cputime_timeout(unsigned long ms) const = 0;
-        virtual void crpcut_cputime_limit(std::ostream& os) const = 0;
-      };
       typedef enum { realtime, cputime } type;
 
       template <type t, unsigned long ms>
@@ -1108,7 +1104,6 @@ namespace crpcut {
       class cputime_enforcer
       {
       public:
-      protected:
         cputime_enforcer(unsigned long timeout_ms);
         ~cputime_enforcer();
       private:
@@ -1128,35 +1123,11 @@ namespace crpcut {
         unsigned long start_timestamp_ms;
       };
 
-      template <>
-      class enforcer<cputime, 0>
-      {
-      public:
-        struct monitor : public virtual timeout::crpcut_none
-        {
-          bool crpcut_cputime_timeout(unsigned long) const
-          {
-            return false;
-          }
-          void crpcut_cputime_limit(std::ostream &) const
-          {
-          }
-        };
-      };
-
       template <unsigned long timeout_ms>
-      class enforcer<cputime, timeout_ms> : public cputime_enforcer
+      class enforcer<cputime, timeout_ms>
       {
       public:
-        enforcer();
-        struct monitor : public virtual timeout::crpcut_none
-        {
-          bool crpcut_cputime_timeout(unsigned long ms) const;
-          void crpcut_cputime_limit(std::ostream &os) const
-          {
-            os << timeout_ms << "ms";
-          }
-        };
+        static const unsigned long crpcut_cputime_timeout_ms = timeout_ms;
       };
 
 
@@ -1209,16 +1180,16 @@ namespace crpcut {
   }
   class test_case_base : protected virtual policies::default_policy
   {
+    virtual void crpcut_run_test() = 0;
   protected:
     test_case_base();
+    ~test_case_base();
   public:
     virtual implementation::crpcut_test_case_registrator& crpcut_get_reg() const = 0;
-    ~test_case_base();
     virtual void test() = 0;
     void run();
     void crpcut_test_finished();
   private:
-    virtual void crpcut_run_test() = 0;
 
     bool finished;
   };
@@ -1518,12 +1489,12 @@ namespace crpcut {
     class test_suite_base;
     class crpcut_test_case_registrator
       : public virtual policies::deaths::crpcut_none,
-        public virtual policies::timeout::crpcut_none,
         public virtual policies::dependencies::crpcut_base
     {
       friend class test_suite_base;
     public:
-      crpcut_test_case_registrator(const char *name, const namespace_info &ns);
+      crpcut_test_case_registrator(const char *name, const namespace_info &ns,
+                                   unsigned long cputime_limit_ms);
       friend std::ostream &operator<<(std::ostream &os,
                                       const crpcut_test_case_registrator &t)
       {
@@ -1562,6 +1533,7 @@ namespace crpcut {
       void crpcut_prepare_destruction(unsigned long ms);
       void crpcut_prepare_construction(unsigned long ms);
     private:
+      bool crpcut_cputime_timeout(unsigned long ms) const;
       std::ostream &crpcut_print_name(std::ostream &) const ;
 
       const char                   *crpcut_name_;
@@ -1581,6 +1553,7 @@ namespace crpcut {
       reader<comm::stdout>          crpcut_stdout_reader;
       reader<comm::stderr>          crpcut_stderr_reader;
       test_phase                    crpcut_phase;
+      const unsigned long           crpcut_cputime_limit_ms;
       friend class report_reader;
     };
 
@@ -1668,8 +1641,6 @@ namespace crpcut {
       virtual bool match_name(const char *) const { return false; }
       virtual std::ostream& print_name(std::ostream &os) const { return os; }
       virtual void crpcut_do_run_test_case() {}
-      virtual bool crpcut_cputime_timeout(unsigned long) const { return false;}
-      virtual void crpcut_cputime_limit(std::ostream&) const {}
     };
 
     typedef datatypes::array_v<implementation::crpcut_test_case_registrator*,
@@ -3076,27 +3047,11 @@ namespace crpcut {
     } // namespace dependencies
 
     namespace timeout {
-
-      template <unsigned long timeout_ms>
-      enforcer<cputime, timeout_ms>::enforcer()
-        : cputime_enforcer(timeout_ms)
-      {
-      }
-
       template <unsigned long timeout_ms>
       enforcer<realtime, timeout_ms>::enforcer()
         : monotonic_enforcer(timeout_ms)
       {
       }
-
-      template <unsigned long timeout_ms>
-      bool
-      enforcer<cputime, timeout_ms>::monitor
-      ::crpcut_cputime_timeout(unsigned long ms) const
-      {
-        return test_case_factory::timeouts_enabled() && ms > timeout_ms;
-      }
-
     } // namespace timeout
 
   } // namespace policies
@@ -3782,7 +3737,6 @@ namespace crpcut {
     };
   }
 
-
   template <typename T>
   typename eval_t<T>::type eval(const T& t) { return eval_t<T>::func(t); }
 
@@ -3878,10 +3832,13 @@ extern crpcut::implementation::namespace_info current_namespace;
     friend class crpcut::implementation::test_wrapper<crpcut_run_wrapper>; \
     friend class crpcut::policies::dependencies::enforcer<test_case_name>; \
     friend class crpcut::implementation::crpcut_test_case_registrator;  \
+    test_case_name() {}                                                 \
+    ~test_case_name() {}                                                \
     virtual void crpcut_run_test()                                      \
     {                                                                   \
       crpcut_realtime_enforcer rt;                                      \
-      crpcut_cputime_enforcer ct;                                       \
+      using crpcut::policies::timeout::cputime_enforcer;                \
+      cputime_enforcer ct(crpcut_cputime_enforcer::crpcut_cputime_timeout_ms); \
       (void)rt; /* silence warning */                                   \
       (void)ct; /* silence warning */                                   \
       using crpcut::implementation::test_wrapper;                       \
@@ -3895,7 +3852,6 @@ extern crpcut::implementation::namespace_info current_namespace;
     class crpcut_registrator                                            \
       : public crpcut::implementation::crpcut_test_case_registrator,    \
         private virtual crpcut::policies::dependencies::crpcut_base,    \
-        private virtual test_case_name::crpcut_cputime_enforcer::monitor, \
         public virtual test_case_name::crpcut_expected_death_cause,     \
         private virtual test_case_name::crpcut_dependency,              \
         public virtual crpcut_testsuite_dep,                            \
@@ -3904,9 +3860,12 @@ extern crpcut::implementation::namespace_info current_namespace;
     {                                                                   \
        typedef crpcut::implementation::crpcut_test_case_registrator     \
          crpcut_registrator_base;                                       \
+       static const unsigned long crpcut_cputime_timeout_ms             \
+         =test_case_name::crpcut_cputime_enforcer::crpcut_cputime_timeout_ms; \
     public:                                                             \
        crpcut_registrator()                                             \
-         : crpcut_registrator_base(#test_case_name, current_namespace)  \
+         : crpcut_registrator_base(#test_case_name, current_namespace,  \
+                                   crpcut_cputime_timeout_ms)           \
          {                                                              \
            crpcut::implementation::test_suite<crpcut_testsuite_id>::crpcut_reg().add_case(this); \
          }                                                              \
