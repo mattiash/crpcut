@@ -1,3 +1,17 @@
+         * Now show stack backtrace for heap errors if support for
+           backtrace if found by CMake. Support for this can be disabled
+           by adding -DUSE_BACKTRACE=no on the CMake command line when
+           building the cmake library.
+
+         * Improved the behaviour of the heap instrumentation at startup.
+           There are still typically 6 false leaks reported by valgrind,
+           which I believe is a bug in valgrind that doesn't count
+           VALGRIND_MEMPOOL_FREE(pool, addr) as free'd.
+
+         * Reduced compile time for tests. Typical reduction is around
+           20%, but as much as 50% improvement has been seen, depending on
+           compiler switches and hardware.
+
          * Incorporated Mattias Holmlund's html-display from
            https://github.com/mattiash/crpcut
 
