@@ -984,7 +984,7 @@ if (WITH_HTML_DOCS)
     target_link_libraries(verify_scope_leak_free crpcut)
     add_custom_target(
       verify_scope_leak_free.out
-      verify_scope_leak_free | sed "s/\\(.*\\)/     \\1/g" > verify_scope_leak_free.out
+      verify_scope_leak_free | c++filt | sed "s/\\(.*\\)/     \\1/g" > verify_scope_leak_free.out
       DEPENDS verify_scope_leak_free sample-output
       WORKING_DIRECTORY sample-output
       VERBATIM)
