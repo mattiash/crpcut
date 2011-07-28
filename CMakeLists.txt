@@ -134,11 +134,16 @@ file(WRITE ${CMAKE_BINARY_DIR}/CMakeTmp/valgrind.cpp
 try_compile(HAVE_VALGRIND ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/CMakeTmp/valgrind.cpp)
 
-# check for clock_gettime()
+# check for backtrace
 
+check_function_exists("backtrace" USE_BACKTRACE)
 if (USE_BACKTRACE)
   add_definitions(-DUSE_BACKTRACE)
+  message("*** using backtrace() for information on heap objects")
 endif (USE_BACKTRACE)
+
+# check for clock_gettime()
+
 set(EXTRA_LIBS "${EXTRA_LIBS} -l${CMAKE_DL_LIBS}")
 check_function_exists("clock_gettime()" HAVE_CLOCK_GETTIME)
 if(HAVE_CLOCK_GETTIME)
@@ -960,7 +965,7 @@ if (WITH_HTML_DOCS)
     target_link_libraries(assert_scope_leak_free crpcut)
     add_custom_target(
       assert_scope_leak_free.out
-      assert_scope_leak_free | sed "s/\\(.*\\)/     \\1/g" > assert_scope_leak_free.out
+      assert_scope_leak_free | c++filt | sed "s/\\(.*\\)/     \\1/g"  > assert_scope_leak_free.out
       DEPENDS assert_scope_leak_free sample-output
       WORKING_DIRECTORY sample-output
       VERBATIM)
@@ -1756,7 +1761,7 @@ if (WITH_HTML_DOCS)
     target_link_libraries(heap-check crpcut)
     add_custom_target(
       heap-check.out
-      heap-check  | sed "s/\\(.*\\)/     \\1/g" > heap-check.out
+      heap-check  | c++filt | sed "s/\\(.*\\)/     \\1/g" > heap-check.out
       DEPENDS heap-check sample-output
       WORKING_DIRECTORY sample-output
       VERBATIM)

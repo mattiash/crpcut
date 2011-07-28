@@ -118,6 +118,8 @@ namespace crpcut
 
     local_root *local_root::current_root;
 
+    static mem_list_element *raw_alloc_mem(size_t s) throw ();
+
     namespace {
       const size_t num_elems = 50000;
       mem_list_element vector[num_elems];
@@ -127,6 +129,7 @@ namespace crpcut
       size_t bytes;
       size_t objects;
 
+#ifdef USE_BACKTRACE
       class function
       {
       public:
@@ -151,6 +154,72 @@ namespace crpcut
 
       function backtrace("backtrace");
       function backtrace_symbols("backtrace_symbols");
+#endif // USE_BACKTRACE
+
+      void show_stack(std::ostringstream &msg,
+                      const char         *header,
+                      mem_list_element   *stack,
+                      int                 size)
+      {
+#ifdef USE_BACKTRACE
+        msg << header;
+        void *stack_addr;
+        if (stack) stack_addr = stack + 1;
+        if (size == 0)
+          {
+            void *buffer[50];
+            size = backtrace.call<int>(buffer, 50);
+            stack_addr = buffer;
+          }
+        if (stack_addr && size)
+          {
+            void **bt = static_cast<void**>(stack_addr);
+            char **alloc_stack = backtrace_symbols.call<char**>(bt, size);
+            for (int i = 1; i < size; ++i)
+              {
+                msg << '\n' << alloc_stack[i];
+              }
+            free(alloc_stack);
+          }
+#else // shut up compiler warnings
+        (void)msg;
+        (void)header;
+        (void)stack;
+        (void)size;
+#endif
+
+    }
+
+      void save_backtrace(mem_list_element *p)
+      {
+#ifdef USE_BACKTRACE
+        if (control::is_enabled())
+          {
+            if (backtrace)
+              {
+                static void* buffer[50];
+                int    const elems  = backtrace.call<int>(buffer, 50);
+                size_t const ebytes = elems*sizeof(void*);
+                if (mem_list_element *sr = raw_alloc_mem(ebytes))
+                  {
+                    const size_t block_size = sizeof(mem_list_element)+ebytes;
+                    valgrind_make_mem_undefined(sr, block_size);
+                    sr->mem = ebytes;
+                    sr->stack = sr->prev = sr->next = 0;
+                    sr->type = raw;
+                    void *addr = sr+1;
+                    void **stack = static_cast<void**>(addr);
+                    std::copy(buffer, buffer + elems, stack);
+                    p->stack = sr;
+                    p->stack_size = elems;
+                  }
+              }
+          }
+#else // shut up compiler warning
+        (void)p;
+#endif
+      }
+
     }
 
     local_root::local_root()
@@ -236,20 +305,7 @@ namespace crpcut
           msg << p->mem << " byte";
           if (p->mem != 1) msg << 's';
           msg << " at " << p+1 << " allocated with " << alloc_name[p->type];
-#ifdef USE_BACKTRACE
-          if (p->stack)
-            {
-              msg << "\nAllocated at:";
-              void *stack_addr = p->stack + 1;
-              void **bt = static_cast<void**>(stack_addr);
-              char **alloc_stack = backtrace_symbols.call<char**>(bt, p->stack_size);
-              for (int i = 1; i < p->stack_size; ++i)
-                {
-                  msg << '\n' << alloc_stack[i];
-                }
-              free(alloc_stack);
-            }
-#endif
+          show_stack(msg, "\nAllocated at:", p->stack, p->stack_size);
           valgrind_make_mem_undefined(p, sizeof(mem_list_element));
           if (n != this) msg << '\n';
           p = n;
@@ -317,36 +373,14 @@ namespace crpcut
           void *addr = p + 1;
           if (control::is_enabled())
             {
-#ifdef USE_BACKTRACE
               std::ostringstream msg;
-              if (p->stack)
-                {
-                  int stack_size = p->stack_size;
-                  void *stack_addr = p->stack+1;
-                  void **bt = static_cast<void**>(stack_addr);
-                  char **alloc_stack = backtrace_symbols.call<char**>(bt, p->stack_size);
-                  for (int i = 1; i < stack_size; ++i)
-                    {
-                      msg << alloc_stack[i] << '\n';
-                    }
-                  msg << "Now at:\n";
-                  void *buffer[50];
-                  int elems = backtrace.call<int>(buffer, 50);
-                  alloc_stack = backtrace_symbols.call<char**>(buffer, elems);
-                  for (int i = 1; i < elems; ++i)
-                    {
-                      msg << alloc_stack[i] << '\n';
-                    }
-                }
-#endif
+              show_stack(msg, "\nAlloc stack:", p->stack, p->stack_size);
+              show_stack(msg, "\nNow at:", 0, 0);
               comm::direct_reporter<crpcut::comm::exit_fail>()
                 << "DEALLOC FAIL\n"
                 << free_name[type] << " " << addr << " was allocated using "
                 << alloc_name[current_type]
-#ifdef USE_BACKTRACE
-                 << "\nAlloc stack:\n" << msg.str()
-#endif
-                ;
+                << msg.str();
             }
           else
             {
@@ -408,6 +442,7 @@ namespace crpcut
 
     int recursive_check::count = -1;
 
+
     static void *alloc_mem(size_t s, alloc_type type) throw ()
     {
       recursive_check is_recursive;
@@ -437,31 +472,7 @@ namespace crpcut
               if (root) root->insert_object(p);
               bytes += s;
               ++objects;
-#ifdef USE_BACKTRACE
-              if (control::is_enabled())
-                {
-                  if (backtrace)
-                    {
-                      static void* buffer[50];
-                      int    const elems  = backtrace.call<int>(buffer, 50);
-                      size_t const ebytes = elems*sizeof(void*);
-                      mem_list_element *sr = raw_alloc_mem(ebytes);
-                      if (sr)
-                        {
-                          valgrind_make_mem_undefined(sr,
-                                                      sizeof(mem_list_element)+ebytes);
-                          sr->mem = ebytes;
-                          sr->stack = sr->prev = sr->next = 0;
-                          sr->type = raw;
-                          void *addr = sr+1;
-                          void **stack = static_cast<void**>(addr);
-                          std::copy(buffer, buffer + elems, stack);
-                          p->stack = sr;
-                          p->stack_size = elems;
-                        }
-                    }
-                }
-#endif
+              save_backtrace(p);
             }
           valgrind_make_mem_noaccess(p, sizeof(mem_list_element));
           ++p;
@@ -490,13 +501,9 @@ namespace crpcut
       --p;
       valgrind_make_mem_defined(p, sizeof(mem_list_element));
       alloc_type_check(p, expected);
-#ifdef USE_BACKTRACE
-      if (p->stack) {
-        free_mem_raw(p->stack);
-      }
-#endif
-      recursive_check recursive;
-      if (!recursive)
+      if (p->stack) free_mem_raw(p->stack);
+      recursive_check is_recursive;
+      if (!is_recursive)
         {
           bytes-= p->mem;
           --objects;
