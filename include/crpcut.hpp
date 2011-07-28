@@ -376,42 +376,45 @@ namespace crpcut {
 
   namespace libwrapper {
 
-    template <const char * const * (&lib)()>
-    class loader
+    class dlloader
     {
+    protected:
+      dlloader(const char *const *lib);
+      ~dlloader();
+      void *libptr() const { return libp;  }
+      void *symbol(const char *name) const;
+      void assert_lib_is_loaded() const;
+    private:
+      void init(const char *const *lib);
+      void *libp;
+    };
+
+    template <const char * const * (&lib)()>
+    class loader : dlloader
+    {
+      loader() : dlloader(lib()) {}
     public:
-      loader()
-      {
-        for (const char * const *name = lib(); *name; ++name)
-          {
-            libp = ::dlopen(*name, RTLD_NOW | RTLD_NOLOAD);
-            if (libp) break;
-          }
-        if (!libp) *(int*)libp = 0; // can't rely on abort() here
-      }
-      ~loader()
-      {
-        (void)::dlclose(libp); // nothing much to do in case of error.
-      }
       template <typename T>
       T sym(const char *name)
       {
+        assert_lib_is_loaded();
         union {       // I don't like silencing the warning this way,
           T func;     // but it should be safe. *IF* the function pointer
           void *addr; // can't be represented by void*, dlsym() can't
         } dlr;        // exist either.
-        dlr.addr = ::dlsym(libp, name);
+        dlr.addr = symbol(name);
         return dlr.func;
+      }
+      bool has_symbol(const char *name)
+      {
+        return symbol(name);
       }
       static loader& obj()
       {
         static loader o;
         return o;
       }
-    private:
-      void *libp;
     };
-
 
   }
 

@@ -357,11 +357,28 @@ namespace crpcut
         }
     }
 
+    class recurse_counter
+    {
+    public:
+      recurse_counter(int &count) : counter(count) { ++counter; }
+      ~recurse_counter() { --counter; }
+      operator const void*() const { return counter ? this : 0; }
+    private:
+      recurse_counter(const recurse_counter&);
+      recurse_counter &operator=(const recurse_counter&);
+      int &counter;
+    };
+
     static mem_list_element *raw_alloc_mem(size_t s) throw ()
     {
       const size_t blocks = (s + sizeof(mem_list_element) - 1)/sizeof(mem_list_element) + 1;
+      static bool has_malloc_sym = false;
+      static int recursive = -1;
+      recurse_counter recurse_checker(recursive);
+      typedef libwrapper::loader<libs::libc> libc_loader;
 
-      if (current_offset + blocks < num_elems)
+      has_malloc_sym |= !recursive && libc_loader::obj().has_symbol("malloc");
+      if (!has_malloc_sym)
         {
           if (current_offset == 0)
             {
@@ -371,7 +388,6 @@ namespace crpcut
           mem_list_element *p = &vector[current_offset];
           current_offset += blocks + 1;
           valgrind_mempool_alloc(vector, p+1, s);
-          valgrind_malloclike_block(p+1, s, sizeof(mem_list_element), 0);
           return p;
         }
       const size_t size = s + 2*sizeof(mem_list_element);
@@ -380,15 +396,13 @@ namespace crpcut
       return p;
     }
 
-    class recursive_check
+
+    class recursive_check : recurse_counter
     {
     public:
-      recursive_check() { ++count; }
-      ~recursive_check() { --count; }
-      operator const void*() const { return count ? this : 0; }
+      recursive_check() : recurse_counter(count) {};
+      using recurse_counter::operator const void*;
     private:
-      recursive_check(const recursive_check&);
-      recursive_check &operator=(const recursive_check&);
       static int count;
     };
 
@@ -396,8 +410,8 @@ namespace crpcut
 
     static void *alloc_mem(size_t s, alloc_type type) throw ()
     {
-      recursive_check recursive;
-      if (!recursive)
+      recursive_check is_recursive;
+      if (!is_recursive)
         {
           const size_t current_limit = limit;
           if (bytes + s > current_limit)
@@ -413,7 +427,7 @@ namespace crpcut
           p->mem = s;
           p->stack = 0;
           p->type = type;
-          if (recursive)
+          if (is_recursive)
             {
               p->next = p->prev = 0;
             }

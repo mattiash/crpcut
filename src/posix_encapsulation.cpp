@@ -62,6 +62,35 @@ namespace crpcut {
       return name;
     }
   }
+
+  namespace libwrapper
+  {
+    dlloader::dlloader(const char *const *lib)
+      : libp(0)
+    {
+      init(lib);
+    }
+    dlloader::~dlloader()
+    {
+      (void)::dlclose(libp); // nothing much to do in case of error.
+    }
+    void dlloader::init(const char *const *lib)
+    {
+      for (const char * const *name = lib; *name; ++name)
+        {
+          libp = ::dlopen(*name, RTLD_NOW | RTLD_NOLOAD);
+          if (libp) break;
+        }
+    }
+    void *dlloader::symbol(const char *name) const
+    {
+      return libp ? ::dlsym(libp, name) : 0;
+    }
+    void dlloader::assert_lib_is_loaded() const
+    {
+      if (!libp) *(int*)libp = 0; // can't rely on abort() here
+    }
+  }
 }
 
 
