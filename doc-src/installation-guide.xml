@@ -227,8 +227,6 @@
     last  changed.) Should you not want this, add the command line parameter
     <constant>-DUSE_BACKTRACE=no</constant> to the CMake line.
     </para>
-    <para>This experimental behaviour may become the default in the future.
-    Please report your experiences with it.</para>
   </simplesect>
   <simplesect><title>Which compiler to use</title>
     <para>
