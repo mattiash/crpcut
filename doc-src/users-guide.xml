@@ -648,7 +648,7 @@ url="http://en.wikipedia.org/wiki/C++0x#Lambda_functions_and_expressions">lambda
 macro.
         <note>Operator == in a collation check does not mean strict
           equality, but rather that the left hand side and right hand
-          side are equitable in the sort order of by the locale.
+          side are equitable in the sort order of the locale.
         </note>
         Consider this class that can represent a range of names
         sorted in a desired locale:
@@ -1060,7 +1060,7 @@ macro.
       is <type>pred_type</type>, and the object constructor is called
       with the parameters to
       <type>crpcut::</type><function>match</function>&lt;pred_type&gt;().
-      However, you can override the traits class template
+      However, you can specialize the traits class template
       <type>crpcut::match_traits</type> for your predicate class, to provide
       a better suitable type, for example a specialization on the
       parameters.

@@ -155,7 +155,7 @@
         one that makes sense for the rest of the test. At other times, more
         checked conditions can give more insight into what went wrong.</para>
         <para>This is why &crpcut; offers both ASSERT macros, that terminate
-        the test pracess on failure, and VERIFY macros, that allow execution
+        the test process on failure, and VERIFY macros, that allow execution
         to continue even when the test is marked as failed.</para>
         <para>Which is better to use is a judgement call from case to case.
         </para>
@@ -268,7 +268,7 @@
           <itemizedlist>
             <listitem><para>
                 <ulink url="http://gcc.gnu.org">gcc</ulink> versions
-                4.3.4, 4.4.4 and 4.5.1.
+                4.2.4, 4.3.4, 4.4.4, 4.4.5, 4.5.1, 4.5.2, 4.6.0 and 4.6.1.
             </para></listitem>
             <listitem><para>
                 <ulink url="http://www.intel.com">Intel</ulink>
@@ -290,8 +290,8 @@
           <itemizedlist>
             <listitem><ulink url="http://www.gentoo.org">gentoo</ulink> x86</listitem>
             <listitem><ulink url="http://www.gentoo.org">gentoo</ulink> amd64</listitem>
-            <listitem><ulink url="http://www.ubuntu.com">Ubuntu</ulink> Linux 10.10 (maverick meerkat) x86</listitem>
-            <listitem><ulink url="http://www.ubuntu.com">Ubuntu</ulink> Linux 10.10 (maverick meerkat) x86-64</listitem>
+            <listitem><ulink url="http://www.ubuntu.com">Ubuntu</ulink> Linux 10.10 (maverick meerkat) and 11.04 (natty narwahl) x86</listitem>
+            <listitem><ulink url="http://www.ubuntu.com">Ubuntu</ulink> Linux 10.10 (maverick meerkat) and 11.04 (natty narwahl) x86-64</listitem>
           </itemizedlist>
         </para>
       </answer>
