@@ -1,5 +1,7 @@
+2011-07-30 1.3.2
+
          * Now show stack backtrace for heap errors if support for
-           backtrace if found by CMake. Support for this can be disabled
+           backtrace is found by CMake. Support for this can be disabled
            by adding -DUSE_BACKTRACE=no on the CMake command line when
            building the cmake library.
 
