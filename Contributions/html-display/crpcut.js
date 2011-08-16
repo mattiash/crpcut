@@ -1,22 +1,28 @@
+/*jslint browser: true, white: true */
+
+/*global $ */
+
+
 $(document).ready(
   function() {
-    function markup( text, cl ) {
-      text = $.trim(text);
-      var m = "\n" + marker(cl);
-      return marker(cl) + text.replace( /\n/g, m );
-    }
+    "use strict";
+    var url = window.location.search.substr(1);
+
+    // Dummy function to mark that a parameter is unused.
+    // Silences warnings from jslint.
+    function unused() {}
 
     function marker( cl ) {
-      if( cl == "violation" ) {
+      if( cl === "violation" ) {
         return "(v) ";
       }
-      else if( cl == "stdout" ) {
+      else if( cl === "stdout" ) {
         return "(o) ";
       }
-      else if( cl == "stderr" ) {
+      else if( cl === "stderr" ) {
         return "(e) ";
       }
-      else if( cl == "info" ) {
+      else if( cl === "info" ) {
         return "(i) ";
       }
       else {
@@ -24,28 +30,37 @@ $(document).ready(
       }
     }
 
-    var url = window.location.search.substr(1);
+    function markup( text, cl ) {
+      var m = "\n" + marker(cl);
+      text = $.trim(text);
+      return marker(cl) + text.replace( /\n/g, m );
+    }
 
     $("#error").ajaxError(
       function(event, request, settings){
+        unused(event, request);
         $(this).append("Failed to fetch <a href='" + settings.url + "'>" +
                        settings.url + "</a>");
       });
 
     $.get(url,
           function(d){
-            var identifier = $(d).find('crpcut').attr('id');
-            if( !identifier )
-              identifier="";
-            var program = /([^\/]+).xml/(url);
+            var identifier, program, html, registered, run, failed;
 
-            var html = "";
+            identifier = $(d).find('crpcut').attr('id');
+            if( !identifier ) {
+              identifier="";
+            }
+
+            program = url.match( /([\-a-zA-Z0-9_]+)\.xml/ );
+
+            html = "";
             html += '<h1 id="qunit-header">' + program[1] + '</h1>';
             html += '<h2 id="qunit-banner" class="pass"></h2>';
             html += '<h2 id="qunit-userAgent">' + identifier + '</h2>';
             html += '<ol id="qunit-tests">';
 
-            if( $(d).find('crpcut').length == 0 ) {
+            if( $(d).find('crpcut').length === 0 ) {
               $('#error').append(
                 "Failed to parse <a href='" + url + "'>" + url + "</a>");
               return;
@@ -53,18 +68,21 @@ $(document).ready(
 
             $(d).find('crpcut > test').each(
               function(){
-                var $test = $(this);
-                var name = $test.attr("name");
-                var result = $test.attr("result");
-                var cl = "unknown";
-                if( result == "PASSED" )
+                var $test = $(this),
+                name = $test.attr("name"),
+                result = $test.attr("result"),
+                cl = "unknown",
+                log = "";
+
+                if( result === "PASSED" ) {
                   cl = "pass";
-                else if( result == "FAILED" )
-                cl = "fail";
+                }
+                else if( result === "FAILED" ) {
+                  cl = "fail";
+                }
 
                 html += '<li class="' + cl + '">';
 
-                var log = "";
                 $test.find('log *').each(
                   function(){
                     var cl = this.tagName;
@@ -73,7 +91,7 @@ $(document).ready(
                     log += '</li>';
                   });
 
-                if(log != "") {
+                if(log !== "") {
                   html += "<a class='expanditem test-name' href=''>" + name
                   + " (more)</a><ul class='log'>"+log+"</ul>";
                 }
@@ -87,10 +105,9 @@ $(document).ready(
 
             $(d).find('blocked_tests > test').each(
               function(){
-                var $test = $(this);
-                var name = $test.attr("name");
-                var result = "BLOCKED";
-                var cl = "block";
+                var $test = $(this),
+                name = $test.attr("name"),
+                cl = "block";
 
                 html += '<li class="' + cl + '">';
                 html += '<span class="test-name">(blocked) ' + name
@@ -100,9 +117,9 @@ $(document).ready(
 
             html += '</ol>';
 
-            var registered = $(d).find("registered_test_cases").text();
-            var run = $(d).find("run_test_cases").text();
-            var failed = $(d).find("failed_test_cases").text();
+            registered = $(d).find("registered_test_cases").text();
+            run = $(d).find("run_test_cases").text();
+            failed = $(d).find("failed_test_cases").text();
 
             html += "<p id='qunit-testresult' class='result'>";
             html += "Ran " + run + " tests of " + registered + ", " +
@@ -112,7 +129,7 @@ $(document).ready(
             $('body').append($(html));
 
             $("#qunit-banner").addClass(
-              failed == 0 ? "qunit-pass" : "qunit-fail" );
+              failed === 0 ? "qunit-pass" : "qunit-fail" );
 
             document.title = program[1] + " " + identifier + " test result";
 
